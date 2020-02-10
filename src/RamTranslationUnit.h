@@ -39,9 +39,8 @@ namespace souffle {
  */
 class RamTranslationUnit {
 public:
-    RamTranslationUnit(std::unique_ptr<RamProgram> prog, SymbolTable& sym, RecordTable& rec, ErrorReport& e,
-            DebugReport& d)
-            : program(std::move(prog)), symbolTable(sym), recordTable(rec), errorReport(e), debugReport(d) {
+    RamTranslationUnit(std::unique_ptr<RamProgram> prog, SymbolTable& sym, ErrorReport& e, DebugReport& d)
+            : program(std::move(prog)), symbolTable(sym), errorReport(e), debugReport(d) {
         assert(program != nullptr && "program is a null-pointer");
     }
 
@@ -94,11 +93,6 @@ public:
         return symbolTable;
     }
 
-    /** @brief get record table  */
-    souffle::RecordTable& getRecordTable() const {
-        return recordTable;
-    }
-
     /** @brief get error report */
     ErrorReport& getErrorReport() {
         return errorReport;
@@ -128,9 +122,6 @@ protected:
 
     /* The table of symbols encountered in the input program */
     souffle::SymbolTable& symbolTable;
-
-    /* The table of records. */
-    souffle::RecordTable& recordTable;
 
     /* Error report for raising errors and warnings */
     ErrorReport& errorReport;

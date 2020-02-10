@@ -110,6 +110,8 @@ private:
     RamIndexAnalysis* isa;
     /** Interpreter program generator */
     NodeGenerator generator;
+    /** Record Table*/
+    RecordTable recordTable;
 };
 
 }  // namespace souffle

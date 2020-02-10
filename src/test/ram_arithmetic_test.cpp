@@ -53,11 +53,10 @@ RamDomain evalExpression(std::unique_ptr<RamExpression> expression) {
             std::make_unique<RamProgram>(std::move(rels), std::make_unique<RamSequence>(), std::move(subs));
 
     SymbolTable symTab;
-    RecordTable recordTable;
     ErrorReport errReport;
     DebugReport debugReport;
 
-    RamTranslationUnit translationUnit(std::move(prog), symTab, recordTable, errReport, debugReport);
+    RamTranslationUnit translationUnit(std::move(prog), symTab, errReport, debugReport);
 
     // configure and execute interpreter
     std::unique_ptr<InterpreterEngine> interpreter = std::make_unique<InterpreterEngine>(translationUnit);

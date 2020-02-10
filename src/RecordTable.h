@@ -23,15 +23,19 @@
 #include <map>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
 
 namespace souffle {
 
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
-class RecordMap {
+class RecMap {
 public:
-    explicit RecordMap(size_t arity) : arity(arity), i2r(1){};  // note: index 0 element left free
+    RecMap() = default;
+    explicit RecMap(size_t arity) : arity(arity), i2r(1) {
+        std::cerr << "RecMap is constructed with the arity: " << arity << std::endl;
+    };  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -78,7 +82,7 @@ public:
 
 private:
     /** The arity of the stored tuples */
-    size_t arity;
+    size_t arity{};
 
     /** The mapping from tuples to references/indices */
     std::map<std::vector<RamDomain>, RamDomain> r2i;
@@ -96,12 +100,37 @@ private:
  */
 class RecordTable {
 public:
+    RecordTable() :  access(), maps() {
+        std::cerr << "Initialized record table" << std::endl;
+        std::cerr << "Maps size: " << maps.size()  <<  std::endl;
+    };
+    
     RamDomain pack(RamDomain* tuple, size_t arity) {
-        return getForArity(arity).pack(tuple);
+        std::cerr << "pack" << ", arity: " << arity << std::endl;
+        for (size_t i = 0; i < arity; ++i) {
+            std::cerr << tuple[i] << " ";
+        }
+        std::cerr << std::endl;
+        
+        auto lease = access.acquire();
+        (void)lease;  // avoid warning;
+        
+        auto map = getForArity(arity).pack(tuple);
+        std::cerr << "->" << map << std::endl;
+        return map;
     }
 
     RamDomain* unpack(RamDomain ref, size_t arity) {
-        return getForArity(arity).unpack(ref);
+        std::cerr << ref << "->" << std::endl;
+
+        auto lease = access.acquire();
+        (void)lease;  // avoid warning;
+        
+        RamDomain *t = getForArity(arity).unpack(ref);
+        for (size_t i = 0;i < arity; i++) {
+            std::cerr << t[i] << " ";
+        }
+        return t;
     }
 
     RamDomain getNull() {
@@ -113,13 +142,33 @@ public:
     }
 
 private:
-    RecordMap& getForArity(size_t arity) {
-        static std::unordered_map<size_t, RecordMap> maps;
-        auto pos = maps.find(arity);
-        if (pos == maps.end()) {
-            maps.emplace(arity, arity);
-        }
+    /** A lock to synchronize parallel accesses */
+    mutable Lock access;
+    
+    std::unordered_map<size_t, RecMap> maps;
+    
+    RecMap& getForArity(size_t arity) {
+        std::cerr << "maps size: " << maps.size() << std::endl;
 
+        for (auto entry : maps) {
+            std::cerr << entry.first << "   " << std::endl;
+        }
+        
+        std::cerr << "getForArity" << std::endl;
+        auto pos = maps.find(arity);
+        std::cerr << "getForArity find" << std::endl;
+        
+        if (pos == maps.end()) {
+            auto it = maps.emplace(arity, arity);
+            if (it.second) {
+                std::cout << "Map " << arity << " was not there." << std::endl;
+            } else {
+                std::cout << "Map is here, arity: " << arity << std::endl;
+            }
+            return it.first->second;
+        } else {
+            std::cout << "Map found" << std::endl;
+        }
         return maps.find(arity)->second;
     }
 };

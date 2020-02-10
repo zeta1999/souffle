@@ -84,7 +84,7 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(FloatConstant)
         FORWARD(UnsignedConstant)
         FORWARD(StringConstant)
-        FORWARD(NullConstant)
+        FORWARD(NilConstant)
         FORWARD(TypeCast)
         FORWARD(RecordInit)
         FORWARD(Aggregator)
@@ -137,19 +137,22 @@ protected:
     LINK(UnnamedVariable, Argument)
     LINK(Counter, Argument)
     LINK(TypeCast, Argument)
-    LINK(RecordInit, Argument)
     LINK(SubroutineArgument, Argument)
 
     LINK(NumberConstant, Constant)
     LINK(FloatConstant, Constant)
     LINK(UnsignedConstant, Constant)
     LINK(StringConstant, Constant)
-    LINK(NullConstant, Constant)
+    LINK(NilConstant, Constant)
     LINK(Constant, Argument)
 
     LINK(IntrinsicFunctor, Functor)
     LINK(UserDefinedFunctor, Functor)
-    LINK(Functor, Argument)
+
+    LINK(RecordInit, Term)
+    LINK(Functor, Term)
+
+    LINK(Term, Argument)
 
     LINK(Aggregator, Argument)
 

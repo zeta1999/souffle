@@ -25,6 +25,7 @@
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
+#include "AstUtils.h"
 #include "AstVisitor.h"
 #include "AuxArityAnalysis.h"
 #include "BinaryConstraintOps.h"
@@ -277,7 +278,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
         // the original rule without any instrumentation
         size_t clauseNum = 1;
         for (auto clause : relation->getClauses()) {
-            if (!clause->isFact()) {
+            if (!isFact(*clause)) {
                 clause->setClauseNum(clauseNum);
 
                 // add info relation
@@ -329,7 +330,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
             clause->getHead()->apply(makeLambdaAstMapper(rewriter));
 
             // if fact, level number is 0
-            if (clause->isFact()) {
+            if (isFact(*clause)) {
                 clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
                 for (size_t i = 0; i < auxArityAnalysis.getArity(relation) - 1; i++) {
                     clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
@@ -412,7 +413,7 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
         // the original rule without any instrumentation
         size_t clauseNum = 1;
         for (auto clause : relation->getClauses()) {
-            if (!clause->isFact()) {
+            if (!isFact(*clause)) {
                 clause->setClauseNum(clauseNum);
 
                 // add info relation
@@ -453,7 +454,7 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
             clause->getHead()->apply(M());
 
             // if fact, level number is 0
-            if (clause->isFact()) {
+            if (isFact(*clause)) {
                 clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
                 clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
             } else {

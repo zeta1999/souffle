@@ -361,6 +361,7 @@ public:
             // which is not relevant for finding variables
             for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
                 if (!contains(uniqueVariables, *atomIt) && !contains(headVariables, *atomIt)) {
+                    // ignore non-variables
                     if (!isVariable(*atomIt)) {
                         continue;
                     }
@@ -429,7 +430,6 @@ public:
                 relName + "(" + joinedArgsStr.str() + ")", "(R" + std::to_string(ruleNum) + ")");
 
         // store the head tuple in bodyVariables so we can print
-        // TODO (taipan-snake): handle the case where the head contains constants (i.e., headVariables is smaller than tuple)
         for (size_t i = 0; i < headVariables.size(); i++) {
             bodyVariables[headVariables[i]] = tuple[i];
         }
@@ -458,58 +458,17 @@ public:
                 bodyRelAtomName = bodyRel.substr(1);
             }
 
-            /*
-            // traverse subroutine return
-            size_t arity;
-            size_t auxiliaryArity;
-            if (isConstraint) {
-                // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
-                // annotations
-                arity = 4;
-                auxiliaryArity = 2;
-            } else {
-                arity = prog.getRelation(bodyRelAtomName)->getArity();
-                auxiliaryArity = prog.getRelation(bodyRelAtomName)->getAuxiliaryArity();
-            }
-
-            // process current literal
-            std::vector<RamDomain> atomValues;
-            std::vector<bool> atomErrs;
-            size_t j = returnCounter;
-
-            for (; j < returnCounter + arity - auxiliaryArity; j++) {
-                atomValues.push_back(ret[j]);
-                atomErrs.push_back(err[j]);
-            }
-
-            // add child nodes to the proof tree
-            std::stringstream childLabel;
-            if (isConstraint) {
-                assert(atomValues.size() == 2 && "not a binary constraint");
-
-                if (isNumericBinaryConstraintOp(toBinaryConstraintOp(bodyRel))) {
-                    childLabel << atomValues[0] << " " << bodyRel << " " << atomValues[1];
-                } else {
-                    childLabel << bodyRel << "(\"" << symTable.resolve(atomValues[0]) << "\", \""
-                               << symTable.resolve(atomValues[1]) << "\")";
-                }
-            } else {
-                childLabel << bodyRel << "(";
-                childLabel << join(numsToArgs(bodyRelAtomName, atomValues, &atomErrs), ", ");
-                childLabel << ")";
-            }
-            */
-
+            // construct a label for a node containing a literal (either constraint or atom)
             std::stringstream childLabel;
             if (isConstraint) {
                 assert(atomRepresentation.size() == 3 && "not a binary constraint");
 
-                childLabel << bodyVariables[atomRepresentation[1]] << " " << bodyRel << " " << bodyVariables[atomRepresentation[2]];
+                childLabel << bodyVariables[atomRepresentation[1]] << " " << bodyRel << " "
+                           << bodyVariables[atomRepresentation[2]];
             } else {
                 childLabel << bodyRel << "(";
-
-                // TODO (taipan-snake): handle the case where not all arguments are variables
                 for (size_t i = 1; i < atomRepresentation.size(); i++) {
+                    // if it's a non-variable, print either _ for unnamed, or constant value
                     if (!isVariable(atomRepresentation[i])) {
                         childLabel << atomRepresentation[i];
                     } else {
@@ -522,6 +481,7 @@ public:
                 childLabel << ")";
             }
 
+            // build a marker for existence of body atoms
             if (atomExists) {
                 childLabel << " ✓";
             } else {
@@ -531,7 +491,6 @@ public:
             internalNode->add_child(std::make_unique<LeafNode>(childLabel.str()));
             internalNode->setSize(internalNode->getSize() + 1);
 
-            // returnCounter = j - 1;
             literalCounter++;
         }
 

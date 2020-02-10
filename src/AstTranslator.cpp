@@ -1298,6 +1298,13 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
     // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates
     // or anything else...)
+    //
+    // The resulting subroutine looks something like this:
+    // IF (arg(0), arg(1), _, _) IN rel_1:
+    //   return 1
+    // IF (arg(0), arg(1), _ ,_) NOT IN rel_1:
+    //   return 0
+    // ...
 
     // clone clause for mutation
     auto clauseReplacedAggregates = std::unique_ptr<AstClause>(clause.clone());
@@ -1401,8 +1408,10 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             assert(query.size() == atom->getArity() && "wrong query tuple size");
 
             // create existence checks to check if the tuple exists or not
-            auto existenceCheck = std::make_unique<RamExistenceCheck>(std::unique_ptr<RamRelationReference>(relRef->clone()), std::move(query));
-            auto negativeExistenceCheck = std::make_unique<RamNegation>(std::unique_ptr<RamExistenceCheck>(existenceCheck->clone()));
+            auto existenceCheck = std::make_unique<RamExistenceCheck>(
+                    std::unique_ptr<RamRelationReference>(relRef->clone()), std::move(query));
+            auto negativeExistenceCheck = std::make_unique<RamNegation>(
+                    std::unique_ptr<RamExistenceCheck>(existenceCheck->clone()));
 
             // return true if the tuple exists
             std::vector<std::unique_ptr<RamExpression>> returnTrue;
@@ -1413,49 +1422,21 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             returnFalse.push_back(std::make_unique<RamSignedConstant>(0));
 
             // create a RamQuery to return true/false
-            appendStmt(searchSequence, std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(existenceCheck), std::make_unique<RamSubroutineReturnValue>(std::move(returnTrue)))));
-            appendStmt(searchSequence, std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(negativeExistenceCheck), std::make_unique<RamSubroutineReturnValue>(std::move(returnFalse)))));
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(existenceCheck),
+                            std::make_unique<RamSubroutineReturnValue>(std::move(returnTrue)))));
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(negativeExistenceCheck),
+                            std::make_unique<RamSubroutineReturnValue>(std::move(returnFalse)))));
 
-
-
-
-            /*
-            // make the nested operation to return the atom number if it exists
-            std::vector<std::unique_ptr<RamExpression>> returnValue;
-            returnValue.push_back(std::make_unique<RamSignedConstant>(litNumber));
-
-            // create a search
-            // a filter to find whether the current atom exists or not
-            auto searchFilter = std::make_unique<RamFilter>(
-                    std::make_unique<RamExistenceCheck>(
-                            std::unique_ptr<RamRelationReference>(relRef->clone()), std::move(query)),
-                    std::make_unique<RamSubroutineReturnValue>(std::move(returnValue)));
-
-            // now, return the values of the atoms, with a separator
-            // between atom number and atom
-            std::vector<std::unique_ptr<RamExpression>> returnAtom;
-            returnAtom.push_back(std::make_unique<RamUndefValue>());
-            // the actual atom
-            for (size_t i = 0; i < atom->getArity() - auxiliaryArity; i++) {
-                returnAtom.push_back(translateValue(atom->getArgument(i), ValueIndex()));
-            }
-
-            // chain the atom number and atom value together
-            auto atomSequence = std::make_unique<RamSequence>();
-            atomSequence->add(std::make_unique<RamQuery>(std::move(searchFilter)));
-            atomSequence->add(std::make_unique<RamQuery>(
-                    std::make_unique<RamSubroutineReturnValue>(std::move(returnAtom))));
-
-            // append search to the sequence
-            searchSequence->add(std::move(atomSequence));
-            */
         } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
             VariablesToArguments varsToArgs(uniqueVariables);
             con->apply(varsToArgs);
 
             // translate to a RamCondition
             auto condition = translateConstraint(con, ValueIndex());
-            auto negativeCondition = std::make_unique<RamNegation>(std::unique_ptr<RamCondition>(condition->clone()));
+            auto negativeCondition =
+                    std::make_unique<RamNegation>(std::unique_ptr<RamCondition>(condition->clone()));
 
             // create a return true value
             std::vector<std::unique_ptr<RamExpression>> returnTrue;
@@ -1465,39 +1446,12 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             std::vector<std::unique_ptr<RamExpression>> returnFalse;
             returnFalse.push_back(std::make_unique<RamSignedConstant>(0));
 
-            appendStmt(searchSequence, std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(condition), std::make_unique<RamSubroutineReturnValue>(std::move(returnTrue)))));
-            appendStmt(searchSequence, std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(negativeCondition), std::make_unique<RamSubroutineReturnValue>(std::move(returnFalse)))));
-
-            /*
-            // create a filter
-            auto filter = std::make_unique<RamFilter>(
-                    std::move(condition), std::make_unique<RamSubroutineReturnValue>(std::move(returnValue)));
-
-            // now, return the values of the literal, with a separator
-            // between atom number and atom
-            std::vector<std::unique_ptr<RamExpression>> returnLit;
-            returnLit.push_back(std::make_unique<RamUndefValue>());
-            // add return values for binary constraints and negations
-            if (auto binaryConstraint = dynamic_cast<AstBinaryConstraint*>(con)) {
-                returnLit.push_back(translateValue(binaryConstraint->getLHS(), ValueIndex()));
-                returnLit.push_back(translateValue(binaryConstraint->getRHS(), ValueIndex()));
-            } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
-                auto vals = negation->getAtom()->getArguments();
-                auto auxiliaryArity = auxArityAnalysis->getArity(negation->getAtom());
-                for (size_t i = 0; i < vals.size() - auxiliaryArity; i++) {
-                    returnLit.push_back(translateValue(vals[i], ValueIndex()));
-                }
-            }
-
-            // chain the atom number and atom value together
-            auto litSequence = std::make_unique<RamSequence>();
-            litSequence->add(std::make_unique<RamQuery>(std::move(filter)));
-            litSequence->add(std::make_unique<RamQuery>(
-                    std::make_unique<RamSubroutineReturnValue>(std::move(returnLit))));
-
-            // append search to the sequence
-            searchSequence->add(std::move(litSequence));
-            */
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(condition),
+                            std::make_unique<RamSubroutineReturnValue>(std::move(returnTrue)))));
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(negativeCondition),
+                            std::make_unique<RamSubroutineReturnValue>(std::move(returnFalse)))));
         }
 
         litNumber++;

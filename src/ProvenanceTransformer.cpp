@@ -83,37 +83,9 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     // add head relation as meta info
     std::vector<std::string> headVariables;
 
-    /*
-    // get all variables and aggregates in the head
-    struct HeadArgumentGetter : public AstNodeMapper {
-        std::vector<std::string>& headVariables;
-
-        HeadArgumentGetter(std::vector<std::string>& headVariables) : headVariables(headVariables) {}
-
-        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-            if (const auto* var = dynamic_cast<const AstVariable*>(node.get())) {
-                std::stringstream varName;
-                var->print(varName);
-                headVariables.push_back(varName.str());
-            } else if (const auto* agg = dynamic_cast<const AstAggregator*>(node.get())) {
-                std::stringstream aggStringRepresentation;
-                agg->print(aggStringRepresentation);
-                headVariables.push_back(aggStringRepresentation.str());
-            } else {
-                // apply mapper to children
-                node->apply(*this);
-            }
-
-            return node;
-        }
-    };
-
-    HeadArgumentGetter headArgGet(headVariables);
-    originalClause.getHead()->apply(headArgGet);
-    */
-    
     // a method to stringify an AstArgument, translating functors and aggregates
-    // keep a global counter of functor and aggregate numbers, which increment for each unique functor/aggregate
+    // keep a global counter of functor and aggregate numbers, which increment for each unique
+    // functor/aggregate
     int functorNumber = 0;
     int aggregateNumber = 0;
     auto getArgInfo = [&](AstArgument* arg) -> std::string {
@@ -152,9 +124,6 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             std::make_unique<AstAttribute>(std::string("head_vars"), AstTypeIdentifier("symbol")));
     infoClauseHead->addArgument(
             std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), headVariableString.str()));
-
-    // add a counter marking aggregates
-    // int aggregateNumber = 0;
 
     // visit all body literals and add to info clause head
     for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {

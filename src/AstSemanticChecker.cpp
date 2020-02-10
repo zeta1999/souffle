@@ -219,7 +219,6 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
     // - intrinsic functors -
     visitDepthFirst(nodes, [&](const AstFunctor& fun) {
-        
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
         if (!eqTypeRamTypeAttribute(fun.getReturnType(), resultType)) {
@@ -247,8 +246,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                 return;
             }
         }
-        
-        
+
         // Check argument types.
         for (size_t i = 0; i < fun.getArity(); i++) {
             auto arg = fun.getArg(i);
@@ -272,7 +270,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             }
         }
     });
-    
+
     // - binary relation -
     visitDepthFirst(nodes, [&](const AstBinaryConstraint& constraint) {
         // only interested in non-equal constraints

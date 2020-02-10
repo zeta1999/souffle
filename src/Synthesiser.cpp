@@ -1736,9 +1736,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     });
     os << "extern \"C\" {\n";
     for (const auto& f : functors) {
-//        size_t arity = f.second.length() - 1;
+        //        size_t arity = f.second.length() - 1;
         const std::string& name = f.first;
-        
+
         const auto& functorTypes = f.second;
         const auto& returnType = functorTypes.first;
         const auto& argsTypes = functorTypes.second;
@@ -1759,7 +1759,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             case RamTypeAttribute::Record:
                 abort();
         }
-        
+
         os << name << "(";
         std::vector<std::string> args;
         for (const RamTypeAttribute typeAttribute : argsTypes) {

@@ -435,7 +435,6 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // intrinsic functor
         void visitFunctor(const AstFunctor& fun) override {
-            
             auto functorVar = getVar(fun);
 
             // Currently we take a very simple approach toward polymorphic function.
@@ -473,7 +472,7 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                     return;
                 }
             }
-            
+
             // Add types constraints of arguments
             for (size_t i = 0; i < fun.getArity(); i++) {
                 auto argumentVar = getVar(fun.getArg(i));

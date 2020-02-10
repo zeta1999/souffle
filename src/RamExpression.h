@@ -47,7 +47,8 @@ public:
  */
 class RamAbstractOperator : public RamExpression {
 public:
-    explicit RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {
+    explicit RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args)
+            : arguments(std::move(args)) {
         for (auto const& arg : arguments) {
             assert(arg != nullptr && "argument is null-pointer");
         }
@@ -138,8 +139,10 @@ protected:
  */
 class RamUserDefinedOperator : public RamAbstractOperator {
 public:
-    RamUserDefinedOperator(std::string n, std::vector<RamTypeAttribute> argsTypes, RamTypeAttribute returnType, std::vector<std::unique_ptr<RamExpression>> args)
-        : RamAbstractOperator(std::move(args)), name(std::move(n)), argsTypes(std::move(argsTypes)), returnType(returnType) {
+    RamUserDefinedOperator(std::string n, std::vector<RamTypeAttribute> argsTypes,
+            RamTypeAttribute returnType, std::vector<std::unique_ptr<RamExpression>> args)
+            : RamAbstractOperator(std::move(args)), name(std::move(n)), argsTypes(std::move(argsTypes)),
+              returnType(returnType) {
         assert(argsTypes.size() == args.size());
     }
 
@@ -178,7 +181,8 @@ public:
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return RamAbstractOperator::equal(node) && name == other.name && argsTypes == other.argsTypes && returnType == other.returnType;
+        return RamAbstractOperator::equal(node) && name == other.name && argsTypes == other.argsTypes &&
+               returnType == other.returnType;
     }
 
     /** Name of user-defined operator */

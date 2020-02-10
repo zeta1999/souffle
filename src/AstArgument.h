@@ -281,12 +281,10 @@ public:
     }
     virtual RamTypeAttribute getReturnType() const = 0;
     virtual RamTypeAttribute getArgType(const size_t arg) const = 0;
-    
-    
+
 protected:
     AstFunctor() = default;
     explicit AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
-
 };
 
 /**
@@ -334,7 +332,7 @@ public:
     virtual bool isOverloaded() const override {
         return isOverloadedFunctor(function);
     }
-    
+
     /** get the return type of the functor. */
     virtual RamTypeAttribute getReturnType() const override {
         return functorReturnType(function);
@@ -397,7 +395,8 @@ public:
     }
 
     void setArgsTypes(const std::vector<RamTypeAttribute>& types) {
-        assert(types.size() == args.size() && "Size of types must match size of arguments (astUserDefinedFunctor)");
+        assert(types.size() == args.size() &&
+                "Size of types must match size of arguments (astUserDefinedFunctor)");
         argTypes = types;
     }
 
@@ -408,7 +407,6 @@ public:
     void setReturnType(RamTypeAttribute type) {
         returnType = type;
     }
-
 
     AstUserDefinedFunctor* clone() const override {
         auto res = new AstUserDefinedFunctor(name);
@@ -428,8 +426,7 @@ protected:
 
     std::vector<RamTypeAttribute> argTypes;
     RamTypeAttribute returnType;
-    
-    
+
     /** name of user-defined functor */
     const std::string name;
 };

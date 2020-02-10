@@ -17,8 +17,8 @@
 #pragma once
 
 #include "AstNode.h"
-#include "Util.h"
 #include "RamTypes.h"
+#include "Util.h"
 
 #include <algorithm>
 #include <string>
@@ -32,7 +32,9 @@ namespace souffle {
 
 class AstFunctorDeclaration : public AstNode {
 public:
-    AstFunctorDeclaration(const std::string& name, const std::vector<RamTypeAttribute>& argsTypes, RamTypeAttribute returnType) : name(name), argsTypes(argsTypes), returnType(returnType) {
+    AstFunctorDeclaration(const std::string& name, const std::vector<RamTypeAttribute>& argsTypes,
+            RamTypeAttribute returnType)
+            : name(name), argsTypes(argsTypes), returnType(returnType) {
         assert(name.length() > 0 && "functor name is empty");
     }
 
@@ -73,7 +75,7 @@ public:
     RamTypeAttribute getReturnType() const {
         return returnType;
     }
-    
+
     /** get number of arguments */
     size_t getArity() const {
         return argsTypes.size();
@@ -117,7 +119,7 @@ protected:
 
     /** name of functor */
     const std::string name;
-    
+
     /** Types of arguments */
     const std::vector<RamTypeAttribute> argsTypes;
 

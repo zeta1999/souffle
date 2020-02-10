@@ -555,7 +555,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         std::cerr << "Failed to prepare CIF for user-defined operator ";
                         std::cerr << name << std::endl;
                         exit(1);
-                    }  
+                    }
             }
             // if (type[arity] == 'N') {
             //     // Initialize for numerical return value

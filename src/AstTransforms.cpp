@@ -1297,13 +1297,14 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
         mutable bool changed{false};
         const AstProgram& program;
         ErrorReport& report;
-        
-        UserFunctorRewriter(const AstProgram& program, ErrorReport& report) : program(program), report(report) {};
+
+        UserFunctorRewriter(const AstProgram& program, ErrorReport& report)
+                : program(program), report(report){};
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-            
             if (auto* userFunctor = dynamic_cast<AstUserDefinedFunctor*>(node.get())) {
-                AstFunctorDeclaration* functorDeclaration = program.getFunctorDeclaration(userFunctor->getName());
+                AstFunctorDeclaration* functorDeclaration =
+                        program.getFunctorDeclaration(userFunctor->getName());
                 // Check if the functor has been declared
                 if (functorDeclaration == nullptr) {
                     report.addError("User-defined functor hasn't been declared", userFunctor->getSrcLoc());
@@ -1315,17 +1316,16 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
                     report.addError("Mismatching number of arguments of functor", userFunctor->getSrcLoc());
                     return node;
                 }
-                
+
                 // Set types of functor instance based on its declaration.
                 userFunctor->setArgsTypes(functorDeclaration->getArgsTypes());
                 userFunctor->setReturnType(functorDeclaration->getReturnType());
 
-                
                 changed = true;
             }
             node->apply(*this);
             return node;
-        }  
+        }
     };
     UserFunctorRewriter update(*translationUnit.getProgram(), translationUnit.getErrorReport());
     translationUnit.getProgram()->apply(update);

@@ -572,7 +572,7 @@ private:
 };
 
 /**
- * Transformation that passes the information from user functors 
+ * Transformation that passes the information from user functors
  * declaration to functors instances
  */
 class AstUserDefinedFunctorsTransformer : public AstTransformer {
@@ -584,7 +584,5 @@ public:
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
-
-
 
 }  // end of namespace souffle

@@ -572,7 +572,7 @@ private:
 };
 
 /**
- * Transformation that passes the information from user functors
+ * Transformation that passes the type information from user functors
  * declaration to functors instances
  */
 class AstUserDefinedFunctorsTransformer : public AstTransformer {

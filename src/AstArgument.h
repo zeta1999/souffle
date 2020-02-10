@@ -394,7 +394,7 @@ public:
         return returnType;
     }
 
-    void setArgsTypes(const std::vector<RamTypeAttribute>& types) {
+    void setArgsTypes(std::vector<RamTypeAttribute> types) {
         assert(types.size() == args.size() &&
                 "Size of types must match size of arguments (astUserDefinedFunctor)");
         argTypes = types;
@@ -410,9 +410,17 @@ public:
 
     AstUserDefinedFunctor* clone() const override {
         auto res = new AstUserDefinedFunctor(name);
-        for (auto& cur : args) {
-            res->args.emplace_back(cur->clone());
+        // Set args
+        for (auto& arg : args) {
+            res->args.emplace_back(arg->clone());
         }
+        // Set types
+        // Only copy types if they have already been set.
+        if (argTypes.size() > 0) {
+            res->setArgsTypes(argTypes);
+        }
+        res->setReturnType(returnType);
+
         res->setSrcLoc(getSrcLoc());
         return res;
     }

@@ -504,7 +504,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
     // If any boolean constraints exist, they will be removed
     bool changed = false;
-    visitDepthFirst(program, [&](const AstBooleanConstraint& bc) { changed = true; });
+    visitDepthFirst(program, [&](const AstBooleanConstraint&) { changed = true; });
 
     // Remove true and false constant literals from all aggregators
     struct removeBools : public AstNodeMapper {
@@ -1302,9 +1302,12 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
                 : program(program), report(report){};
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            node->apply(*this);
+
             if (auto* userFunctor = dynamic_cast<AstUserDefinedFunctor*>(node.get())) {
                 AstFunctorDeclaration* functorDeclaration =
                         program.getFunctorDeclaration(userFunctor->getName());
+
                 // Check if the functor has been declared
                 if (functorDeclaration == nullptr) {
                     report.addError("User-defined functor hasn't been declared", userFunctor->getSrcLoc());
@@ -1323,7 +1326,6 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
 
                 changed = true;
             }
-            node->apply(*this);
             return node;
         }
     };

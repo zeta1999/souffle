@@ -556,7 +556,6 @@ int main(int argc, char** argv) {
             }
         } else {
             // ------- compiler -------------
-
             std::string compileCmd = ::findTool("souffle-compile", souffleExecutable, ".");
             /* Fail if a souffle-compile executable is not found */
             if (!isExecutable(compileCmd)) {

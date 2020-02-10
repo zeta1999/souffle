@@ -551,7 +551,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
                 default:
                     // Initialize for numeric value.
-                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
+                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_uint32, args) != FFI_OK) {
                         std::cerr << "Failed to prepare CIF for user-defined operator ";
                         std::cerr << name << std::endl;
                         exit(1);

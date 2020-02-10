@@ -284,10 +284,21 @@ public:
         // atoms[0] represents variables in the head atom
         auto headVariables = splitString(atoms[0], ',');
 
+        auto isVariable = [&](std::string arg) {
+            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
+                return false;
+            }
+            return true;
+        };
+
         // check that head variable bindings make sense, i.e. for a head like a(x, x), make sure both x are
         // the same value
         std::map<std::string, std::string> headVariableMapping;
         for (size_t i = 0; i < headVariables.size(); i++) {
+            if (!isVariable(headVariables[i])) {
+                continue;
+            }
+
             if (headVariableMapping.find(headVariables[i]) == headVariableMapping.end()) {
                 headVariableMapping[headVariables[i]] = args[i];
             } else {
@@ -305,6 +316,10 @@ public:
             // atomRepresentation.begin() + 1 because the first element is the relation name of the atom
             // which is not relevant for finding variables
             for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
+                if (!isVariable(*atomIt)) {
+                    continue;
+                }
+
                 if (!contains(uniqueBodyVariables, *atomIt) && !contains(headVariables, *atomIt)) {
                     uniqueBodyVariables.push_back(*atomIt);
                 }
@@ -331,6 +346,13 @@ public:
 
         uniqueVariables.insert(uniqueVariables.end(), headVariables.begin(), headVariables.end());
 
+        auto isVariable = [&](std::string arg) {
+            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
+                return false;
+            }
+            return true;
+        };
+
         // get body variables
         for (auto it = atoms.begin() + 1; it < atoms.end(); it++) {
             auto atomRepresentation = splitString(*it, ',');
@@ -339,6 +361,10 @@ public:
             // which is not relevant for finding variables
             for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
                 if (!contains(uniqueVariables, *atomIt) && !contains(headVariables, *atomIt)) {
+                    if (!isVariable(*atomIt)) {
+                        continue;
+                    }
+
                     uniqueVariables.push_back(*atomIt);
 
                     if (!contains(constraintList, atomRepresentation[0])) {
@@ -481,8 +507,14 @@ public:
                 childLabel << bodyVariables[atomRepresentation[1]] << " " << bodyRel << " " << bodyVariables[atomRepresentation[2]];
             } else {
                 childLabel << bodyRel << "(";
+
+                // TODO (taipan-snake): handle the case where not all arguments are variables
                 for (size_t i = 1; i < atomRepresentation.size(); i++) {
-                    childLabel << bodyVariables[atomRepresentation[i]];
+                    if (!isVariable(atomRepresentation[i])) {
+                        childLabel << atomRepresentation[i];
+                    } else {
+                        childLabel << bodyVariables[atomRepresentation[i]];
+                    }
                     if (i < atomRepresentation.size() - 1) {
                         childLabel << ", ";
                     }

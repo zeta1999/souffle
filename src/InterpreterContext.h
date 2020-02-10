@@ -38,8 +38,6 @@ class InterpreterContext {
     std::vector<const RamDomain*> data;
     /** @brief Subroutine return value */
     std::vector<RamDomain>* returnValues = nullptr;
-    /** @brief Subroutine error */
-    std::vector<bool>* returnErrors = nullptr;
     /** @brief Subroutine arguments */
     const std::vector<RamDomain>* args = nullptr;
     /** @bref Allocated data */
@@ -52,8 +50,7 @@ public:
 
     /** This constructor is used when program enter a new scope.
      * Only Subroutine value needs to be copied */
-    InterpreterContext(InterpreterContext& ctxt)
-            : returnValues(ctxt.returnValues), returnErrors(ctxt.returnErrors), args(ctxt.args) {}
+    InterpreterContext(InterpreterContext& ctxt) : returnValues(ctxt.returnValues), args(ctxt.args) {}
     virtual ~InterpreterContext() = default;
 
     const RamDomain*& operator[](size_t index) {
@@ -88,20 +85,9 @@ public:
     }
 
     /** @brief Add subroutine return value */
-    void addReturnValue(RamDomain val, bool err = false) {
-        assert(returnValues != nullptr && returnErrors != nullptr);
+    void addReturnValue(RamDomain val) {
+        assert(returnValues != nullptr);
         returnValues->push_back(val);
-        returnErrors->push_back(err);
-    }
-
-    /** @brief Get subroutine return errors */
-    std::vector<bool>& getReturnErrors() const {
-        return *returnErrors;
-    }
-
-    /** @brief Set subroutine return errors */
-    void setReturnErrors(std::vector<bool>& retErrs) {
-        returnErrors = &retErrs;
     }
 
     /** @brief Get subroutine Arguments */

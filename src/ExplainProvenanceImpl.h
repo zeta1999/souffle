@@ -111,7 +111,6 @@ public:
 
         // make return vector pointer
         std::vector<RamDomain> ret;
-        std::vector<bool> err;
 
         if (useSublevels) {
             // add subtree level numbers to tuple
@@ -123,7 +122,7 @@ public:
         }
 
         // execute subroutine to get subproofs
-        prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_subproof", tuple, ret, err);
+        prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_subproof", tuple, ret);
 
         // recursively get nodes for subproofs
         size_t tupleCurInd = 0;
@@ -160,13 +159,11 @@ public:
             }
             auto tupleEnd = tupleCurInd + arity;
 
-            // store current tuple and error
+            // store current tuple
             std::vector<RamDomain> subproofTuple;
-            std::vector<bool> subproofTupleError;
 
             for (; tupleCurInd < tupleEnd - auxiliaryArity; tupleCurInd++) {
                 subproofTuple.push_back(ret[tupleCurInd]);
-                subproofTupleError.push_back(err[tupleCurInd]);
             }
 
             int subproofRuleNum = ret[tupleCurInd];
@@ -182,7 +179,7 @@ public:
             // for a negation, display the corresponding tuple and do not recurse
             if (bodyRel[0] == '!') {
                 std::stringstream joinedTuple;
-                joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple, &subproofTupleError), ", ");
+                joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple), ", ");
                 auto joinedTupleStr = joinedTuple.str();
                 internalNode->add_child(std::make_unique<LeafNode>(bodyRel + "(" + joinedTupleStr + ")"));
                 internalNode->setSize(internalNode->getSize() + 1);
@@ -284,10 +281,21 @@ public:
         // atoms[0] represents variables in the head atom
         auto headVariables = splitString(atoms[0], ',');
 
+        auto isVariable = [&](std::string arg) {
+            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
+                return false;
+            }
+            return true;
+        };
+
         // check that head variable bindings make sense, i.e. for a head like a(x, x), make sure both x are
         // the same value
         std::map<std::string, std::string> headVariableMapping;
         for (size_t i = 0; i < headVariables.size(); i++) {
+            if (!isVariable(headVariables[i])) {
+                continue;
+            }
+
             if (headVariableMapping.find(headVariables[i]) == headVariableMapping.end()) {
                 headVariableMapping[headVariables[i]] = args[i];
             } else {
@@ -305,6 +313,10 @@ public:
             // atomRepresentation.begin() + 1 because the first element is the relation name of the atom
             // which is not relevant for finding variables
             for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
+                if (!isVariable(*atomIt)) {
+                    continue;
+                }
+
                 if (!contains(uniqueBodyVariables, *atomIt) && !contains(headVariables, *atomIt)) {
                     uniqueBodyVariables.push_back(*atomIt);
                 }
@@ -331,6 +343,13 @@ public:
 
         uniqueVariables.insert(uniqueVariables.end(), headVariables.begin(), headVariables.end());
 
+        auto isVariable = [&](std::string arg) {
+            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
+                return false;
+            }
+            return true;
+        };
+
         // get body variables
         for (auto it = atoms.begin() + 1; it < atoms.end(); it++) {
             auto atomRepresentation = splitString(*it, ',');
@@ -339,6 +358,11 @@ public:
             // which is not relevant for finding variables
             for (auto atomIt = atomRepresentation.begin() + 1; atomIt < atomRepresentation.end(); atomIt++) {
                 if (!contains(uniqueVariables, *atomIt) && !contains(headVariables, *atomIt)) {
+                    // ignore non-variables
+                    if (!isVariable(*atomIt)) {
+                        continue;
+                    }
+
                     uniqueVariables.push_back(*atomIt);
 
                     if (!contains(constraintList, atomRepresentation[0])) {
@@ -387,11 +411,12 @@ public:
 
         // set up return and error vectors for subroutine calling
         std::vector<RamDomain> ret;
-        std::vector<bool> err;
 
         // execute subroutine to get subproofs
-        prog.executeSubroutine(
-                relName + "_" + std::to_string(ruleNum) + "_negation_subproof", args, ret, err);
+        prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_negation_subproof", args, ret);
+
+        // ensure the subroutine returns the correct number of results
+        assert(ret.size() == atoms.size() - 1);
 
         // construct tree nodes
         std::stringstream joinedArgsStr;
@@ -399,19 +424,19 @@ public:
         auto internalNode = std::make_unique<InnerNode>(
                 relName + "(" + joinedArgsStr.str() + ")", "(R" + std::to_string(ruleNum) + ")");
 
+        // store the head tuple in bodyVariables so we can print
+        for (size_t i = 0; i < headVariables.size(); i++) {
+            bodyVariables[headVariables[i]] = tuple[i];
+        }
+
         // traverse return vector and construct child nodes
         // making sure we display existent and non-existent tuples correctly
         int literalCounter = 1;
         for (size_t returnCounter = 0; returnCounter < ret.size(); returnCounter++) {
             // check what the next contained atom is
-            bool atomExists;
-            if (err[returnCounter]) {
+            bool atomExists = true;
+            if (ret[returnCounter] == 0) {
                 atomExists = false;
-                returnCounter++;
-            } else {
-                atomExists = true;
-                assert(err[returnCounter + 1] && "there should be a separator for literals in return");
-                returnCounter += 2;
             }
 
             // get the relation of the current atom
@@ -428,46 +453,30 @@ public:
                 bodyRelAtomName = bodyRel.substr(1);
             }
 
-            // traverse subroutine return
-            size_t arity;
-            size_t auxiliaryArity;
-            if (isConstraint) {
-                // we only handle binary constraints, and assume arity is 4 to account for hidden provenance
-                // annotations
-                arity = 4;
-                auxiliaryArity = 2;
-            } else {
-                arity = prog.getRelation(bodyRelAtomName)->getArity();
-                auxiliaryArity = prog.getRelation(bodyRelAtomName)->getAuxiliaryArity();
-            }
-
-            // process current literal
-            std::vector<RamDomain> atomValues;
-            std::vector<bool> atomErrs;
-            size_t j = returnCounter;
-
-            for (; j < returnCounter + arity - auxiliaryArity; j++) {
-                atomValues.push_back(ret[j]);
-                atomErrs.push_back(err[j]);
-            }
-
-            // add child nodes to the proof tree
+            // construct a label for a node containing a literal (either constraint or atom)
             std::stringstream childLabel;
             if (isConstraint) {
-                assert(atomValues.size() == 2 && "not a binary constraint");
+                assert(atomRepresentation.size() == 3 && "not a binary constraint");
 
-                if (isNumericBinaryConstraintOp(toBinaryConstraintOp(bodyRel))) {
-                    childLabel << atomValues[0] << " " << bodyRel << " " << atomValues[1];
-                } else {
-                    childLabel << bodyRel << "(\"" << symTable.resolve(atomValues[0]) << "\", \""
-                               << symTable.resolve(atomValues[1]) << "\")";
-                }
+                childLabel << bodyVariables[atomRepresentation[1]] << " " << bodyRel << " "
+                           << bodyVariables[atomRepresentation[2]];
             } else {
                 childLabel << bodyRel << "(";
-                childLabel << join(numsToArgs(bodyRelAtomName, atomValues, &atomErrs), ", ");
+                for (size_t i = 1; i < atomRepresentation.size(); i++) {
+                    // if it's a non-variable, print either _ for unnamed, or constant value
+                    if (!isVariable(atomRepresentation[i])) {
+                        childLabel << atomRepresentation[i];
+                    } else {
+                        childLabel << bodyVariables[atomRepresentation[i]];
+                    }
+                    if (i < atomRepresentation.size() - 1) {
+                        childLabel << ", ";
+                    }
+                }
                 childLabel << ")";
             }
 
+            // build a marker for existence of body atoms
             if (atomExists) {
                 childLabel << " ✓";
             } else {
@@ -477,7 +486,6 @@ public:
             internalNode->add_child(std::make_unique<LeafNode>(childLabel.str()));
             internalNode->setSize(internalNode->getSize() + 1);
 
-            returnCounter = j - 1;
             literalCounter++;
         }
 

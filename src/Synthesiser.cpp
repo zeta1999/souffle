@@ -1657,12 +1657,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             for (auto val : ret.getValues()) {
                 if (isRamUndefValue(val)) {
                     out << "ret.push_back(0);\n";
-                    out << "err.push_back(true);\n";
                 } else {
                     out << "ret.push_back(";
                     visit(val, out);
                     out << ");\n";
-                    out << "err.push_back(false);\n";
                 }
             }
         }
@@ -2134,14 +2132,14 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
         // generate subroutine adapter
         os << "void executeSubroutine(std::string name, const std::vector<RamDomain>& args, "
-              "std::vector<RamDomain>& ret, std::vector<bool>& err) override {\n";
+              "std::vector<RamDomain>& ret) override {\n";
 
         // subroutine number
         size_t subroutineNum = 0;
         for (auto& sub : prog.getSubroutines()) {
             os << "if (name == \"" << sub.first << "\") {\n"
                << "subproof_" << subroutineNum
-               << "(args, ret, err);\n"  // subproof_i to deal with special characters in relation names
+               << "(args, ret);\n"  // subproof_i to deal with special characters in relation names
                << "}\n";
             subroutineNum++;
         }
@@ -2154,7 +2152,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "void "
                << "subproof_" << subroutineNum
                << "(const std::vector<RamDomain>& args, "
-                  "std::vector<RamDomain>& ret, std::vector<bool>& err) {\n";
+                  "std::vector<RamDomain>& ret) {\n";
 
             // a lock is needed when filling the subroutine return vectors
             os << "std::mutex lock;\n";

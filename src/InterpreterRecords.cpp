@@ -24,14 +24,4 @@
 
 namespace souffle {
 
-RecordTable::InterpreterRecordMap& RecordTable::getForArity(int arity) {
-    static std::unordered_map<int, InterpreterRecordMap> maps;
-    auto pos = maps.find(arity);
-    if (pos == maps.end()) {
-        maps.emplace(arity, arity);
-    }
-
-    return maps.find(arity)->second;
-}
-
 }  // end of namespace souffle

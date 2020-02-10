@@ -24,6 +24,9 @@
 namespace souffle {
 
 class RecordTable {
+private:
+    mutable Lock access;
+
     /**
      * A bidirectional mapping between tuples and reference indices.
      */
@@ -84,6 +87,19 @@ class RecordTable {
         }
     };
 
+    std::unordered_map<int, InterpreterRecordMap> maps;
+
+    InterpreterRecordMap& getForArity(int arity) {
+        auto lease = access.acquire();
+        (void)lease;  // avoid warning;
+        auto pos = maps.find(arity);
+        if (pos == maps.end()) {
+            maps.emplace(arity, arity);
+        }
+
+        return maps.find(arity)->second;
+    }
+
 public:
     RecordTable() = default;
     virtual ~RecordTable() = default;
@@ -109,9 +125,6 @@ public:
     bool isNullInterpreter(RamDomain ref) {
         return ref == 0;
     }
-
-protected:
-    InterpreterRecordMap& getForArity(int arity);
 };
 
 }  // end of namespace souffle

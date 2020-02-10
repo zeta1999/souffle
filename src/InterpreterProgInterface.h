@@ -248,9 +248,9 @@ public:
     void dumpOutputs(std::ostream&) override {}
 
     /** Run subroutine */
-    void executeSubroutine(std::string name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret,
-            std::vector<bool>& err) override {
-        exec.executeSubroutine(name, args, ret, err);
+    void executeSubroutine(
+            std::string name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret) override {
+        exec.executeSubroutine(name, args, ret);
     }
 
     /** Get symbol table */

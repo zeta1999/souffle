@@ -111,7 +111,6 @@ public:
 
         // make return vector pointer
         std::vector<RamDomain> ret;
-        std::vector<bool> err;
 
         if (useSublevels) {
             // add subtree level numbers to tuple
@@ -123,7 +122,7 @@ public:
         }
 
         // execute subroutine to get subproofs
-        prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_subproof", tuple, ret, err);
+        prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_subproof", tuple, ret);
 
         // recursively get nodes for subproofs
         size_t tupleCurInd = 0;
@@ -160,13 +159,11 @@ public:
             }
             auto tupleEnd = tupleCurInd + arity;
 
-            // store current tuple and error
+            // store current tuple
             std::vector<RamDomain> subproofTuple;
-            std::vector<bool> subproofTupleError;
 
             for (; tupleCurInd < tupleEnd - auxiliaryArity; tupleCurInd++) {
                 subproofTuple.push_back(ret[tupleCurInd]);
-                subproofTupleError.push_back(err[tupleCurInd]);
             }
 
             int subproofRuleNum = ret[tupleCurInd];
@@ -182,7 +179,7 @@ public:
             // for a negation, display the corresponding tuple and do not recurse
             if (bodyRel[0] == '!') {
                 std::stringstream joinedTuple;
-                joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple, &subproofTupleError), ", ");
+                joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple), ", ");
                 auto joinedTupleStr = joinedTuple.str();
                 internalNode->add_child(std::make_unique<LeafNode>(bodyRel + "(" + joinedTupleStr + ")"));
                 internalNode->setSize(internalNode->getSize() + 1);
@@ -414,11 +411,9 @@ public:
 
         // set up return and error vectors for subroutine calling
         std::vector<RamDomain> ret;
-        std::vector<bool> err;
 
         // execute subroutine to get subproofs
-        prog.executeSubroutine(
-                relName + "_" + std::to_string(ruleNum) + "_negation_subproof", args, ret, err);
+        prog.executeSubroutine(relName + "_" + std::to_string(ruleNum) + "_negation_subproof", args, ret);
 
         // ensure the subroutine returns the correct number of results
         assert(ret.size() == atoms.size() - 1);

@@ -796,10 +796,9 @@ public:
      * @param name  Name of a subroutine (std:string)
      * @param arg Arguments of the subroutine (std::vector<RamDomain>&)
      * @param ret Return values of the subroutine (std::vector<RamDomain>&)
-     * @param retErr Error state of the subroutine (std::vector<bool>&)
      */
-    virtual void executeSubroutine(std::string name, const std::vector<RamDomain>& args,
-            std::vector<RamDomain>& ret, std::vector<bool>& retErr) {}
+    virtual void executeSubroutine(
+            std::string name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret) {}
 
     /**
      * Get the symbol table of the program.

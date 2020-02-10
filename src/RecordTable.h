@@ -33,60 +33,59 @@ namespace souffle {
 class InterpreterRecordMap {
     /** The arity of the stored tuples */
     int arity;
-    
+
     /** The mapping from tuples to references/indices */
-        std::map<std::vector<RamDomain>, RamDomain> r2i;
-    
-        /** The mapping from indices to tuples */
-        std::vector<std::vector<RamDomain>> i2r;
+    std::map<std::vector<RamDomain>, RamDomain> r2i;
 
-    public:
-        InterpreterRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    /** The mapping from indices to tuples */
+    std::vector<std::vector<RamDomain>> i2r;
 
-        /**
-         * Packs the given tuple -- and may create a new reference if necessary.
-         */
-        RamDomain pack(const RamDomain* tuple) {
-            std::vector<RamDomain> tmp(arity);
-            for (int i = 0; i < arity; i++) {
-                tmp[i] = tuple[i];
-            }
+public:
+    InterpreterRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
 
-            RamDomain index;
+    /**
+     * Packs the given tuple -- and may create a new reference if necessary.
+     */
+    RamDomain pack(const RamDomain* tuple) {
+        std::vector<RamDomain> tmp(arity);
+        for (int i = 0; i < arity; i++) {
+            tmp[i] = tuple[i];
+        }
+
+        RamDomain index;
 #pragma omp critical(record_pack)
-            {
-                auto pos = r2i.find(tmp);
-                if (pos != r2i.end()) {
-                    index = pos->second;
-                } else {
+        {
+            auto pos = r2i.find(tmp);
+            if (pos != r2i.end()) {
+                index = pos->second;
+            } else {
 #pragma omp critical(record_unpack)
-                    {
-                        i2r.push_back(tmp);
-                        index = i2r.size() - 1;
-                        r2i[tmp] = index;
+                {
+                    i2r.push_back(tmp);
+                    index = i2r.size() - 1;
+                    r2i[tmp] = index;
 
-                        // assert that new index is smaller than the range
-                        assert(index != std::numeric_limits<RamDomain>::max());
-                    }
+                    // assert that new index is smaller than the range
+                    assert(index != std::numeric_limits<RamDomain>::max());
                 }
             }
-
-            return index;
         }
 
-        /**
-         * Obtains a pointer to the tuple addressed by the given index.
-         */
-        RamDomain* unpack(RamDomain index) {
-            RamDomain* res;
+        return index;
+    }
+
+    /**
+     * Obtains a pointer to the tuple addressed by the given index.
+     */
+    RamDomain* unpack(RamDomain index) {
+        RamDomain* res;
 
 #pragma omp critical(record_unpack)
-            res = &(i2r[index][0]);
+        res = &(i2r[index][0]);
 
-            return res;
-        }
+        return res;
+    }
 };
-
 
 class RecordTable {
 public:

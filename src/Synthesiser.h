@@ -80,7 +80,7 @@ protected:
     size_t lookupReadIdx(const std::string& txt);
 
 public:
-    Synthesiser(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
+    explicit Synthesiser(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
     virtual ~Synthesiser() = default;
 
     /** Get translation unit */

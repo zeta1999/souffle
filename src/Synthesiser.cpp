@@ -61,11 +61,7 @@ unsigned Synthesiser::lookupFreqIdx(const std::string& txt) {
 /** Lookup frequency counter */
 size_t Synthesiser::lookupReadIdx(const std::string& txt) {
     std::string modifiedTxt = txt;
-    for (auto& cur : modifiedTxt) {
-        if (cur == '-') {
-            cur = '.';
-        }
-    }
+    std::replace(modifiedTxt.begin(), modifiedTxt.end(), '-', '.');
     static unsigned counter;
     auto pos = neIdxMap.find(modifiedTxt);
     if (pos == neIdxMap.end()) {
@@ -1235,7 +1231,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto arity = rel.getArity();
             assert(arity > 0 && "AstTranslator failed");
-            std::string before, after;
+            std::string after;
             if (Global::config().has("profile") && !exists.getRelation().isTemp()) {
                 out << R"_((reads[)_" << synthesiser.lookupReadIdx(rel.getName()) << R"_(]++,)_";
                 after = ")";

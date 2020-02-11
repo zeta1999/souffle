@@ -17,6 +17,7 @@
 #include "CompiledTuple.h"
 #include "RecordTable.h"
 #include "test.h"
+#include <functional>
 #include <random>
 #include <vector>
 

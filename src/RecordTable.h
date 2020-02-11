@@ -33,7 +33,7 @@ namespace souffle {
  */
 class RecordMap {
     /** The arity of the stored tuples */
-    int arity;
+    size_t arity;
 
     /** The mapping from tuples to references/indices */
     std::map<std::vector<RamDomain>, RamDomain> r2i;
@@ -42,14 +42,14 @@ class RecordMap {
     std::vector<std::vector<RamDomain>> i2r;
 
 public:
-    RecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    RecordMap(size_t arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
      */
     RamDomain pack(const RamDomain* tuple) {
         std::vector<RamDomain> tmp(arity);
-        for (int i = 0; i < arity; i++) {
+        for (size_t i = 0; i < arity; i++) {
             tmp[i] = tuple[i];
         }
 
@@ -96,7 +96,7 @@ public:
     /**
      * A function packing a tuple of the given arity into a reference.
      */
-    RamDomain pack(RamDomain* tuple, int arity) {
+    RamDomain pack(RamDomain* tuple, size_t arity) {
         return getForArity(arity).pack(tuple);
     }
 
@@ -113,7 +113,7 @@ public:
     /**
      * A function obtaining a pointer to the tuple addressed by the given reference.
      */
-    RamDomain* unpack(RamDomain ref, int arity) {
+    RamDomain* unpack(RamDomain ref, size_t arity) {
         return getForArity(arity).unpack(ref);
     }
 
@@ -141,9 +141,9 @@ public:
 
 private:
     mutable Lock access;
-    std::unordered_map<int, RecordMap> maps;
+    std::unordered_map<size_t, RecordMap> maps;
 
-    RecordMap& getForArity(int arity) {
+    RecordMap& getForArity(size_t arity) {
         auto lease = access.acquire();
         (void)lease;  // avoid warning;
         auto pos = maps.find(arity);

@@ -57,8 +57,8 @@ public:
     /** @brief Execute the main program */
     void executeMain();
     /** @brief Execute the subroutine program */
-    void executeSubroutine(const std::string& name, const std::vector<RamDomain>& args,
-            std::vector<RamDomain>& ret, std::vector<bool>& err);
+    void executeSubroutine(
+            const std::string& name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret);
 
 private:
     /** @brief Remove a relation from the environment */

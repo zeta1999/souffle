@@ -181,11 +181,10 @@ void InterpreterEngine::executeMain() {
     }
     SignalHandler::instance()->reset();
 }
-void InterpreterEngine::executeSubroutine(const std::string& name, const std::vector<RamDomain>& args,
-        std::vector<RamDomain>& ret, std::vector<bool>& err) {
+void InterpreterEngine::executeSubroutine(
+        const std::string& name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret) {
     InterpreterContext ctxt;
     ctxt.setReturnValues(ret);
-    ctxt.setReturnErrors(err);
     ctxt.setArguments(args);
 
     auto entry = generator.generateTree(tUnit.getProgram().getSubroutine(name));
@@ -1211,7 +1210,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(SubroutineReturnValue)
             for (size_t i = 0; i < cur.getValues().size(); ++i) {
                 if (node->getChild(i) == nullptr) {
-                    ctxt.addReturnValue(0, true);
+                    ctxt.addReturnValue(0);
                 } else {
                     ctxt.addReturnValue(execute(node->getChild(i), ctxt));
                 }

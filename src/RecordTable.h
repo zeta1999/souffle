@@ -31,7 +31,7 @@ namespace souffle {
 /**
  * A bidirectional mapping between tuples and reference indices.
  */
-class InterpreterRecordMap {
+class RecordMap {
     /** The arity of the stored tuples */
     int arity;
 
@@ -42,7 +42,7 @@ class InterpreterRecordMap {
     std::vector<std::vector<RamDomain>> i2r;
 
 public:
-    InterpreterRecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    RecordMap(int arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -141,9 +141,9 @@ public:
 
 private:
     mutable Lock access;
-    std::unordered_map<int, InterpreterRecordMap> maps;
+    std::unordered_map<int, RecordMap> maps;
 
-    InterpreterRecordMap& getForArity(int arity) {
+    RecordMap& getForArity(int arity) {
         auto lease = access.acquire();
         (void)lease;  // avoid warning;
         auto pos = maps.find(arity);

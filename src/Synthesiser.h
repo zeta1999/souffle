@@ -18,6 +18,7 @@
 
 #include "RamStatement.h"
 #include "RamTypes.h"
+#include "RecordTable.h"
 #include <map>
 #include <memory>
 #include <ostream>
@@ -36,6 +37,9 @@ class RamRelation;
  */
 class Synthesiser {
 private:
+    /** Record Table */
+    RecordTable recordTable;
+
     /** RAM translation unit */
     RamTranslationUnit& translationUnit;
 
@@ -52,6 +56,9 @@ private:
     std::set<std::string> typeCache;
 
 protected:
+    /** Get record table */
+    const RecordTable& getRecordTable();
+
     /** Convert RAM identifier */
     const std::string convertRamIdent(const std::string& name);
 
@@ -80,7 +87,7 @@ protected:
     size_t lookupReadIdx(const std::string& txt);
 
 public:
-    Synthesiser(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
+    explicit Synthesiser(RamTranslationUnit& tUnit) : translationUnit(tUnit) {}
     virtual ~Synthesiser() = default;
 
     /** Get translation unit */

@@ -43,6 +43,7 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
+#include "RecordTable.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"

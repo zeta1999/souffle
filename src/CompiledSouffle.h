@@ -18,12 +18,12 @@
 
 #include "souffle/Brie.h"
 #include "souffle/CompiledIndexUtils.h"
-#include "souffle/CompiledRecord.h"
 #include "souffle/CompiledTuple.h"
 #include "souffle/IODirectives.h"
 #include "souffle/IOSystem.h"
 #include "souffle/ParallelUtils.h"
 #include "souffle/RamTypes.h"
+#include "souffle/RecordTable.h"
 #include "souffle/SignalHandler.h"
 #include "souffle/SouffleInterface.h"
 #include "souffle/SymbolTable.h"

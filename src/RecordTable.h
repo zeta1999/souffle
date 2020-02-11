@@ -105,7 +105,7 @@ public:
      */
     template <typename Domain, std::size_t _arity>
     RamDomain pack(ram::Tuple<Domain, _arity> tuple) {
-        return getForArity(_arity).pack(tuple.data);
+        return getForArity(_arity).pack(static_cast<RamDomain*>(tuple.data));
     }
 
     /**

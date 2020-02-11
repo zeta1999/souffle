@@ -33,16 +33,16 @@ namespace souffle {
  */
 class RecordMap {
     /** The arity of the stored tuples */
-    size_t arity;
+    const size_t arity;
 
     /** The mapping from tuples to references/indices */
-    std::map<std::vector<RamDomain>, RamDomain> r2i;
+    std::map<std::vector<RamDomain>, RamDomain> recordToIndex;
 
     /** The mapping from indices to tuples */
-    std::vector<std::vector<RamDomain>> i2r;
+    std::vector<std::vector<RamDomain>> indexToRecord;
 
 public:
-    explicit RecordMap(size_t arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    explicit RecordMap(size_t arity) : arity(arity), indexToRecord(1) {}  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -56,15 +56,15 @@ public:
         RamDomain index;
 #pragma omp critical(record_pack)
         {
-            auto pos = r2i.find(tmp);
-            if (pos != r2i.end()) {
+            auto pos = recordToIndex.find(tmp);
+            if (pos != recordToIndex.end()) {
                 index = pos->second;
             } else {
 #pragma omp critical(record_unpack)
                 {
-                    i2r.push_back(tmp);
-                    index = i2r.size() - 1;
-                    r2i[tmp] = index;
+                    indexToRecord.push_back(tmp);
+                    index = indexToRecord.size() - 1;
+                    recordToIndex[tmp] = index;
 
                     // assert that new index is smaller than the range
                     assert(index != std::numeric_limits<RamDomain>::max());
@@ -82,7 +82,7 @@ public:
         RamDomain* res;
 
 #pragma omp critical(record_unpack)
-        res = &(i2r[index][0]);
+        res = &(indexToRecord[index][0]);
 
         return res;
     }
@@ -105,8 +105,6 @@ public:
      */
     template <typename Domain, std::size_t _arity>
     RamDomain pack(ram::Tuple<Domain, _arity> tuple) {
-        static_assert(sizeof(Domain) == sizeof(RamDomain),
-                "Pointer cast: Size of tuple domain must equal domain in Record Table.");
         return getForArity(_arity).pack(static_cast<RamDomain*>(tuple.data));
     }
 

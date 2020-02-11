@@ -115,14 +115,20 @@ public:
         return getForArity(arity).unpack(ref);
     }
 
-    // /**
-    //  * A function obtaining a pointer to the tuple addressed by the given reference.
-    //  */
-    // template<typename Domain, std::size_t _arity>
-    // constexpr ram::Tuple<RamDomain, _arity>* unpackTuple(RamDomain ref, const int arity) {
-    //     ram::Tuple<RamDomain, arity> tuple;
-    //     RamDomain data = getForArity(arity).unpack(ref);
-    // }
+    /**
+     * A function obtaining a pointer to the tuple addressed by the given reference.
+     */
+    template<typename Domain, std::size_t _arity>
+    ram::Tuple<Domain, _arity> unpackTuple(RamDomain ref) {
+        
+        ram::Tuple<RamDomain, _arity> tuple;
+        RamDomain* data = getForArity(_arity).unpack(ref);
+
+        for (size_t i = 0; i < _arity; ++i) {
+            tuple.data[i] = data[i];
+        }
+        return tuple;
+    }
 
     /**
      * Determines whether the given reference is the null reference encoding

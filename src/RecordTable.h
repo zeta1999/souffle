@@ -103,9 +103,9 @@ public:
     /**
      * A function packing a tuple of the given arity into a reference.
      */
-    template <typename Domain, std::size_t _arity>
-    RamDomain pack(ram::Tuple<Domain, _arity> tuple) {
-        return getForArity(_arity).pack(static_cast<RamDomain*>(tuple.data));
+    template <typename Domain, std::size_t Arity>
+    RamDomain pack(ram::Tuple<Domain, Arity> tuple) {
+        return getForArity(Arity).pack(static_cast<RamDomain*>(tuple.data));
     }
 
     /**
@@ -118,12 +118,12 @@ public:
     /**
      * A function obtaining a pointer to the tuple addressed by the given reference.
      */
-    template <typename Domain, std::size_t _arity>
-    ram::Tuple<Domain, _arity> unpackTuple(RamDomain ref) {
-        ram::Tuple<RamDomain, _arity> tuple;
-        RamDomain* data = getForArity(_arity).unpack(ref);
+    template <typename Domain, std::size_t Arity>
+    ram::Tuple<Domain, Arity> unpackTuple(RamDomain ref) {
+        ram::Tuple<RamDomain, Arity> tuple;
+        RamDomain* data = getForArity(Arity).unpack(ref);
 
-        for (size_t i = 0; i < _arity; ++i) {
+        for (size_t i = 0; i < Arity; ++i) {
             tuple.data[i] = data[i];
         }
         return tuple;

@@ -33,19 +33,16 @@ TEST(Pack, Tuple) {
     }
 }
 
-
 TEST(PackUnpack, Tuple) {
     RecordTable recordTable;
 
     const ram::Tuple<int, 3> toPack = {{1, 2, 3}};
 
     RamDomain ref = recordTable.pack(toPack);
-    
+
     const ram::Tuple<int, 3> unPacked = recordTable.unpackTuple<int, 3>(ref);
-    
 
     EXPECT_EQ(toPack, unPacked);
-        
 }
 
-}// namespace souffle::test
+}  // namespace souffle::test

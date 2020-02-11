@@ -118,9 +118,8 @@ public:
     /**
      * A function obtaining a pointer to the tuple addressed by the given reference.
      */
-    template<typename Domain, std::size_t _arity>
+    template <typename Domain, std::size_t _arity>
     ram::Tuple<Domain, _arity> unpackTuple(RamDomain ref) {
-        
         ram::Tuple<RamDomain, _arity> tuple;
         RamDomain* data = getForArity(_arity).unpack(ref);
 

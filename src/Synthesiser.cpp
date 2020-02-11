@@ -815,8 +815,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             visit(lookup.getExpression(), out);
             out << ";\n";
 
+            // Handle null case.
             out << "if (recordTable.isNull(ref)) continue;\n";
-            out << tuple_type << " env" << lookup.getTupleId() << " = unpack<" << tuple_type << ">(ref);\n";
+
+            // Unpack tuple
+            out << tuple_type << " "
+                << "env" << lookup.getTupleId() << " = "
+                << "recordTable.unpackTuple<RamDomain, " << arity << ">"
+                << "(ref);"
+                << "\n";
 
             out << "{\n";
 
@@ -1633,7 +1640,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitPackRecord(const RamPackRecord& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "pack("
+            out << "recordTable.pack("
                 << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">({"
                 << join(pack.getArguments(), ",", rec) << "})"
                 << ")";

@@ -180,7 +180,6 @@ soufflepublic_HEADERS = \
         Brie.h                                    \
         BTree.h                                   \
         CompiledIndexUtils.h                      \
-        CompiledRecord.h                          \
         CompiledSouffle.h                         \
         CompiledTuple.h                           \
         EventProcessor.h                          \

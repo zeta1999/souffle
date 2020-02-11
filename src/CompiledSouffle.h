@@ -18,7 +18,6 @@
 
 #include "souffle/Brie.h"
 #include "souffle/CompiledIndexUtils.h"
-#include "souffle/CompiledRecord.h"
 #include "souffle/CompiledTuple.h"
 #include "souffle/IODirectives.h"
 #include "souffle/IOSystem.h"

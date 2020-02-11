@@ -236,7 +236,7 @@ TEST(AstProgram, RemoveAggregatorMin) {
 
     auto tu1 = makeATU(".decl A,B(x:number) \n A(min x : B(x)).");
     auto clause = makeClauseA(std::move(min));
-    
+
     tu1->getProgram()->removeClause(clause.get());
     auto tu2 = makeATU(".decl A,B(x:number)");
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
@@ -251,7 +251,7 @@ TEST(AstProgram, RemoveAggregatorMax) {
 
     auto tu1 = makeATU(".decl A,B(x:number) \n A(max x : B(x)).");
     auto clause = makeClauseA(std::move(max));
-    
+
     tu1->getProgram()->removeClause(clause.get());
     auto tu2 = makeATU(".decl A,B(x:number)");
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
@@ -266,7 +266,7 @@ TEST(AstProgram, RemoveAggregatorCount) {
 
     auto tu1 = makeATU(".decl A,B(x:number) \n A(count x : B(x)).");
     auto clause = makeClauseA(std::move(count));
-    
+
     tu1->getProgram()->removeClause(clause.get());
     auto tu2 = makeATU(".decl A,B(x:number)");
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
@@ -281,7 +281,7 @@ TEST(AstProgram, RemoveAggregatorSum) {
 
     auto tu1 = makeATU(".decl A,B(x:number) \n A(sum x : B(x)).");
     auto clause = makeClauseA(std::move(sum));
-    
+
     tu1->getProgram()->removeClause(clause.get());
     auto tu2 = makeATU(".decl A,B(x:number)");
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());

@@ -238,8 +238,8 @@ protected:
         return nums;
     }
 
-    std::vector<std::string> numsToArgs(const std::string& relName, const std::vector<RamDomain>& nums,
-            std::vector<bool>* err = nullptr) const {
+    std::vector<std::string> numsToArgs(
+            const std::string& relName, const std::vector<RamDomain>& nums) const {
         std::vector<std::string> args;
 
         auto rel = prog.getRelation(relName);
@@ -248,14 +248,10 @@ protected:
         }
 
         for (size_t i = 0; i < nums.size(); i++) {
-            if ((err != nullptr) && (*err)[i]) {
-                args.push_back("_");
+            if (*rel->getAttrType(i) == 's') {
+                args.push_back("\"" + std::string(symTable.resolve(nums[i])) + "\"");
             } else {
-                if (*rel->getAttrType(i) == 's') {
-                    args.push_back("\"" + std::string(symTable.resolve(nums[i])) + "\"");
-                } else {
-                    args.push_back(std::to_string(nums[i]));
-                }
+                args.push_back(std::to_string(nums[i]));
             }
         }
 

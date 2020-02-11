@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "CompiledTuple.h"
 #include "ParallelUtils.h"
 #include "RamTypes.h"
 #include <cassert>
@@ -100,11 +101,28 @@ public:
     }
 
     /**
+     * A function packing a tuple of the given arity into a reference.
+     */
+    template <typename Domain, std::size_t _arity>
+    RamDomain pack(ram::Tuple<Domain, _arity> tuple) {
+        return getForArity(_arity).pack(tuple.data);
+    }
+
+    /**
      * A function obtaining a pointer to the tuple addressed by the given reference.
      */
     RamDomain* unpack(RamDomain ref, int arity) {
         return getForArity(arity).unpack(ref);
     }
+
+    // /**
+    //  * A function obtaining a pointer to the tuple addressed by the given reference.
+    //  */
+    // template<typename Domain, std::size_t _arity>
+    // constexpr ram::Tuple<RamDomain, _arity>* unpackTuple(RamDomain ref, const int arity) {
+    //     ram::Tuple<RamDomain, arity> tuple;
+    //     RamDomain data = getForArity(arity).unpack(ref);
+    // }
 
     /**
      * Determines whether the given reference is the null reference encoding

@@ -815,8 +815,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             visit(lookup.getExpression(), out);
             out << ";\n";
 
-            // Handle null case.
-            out << "if (recordTable.isNull(ref)) continue;\n";
+            // Handle nil case.
+            out << "if (recordTable.isNil(ref)) continue;\n";
 
             // Unpack tuple
             out << tuple_type << " "

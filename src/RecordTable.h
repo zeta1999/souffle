@@ -132,10 +132,10 @@ public:
     }
 
     /**
-     * Determines whether the given reference is the null reference encoding
+     * Determines whether the given reference is the nil reference encoding
      * the absence of any nested record.
      */
-    bool isNull(RamDomain ref) {
+    bool isNil(RamDomain ref) {
         return ref == 0;
     }
 

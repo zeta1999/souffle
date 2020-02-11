@@ -988,8 +988,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(UnpackRecord)
             RamDomain ref = execute(node->getChild(0), ctxt);
 
-            // check for null
-            if (getRecordTable().isNull(ref)) {
+            // check for nil
+            if (getRecordTable().isNil(ref)) {
                 return true;
             }
 

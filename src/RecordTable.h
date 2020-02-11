@@ -42,7 +42,7 @@ class RecordMap {
     std::vector<std::vector<RamDomain>> i2r;
 
 public:
-    RecordMap(size_t arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
+    explicit RecordMap(size_t arity) : arity(arity), i2r(1) {}  // note: index 0 element left free
 
     /**
      * Packs the given tuple -- and may create a new reference if necessary.
@@ -140,17 +140,16 @@ public:
     }
 
 private:
-    mutable Lock access;
     std::unordered_map<size_t, RecordMap> maps;
 
     RecordMap& getForArity(size_t arity) {
-        auto lease = access.acquire();
-        (void)lease;  // avoid warning;
-        auto pos = maps.find(arity);
-        if (pos == maps.end()) {
-            maps.emplace(arity, arity);
+#pragma omp critical(RecordTableGetForArity)
+        {
+            auto pos = maps.find(arity);
+            if (pos == maps.end()) {
+                maps.emplace(arity, arity);
+            }
         }
-
         return maps.find(arity)->second;
     }
 };

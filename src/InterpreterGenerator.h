@@ -20,7 +20,6 @@
 #include "Global.h"
 #include "InterpreterNode.h"
 #include "InterpreterPreamble.h"
-#include "InterpreterRecords.h"
 #include "RamIndexAnalysis.h"
 #include "RamVisitor.h"
 #include <cassert>
@@ -275,7 +274,6 @@ public:
         NodePtrVec children;
         children.push_back(visit(lookup.getExpression()));
         children.push_back(visitTupleOperation(lookup));
-        createRecordMap(lookup.getArity());
         return std::make_unique<InterpreterNode>(I_UnpackRecord, &lookup, std::move(children));
     }
 

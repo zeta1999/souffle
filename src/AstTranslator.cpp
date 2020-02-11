@@ -43,6 +43,7 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
+#include "RecordTable.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
@@ -1036,49 +1037,35 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     // --- create preamble ---
 
-    // mappings for temporary relations
-    std::map<const AstRelation*, std::unique_ptr<RamRelationReference>> rrel;
-    std::map<const AstRelation*, std::unique_ptr<RamRelationReference>> relDelta;
-    std::map<const AstRelation*, std::unique_ptr<RamRelationReference>> relNew;
-
     /* Compute non-recursive clauses for relations in scc and push
        the results in their delta tables. */
     for (const AstRelation* rel : scc) {
         std::unique_ptr<RamStatement> updateRelTable;
 
-        /* create two temporary tables for relaxed semi-naive evaluation */
-        rrel[rel] = translateRelation(rel);
-        relDelta[rel] = translateDeltaRelation(rel);
-        relNew[rel] = translateNewRelation(rel);
-
         /* create update statements for fixpoint (even iteration) */
         appendStmt(updateRelTable,
-                std::make_unique<RamSequence>(genMerge(rrel[rel].get(), relNew[rel].get()),
-                        std::make_unique<RamSwap>(
-                                std::unique_ptr<RamRelationReference>(relDelta[rel]->clone()),
-                                std::unique_ptr<RamRelationReference>(relNew[rel]->clone())),
-                        std::make_unique<RamClear>(
-                                std::unique_ptr<RamRelationReference>(relNew[rel]->clone()))));
+                std::make_unique<RamSequence>(
+                        genMerge(translateRelation(rel).get(), translateNewRelation(rel).get()),
+                        std::make_unique<RamSwap>(translateDeltaRelation(rel), translateNewRelation(rel)),
+                        std::make_unique<RamClear>(translateNewRelation(rel))));
 
         /* measure update time for each relation */
         if (Global::config().has("profile")) {
             updateRelTable = std::make_unique<RamLogRelationTimer>(std::move(updateRelTable),
                     LogStatement::cRecursiveRelation(toString(rel->getName()), rel->getSrcLoc()),
-                    std::unique_ptr<RamRelationReference>(relNew[rel]->clone()));
+                    translateNewRelation(rel));
         }
 
         /* drop temporary tables after recursion */
-        appendStmt(postamble, std::make_unique<RamSequence>(
-                                      std::make_unique<RamClear>(
-                                              std::unique_ptr<RamRelationReference>(relDelta[rel]->clone())),
-                                      std::make_unique<RamClear>(
-                                              std::unique_ptr<RamRelationReference>(relNew[rel]->clone()))));
+        appendStmt(postamble,
+                std::make_unique<RamSequence>(std::make_unique<RamClear>(translateDeltaRelation(rel)),
+                        std::make_unique<RamClear>(translateNewRelation(rel))));
 
         /* Generate code for non-recursive part of relation */
         appendStmt(preamble, translateNonRecursiveRelation(*rel, recursiveClauses));
 
         /* Generate merge operation for temp tables */
-        appendStmt(preamble, genMerge(relDelta[rel].get(), rrel[rel].get()));
+        appendStmt(preamble, genMerge(translateDeltaRelation(rel).get(), translateRelation(rel).get()));
 
         /* Add update operations of relations to parallel statements */
         updateTable->add(std::move(updateRelTable));
@@ -1118,10 +1105,10 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                     continue;
                 }
 
-                // modify the processed rule to use relDelta and write to relNew
+                // modify the processed rule to use delta relation and write to new relation
                 std::unique_ptr<AstClause> r1(cl->clone());
-                r1->getHead()->setName(relNew[rel]->get()->getName());
-                r1->getAtoms()[j]->setName(relDelta[atomRelation]->get()->getName());
+                r1->getHead()->setName(translateNewRelation(rel)->get()->getName());
+                r1->getAtoms()[j]->setName(translateDeltaRelation(atomRelation)->get()->getName());
                 if (Global::config().has("provenance")) {
                     r1->addToBody(std::make_unique<AstProvenanceNegation>(
                             std::unique_ptr<AstAtom>(cl->getHead()->clone())));
@@ -1140,7 +1127,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 for (size_t k = j + 1; k < atoms.size(); k++) {
                     if (isInSameSCC(getAtomRelation(atoms[k], program))) {
                         AstAtom* cur = r1->getAtoms()[k]->clone();
-                        cur->setName(relDelta[getAtomRelation(atoms[k], program)]->get()->getName());
+                        cur->setName(
+                                translateDeltaRelation(getAtomRelation(atoms[k], program))->get()->getName());
                         r1->addToBody(std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cur)));
                     }
                 }
@@ -1157,9 +1145,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                             LogStatement::tRecursiveRule(relationName, version, srcLocation, clauseText);
                     const std::string logSizeStatement =
                             LogStatement::nRecursiveRule(relationName, version, srcLocation, clauseText);
-                    rule = std::make_unique<RamSequence>(
-                            std::make_unique<RamLogRelationTimer>(std::move(rule), logTimerStatement,
-                                    std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
+                    rule = std::make_unique<RamSequence>(std::make_unique<RamLogRelationTimer>(
+                            std::move(rule), logTimerStatement, translateNewRelation(rel)));
                 }
 
                 // add debug info
@@ -1188,8 +1175,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
             const SrcLocation& srcLocation = rel->getSrcLoc();
             const std::string logTimerStatement = LogStatement::tRecursiveRelation(relationName, srcLocation);
             const std::string logSizeStatement = LogStatement::nRecursiveRelation(relationName, srcLocation);
-            loopRelSeq = std::make_unique<RamLogRelationTimer>(std::move(loopRelSeq), logTimerStatement,
-                    std::unique_ptr<RamRelationReference>(relNew[rel]->clone()));
+            loopRelSeq = std::make_unique<RamLogRelationTimer>(
+                    std::move(loopRelSeq), logTimerStatement, translateNewRelation(rel));
         }
 
         /* add rule computations of a relation to parallel statement */
@@ -1204,8 +1191,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     std::unique_ptr<RamCondition> exitCond;
     for (const AstRelation* rel : scc) {
-        addCondition(exitCond, std::make_unique<RamEmptinessCheck>(
-                                       std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
+        addCondition(exitCond, std::make_unique<RamEmptinessCheck>(translateNewRelation(rel)));
     }
 
     /* construct fixpoint loop  */

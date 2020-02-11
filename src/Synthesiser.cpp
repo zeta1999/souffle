@@ -61,11 +61,7 @@ unsigned Synthesiser::lookupFreqIdx(const std::string& txt) {
 /** Lookup frequency counter */
 size_t Synthesiser::lookupReadIdx(const std::string& txt) {
     std::string modifiedTxt = txt;
-    for (auto& cur : modifiedTxt) {
-        if (cur == '-') {
-            cur = '.';
-        }
-    }
+    std::replace(modifiedTxt.begin(), modifiedTxt.end(), '-', '.');
     static unsigned counter;
     auto pos = neIdxMap.find(modifiedTxt);
     if (pos == neIdxMap.end()) {
@@ -819,8 +815,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             visit(lookup.getExpression(), out);
             out << ";\n";
 
-            out << "if (isNull<" << tuple_type << ">(ref)) continue;\n";
-            out << tuple_type << " env" << lookup.getTupleId() << " = unpack<" << tuple_type << ">(ref);\n";
+            // Handle nil case.
+            out << "if (recordTable.isNil(ref)) continue;\n";
+
+            // Unpack tuple
+            out << tuple_type << " "
+                << "env" << lookup.getTupleId() << " = "
+                << "recordTable.unpackTuple<RamDomain, " << arity << ">"
+                << "(ref);"
+                << "\n";
 
             out << "{\n";
 
@@ -1235,7 +1238,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto arity = rel.getArity();
             assert(arity > 0 && "AstTranslator failed");
-            std::string before, after;
+            std::string after;
             if (Global::config().has("profile") && !exists.getRelation().isTemp()) {
                 out << R"_((reads[)_" << synthesiser.lookupReadIdx(rel.getName()) << R"_(]++,)_";
                 after = ")";
@@ -1652,7 +1655,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitPackRecord(const RamPackRecord& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "pack("
+            out << "recordTable.pack("
                 << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">({"
                 << join(pack.getArguments(), ",", rec) << "})"
                 << ")";
@@ -1672,12 +1675,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             for (auto val : ret.getValues()) {
                 if (isRamUndefValue(val)) {
                     out << "ret.push_back(0);\n";
-                    out << "err.push_back(true);\n";
                 } else {
                     out << "ret.push_back(";
                     visit(val, out);
                     out << ");\n";
-                    out << "err.push_back(false);\n";
                 }
             }
         }
@@ -1851,6 +1852,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "}";
     }
     os << ";";
+
+    // declare record table
+    os << "// -- initialize record table --\n";
+
+    os << "RecordTable recordTable;"
+       << "\n";
+
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -2046,6 +2054,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue printAll method
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
+
     visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
             std::vector<RamTypeAttribute> symbolMask;
@@ -2088,6 +2097,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue loadAll method
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
+
     visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
         std::vector<RamTypeAttribute> symbolMask;
@@ -2116,8 +2126,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of loadAll() method
     // issue dump methods
     auto dumpRelation = [&](const RamRelation& ramRelation) {
-        auto& relName = getRelationName(ramRelation);
-        auto& name = ramRelation.getName();
+        const auto& relName = getRelationName(ramRelation);
+        const auto& name = ramRelation.getName();
         auto& mask = ramRelation.getAttributeTypes();
         size_t auxiliaryArity = ramRelation.getAuxiliaryArity();
 
@@ -2176,14 +2186,14 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
         // generate subroutine adapter
         os << "void executeSubroutine(std::string name, const std::vector<RamDomain>& args, "
-              "std::vector<RamDomain>& ret, std::vector<bool>& err) override {\n";
+              "std::vector<RamDomain>& ret) override {\n";
 
         // subroutine number
         size_t subroutineNum = 0;
         for (auto& sub : prog.getSubroutines()) {
             os << "if (name == \"" << sub.first << "\") {\n"
                << "subproof_" << subroutineNum
-               << "(args, ret, err);\n"  // subproof_i to deal with special characters in relation names
+               << "(args, ret);\n"  // subproof_i to deal with special characters in relation names
                << "}\n";
             subroutineNum++;
         }
@@ -2196,7 +2206,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "void "
                << "subproof_" << subroutineNum
                << "(const std::vector<RamDomain>& args, "
-                  "std::vector<RamDomain>& ret, std::vector<bool>& err) {\n";
+                  "std::vector<RamDomain>& ret) {\n";
 
             // a lock is needed when filling the subroutine return vectors
             os << "std::mutex lock;\n";

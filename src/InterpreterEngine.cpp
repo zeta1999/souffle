@@ -16,9 +16,9 @@
 #include "InterpreterEngine.h"
 #include "IOSystem.h"
 #include "InterpreterGenerator.h"
-#include "InterpreterRecords.h"
 #include "Logger.h"
 #include "RamTypes.h"
+#include "RecordTable.h"
 #include "SignalHandler.h"
 #include <cassert>
 #include <csignal>
@@ -43,6 +43,10 @@ int InterpreterEngine::incCounter() {
 
 SymbolTable& InterpreterEngine::getSymbolTable() {
     return tUnit.getSymbolTable();
+}
+
+RecordTable& InterpreterEngine::getRecordTable() {
+    return recordTable;
 }
 
 RamTranslationUnit& InterpreterEngine::getTranslationUnit() {
@@ -177,11 +181,10 @@ void InterpreterEngine::executeMain() {
     }
     SignalHandler::instance()->reset();
 }
-void InterpreterEngine::executeSubroutine(const std::string& name, const std::vector<RamDomain>& args,
-        std::vector<RamDomain>& ret, std::vector<bool>& err) {
+void InterpreterEngine::executeSubroutine(
+        const std::string& name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret) {
     InterpreterContext ctxt;
     ctxt.setReturnValues(ret);
-    ctxt.setReturnErrors(err);
     ctxt.setArguments(args);
 
     auto entry = generator.generateTree(tUnit.getProgram().getSubroutine(name));
@@ -580,7 +583,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; ++i) {
                 data[i] = execute(node->getChild(i), ctxt);
             }
-            return packInterpreter(data, arity);
+            return getRecordTable().pack(data, arity);
         ESAC(PackRecord)
 
         CASE(SubroutineArgument)
@@ -996,14 +999,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(UnpackRecord)
             RamDomain ref = execute(node->getChild(0), ctxt);
 
-            // check for null
-            if (isNullInterpreter(ref)) {
+            // check for nil
+            if (getRecordTable().isNil(ref)) {
                 return true;
             }
 
             // update environment variable
             size_t arity = cur.getArity();
-            const RamDomain* tuple = unpackInterpreter(ref, arity);
+            const RamDomain* tuple = getRecordTable().unpack(ref, arity);
 
             // save reference to temporary value
             ctxt[cur.getTupleId()] = tuple;
@@ -1218,7 +1221,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(SubroutineReturnValue)
             for (size_t i = 0; i < cur.getValues().size(); ++i) {
                 if (node->getChild(i) == nullptr) {
-                    ctxt.addReturnValue(0, true);
+                    ctxt.addReturnValue(0);
                 } else {
                     ctxt.addReturnValue(execute(node->getChild(i), ctxt));
                 }

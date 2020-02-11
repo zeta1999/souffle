@@ -23,6 +23,7 @@
 #include "InterpreterRelation.h"
 #include "RamTranslationUnit.h"
 #include "RamVisitor.h"
+#include "RecordTable.h"
 #include <deque>
 #include <map>
 #include <memory>
@@ -56,8 +57,8 @@ public:
     /** @brief Execute the main program */
     void executeMain();
     /** @brief Execute the subroutine program */
-    void executeSubroutine(const std::string& name, const std::vector<RamDomain>& args,
-            std::vector<RamDomain>& ret, std::vector<bool>& err);
+    void executeSubroutine(
+            const std::string& name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret);
 
 private:
     /** @brief Remove a relation from the environment */
@@ -68,6 +69,8 @@ private:
     RelationHandle& getRelationHandle(const size_t idx);
     /** @brief Return the string symbol table */
     SymbolTable& getSymbolTable();
+    /** @brief Return the record table */
+    RecordTable& getRecordTable();
     /** @brief Return the RamTranslationUnit */
     RamTranslationUnit& getTranslationUnit();
     /** @brief Execute the program */
@@ -107,6 +110,8 @@ private:
     RamIndexAnalysis* isa;
     /** Interpreter program generator */
     NodeGenerator generator;
+    /** Record Table*/
+    RecordTable recordTable;
 };
 
 }  // namespace souffle

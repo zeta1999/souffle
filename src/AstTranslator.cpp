@@ -43,6 +43,7 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
+#include "RecordTable.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
@@ -1039,49 +1040,35 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     // --- create preamble ---
 
-    // mappings for temporary relations
-    std::map<const AstRelation*, std::unique_ptr<RamRelationReference>> rrel;
-    std::map<const AstRelation*, std::unique_ptr<RamRelationReference>> relDelta;
-    std::map<const AstRelation*, std::unique_ptr<RamRelationReference>> relNew;
-
     /* Compute non-recursive clauses for relations in scc and push
        the results in their delta tables. */
     for (const AstRelation* rel : scc) {
         std::unique_ptr<RamStatement> updateRelTable;
 
-        /* create two temporary tables for relaxed semi-naive evaluation */
-        rrel[rel] = translateRelation(rel);
-        relDelta[rel] = translateDeltaRelation(rel);
-        relNew[rel] = translateNewRelation(rel);
-
         /* create update statements for fixpoint (even iteration) */
         appendStmt(updateRelTable,
-                std::make_unique<RamSequence>(genMerge(rrel[rel].get(), relNew[rel].get()),
-                        std::make_unique<RamSwap>(
-                                std::unique_ptr<RamRelationReference>(relDelta[rel]->clone()),
-                                std::unique_ptr<RamRelationReference>(relNew[rel]->clone())),
-                        std::make_unique<RamClear>(
-                                std::unique_ptr<RamRelationReference>(relNew[rel]->clone()))));
+                std::make_unique<RamSequence>(
+                        genMerge(translateRelation(rel).get(), translateNewRelation(rel).get()),
+                        std::make_unique<RamSwap>(translateDeltaRelation(rel), translateNewRelation(rel)),
+                        std::make_unique<RamClear>(translateNewRelation(rel))));
 
         /* measure update time for each relation */
         if (Global::config().has("profile")) {
             updateRelTable = std::make_unique<RamLogRelationTimer>(std::move(updateRelTable),
                     LogStatement::cRecursiveRelation(toString(rel->getName()), rel->getSrcLoc()),
-                    std::unique_ptr<RamRelationReference>(relNew[rel]->clone()));
+                    translateNewRelation(rel));
         }
 
         /* drop temporary tables after recursion */
-        appendStmt(postamble, std::make_unique<RamSequence>(
-                                      std::make_unique<RamClear>(
-                                              std::unique_ptr<RamRelationReference>(relDelta[rel]->clone())),
-                                      std::make_unique<RamClear>(
-                                              std::unique_ptr<RamRelationReference>(relNew[rel]->clone()))));
+        appendStmt(postamble,
+                std::make_unique<RamSequence>(std::make_unique<RamClear>(translateDeltaRelation(rel)),
+                        std::make_unique<RamClear>(translateNewRelation(rel))));
 
         /* Generate code for non-recursive part of relation */
         appendStmt(preamble, translateNonRecursiveRelation(*rel, recursiveClauses));
 
         /* Generate merge operation for temp tables */
-        appendStmt(preamble, genMerge(relDelta[rel].get(), rrel[rel].get()));
+        appendStmt(preamble, genMerge(translateDeltaRelation(rel).get(), translateRelation(rel).get()));
 
         /* Add update operations of relations to parallel statements */
         updateTable->add(std::move(updateRelTable));
@@ -1121,10 +1108,10 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                     continue;
                 }
 
-                // modify the processed rule to use relDelta and write to relNew
+                // modify the processed rule to use delta relation and write to new relation
                 std::unique_ptr<AstClause> r1(cl->clone());
-                r1->getHead()->setName(relNew[rel]->get()->getName());
-                r1->getAtoms()[j]->setName(relDelta[atomRelation]->get()->getName());
+                r1->getHead()->setName(translateNewRelation(rel)->get()->getName());
+                r1->getAtoms()[j]->setName(translateDeltaRelation(atomRelation)->get()->getName());
                 if (Global::config().has("provenance")) {
                     r1->addToBody(std::make_unique<AstProvenanceNegation>(
                             std::unique_ptr<AstAtom>(cl->getHead()->clone())));
@@ -1143,7 +1130,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 for (size_t k = j + 1; k < atoms.size(); k++) {
                     if (isInSameSCC(getAtomRelation(atoms[k], program))) {
                         AstAtom* cur = r1->getAtoms()[k]->clone();
-                        cur->setName(relDelta[getAtomRelation(atoms[k], program)]->get()->getName());
+                        cur->setName(
+                                translateDeltaRelation(getAtomRelation(atoms[k], program))->get()->getName());
                         r1->addToBody(std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cur)));
                     }
                 }
@@ -1160,9 +1148,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                             LogStatement::tRecursiveRule(relationName, version, srcLocation, clauseText);
                     const std::string logSizeStatement =
                             LogStatement::nRecursiveRule(relationName, version, srcLocation, clauseText);
-                    rule = std::make_unique<RamSequence>(
-                            std::make_unique<RamLogRelationTimer>(std::move(rule), logTimerStatement,
-                                    std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
+                    rule = std::make_unique<RamSequence>(std::make_unique<RamLogRelationTimer>(
+                            std::move(rule), logTimerStatement, translateNewRelation(rel)));
                 }
 
                 // add debug info
@@ -1191,8 +1178,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
             const SrcLocation& srcLocation = rel->getSrcLoc();
             const std::string logTimerStatement = LogStatement::tRecursiveRelation(relationName, srcLocation);
             const std::string logSizeStatement = LogStatement::nRecursiveRelation(relationName, srcLocation);
-            loopRelSeq = std::make_unique<RamLogRelationTimer>(std::move(loopRelSeq), logTimerStatement,
-                    std::unique_ptr<RamRelationReference>(relNew[rel]->clone()));
+            loopRelSeq = std::make_unique<RamLogRelationTimer>(
+                    std::move(loopRelSeq), logTimerStatement, translateNewRelation(rel));
         }
 
         /* add rule computations of a relation to parallel statement */
@@ -1207,8 +1194,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
     std::unique_ptr<RamCondition> exitCond;
     for (const AstRelation* rel : scc) {
-        addCondition(exitCond, std::make_unique<RamEmptinessCheck>(
-                                       std::unique_ptr<RamRelationReference>(relNew[rel]->clone())));
+        addCondition(exitCond, std::make_unique<RamEmptinessCheck>(translateNewRelation(rel)));
     }
 
     /* construct fixpoint loop  */
@@ -1301,6 +1287,13 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(const AstClause& clause) {
     // TODO (taipan-snake): Currently we only deal with atoms (no constraints or negations or aggregates
     // or anything else...)
+    //
+    // The resulting subroutine looks something like this:
+    // IF (arg(0), arg(1), _, _) IN rel_1:
+    //   return 1
+    // IF (arg(0), arg(1), _ ,_) NOT IN rel_1:
+    //   return 0
+    // ...
 
     // clone clause for mutation
     auto clauseReplacedAggregates = std::unique_ptr<AstClause>(clause.clone());
@@ -1369,7 +1362,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
     // the structure of this subroutine is a sequence where each nested statement is a search in each
     // relation
-    std::unique_ptr<RamSequence> searchSequence = std::make_unique<RamSequence>();
+    std::unique_ptr<RamStatement> searchSequence;
 
     // make a copy so that when we mutate clause, pointers to objects in newClause are not affected
     auto newClause = std::unique_ptr<AstClause>(clauseReplacedAggregates->clone());
@@ -1403,79 +1396,57 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             // ensure the length of query tuple is correct
             assert(query.size() == atom->getArity() && "wrong query tuple size");
 
-            // make the nested operation to return the atom number if it exists
-            std::vector<std::unique_ptr<RamExpression>> returnValue;
-            returnValue.push_back(std::make_unique<RamSignedConstant>(litNumber));
+            // create existence checks to check if the tuple exists or not
+            auto existenceCheck = std::make_unique<RamExistenceCheck>(
+                    std::unique_ptr<RamRelationReference>(relRef->clone()), std::move(query));
+            auto negativeExistenceCheck = std::make_unique<RamNegation>(
+                    std::unique_ptr<RamExistenceCheck>(existenceCheck->clone()));
 
-            // create a search
-            // a filter to find whether the current atom exists or not
-            auto searchFilter = std::make_unique<RamFilter>(
-                    std::make_unique<RamExistenceCheck>(
-                            std::unique_ptr<RamRelationReference>(relRef->clone()), std::move(query)),
-                    std::make_unique<RamSubroutineReturnValue>(std::move(returnValue)));
+            // return true if the tuple exists
+            std::vector<std::unique_ptr<RamExpression>> returnTrue;
+            returnTrue.push_back(std::make_unique<RamSignedConstant>(1));
 
-            // now, return the values of the atoms, with a separator
-            // between atom number and atom
-            std::vector<std::unique_ptr<RamExpression>> returnAtom;
-            returnAtom.push_back(std::make_unique<RamUndefValue>());
-            // the actual atom
-            for (size_t i = 0; i < atom->getArity() - auxiliaryArity; i++) {
-                returnAtom.push_back(translateValue(atom->getArgument(i), ValueIndex()));
-            }
+            // return false if the tuple exists
+            std::vector<std::unique_ptr<RamExpression>> returnFalse;
+            returnFalse.push_back(std::make_unique<RamSignedConstant>(0));
 
-            // chain the atom number and atom value together
-            auto atomSequence = std::make_unique<RamSequence>();
-            atomSequence->add(std::make_unique<RamQuery>(std::move(searchFilter)));
-            atomSequence->add(std::make_unique<RamQuery>(
-                    std::make_unique<RamSubroutineReturnValue>(std::move(returnAtom))));
+            // create a RamQuery to return true/false
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(existenceCheck),
+                            std::make_unique<RamSubroutineReturnValue>(std::move(returnTrue)))));
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(negativeExistenceCheck),
+                            std::make_unique<RamSubroutineReturnValue>(std::move(returnFalse)))));
 
-            // append search to the sequence
-            searchSequence->add(std::move(atomSequence));
         } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
             VariablesToArguments varsToArgs(uniqueVariables);
             con->apply(varsToArgs);
 
             // translate to a RamCondition
             auto condition = translateConstraint(con, ValueIndex());
+            auto negativeCondition =
+                    std::make_unique<RamNegation>(std::unique_ptr<RamCondition>(condition->clone()));
 
-            // create a return value
-            std::vector<std::unique_ptr<RamExpression>> returnValue;
-            returnValue.push_back(std::make_unique<RamSignedConstant>(litNumber));
+            // create a return true value
+            std::vector<std::unique_ptr<RamExpression>> returnTrue;
+            returnTrue.push_back(std::make_unique<RamSignedConstant>(1));
 
-            // create a filter
-            auto filter = std::make_unique<RamFilter>(
-                    std::move(condition), std::make_unique<RamSubroutineReturnValue>(std::move(returnValue)));
+            // create a return false value
+            std::vector<std::unique_ptr<RamExpression>> returnFalse;
+            returnFalse.push_back(std::make_unique<RamSignedConstant>(0));
 
-            // now, return the values of the literal, with a separator
-            // between atom number and atom
-            std::vector<std::unique_ptr<RamExpression>> returnLit;
-            returnLit.push_back(std::make_unique<RamUndefValue>());
-            // add return values for binary constraints and negations
-            if (auto binaryConstraint = dynamic_cast<AstBinaryConstraint*>(con)) {
-                returnLit.push_back(translateValue(binaryConstraint->getLHS(), ValueIndex()));
-                returnLit.push_back(translateValue(binaryConstraint->getRHS(), ValueIndex()));
-            } else if (auto negation = dynamic_cast<AstNegation*>(con)) {
-                auto vals = negation->getAtom()->getArguments();
-                auto auxiliaryArity = auxArityAnalysis->getArity(negation->getAtom());
-                for (size_t i = 0; i < vals.size() - auxiliaryArity; i++) {
-                    returnLit.push_back(translateValue(vals[i], ValueIndex()));
-                }
-            }
-
-            // chain the atom number and atom value together
-            auto litSequence = std::make_unique<RamSequence>();
-            litSequence->add(std::make_unique<RamQuery>(std::move(filter)));
-            litSequence->add(std::make_unique<RamQuery>(
-                    std::make_unique<RamSubroutineReturnValue>(std::move(returnLit))));
-
-            // append search to the sequence
-            searchSequence->add(std::move(litSequence));
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(condition),
+                            std::make_unique<RamSubroutineReturnValue>(std::move(returnTrue)))));
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(negativeCondition),
+                            std::make_unique<RamSubroutineReturnValue>(std::move(returnFalse)))));
         }
 
         litNumber++;
     }
 
-    return std::move(searchSequence);
+    return searchSequence;
 }
 
 /** translates the given datalog program into an equivalent RAM program  */

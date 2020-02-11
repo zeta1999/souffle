@@ -121,7 +121,7 @@ souffle_sources = \
         InterpreterNode.h		          \
         InterpreterProgInterface.h                \
         InterpreterPreamble.h			  \
-        InterpreterRecords.h         InterpreterRecords.cpp     \
+        RecordTable.h                             \
         RamComplexityAnalysis.cpp  RamComplexityAnalysis.h  \
         RamLevelAnalysis.cpp  RamLevelAnalysis.h  \
         RamCondition.h                            \
@@ -180,7 +180,6 @@ soufflepublic_HEADERS = \
         Brie.h                                    \
         BTree.h                                   \
         CompiledIndexUtils.h                      \
-        CompiledRecord.h                          \
         CompiledSouffle.h                         \
         CompiledTuple.h                           \
         EventProcessor.h                          \
@@ -201,6 +200,7 @@ soufflepublic_HEADERS = \
         RamTypes.h                                \
         ReadStream.h                              \
         ReadStreamCSV.h                           \
+        RecordTable.h                             \
         SignalHandler.h                           \
         SouffleInterface.h                        \
         SymbolTable.h                             \
@@ -413,6 +413,11 @@ check_PROGRAMS += test/ram_type_conversion_test
 test_ram_type_conversion_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
 test_ram_type_conversion_test_SOURCES = test/ram_type_conversion_test.cpp
 test_ram_type_conversion_test_LDADD = libsouffle.la
+
+check_PROGRAMS += test/record_table_test
+test_record_table_test_CXXFLAGS = $(souffle_bin_CPPFLAGS) -I @abs_top_srcdir@/src/test -DBUILDDIR='"@abs_top_builddir@/src/"'
+test_record_table_test_SOURCES = test/record_table_test.cpp
+test_record_table_test_LDADD = libsouffle.la
 
 # make all check-programs tests
 TESTS = $(check_PROGRAMS)

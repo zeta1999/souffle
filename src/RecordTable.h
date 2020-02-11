@@ -143,14 +143,13 @@ private:
     std::unordered_map<size_t, RecordMap> maps;
 
     RecordMap& getForArity(size_t arity) {
+        std::unordered_map<size_t, RecordMap>::iterator mapsIterator;
 #pragma omp critical(RecordTableGetForArity)
         {
-            auto pos = maps.find(arity);
-            if (pos == maps.end()) {
-                maps.emplace(arity, arity);
-            }
+            // This will create a new map if it doesn't exist yet.
+            mapsIterator = maps.emplace(arity, arity).first;
         }
-        return maps.find(arity)->second;
+        return mapsIterator->second;
     }
 };
 

@@ -557,21 +557,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         exit(1);
                     }
             }
-            // if (type[arity] == 'N') {
-            //     // Initialize for numerical return value
-            //     if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_uint32, args) != FFI_OK) {
-            //         std::cerr << "Failed to prepare CIF for user-defined operator ";
-            //         std::cerr << name << std::endl;
-            //         exit(1);
-            //     }
-            // } else {
-            //     // Initialize for string return value
-            //     if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
-            //         std::cerr << "Failed to prepare CIF for user-defined operator ";
-            //         std::cerr << name << std::endl;
-            //         exit(1);
-            //     }
-            // }
+
             ffi_call(&cif, fn, &rc, values);
             RamDomain result;
             switch (cur.getReturnType()) {
@@ -584,11 +570,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 default:
                     abort();
             }
-            // if (type[arity] == 'N') {
-            //     result = ((RamDomain)rc);
-            // } else {
-            //     result = getSymbolTable().lookup(((const char*)rc));
-            // }
             return result;
         ESAC(UserDefinedOperator)
 

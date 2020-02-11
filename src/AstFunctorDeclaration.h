@@ -54,10 +54,9 @@ public:
             }
         };
         out << ".declfun " << name << "(";
-        std::vector<std::string> args;
-        for (auto argType : argsTypes) {
-            args.push_back(convert(argType));
-        }
+        std::vector<std::string> args(argsTypes.size());
+        std::transform(argsTypes.begin(), argsTypes.end(), args.begin(), convert);
+
         out << join(args, ",");
         out << "):" << convert(returnType) << std::endl;
     }
@@ -80,28 +79,6 @@ public:
     size_t getArity() const {
         return argsTypes.size();
     }
-
-    // /** is return type a symbolic value */
-    // bool isSymbolic() const {
-    //     return (type[type.length() - 1] == 'S');
-    // }
-
-    // /** is return type a number value */
-    // bool isNumerical() const {
-    //     return (type[type.length() - 1] == 'N');
-    // }
-
-    // /** accepts the i-th argument as a symbolic value */
-    // bool acceptsSymbols(size_t idx) const {
-    //     assert(idx <= getArity() && "argument index out of bound");
-    //     return (type[idx] == 'S');
-    // }
-
-    // /** accepts the i-th argument as a number value */
-    // bool acceptsNumbers(size_t idx) const {
-    //     assert(idx <= getArity() && "argument index out of bound");
-    //     return (type[idx] == 'N');
-    // }
 
     /** clone */
     AstFunctorDeclaration* clone() const override {

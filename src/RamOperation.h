@@ -459,7 +459,7 @@ class RamChoice : public RamRelationOperation, public RamAbstractChoice {
 public:
     RamChoice(std::unique_ptr<RamRelationReference> rel, size_t ident, std::unique_ptr<RamCondition> cond,
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
-            : RamRelationOperation(std::move(rel), ident, std::move(nested), profileText),
+        : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)),
               RamAbstractChoice(std::move(cond)) {}
 
     void print(std::ostream& os, int tabpos) const override {
@@ -510,7 +510,7 @@ public:
     RamParallelChoice(std::unique_ptr<RamRelationReference> rel, size_t ident,
             std::unique_ptr<RamCondition> cond, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamChoice(std::move(rel), ident, std::move(cond), std::move(nested), std::move(profileText)) {}
+            : RamChoice(std::move(rel), ident, std::move(cond), std::move(nested), profileText) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);

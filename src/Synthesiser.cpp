@@ -1805,6 +1805,13 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "}";
     }
     os << ";";
+
+    // declare record table
+    os << "// -- initialize record table --\n";
+
+    os << "RecordTable recordTable;"
+       << "\n";
+
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
@@ -2000,6 +2007,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue printAll method
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
+
     visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
         if (auto store = dynamic_cast<const RamStore*>(&node)) {
             std::vector<RamTypeAttribute> symbolMask;
@@ -2042,6 +2050,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // issue loadAll method
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
+
     visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
         // get some table details
         std::vector<RamTypeAttribute> symbolMask;
@@ -2070,8 +2079,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of loadAll() method
     // issue dump methods
     auto dumpRelation = [&](const RamRelation& ramRelation) {
-        auto& relName = getRelationName(ramRelation);
-        auto& name = ramRelation.getName();
+        const auto& relName = getRelationName(ramRelation);
+        const auto& name = ramRelation.getName();
         auto& mask = ramRelation.getAttributeTypes();
         size_t auxiliaryArity = ramRelation.getAuxiliaryArity();
 

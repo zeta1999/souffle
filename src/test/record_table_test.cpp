@@ -33,14 +33,4 @@ TEST(Pack, Tuple) {
     }
 }
 
-TEST(isNull, Tuple) {
-    RecordTable recordTable;
-
-    ram::Tuple<int, 0> null;
-    ram::Tuple<int, 2> notNull = {{1, 2}};
-
-    EXPECT_TRUE(recordTable.isNull(null));
-    EXPECT_FALSE(recordTable.isNull(notNull));
-}
-
 }  // namespace souffle::test

@@ -132,11 +132,6 @@ public:
         return ref == 0;
     }
 
-    template <typename Domain, std::size_t _arity>
-    constexpr RamDomain isNull(ram::Tuple<Domain, _arity> tuple) {
-        return _arity == 0;
-    }
-
 private:
     mutable Lock access;
     std::unordered_map<int, InterpreterRecordMap> maps;

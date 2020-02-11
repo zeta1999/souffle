@@ -22,7 +22,7 @@ namespace souffle::test {
 
 TEST(Pack, Tuple) {
     RecordTable recordTable;
-    const ram::Tuple<int, 3> tuple = {{1, 2, 3}};
+    const ram::Tuple<RamDomain, 3> tuple = {{1, 2, 3}};
 
     RamDomain ref = recordTable.pack(tuple);
 
@@ -36,11 +36,11 @@ TEST(Pack, Tuple) {
 TEST(PackUnpack, Tuple) {
     RecordTable recordTable;
 
-    const ram::Tuple<int, 3> toPack = {{1, 2, 3}};
+    const ram::Tuple<RamDomain, 3> toPack = {{1, 2, 3}};
 
     RamDomain ref = recordTable.pack(toPack);
 
-    const ram::Tuple<int, 3> unPacked = recordTable.unpackTuple<int, 3>(ref);
+    const ram::Tuple<RamDomain, 3> unPacked = recordTable.unpackTuple<RamDomain, 3>(ref);
 
     EXPECT_EQ(toPack, unPacked);
 }

@@ -105,6 +105,8 @@ public:
      */
     template <typename Domain, std::size_t _arity>
     RamDomain pack(ram::Tuple<Domain, _arity> tuple) {
+        static_assert(sizeof(Domain) == sizeof(RamDomain),
+                "Pointer cast: Size of tuple domain must equal domain in Record Table.");
         return getForArity(_arity).pack(static_cast<RamDomain*>(tuple.data));
     }
 

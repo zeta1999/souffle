@@ -30,16 +30,14 @@ using Json = json11::Json;
 class WriteStream {
 public:
     WriteStream(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-                const size_t auxiliaryArity, const std::string& typesystem = "", bool summary = false)
-        : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
+            const size_t auxiliaryArity, bool summary = false, const std::string& typesystem = "")
+            : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
               arity(symbolMask.size() - auxiliaryArity) {
-
         std::string parseErrors;
         types = Json::parse(typesystem, parseErrors);
         assert(parseErrors.size() == 0 && "Internal JSON parsing failed");
-        
     }
-    
+
     template <typename T>
     void writeAll(const T& relation) {
         if (summary) {
@@ -68,7 +66,7 @@ protected:
     const std::vector<RamTypeAttribute>& symbolMask;
     const SymbolTable& symbolTable;
     Json types;
-    
+
     const bool summary;
     const size_t arity;
 
@@ -108,13 +106,11 @@ public:
             const size_t auxiliaryArity) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
-    
 };
 
 template <>
 inline void WriteStream::writeNext(const RamDomain* tuple) {
     writeNextTuple(tuple);
 }
-
 
 } /* namespace souffle */

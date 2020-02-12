@@ -47,6 +47,7 @@
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
+#include "json11.h"
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -115,12 +116,12 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     }
     std::string name = getRelationName(rel->getName());
     Json relJson = Json::object{{"arity", std::to_string(rel->getArity())},
-                                {"aux-arity", std::to_string(rel->getArity())}, // Fix this.
-                                {"attributes", Json::array(attributes.begin(), attributes.end())},
-                                {"types", Json::array(typeAttributes.begin(), typeAttributes.end())}};
+            {"aux-arity", std::to_string(rel->getArity())},  // Fix this.
+            {"attributes", Json::array(attributes.begin(), attributes.end())},
+            {"types", Json::array(typeAttributes.begin(), typeAttributes.end())}};
 
     Json typesystem = Json::object{{name, relJson}};
-    
+
     std::string toStr = typesystem.dump();
     ioDirective.set("typesystem", toStr);
 }

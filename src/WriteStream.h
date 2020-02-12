@@ -33,9 +33,11 @@ public:
             const size_t auxiliaryArity, bool summary = false, const std::string& typesystem = "")
             : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
               arity(symbolMask.size() - auxiliaryArity) {
-        std::string parseErrors;
-        types = Json::parse(typesystem, parseErrors);
-        assert(parseErrors.size() == 0 && "Internal JSON parsing failed");
+        if (typesystem.size() > 0) {
+            std::string parseErrors;
+            types = Json::parse(typesystem, parseErrors);
+            assert(parseErrors.size() == 0 && "Internal JSON parsing failed");
+        }
     }
 
     template <typename T>

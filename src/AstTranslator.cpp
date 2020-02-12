@@ -107,20 +107,22 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
         }
     }
 
-    std::vector<Json> attributes;
+    std::vector<std::string> attributes;
+    std::vector<std::string> typeAttributes;
     for (size_t i = 0; i < rel->getArity(); ++i) {
-        Json obj = Json::object({
-                {"attribute", rel->getAttribute(i)->getAttributeName()},
-                {"type", getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName()))},
-        });
-        attributes.push_back(obj);
+        attributes.push_back(rel->getAttribute(i)->getAttributeName());
+        typeAttributes.push_back(getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
     }
     std::string name = getRelationName(rel->getName());
-    Json relJson = Json::object{{"relation", name}, {"arity", std::to_string(rel->getArity())},
-            {"aux-arity", std::to_string(rel->getArity())},
-            {"attributes", Json::array(attributes.begin(), attributes.end())}};
-    std::string relJsonStr = relJson.dump();
-    ioDirective.set("typesystem", relJsonStr);
+    Json relJson = Json::object{{"arity", std::to_string(rel->getArity())},
+                                {"aux-arity", std::to_string(rel->getArity())}, // Fix this.
+                                {"attributes", Json::array(attributes.begin(), attributes.end())},
+                                {"types", Json::array(typeAttributes.begin(), typeAttributes.end())}};
+
+    Json typesystem = Json::object{{name, relJson}};
+    
+    std::string toStr = typesystem.dump();
+    ioDirective.set("typesystem", toStr);
 }
 
 std::vector<IODirectives> AstTranslator::getInputIODirectives(

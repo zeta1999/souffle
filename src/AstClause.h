@@ -236,9 +236,19 @@ private:
  */
 class AstClause : public AstNode {
 public:
-    /** Construct an empty clause with empty list of literals and
-        its head set to NULL */
-    AstClause() : head(nullptr), plan(nullptr) {}
+    void print(std::ostream& os) const override {
+        if (head != nullptr) {
+            head->print(os);
+        }
+        if (getBodySize() > 0) {
+            os << " :- \n   ";
+            os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
+        }
+        os << ".";
+        if (getExecutionPlan() != nullptr) {
+            getExecutionPlan()->print(os);
+        }
+    }
 
     /** Add a Literal to the body of the clause */
     void addToBody(std::unique_ptr<AstLiteral> l) {
@@ -267,11 +277,13 @@ public:
     }
 
     /** Return the number of elements in the body of the Clause */
+    // TODO (b-scholz): remove this method
     size_t getBodySize() const {
         return atoms.size() + negations.size() + provNegations.size() + constraints.size();
     }
 
     /** Return the i-th Literal in body of the clause */
+    // TODO (b-scholz): remove this method
     AstLiteral* getBodyLiteral(size_t idx) const {
         if (idx < atoms.size()) {
             return atoms[idx].get();
@@ -307,6 +319,7 @@ public:
     }
 
     /** Re-orders atoms to be in the given order. */
+    // TODO (b-scholz): remove this method
     void reorderAtoms(const std::vector<unsigned int>& newOrder) {
         // Validate given order
         assert(newOrder.size() == atoms.size());
@@ -325,21 +338,25 @@ public:
     }
 
     /** Obtains a list of contained body-atoms. */
+    // TODO (b-scholz): remove this method
     std::vector<AstAtom*> getAtoms() const {
         return toPtrVector(atoms);
     }
 
     /** Obtains a list of contained negations. */
+    // TODO (b-scholz): remove this method
     std::vector<AstNegation*> getNegations() const {
         return toPtrVector(negations);
     }
 
     /** Obtains a list of constraints */
+    // TODO (b-scholz): remove this method
     std::vector<AstConstraint*> getConstraints() const {
         return toPtrVector(constraints);
     }
 
     /** Obtains a list of binary constraints */
+    // TODO (b-scholz): remove this method
     std::vector<AstBinaryConstraint*> getBinaryConstraints() const {
         std::vector<AstBinaryConstraint*> result;
         for (auto& constraint : constraints) {
@@ -395,18 +412,17 @@ public:
         clauseNum = num;
     }
 
-    void print(std::ostream& os) const override {
-        if (head != nullptr) {
-            head->print(os);
-        }
-        if (getBodySize() > 0) {
-            os << " :- \n   ";
-            os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
-        }
-        os << ".";
+    /** clone head */
+    // TODO (b-scholz): remove this method
+    AstClause* cloneHead() const {
+        auto* clone = new AstClause();
+        clone->setSrcLoc(getSrcLoc());
+        clone->setHead(std::unique_ptr<AstAtom>(getHead()->clone()));
         if (getExecutionPlan() != nullptr) {
-            getExecutionPlan()->print(os);
+            clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(getExecutionPlan()->clone()));
         }
+        clone->setFixedExecutionPlan(hasFixedExecutionPlan());
+        return clone;
     }
 
     AstClause* clone() const override {
@@ -449,17 +465,6 @@ public:
         }
     }
 
-    AstClause* cloneHead() const {
-        auto* clone = new AstClause();
-        clone->setSrcLoc(getSrcLoc());
-        clone->setHead(std::unique_ptr<AstAtom>(getHead()->clone()));
-        if (getExecutionPlan() != nullptr) {
-            clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(getExecutionPlan()->clone()));
-        }
-        clone->setFixedExecutionPlan(hasFixedExecutionPlan());
-        return clone;
-    }
-
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res = {head.get()};
         for (auto& cur : atoms) {
@@ -489,18 +494,23 @@ protected:
     std::unique_ptr<AstAtom> head;
 
     /** The atoms in the body of this clause */
+    // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstAtom>> atoms;
 
     /** The negations in the body of this clause */
+    // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstNegation>> negations;
 
     /** The provenance negations in the body of this clause */
+    // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstProvenanceNegation>> provNegations;
 
     /** The constraints in the body of this clause */
+    // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstConstraint>> constraints;
 
     /** Determines whether the given execution order should be enforced */
+    // TODO (b-scholz): confused state / double-check
     bool fixedPlan = false;
 
     /** The user defined execution plan -- if any */
@@ -511,6 +521,7 @@ protected:
 
     /** Stores a unique number for each clause in a relation,
         used for provenance */
+    // TODO (b-scholz): move to an AST analysis
     size_t clauseNum = 0;
 };
 

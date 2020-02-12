@@ -52,8 +52,6 @@ class AstRelation;
  */
 class AstProgram : public AstNode {
 public:
-    AstProgram() = default;
-
     void print(std::ostream& os) const override {
         /* Print types */
         os << "// ----- Types -----\n";
@@ -125,13 +123,14 @@ public:
         }
     }
 
-    /** Obtains the type with the given name */
+    /** get type */
+    // TODO (b-scholz): remove this method
     const AstType* getType(const AstTypeIdentifier& name) const {
         auto pos = types.find(name);
         return (pos == types.end()) ? nullptr : pos->second.get();
     }
 
-    /** Gets a list of all types in this program */
+    /** get types */
     std::vector<const AstType*> getTypes() const {
         std::vector<const AstType*> res;
         for (const auto& cur : types) {
@@ -140,19 +139,7 @@ public:
         return res;
     }
 
-    /** Find and return the relation in the program given its name */
-    AstRelation* getRelation(const AstRelationIdentifier& name) const {
-        auto pos = relations.find(name);
-        return (pos == relations.end()) ? nullptr : pos->second.get();
-    }
-
-    /** Get functor declaration */
-    AstFunctorDeclaration* getFunctorDeclaration(const std::string& name) const {
-        auto pos = functors.find(name);
-        return (pos == functors.end()) ? nullptr : pos->second.get();
-    }
-
-    /** Get all relations in the program */
+    /** get relations */
     std::vector<AstRelation*> getRelations() const {
         std::vector<AstRelation*> res;
         for (const auto& rel : relations) {
@@ -161,30 +148,50 @@ public:
         return res;
     }
 
-    /** Get all io directives in the program */
-    const std::vector<std::unique_ptr<AstLoad>>& getLoads() const {
-        return loads;
+    /** get relation */
+    // TODO (b-scholz): remove this method
+    AstRelation* getRelation(const AstRelationIdentifier& name) const {
+        auto pos = relations.find(name);
+        return (pos == relations.end()) ? nullptr : pos->second.get();
     }
 
-    const std::vector<std::unique_ptr<AstPrintSize>>& getPrintSizes() const {
-        return printSizes;
-    }
-
-    const std::vector<std::unique_ptr<AstStore>>& getStores() const {
-        return stores;
-    }
-
-    /** Get all pragma directives in the program */
-    const std::vector<std::unique_ptr<AstPragma>>& getPragmaDirectives() const {
-        return pragmaDirectives;
-    }
-
-    /** Return the number of relations in the program */
+    /** get number of relations */
+    // TODO (b-scholz): remove this method
     size_t relationSize() const {
         return relations.size();
     }
 
-    /** appends a new relation to this program -- after parsing */
+    /** get functor declaration */
+    // TODO (b-scholz): replace by list of functors
+    AstFunctorDeclaration* getFunctorDeclaration(const std::string& name) const {
+        auto pos = functors.find(name);
+        return (pos == functors.end()) ? nullptr : pos->second.get();
+    }
+
+    /** get load directives */
+    // TODO (b-scholz): unify load/store/printsizes
+    const std::vector<std::unique_ptr<AstLoad>>& getLoads() const {
+        return loads;
+    }
+
+    /** get print-size directives */
+    // TODO (b-scholz): unify load/store/printsizes
+    const std::vector<std::unique_ptr<AstPrintSize>>& getPrintSizes() const {
+        return printSizes;
+    }
+
+    /** get store directives */
+    // TODO (b-scholz): unify load/store/printsizes
+    const std::vector<std::unique_ptr<AstStore>>& getStores() const {
+        return stores;
+    }
+
+    /** get pragma directives */
+    const std::vector<std::unique_ptr<AstPragma>>& getPragmaDirectives() const {
+        return pragmaDirectives;
+    }
+
+    /** append new relation */
     void appendRelation(std::unique_ptr<AstRelation> r) {
         // get relation
         std::unique_ptr<AstRelation>& rel = relations[r->getName()];
@@ -194,13 +201,13 @@ public:
         rel = std::move(r);
     }
 
-    /** Remove a relation from the program. */
+    /** remove relation */
     void removeRelation(const AstRelationIdentifier& name) {
         /* Remove relation from map */
         relations.erase(relations.find(name));
     }
 
-    /** append a new clause to this program -- after parsing */
+    /** append clause */
     void appendClause(std::unique_ptr<AstClause> clause) {
         // get relation
         std::unique_ptr<AstRelation>& r = relations[clause->getHead()->getName()];
@@ -210,7 +217,7 @@ public:
         r->addClause(std::move(clause));
     }
 
-    /** Removes a clause from this program */
+    /** remove clause */
     void removeClause(const AstClause* clause) {
         // get relation
         auto pos = relations.find(clause->getHead()->getName());
@@ -222,22 +229,17 @@ public:
         pos->second->removeClause(clause);
     }
 
-    /**
-     * Obtains a list of clauses not associated to any relations. In
-     * a valid program this list is always empty
-     */
+    /** get orphan clauses (clauses without relation declarations) */
     std::vector<AstClause*> getOrphanClauses() const {
         return toPtrVector(clauses);
     }
 
-    // -- Components -----------------------------------------------------------
-
-    /** Obtains a list of all comprised components */
+    /** get components */
     std::vector<AstComponent*> getComponents() const {
         return toPtrVector(components);
     }
 
-    /** Obtains a list of all component instantiations */
+    /** get component instantiation */
     std::vector<AstComponentInit*> getComponentInstantiations() const {
         return toPtrVector(instantiations);
     }
@@ -245,21 +247,26 @@ public:
     AstProgram* clone() const override {
         auto res = new AstProgram();
 
-        // move types
+        for (const auto& cur : pragmaDirectives) {
+            res->pragmaDirectives.emplace_back(cur->clone());
+        }
+        for (const auto& cur : components) {
+            res->components.emplace_back(cur->clone());
+        }
+        for (const auto& cur : instantiations) {
+            res->instantiations.emplace_back(cur->clone());
+        }
         for (const auto& cur : types) {
             res->types.insert(std::make_pair(cur.first, std::unique_ptr<AstType>(cur.second->clone())));
         }
-
-        for (const auto& cur : relations) {
-            res->relations.insert(
-                    std::make_pair(cur.first, std::unique_ptr<AstRelation>(cur.second->clone())));
-        }
-
         for (const auto& cur : functors) {
             res->functors.insert(
                     std::make_pair(cur.first, std::unique_ptr<AstFunctorDeclaration>(cur.second->clone())));
         }
-
+        for (const auto& cur : relations) {
+            res->relations.insert(
+                    std::make_pair(cur.first, std::unique_ptr<AstRelation>(cur.second->clone())));
+        }
         for (const auto& cur : clauses) {
             res->clauses.emplace_back(cur->clone());
         }
@@ -273,20 +280,8 @@ public:
             res->stores.emplace_back(cur->clone());
         }
 
-        for (const auto& cur : components) {
-            res->components.emplace_back(cur->clone());
-        }
-
-        for (const auto& cur : instantiations) {
-            res->instantiations.emplace_back(cur->clone());
-        }
-
-        for (const auto& cur : pragmaDirectives) {
-            res->pragmaDirectives.emplace_back(cur->clone());
-        }
-
+        // TODO (b-scholz): that is odd - revisit!
         ErrorReport errors;
-
         res->finishParsing();
 
         // done
@@ -294,11 +289,8 @@ public:
     }
 
     void apply(const AstNodeMapper& map) override {
-        for (auto& cur : types) {
-            cur.second = map(std::move(cur.second));
-        }
-        for (auto& cur : relations) {
-            cur.second = map(std::move(cur.second));
+        for (auto& cur : pragmaDirectives) {
+            cur = map(std::move(cur));
         }
         for (auto& cur : components) {
             cur = map(std::move(cur));
@@ -306,24 +298,37 @@ public:
         for (auto& cur : instantiations) {
             cur = map(std::move(cur));
         }
-        for (auto& cur : pragmaDirectives) {
+        for (auto& cur : functors) {
+            cur.second = map(std::move(cur.second));
+        }
+        for (auto& cur : types) {
+            cur.second = map(std::move(cur.second));
+        }
+        for (auto& cur : relations) {
+            cur.second = map(std::move(cur.second));
+        }
+#if 0
+        for (const auto& cur : clauses) {
             cur = map(std::move(cur));
         }
+#endif
         for (auto& cur : loads) {
             cur = map(std::move(cur));
         }
         for (auto& cur : stores) {
             cur = map(std::move(cur));
         }
+#if 0
+        for (const auto& cur : printSizes) {
+            cur = map(std::move(cur));
+        }
+#endif
     }
 
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res;
-        for (const auto& cur : types) {
-            res.push_back(cur.second.get());
-        }
-        for (const auto& cur : relations) {
-            res.push_back(cur.second.get());
+        for (const auto& cur : pragmaDirectives) {
+            res.push_back(cur.get());
         }
         for (const auto& cur : components) {
             res.push_back(cur.get());
@@ -331,10 +336,16 @@ public:
         for (const auto& cur : instantiations) {
             res.push_back(cur.get());
         }
-        for (const auto& cur : clauses) {
-            res.push_back(cur.get());
+        for (const auto& cur : functors) {
+            res.push_back(cur.second.get());
         }
-        for (const auto& cur : pragmaDirectives) {
+        for (const auto& cur : types) {
+            res.push_back(cur.second.get());
+        }
+        for (const auto& cur : relations) {
+            res.push_back(cur.second.get());
+        }
+        for (const auto& cur : clauses) {
             res.push_back(cur.get());
         }
         for (const auto& cur : loads) {
@@ -408,101 +419,73 @@ protected:
         return true;
     }
 
-private:
+protected:
     friend class ComponentInstantiationTransformer;
     friend class ParserDriver;
     friend class ProvenanceTransformer;
 
-    /** Program types  */
-    std::map<AstTypeIdentifier, std::unique_ptr<AstType>> types;
-
-    /** Program relations */
-    std::map<AstRelationIdentifier, std::unique_ptr<AstRelation>> relations;
-
-    /** External Functors */
-    std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
-
-    /** The list of clauses provided by the user */
-    std::vector<std::unique_ptr<AstClause>> clauses;
-
-    /** The list of IO directives provided by the user */
-    std::vector<std::unique_ptr<AstLoad>> loads;
-    std::vector<std::unique_ptr<AstPrintSize>> printSizes;
-    std::vector<std::unique_ptr<AstStore>> stores;
-
-    /** Program components */
-    std::vector<std::unique_ptr<AstComponent>> components;
-
-    /** Component instantiations */
-    std::vector<std::unique_ptr<AstComponentInit>> instantiations;
-
-    /** Pragmas */
-    std::vector<std::unique_ptr<AstPragma>> pragmaDirectives;
-
-    // -- Types ----------------------------------------------------------------
-
-    /** Add the given type to the program. Asserts if a type with the
-      same name has already been added.  */
+    /* add type */
     void addType(std::unique_ptr<AstType> type) {
         auto& cur = types[type->getName()];
         assert(!cur && "Redefinition of type!");
         cur = std::move(type);
     }
 
-    // -- Relations ------------------------------------------------------------
-
-    /** Add the given relation to the program. Asserts if a relation with the
-     * same name has already been added. */
+    /* add relation */
     void addRelation(std::unique_ptr<AstRelation> r) {
         const auto& name = r->getName();
         assert(relations.find(name) == relations.end() && "Redefinition of relation!");
         relations[name] = std::move(r);
     }
 
-    /** Add a clause to the program */
+    /** add a clause */
     void addClause(std::unique_ptr<AstClause> clause) {
         assert(clause && "NULL clause");
         clauses.push_back(std::move(clause));
     }
 
-    /** Add an IO directive to the program */
+    /** add load directive */
     void addLoad(std::unique_ptr<AstLoad> directive) {
         assert(directive && "NULL IO directive");
         loads.push_back(std::move(directive));
     }
 
-    void addPrintSize(std::unique_ptr<AstPrintSize> directive) {}
+    /** add printsize directive */
+    void addPrintSize(std::unique_ptr<AstPrintSize> directive) {
+        assert(directive && "NULL IO directive");
+        printSizes.push_back(std::move(directive));
+    }
 
+    /** add store directive */
     void addStore(std::unique_ptr<AstStore> directive) {
         assert(directive && "NULL IO directive");
         stores.push_back(std::move(directive));
     }
 
-    /** Add a pragma to the program */
+    /** add a pragma */
     void addPragma(std::unique_ptr<AstPragma> pragma) {
         assert(pragma && "NULL IO directive");
         pragmaDirectives.push_back(std::move(pragma));
     }
 
-    /** Add a functor to the program */
+    /** add functor */
     void addFunctorDeclaration(std::unique_ptr<souffle::AstFunctorDeclaration> f) {
         const auto& name = f->getName();
         assert(functors.find(name) == functors.end() && "Redefinition of relation!");
         functors[name] = std::move(f);
     }
 
-    // -- Components -----------------------------------------------------------
-
-    /** Adds the given component to this program */
+    /** add component */
     void addComponent(std::unique_ptr<AstComponent> c) {
         components.push_back(std::move(c));
     }
 
-    /** Adds a component instantiation */
+    /** add component instantiation */
     void addInstantiation(std::unique_ptr<AstComponentInit> i) {
         instantiations.push_back(std::move(i));
     }
 
+    /** finishing parsing */
     void finishParsing() {
         // unbound clauses with no relation defined
         std::vector<std::unique_ptr<AstClause>> unbound;
@@ -549,6 +532,35 @@ private:
         stores.clear();
         stores.swap(unboundStores);
     }
+
+    /** Program types  */
+    // TODO(b-scholz): change to vector
+    std::map<AstTypeIdentifier, std::unique_ptr<AstType>> types;
+
+    /** Program relations */
+    // TODO(b-scholz): change to vector
+    std::map<AstRelationIdentifier, std::unique_ptr<AstRelation>> relations;
+
+    /** External Functors */
+    // TODO(b-scholz): change to vector
+    std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
+
+    /** The list of clauses provided by the user */
+    std::vector<std::unique_ptr<AstClause>> clauses;
+
+    /** The list of IO directives provided by the user */
+    std::vector<std::unique_ptr<AstLoad>> loads;
+    std::vector<std::unique_ptr<AstPrintSize>> printSizes;
+    std::vector<std::unique_ptr<AstStore>> stores;
+
+    /** Program components */
+    std::vector<std::unique_ptr<AstComponent>> components;
+
+    /** Component instantiations */
+    std::vector<std::unique_ptr<AstComponentInit>> instantiations;
+
+    /** Pragmas */
+    std::vector<std::unique_ptr<AstPragma>> pragmaDirectives;
 };
 
 }  // namespace souffle

@@ -307,22 +307,18 @@ public:
         for (auto& cur : relations) {
             cur.second = map(std::move(cur.second));
         }
-#if 0
-        for (const auto& cur : clauses) {
+        for (auto& cur : clauses) {
             cur = map(std::move(cur));
         }
-#endif
         for (auto& cur : loads) {
             cur = map(std::move(cur));
         }
         for (auto& cur : stores) {
             cur = map(std::move(cur));
         }
-#if 0
-        for (const auto& cur : printSizes) {
+        for (auto& cur : printSizes) {
             cur = map(std::move(cur));
         }
-#endif
     }
 
     std::vector<const AstNode*> getChildNodes() const override {

@@ -6,4 +6,3 @@
 
 noinst_LTLIBRARIES = libfunctors.la
 libfunctors_la_SOURCES = functors.cpp
-libfunctors_la_LDFLAGS = -version-info 0:0:0 

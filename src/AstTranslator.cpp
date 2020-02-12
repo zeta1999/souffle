@@ -115,8 +115,9 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
         typeAttributes.push_back(getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
     }
     std::string name = getRelationName(rel->getName());
-    Json relJson = Json::object{{"arity", std::to_string(rel->getArity())},
-            {"aux-arity", std::to_string(rel->getArity())},  // Fix this.
+    Json relJson = Json::object{// cast due to json weirdness.
+            {"arity", static_cast<double>(rel->getArity() -
+                                          auxArityAnalysis->getArity(rel))},  // Arity = arity - axuliaryArity
             {"attributes", Json::array(attributes.begin(), attributes.end())},
             {"types", Json::array(typeAttributes.begin(), typeAttributes.end())}};
 
@@ -372,9 +373,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         std::unique_ptr<RamCondition> visitBinaryConstraint(const AstBinaryConstraint& binRel) override {
             std::unique_ptr<RamExpression> valLHS = translator.translateValue(binRel.getLHS(), index);
             std::unique_ptr<RamExpression> valRHS = translator.translateValue(binRel.getRHS(), index);
-            return std::make_unique<RamConstraint>(binRel.getOperator(),
-                    translator.translateValue(binRel.getLHS(), index),
-                    translator.translateValue(binRel.getRHS(), index));
+            return std::make_unique<RamConstraint>(
+                    binRel.getOperator(), std::move(valLHS), std::move(valRHS));
         }
 
         /** for negations */

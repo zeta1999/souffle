@@ -27,17 +27,37 @@ namespace souffle {
 
 using Json = json11::Json;
 
+// Arguments:
+// 1) IOdirectives
+// 2) symbolTable
+// 3) (future) recordTable
+
 class WriteStream {
 public:
     WriteStream(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-            const size_t auxiliaryArity, bool summary = false, const std::string& typesystem = "")
+            const size_t auxiliaryArity, bool summary = false)
             : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
-              arity(symbolMask.size() - auxiliaryArity) {
-        if (typesystem.size() > 0) {
-            std::string parseErrors;
-            types = Json::parse(typesystem, parseErrors);
-            assert(parseErrors.size() == 0 && "Internal JSON parsing failed");
+              arity(symbolMask.size() - auxiliaryArity){};
+
+    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable, const size_t auxiliaryArity,
+            bool summary = false)
+            : symbolTable(symbolTable), summary(summary) {
+        const std::string& relationName{ioDirectives.getRelationName()};
+
+        std::string parseErrors;
+
+        types = Json::parse(ioDirectives.get("typesystem"), parseErrors);
+
+        assert(parseErrors.size() == 0 && "Internal JSON parsing failed");
+
+        arity = static_cast<size_t>(types[relationName]["arity"].int_value());
+
+        for (size_t i = 0; i < arity; ++i) {
+            RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
+            symbolMask.push_back(type);
         }
+
+        assert(symbolMask.size() - auxiliaryArity == arity && "Invalid arity");
     }
 
     template <typename T>
@@ -65,12 +85,12 @@ public:
     virtual ~WriteStream() = default;
 
 protected:
-    const std::vector<RamTypeAttribute>& symbolMask;
+    std::vector<RamTypeAttribute> symbolMask;
     const SymbolTable& symbolTable;
     Json types;
 
     const bool summary;
-    const size_t arity;
+    size_t arity;
 
     virtual void writeNullary() = 0;
     virtual void writeNextTuple(const RamDomain* tuple) = 0;

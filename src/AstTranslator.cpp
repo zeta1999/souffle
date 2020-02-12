@@ -63,6 +63,8 @@
 
 namespace souffle {
 
+using Json = json11::Json;
+
 class ErrorReport;
 class SymbolTable;
 
@@ -70,7 +72,7 @@ std::unique_ptr<RamTupleElement> AstTranslator::makeRamTupleElement(const Locati
     return std::make_unique<RamTupleElement>(loc.identifier, loc.element);
 }
 
-const size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
+size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     if (atom->getName().getName().find("@delta_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(7));
         return auxArityAnalysis->getArity(program->getRelation(originalRel));
@@ -104,6 +106,21 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
             ioDirective.setFileName(filePath + "/" + ioDirective.getFileName());
         }
     }
+
+    std::vector<Json> attributes;
+    for (size_t i = 0; i < rel->getArity(); ++i) {
+        Json obj = Json::object({
+                {"attribute", rel->getAttribute(i)->getAttributeName()},
+                {"type", getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName()))},
+        });
+        attributes.push_back(obj);
+    }
+    std::string name = getRelationName(rel->getName());
+    Json relJson = Json::object{{"relation", name}, {"arity", std::to_string(rel->getArity())},
+            {"aux-arity", std::to_string(rel->getArity())},
+            {"attributes", Json::array(attributes.begin(), attributes.end())}};
+    std::string relJsonStr = relJson.dump();
+    ioDirective.set("typesystem", relJsonStr);
 }
 
 std::vector<IODirectives> AstTranslator::getInputIODirectives(
@@ -217,10 +234,9 @@ std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const AstAtom* atom) {
     if (const auto rel = getAtomRelation(atom, program)) {
         return translateRelation(rel);
-    } else {
-        return createRelationReference(
-                getRelationName(atom->getName()), atom->getArity(), getEvaluationArity(atom));
     }
+    return createRelationReference(
+            getRelationName(atom->getName()), atom->getArity(), getEvaluationArity(atom));
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
@@ -267,7 +283,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             return makeRamTupleElement(index.getDefinitionPoint(var));
         }
 
-        std::unique_ptr<RamExpression> visitUnnamedVariable(const AstUnnamedVariable& var) override {
+        std::unique_ptr<RamExpression> visitUnnamedVariable(const AstUnnamedVariable&) override {
             return std::make_unique<RamUndefValue>();
         }
 
@@ -552,7 +568,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
         for (size_t i = 0; i < arity; i++) {
             auto arg = head->getArgument(i);
             // don't add counters
-            visitDepthFirst(*arg, [&](const AstCounter& cur) { isVolatile = false; });
+            visitDepthFirst(*arg, [&](const AstCounter&) { isVolatile = false; });
             values.push_back(translator.translateValue(arg, valueIndex));
         }
         for (size_t i = 0; i < auxiliaryArity; i++) {
@@ -615,7 +631,7 @@ std::unique_ptr<RamCondition> AstTranslator::ClauseTranslator::createCondition(
 }
 
 std::unique_ptr<RamCondition> AstTranslator::ProvenanceClauseTranslator::createCondition(
-        const AstClause& originalClause) {
+        const AstClause& /* originalClause */) {
     return nullptr;
 }
 

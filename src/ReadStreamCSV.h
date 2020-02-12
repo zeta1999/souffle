@@ -96,7 +96,7 @@ protected:
                     case RamTypeAttribute::Symbol:
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;
-                    case RamTypeAttribute::Record:  // What should be done here?
+                    case RamTypeAttribute::Record:
                     case RamTypeAttribute::Signed:
                         tuple[inputMap[column]] = RamDomainFromString(element);
                         break;

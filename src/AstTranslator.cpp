@@ -339,12 +339,10 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
     class ConstraintTranslator : public AstVisitor<std::unique_ptr<RamCondition>> {
         AstTranslator& translator;
         const ValueIndex& index;
-        const AuxiliaryArity* auxArityAnalysis;
 
     public:
-        ConstraintTranslator(
-                AstTranslator& translator, const ValueIndex& index, const AuxiliaryArity* auxArityAnalysis)
-                : translator(translator), index(index), auxArityAnalysis(auxArityAnalysis) {}
+        ConstraintTranslator(AstTranslator& translator, const ValueIndex& index)
+                : translator(translator), index(index) {}
 
         /** for atoms */
         std::unique_ptr<RamCondition> visitAtom(const AstAtom&) override {
@@ -402,7 +400,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                     translator.translateRelation(atom), std::move(values)));
         }
     };
-    return ConstraintTranslator(*this, index, auxArityAnalysis)(*lit);
+    return ConstraintTranslator(*this, index)(*lit);
 }
 
 std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
@@ -1523,13 +1521,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         const auto& allInterns = sccGraph.getInternalRelations(scc);
         const auto& internIns = sccGraph.getInternalInputRelations(scc);
         const auto& internOuts = sccGraph.getInternalOutputRelations(scc);
-        const auto& externOutPreds = sccGraph.getExternalOutputPredecessorRelations(scc);
-        const auto& externNonOutPreds = sccGraph.getExternalNonOutputPredecessorRelations(scc);
-
-        // const auto& externPreds = sccGraph.getExternalPredecessorRelations(scc);
-        // const auto& internsWithExternSuccs = sccGraph.getInternalRelationsWithExternalSuccessors(scc);
-        const auto& internNonOutsWithExternSuccs =
-                sccGraph.getInternalNonOutputRelationsWithExternalSuccessors(scc);
 
         // make a variable for all relations that are expired at the current SCC
         const auto& internExps = expirySchedule.at(indexOfScc).expired();

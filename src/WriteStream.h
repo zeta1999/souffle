@@ -123,6 +123,7 @@ public:
     virtual std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
             const SymbolTable& symbolTable, const IODirectives& ioDirectives,
             const size_t auxiliaryArity) = 0;
+    
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

@@ -29,6 +29,15 @@ namespace souffle {
 
 class WriteStreamSQLite : public WriteStream {
 public:
+    WriteStreamSQLite(const IODirectives& ioDirectives, const SymbolTable& symbolTable)
+            : WriteStream(ioDirectives, symbolTable), dbFilename(ioDirectives.get("dbname")),
+              relationName(ioDirectives.getRelationName()) {
+        openDB();
+        createTables();
+        prepareStatements();
+        //        executeSQL("BEGIN TRANSACTION", db);
+    }
+
     WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
             const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const size_t auxiliaryArity)
@@ -273,6 +282,12 @@ public:
         return std::make_unique<WriteStreamSQLite>(
                 dbName, relationName, symbolMask, symbolTable, auxiliaryArity);
     }
+
+    std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives, const SymbolTable& symbolTable) {
+        return std::make_unique<WriteStreamSQLite>(ioDirectives, symbolTable);
+    }
+
+    // std::unique_ptr<WriteStream> getWriter(
     const std::string& getName() const override {
         static const std::string name = "sqlite";
         return name;

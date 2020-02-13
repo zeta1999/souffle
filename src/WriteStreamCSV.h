@@ -167,7 +167,7 @@ protected:
 
 class WriteCoutPrintSize : public WriteStream {
 public:
-    WriteCoutPrintSize(const IODirectives& ioDirectives)
+    explicit WriteCoutPrintSize(const IODirectives& ioDirectives)
             : WriteStream((std::vector<RamTypeAttribute>){}, {}, 1, true),
               lease(souffle::getOutputLock().acquire()) {
         std::cout << ioDirectives.getRelationName() << "\t";

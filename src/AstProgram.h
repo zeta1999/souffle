@@ -25,7 +25,6 @@
 #include "AstRelation.h"
 #include "AstRelationIdentifier.h"
 #include "AstType.h"
-#include "ErrorReport.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -281,7 +280,6 @@ public:
         }
 
         // TODO (b-scholz): that is odd - revisit!
-        ErrorReport errors;
         res->finishParsing();
 
         // done

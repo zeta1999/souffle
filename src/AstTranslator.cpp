@@ -194,50 +194,21 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
     return outputDirectives;
 }
 
-std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name,
-        const size_t arity, const size_t auxiliaryArity, const std::vector<std::string> attributeNames,
-        const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation representation) {
+std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(const std::string name) {
     auto it = ramRels.find(name);
-    if (it == ramRels.end()) {
-        ramRels[name] = std::make_unique<RamRelation>(
-                name, arity, auxiliaryArity, attributeNames, attributeTypeQualifiers, representation);
-        it = ramRels.find(name);
-    }
     assert(it != ramRels.end() && "relation name not found");
 
     const RamRelation* relation = it->second.get();
     return std::make_unique<RamRelationReference>(relation);
 }
 
-std::unique_ptr<RamRelationReference> AstTranslator::createRelationReference(
-        const std::string name, const size_t arity, const size_t auxiliaryArity) {
-    return createRelationReference(name, arity, auxiliaryArity, {}, {}, {});
-}
-
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(const AstAtom* atom) {
-    if (const auto rel = getAtomRelation(atom, program)) {
-        return translateRelation(rel);
-    } else {
-        return createRelationReference(
-                getRelationName(atom->getName()), atom->getArity(), getEvaluationArity(atom));
-    }
+    return createRelationReference(getRelationName(atom->getName()));
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateRelation(
         const AstRelation* rel, const std::string relationNamePrefix) {
-    std::vector<std::string> attributeNames;
-    std::vector<std::string> attributeTypeQualifiers;
-    for (size_t i = 0; i < rel->getArity(); ++i) {
-        attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
-        if (typeEnv != nullptr) {
-            attributeTypeQualifiers.push_back(
-                    getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
-        }
-    }
-
-    return createRelationReference(relationNamePrefix + getRelationName(rel->getName()), rel->getArity(),
-            auxArityAnalysis->getArity(rel), attributeNames, attributeTypeQualifiers,
-            rel->getRepresentation());
+    return createRelationReference(relationNamePrefix + getRelationName(rel->getName()));
 }
 
 std::unique_ptr<RamRelationReference> AstTranslator::translateDeltaRelation(const AstRelation* rel) {
@@ -1510,6 +1481,36 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // maintain the index of the SCC within the topological order
     size_t indexOfScc = 0;
 
+    // create all Ram relations in ramRels
+    for (const auto& scc : sccOrder.order()) {
+        const auto& isRecursive = sccGraph.isRecursive(scc);
+        const auto& allInterns = sccGraph.getInternalRelations(scc);
+        for (const auto& rel : allInterns) {
+            std::string name = rel->getName().getName();
+            auto arity = rel->getArity();
+            auto auxiliaryArity = auxArityAnalysis->getArity(rel);
+            auto representation = rel->getRepresentation();
+            std::vector<std::string> attributeNames;
+            std::vector<std::string> attributeTypeQualifiers;
+            for (size_t i = 0; i < rel->getArity(); ++i) {
+                attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
+                if (typeEnv != nullptr) {
+                    attributeTypeQualifiers.push_back(
+                            getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
+                }
+            }
+            ramRels[name] = std::make_unique<RamRelation>(
+                    name, arity, auxiliaryArity, attributeNames, attributeTypeQualifiers, representation);
+            if (isRecursive) {
+                std::string deltaName = "@delta_" + name;
+                std::string newName = "@new_" + name;
+                ramRels[deltaName] = std::make_unique<RamRelation>(deltaName, arity, auxiliaryArity,
+                        attributeNames, attributeTypeQualifiers, representation);
+                ramRels[newName] = std::make_unique<RamRelation>(newName, arity, auxiliaryArity,
+                        attributeNames, attributeTypeQualifiers, representation);
+            }
+        }
+    }
     // iterate over each SCC according to the topological order
     for (const auto& scc : sccOrder.order()) {
         // make a new ram statement for the current SCC

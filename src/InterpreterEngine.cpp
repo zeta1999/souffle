@@ -1278,20 +1278,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(LogSize)
 
         CASE(Load)
-            for (IODirectives ioDirectives : cur.getIODirectives()) {
-                try {
+            try {
+                for (IODirectives ioDirectives : cur.getIODirectives()) {
                     InterpreterRelation& relation = *node->getRelation();
-                    std::vector<RamTypeAttribute> symbolMask;
-                    for (auto& cur : cur.getRelation().getAttributeTypes()) {
-                        symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-                    }
-                    IOSystem::getInstance()
-                            .getReader(
-                                    symbolMask, getSymbolTable(), ioDirectives, relation.getAuxiliaryArity())
-                            ->readAll(relation);
-                } catch (std::exception& e) {
-                    std::cerr << "Error loading data: " << e.what() << "\n";
+                    IOSystem::getInstance().getReader(ioDirectives, getSymbolTable())->readAll(relation);
                 }
+            } catch (std::exception& e) {
+                std::cerr << "Error loading data: " << e.what() << "\n";
             }
             return true;
         ESAC(Load)

@@ -74,9 +74,8 @@ protected:
 
 class ReadStreamFactory {
 public:
-    // virtual getReader(const IODirectives& ioDirectives, SymbolTable& symbolTable) = 0;
-    virtual std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t number) = 0;
+    virtual std::unique_ptr<ReadStream> getReader(
+            const IODirectives& ioDirectives, SymbolTable& symbolTable) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~ReadStreamFactory() = default;
 };

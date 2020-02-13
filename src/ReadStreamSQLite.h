@@ -166,14 +166,17 @@ protected:
 
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) override {
-        std::string dbName = ioDirectives.get("dbname");
-        std::string relationName = ioDirectives.getRelationName();
-        return std::make_unique<ReadStreamSQLite>(
-                dbName, relationName, symbolMask, symbolTable, auxiliaryArity);
+    std::unique_ptr<ReadStream> getReader(const IODirectives& ioDirectives, SymbolTable& symbolTable) {
+        return std::make_unique<ReadStreamSQLite>(ioDirectives, symbolTable);
     }
+    // std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
+    //         SymbolTable& symbolTable, const IODirectives& ioDirectives,
+    //         const size_t auxiliaryArity) override {
+    //     std::string dbName = ioDirectives.get("dbname");
+    //     std::string relationName = ioDirectives.getRelationName();
+    //     return std::make_unique<ReadStreamSQLite>(
+    //             dbName, relationName, symbolMask, symbolTable, auxiliaryArity);
+    // }
     const std::string& getName() const override {
         static const std::string name = "sqlite";
         return name;

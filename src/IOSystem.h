@@ -62,13 +62,12 @@ public:
     /**
      * Return a new ReadStream
      */
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t auxiliaryArity) const {
+    std::unique_ptr<ReadStream> getReader(const IODirectives& ioDirectives, SymbolTable& symbolTable) const {
         std::string ioType = ioDirectives.getIOType();
         if (inputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested input type <" + ioType + "> is not supported.");
         }
-        return inputFactories.at(ioType)->getReader(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
+        return inputFactories.at(ioType)->getReader(ioDirectives, symbolTable);
     }
     ~IOSystem() = default;
 

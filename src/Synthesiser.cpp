@@ -201,10 +201,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             out << "if (performIO) {\n";
 
-            std::vector<RamTypeAttribute> symbolMask;
-            for (auto& cur : load.getRelation().getAttributeTypes()) {
-                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-            }
             // get some table details
             for (IODirectives ioDirectives : load.getIODirectives()) {
                 out << "try {";
@@ -216,9 +212,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
-                out << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
-                out << ", symTable, ioDirectives";
-                out << ", " << load.getRelation().getAuxiliaryArity();
+                out << "ioDirectives, symTable";
                 out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
                 out << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -2046,11 +2040,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
 
     visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
-        // get some table details
-        std::vector<RamTypeAttribute> symbolMask;
-        for (auto& cur : load.getRelation().getAttributeTypes()) {
-            symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-        }
         for (IODirectives ioDirectives : load.getIODirectives()) {
             os << "try {";
             os << "std::map<std::string, std::string> directiveMap(";
@@ -2061,9 +2050,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";
             os << "IODirectives ioDirectives(directiveMap);\n";
             os << "IOSystem::getInstance().getReader(";
-            os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
-            os << ", symTable, ioDirectives";
-            os << ", " << load.getRelation().getAuxiliaryArity();
+            os << "ioDirectives, symTable";
             os << ")->readAll(*" << getRelationName(load.getRelation());
             os << ");\n";
             os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "

@@ -426,10 +426,10 @@ public:
         // traverse return vector and construct child nodes
         // making sure we display existent and non-existent tuples correctly
         int literalCounter = 1;
-        for (size_t returnCounter = 0; returnCounter < ret.size(); returnCounter++) {
+        for (RamDomain returnCounter : ret) {
             // check what the next contained atom is
             bool atomExists = true;
-            if (ret[returnCounter] == 0) {
+            if (returnCounter == 0) {
                 atomExists = false;
             }
 

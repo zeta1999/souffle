@@ -116,8 +116,9 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     }
     std::string name = getRelationName(rel->getName());
     Json relJson = Json::object{// cast due to json weirdness.
-            {"arity", static_cast<double>(rel->getArity() -
-                                          auxArityAnalysis->getArity(rel))},  // Arity = arity - axuliaryArity
+            {"arity",
+                    static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(
+                                                                     rel))},  // Arity = arity - axuliaryArity
             {"attributes", Json::array(attributes.begin(), attributes.end())},
             {"types", Json::array(typeAttributes.begin(), typeAttributes.end())}};
 

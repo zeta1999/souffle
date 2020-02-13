@@ -39,8 +39,7 @@ public:
             : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
               arity(symbolMask.size() - auxiliaryArity){};
 
-    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable, const size_t auxiliaryArity,
-            bool summary = false)
+    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable, bool summary = false)
             : symbolTable(symbolTable), summary(summary) {
         const std::string& relationName{ioDirectives.getRelationName()};
 
@@ -48,16 +47,14 @@ public:
 
         types = Json::parse(ioDirectives.get("typesystem"), parseErrors);
 
-        assert(parseErrors.size() == 0 && "Internal JSON parsing failed");
+        assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
 
-        arity = static_cast<size_t>(types[relationName]["arity"].int_value());
+        arity = static_cast<size_t>(types[relationName]["arity"].long_value());
 
         for (size_t i = 0; i < arity; ++i) {
             RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
             symbolMask.push_back(type);
         }
-
-        assert(symbolMask.size() - auxiliaryArity == arity && "Invalid arity");
     }
 
     template <typename T>
@@ -66,7 +63,7 @@ public:
             return writeSize(relation.size());
         }
         auto lease = symbolTable.acquireLock();
-        (void)lease;
+        (void)lease;  // silence "unused variable" warning
         if (arity == 0) {
             if (relation.begin() != relation.end()) {
                 writeNullary();

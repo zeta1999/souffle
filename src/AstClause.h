@@ -34,54 +34,21 @@ namespace souffle {
 
 /**
  * An execution order for atoms within a clause.
- * TODO (b-scholz): simplify interface / does it need to be an AstNode/
- *                  confused array interface
  */
 class AstExecutionOrder : public AstNode {
 public:
-    using const_iterator = typename std::vector<unsigned int>::const_iterator;
-
     void print(std::ostream& out) const override {
         out << "(" << join(order) << ")";
     }
 
-    /** The length of this order */
-    std::size_t size() const {
-        return order.size();
-    }
-
-    /** Appends another atom to this order */
+    /** appends index of an atom */
     void appendAtomIndex(int index) {
         order.push_back(index);
     }
 
-    /** Obtains a reference to the underlying vector */
+    /** get order */
     const std::vector<unsigned int>& getOrder() const {
         return order;
-    }
-
-    /** Provides access to individual elements of this order */
-    int operator[](unsigned index) const {
-        assert(index < order.size());
-        return order[index];
-    }
-
-    /** Verifies that this order is complete */
-    bool isComplete() const {
-        for (unsigned i = 1; i <= order.size(); i++) {
-            if (!contains(order, i)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    const_iterator begin() const {
-        return order.begin();
-    }
-
-    const_iterator end() const {
-        return order.end();
     }
 
     AstExecutionOrder* clone() const override {
@@ -99,66 +66,30 @@ protected:
     }
 
 private:
-    /** The actual order, starting with 1 (!) */
+    /** literal order of body (starting from 1) */
     std::vector<unsigned int> order;
 };
 
 /**
  * The class utilized to model user-defined execution plans for various
  * versions of clauses.
- * TODO (b-scholz): confused array interface -- simplify;
- *                  does it need to be an AstNode?
  */
 class AstExecutionPlan : public AstNode {
 public:
-    using const_iterator = typename std::map<int, AstExecutionOrder>::const_iterator;
-
     void print(std::ostream& out) const override {
         if (!plans.empty()) {
-            out << "\n\n   .plan ";
-            bool first = true;
-            for (const auto& plan : plans) {
-                if (first) {
-                    first = false;
-                } else {
-                    out << ",";
-                }
-                out << plan.first << ":";
-                plan.second->print(out);
-            }
+            out << " .plan ";
+            out << join(plans, ", ",
+                    [](std::ostream& os, const auto& arg) { os << arg.first << ":" << *arg.second; });
         }
     }
 
-    /** Updates the execution order for a special version of a rule */
+    /** updates execution order for rule version */
     void setOrderFor(int version, std::unique_ptr<AstExecutionOrder> plan) {
         plans[version] = std::move(plan);
-        if (version > maxVersion) {
-            maxVersion = version;
-        }
     }
 
-    /** Determines whether for the given version a plan has been specified */
-    bool hasOrderFor(int version) const {
-        return plans.find(version) != plans.end();
-    }
-
-    /** get maximal version number */
-    const int getMaxVersion() const {
-        return maxVersion;
-    }
-
-    /** Obtains the order defined for the given version */
-    const AstExecutionOrder& getOrderFor(int version) const {
-        assert(hasOrderFor(version));
-        return *plans.find(version)->second;
-    }
-
-    /** Tests whether there has any order been defined */
-    bool empty() const {
-        return plans.empty();
-    }
-
-    /** Get orders */
+    /** get orders */
     std::map<int, const AstExecutionOrder*> getOrders() const {
         std::map<int, const AstExecutionOrder*> result;
         for (auto& plan : plans) {
@@ -194,9 +125,6 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstExecutionPlan*>(&node));
         const auto& other = static_cast<const AstExecutionPlan&>(node);
-        if (maxVersion != other.maxVersion) {
-            return false;
-        }
         if (plans.size() != other.plans.size()) {
             return false;
         }
@@ -216,9 +144,6 @@ protected:
 private:
     /** mapping versions of clauses to execution plans */
     std::map<int, std::unique_ptr<AstExecutionOrder>> plans;
-
-    /** remember maximal version number */
-    int maxVersion = -1;
 };
 
 /**

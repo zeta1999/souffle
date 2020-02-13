@@ -305,13 +305,7 @@ private:
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
     /** create a reference to a RAM relation */
-    std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
-            const size_t auxiliaryArity, const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation structure);
-
-    /** create a reference to a RAM relation */
-    std::unique_ptr<RamRelationReference> createRelationReference(
-            const std::string name, const size_t arity, const size_t auxiliaryArity);
+    std::unique_ptr<RamRelationReference> createRelationReference(const std::string name);
 
     /** a utility to translate atoms to relations */
     std::unique_ptr<RamRelationReference> translateRelation(const AstAtom* atom);

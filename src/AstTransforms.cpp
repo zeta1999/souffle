@@ -554,7 +554,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                                 std::make_unique<AstNumberConstant>(1)));
                     }
 
-                    return std::move(replacementAggregator);
+                    return replacementAggregator;
                 }
             }
 
@@ -1072,7 +1072,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
                         auto result = std::make_unique<AstIntrinsicFunctor>(
                                 FunctorOp::MUL, std::move(number), std::move(count));
 
-                        return std::move(result);
+                        return result;
                     }
                 }
             }
@@ -1136,7 +1136,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                         std::unique_ptr<AstArgument>(stringConstant->clone())));
 
                 // update constant to be the variable created
-                return std::move(newVariable);
+                return newVariable;
             } else if (auto* numberConstant = dynamic_cast<AstNumberConstant*>(node.get())) {
                 // number constant found
                 changeCount++;
@@ -1153,7 +1153,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                         std::unique_ptr<AstArgument>(numberConstant->clone())));
 
                 // update constant to be the variable created
-                return std::move(newVariable);
+                return newVariable;
             } else if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
                 // underscore found
                 changeCount++;

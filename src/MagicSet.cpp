@@ -605,7 +605,7 @@ int getNextAtomMaxRatioSIPS(std::vector<AstAtom*>& atoms, const std::set<std::st
 // Current choice is the max ratio SIPS
 int getNextAtomSIPS(std::vector<AstAtom*>& atoms, std::set<std::string> boundArgs,
         std::set<AstRelationIdentifier> edb, BindingStore& compositeBindings) {
-    return getNextAtomMaxBoundSIPS(atoms, std::move(boundArgs), std::move(edb), compositeBindings);
+    return getNextAtomMaxBoundSIPS(atoms, boundArgs, edb, compositeBindings);
 }
 
 // Find and stores all composite arguments (namely records and functors) along
@@ -642,7 +642,7 @@ BindingStore bindComposites(const AstProgram* program) {
                         std::unique_ptr<AstArgument>(functor->clone())));
 
                 // update functor to be the variable created
-                return std::move(newVariable);
+                return newVariable;
             } else if (auto* record = dynamic_cast<AstRecordInit*>(node.get())) {
                 // record found
                 changeCount++;
@@ -661,7 +661,7 @@ BindingStore bindComposites(const AstProgram* program) {
                         std::unique_ptr<AstArgument>(record->clone())));
 
                 // update record to be the variable created
-                return std::move(newVariable);
+                return newVariable;
             }
             node->apply(*this);
             return node;

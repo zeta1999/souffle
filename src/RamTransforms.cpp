@@ -48,13 +48,12 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
                     for (auto& cond : conditionList) {
                         auto tempCond = cond->clone();
                         if (filters.empty()) {
-                            filters.emplace_back(std::make_unique<RamFilter>(
-                                    std::unique_ptr<RamCondition>(std::move(tempCond)),
-                                    std::unique_ptr<RamOperation>(filter->getOperation().clone())));
+                            filters.emplace_back(
+                                    std::make_unique<RamFilter>(std::unique_ptr<RamCondition>(tempCond),
+                                            std::unique_ptr<RamOperation>(filter->getOperation().clone())));
                         } else {
                             filters.emplace_back(std::make_unique<RamFilter>(
-                                    std::unique_ptr<RamCondition>(std::move(tempCond)),
-                                    std::move(filters.back())));
+                                    std::unique_ptr<RamCondition>(tempCond), std::move(filters.back())));
                         }
                     }
                     node = std::move(filters.back());

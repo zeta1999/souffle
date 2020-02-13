@@ -207,7 +207,7 @@ public:
             tupleCurInd = tupleEnd;
         }
 
-        return std::move(internalNode);
+        return internalNode;
     }
 
     std::unique_ptr<TreeNode> explain(
@@ -483,7 +483,7 @@ public:
             literalCounter++;
         }
 
-        return std::move(internalNode);
+        return internalNode;
     }
 
     std::string getRule(std::string relName, size_t ruleNum) override {

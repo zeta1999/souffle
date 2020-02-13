@@ -294,7 +294,7 @@ std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inline
                 std::stringstream newName;
                 newName << "<inlined_" << var->getName() << "_" << varnum << ">";
                 newVar->setName(newName.str());
-                return std::move(newVar);
+                return newVar;
             }
             node->apply(*this);
             return node;
@@ -479,7 +479,7 @@ void renameVariables(AstArgument* arg) {
                 std::stringstream newName;
                 newName << var->getName() << "-v" << varnum;
                 newVar->setName(newName.str());
-                return std::move(newVar);
+                return newVar;
             }
             node->apply(*this);
             return node;

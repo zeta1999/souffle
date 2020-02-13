@@ -449,7 +449,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
                 if (pos != canonicalName.end()) {
                     auto newAtom = std::unique_ptr<AstAtom>(atom->clone());
                     newAtom->setName(pos->second);
-                    return std::move(newAtom);
+                    return newAtom;
                 }
             }
 

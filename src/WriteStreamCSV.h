@@ -31,8 +31,6 @@
 
 namespace souffle {
 
-// inherit from WriteStream
-// Move write next tuple here (from WriteStream)
 class WriteStreamCSV {
 protected:
     virtual std::string getDelimiter(const IODirectives& ioDirectives) const {

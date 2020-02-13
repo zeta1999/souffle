@@ -108,23 +108,30 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
         }
     }
 
-    std::vector<std::string> attributes;
-    std::vector<std::string> typeAttributes;
-    for (size_t i = 0; i < rel->getArity(); ++i) {
-        attributes.push_back(rel->getAttribute(i)->getAttributeName());
-        typeAttributes.push_back(getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
-    }
+    // Prepare type system information.
     std::string name = getRelationName(rel->getName());
-    Json relJson =
-            Json::object{{"arity", static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(rel))},
-                    {"auxArity", static_cast<long long>(auxArityAnalysis->getArity(rel))},
-                    {"attributes", Json::array(attributes.begin(), attributes.end())},
-                    {"types", Json::array(typeAttributes.begin(), typeAttributes.end())}};
+    std::vector<std::string> attributesNames;
+    std::vector<std::string> attributesTypes;
+
+    for (size_t i = 0; i < rel->getArity(); ++i) {
+        auto attribute = rel->getAttribute(i)->getAttributeName();
+        attributesNames.push_back(attribute);
+
+        auto type = getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName()));
+        attributesTypes.push_back(type);
+    }
+
+    // Casting due to json11.h type requirements.
+    long long arity{static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(rel))};
+    long long auxArity{static_cast<long long>(auxArityAnalysis->getArity(rel))};
+
+    Json relJson = Json::object{{"arity", arity}, {"auxArity", auxArity},
+            {"attributesNames", Json::array(attributesNames.begin(), attributesNames.end())},
+            {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
 
     Json typesystem = Json::object{{name, relJson}};
 
-    std::string toStr = typesystem.dump();
-    ioDirective.set("typesystem", toStr);
+    ioDirective.set("typesystem", typesystem.dump());
 }
 
 std::vector<IODirectives> AstTranslator::getInputIODirectives(

@@ -408,26 +408,29 @@ std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
     const auto plan = clause.getExecutionPlan();
 
     // check whether there is an imposed order constraint
-    if (plan != nullptr && plan->hasOrderFor(version)) {
-        // get the imposed order
-        const auto& order = plan->getOrderFor(version);
+    if (plan != nullptr) {
+        auto orders = plan->getOrders();
+        if (orders.find(version) != orders.end()) {
+            // get the imposed order
+            const auto& order = orders[version];
 
-        // create a copy and fix order
-        std::unique_ptr<AstClause> reorderedClause(clause.clone());
+            // create a copy and fix order
+            std::unique_ptr<AstClause> reorderedClause(clause.clone());
 
-        // Change order to start at zero
-        std::vector<unsigned int> newOrder(order.size());
-        std::transform(order.begin(), order.end(), newOrder.begin(),
-                [](unsigned int i) -> unsigned int { return i - 1; });
+            // Change order to start at zero
+            std::vector<unsigned int> newOrder(order->getOrder().size());
+            std::transform(order->getOrder().begin(), order->getOrder().end(), newOrder.begin(),
+                    [](unsigned int i) -> unsigned int { return i - 1; });
 
-        // re-order atoms
-        reorderedClause->reorderAtoms(newOrder);
+            // re-order atoms
+            reorderedClause->reorderAtoms(newOrder);
 
-        // clear other order and fix plan
-        reorderedClause->clearExecutionPlan();
-        reorderedClause->setFixedExecutionPlan();
+            // clear other order and fix plan
+            reorderedClause->clearExecutionPlan();
+            reorderedClause->setFixedExecutionPlan();
 
-        return reorderedClause;
+            return reorderedClause;
+        }
     }
 
     return nullptr;
@@ -1159,7 +1162,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 // increment version counter
                 version++;
             }
-            assert(cl->getExecutionPlan() == nullptr || version > cl->getExecutionPlan()->getMaxVersion());
+            assert(cl->getExecutionPlan() == nullptr);
         }
 
         // if there was no rule, continue

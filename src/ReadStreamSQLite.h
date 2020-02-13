@@ -38,16 +38,6 @@ public:
         prepareSelectStatement();
     }
 
-    ReadStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
-            const size_t auxiliaryArity)
-            : ReadStream(symbolMask, symbolTable, auxiliaryArity), dbFilename(dbFilename),
-              relationName(relationName) {
-        openDB();
-        checkTableExists();
-        prepareSelectStatement();
-    }
-
     ~ReadStreamSQLite() override {
         sqlite3_finalize(selectStatement);
         sqlite3_close(db);
@@ -166,17 +156,11 @@ protected:
 
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const IODirectives& ioDirectives, SymbolTable& symbolTable) {
+    std::unique_ptr<ReadStream> getReader(
+            const IODirectives& ioDirectives, SymbolTable& symbolTable) override {
         return std::make_unique<ReadStreamSQLite>(ioDirectives, symbolTable);
     }
-    // std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-    //         SymbolTable& symbolTable, const IODirectives& ioDirectives,
-    //         const size_t auxiliaryArity) override {
-    //     std::string dbName = ioDirectives.get("dbname");
-    //     std::string relationName = ioDirectives.getRelationName();
-    //     return std::make_unique<ReadStreamSQLite>(
-    //             dbName, relationName, symbolMask, symbolTable, auxiliaryArity);
-    // }
+
     const std::string& getName() const override {
         static const std::string name = "sqlite";
         return name;

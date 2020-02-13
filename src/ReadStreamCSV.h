@@ -45,10 +45,6 @@ public:
         }
     }
 
-    ReadStreamCSV(std::istream& file, const std::vector<RamTypeAttribute>& /*symbolMask*/,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t /*auxiliaryArity*/ = 0)
-            : ReadStreamCSV(file, ioDirectives, symbolTable){};
-
     ~ReadStreamCSV() override = default;
 
 protected:
@@ -178,9 +174,6 @@ public:
         }
     }
 
-    ReadFileCSV(const std::vector<RamTypeAttribute>& /*symbolMask*/, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t /*auxiliaryArity*/ = 0)
-            : ReadFileCSV(ioDirectives, symbolTable){};
     /**
      * Read and return the next tuple.
      *
@@ -222,12 +215,6 @@ public:
         return std::make_unique<ReadStreamCSV>(std::cin, ioDirectives, symbolTable);
     }
 
-    // std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-    //         SymbolTable& symbolTable, const IODirectives& ioDirectives,
-    //         const size_t auxiliaryArity) override {
-    //     return std::make_unique<ReadStreamCSV>(
-    //             std::cin, symbolMask, symbolTable, ioDirectives, auxiliaryArity);
-    // }
     const std::string& getName() const override {
         static const std::string name = "stdin";
         return name;
@@ -241,11 +228,7 @@ public:
             const IODirectives& ioDirectives, SymbolTable& symbolTable) override {
         return std::make_unique<ReadFileCSV>(ioDirectives, symbolTable);
     }
-    // std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-    //         SymbolTable& symbolTable, const IODirectives& ioDirectives,
-    //         const size_t auxiliaryArity) override {
-    //     return std::make_unique<ReadFileCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
-    // }
+
     const std::string& getName() const override {
         static const std::string name = "file";
         return name;

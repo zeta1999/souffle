@@ -46,10 +46,6 @@ public:
         }
     }
 
-    ReadStream(const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
-            const size_t auxiliaryArity)
-            : symbolMask(symbolMask), symbolTable(symbolTable), arity(symbolMask.size() - auxiliaryArity),
-              auxiliaryArity(auxiliaryArity) {}
     template <typename T>
     void readAll(T& relation) {
         auto lease = symbolTable.acquireLock();

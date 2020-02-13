@@ -34,6 +34,7 @@ using Json = json11::Json;
 
 class WriteStream {
 public:
+    // Todo: drop this and fix printsize related issues.
     WriteStream(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
             const size_t auxiliaryArity, bool summary = false)
             : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),

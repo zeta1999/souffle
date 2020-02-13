@@ -38,17 +38,6 @@ public:
         //        executeSQL("BEGIN TRANSACTION", db);
     }
 
-    WriteStreamSQLite(const std::string& dbFilename, const std::string& relationName,
-            const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-            const size_t auxiliaryArity)
-            : WriteStream(symbolMask, symbolTable, auxiliaryArity), dbFilename(dbFilename),
-              relationName(relationName) {
-        openDB();
-        createTables();
-        prepareStatements();
-        //        executeSQL("BEGIN TRANSACTION", db);
-    }
-
     ~WriteStreamSQLite() override {
         sqlite3_finalize(insertStatement);
         sqlite3_finalize(symbolInsertStatement);

@@ -34,54 +34,21 @@ namespace souffle {
 
 /**
  * An execution order for atoms within a clause.
- * TODO (b-scholz): simplify interface / does it need to be an AstNode/
- *                  confused array interface
  */
 class AstExecutionOrder : public AstNode {
 public:
-    using const_iterator = typename std::vector<unsigned int>::const_iterator;
-
     void print(std::ostream& out) const override {
         out << "(" << join(order) << ")";
     }
 
-    /** The length of this order */
-    std::size_t size() const {
-        return order.size();
-    }
-
-    /** Appends another atom to this order */
+    /** appends index of an atom */
     void appendAtomIndex(int index) {
         order.push_back(index);
     }
 
-    /** Obtains a reference to the underlying vector */
+    /** get order */
     const std::vector<unsigned int>& getOrder() const {
         return order;
-    }
-
-    /** Provides access to individual elements of this order */
-    int operator[](unsigned index) const {
-        assert(index < order.size());
-        return order[index];
-    }
-
-    /** Verifies that this order is complete */
-    bool isComplete() const {
-        for (unsigned i = 1; i <= order.size(); i++) {
-            if (!contains(order, i)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    const_iterator begin() const {
-        return order.begin();
-    }
-
-    const_iterator end() const {
-        return order.end();
     }
 
     AstExecutionOrder* clone() const override {
@@ -99,66 +66,30 @@ protected:
     }
 
 private:
-    /** The actual order, starting with 1 (!) */
+    /** literal order of body (starting from 1) */
     std::vector<unsigned int> order;
 };
 
 /**
  * The class utilized to model user-defined execution plans for various
  * versions of clauses.
- * TODO (b-scholz): confused array interface -- simplify;
- *                  does it need to be an AstNode?
  */
 class AstExecutionPlan : public AstNode {
 public:
-    using const_iterator = typename std::map<int, AstExecutionOrder>::const_iterator;
-
     void print(std::ostream& out) const override {
         if (!plans.empty()) {
-            out << "\n\n   .plan ";
-            bool first = true;
-            for (const auto& plan : plans) {
-                if (first) {
-                    first = false;
-                } else {
-                    out << ",";
-                }
-                out << plan.first << ":";
-                plan.second->print(out);
-            }
+            out << " .plan ";
+            out << join(plans, ", ",
+                    [](std::ostream& os, const auto& arg) { os << arg.first << ":" << *arg.second; });
         }
     }
 
-    /** Updates the execution order for a special version of a rule */
+    /** updates execution order for rule version */
     void setOrderFor(int version, std::unique_ptr<AstExecutionOrder> plan) {
         plans[version] = std::move(plan);
-        if (version > maxVersion) {
-            maxVersion = version;
-        }
     }
 
-    /** Determines whether for the given version a plan has been specified */
-    bool hasOrderFor(int version) const {
-        return plans.find(version) != plans.end();
-    }
-
-    /** get maximal version number */
-    const int getMaxVersion() const {
-        return maxVersion;
-    }
-
-    /** Obtains the order defined for the given version */
-    const AstExecutionOrder& getOrderFor(int version) const {
-        assert(hasOrderFor(version));
-        return *plans.find(version)->second;
-    }
-
-    /** Tests whether there has any order been defined */
-    bool empty() const {
-        return plans.empty();
-    }
-
-    /** Get orders */
+    /** get orders */
     std::map<int, const AstExecutionOrder*> getOrders() const {
         std::map<int, const AstExecutionOrder*> result;
         for (auto& plan : plans) {
@@ -194,9 +125,6 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstExecutionPlan*>(&node));
         const auto& other = static_cast<const AstExecutionPlan&>(node);
-        if (maxVersion != other.maxVersion) {
-            return false;
-        }
         if (plans.size() != other.plans.size()) {
             return false;
         }
@@ -216,9 +144,6 @@ protected:
 private:
     /** mapping versions of clauses to execution plans */
     std::map<int, std::unique_ptr<AstExecutionOrder>> plans;
-
-    /** remember maximal version number */
-    int maxVersion = -1;
 };
 
 /**
@@ -236,9 +161,19 @@ private:
  */
 class AstClause : public AstNode {
 public:
-    /** Construct an empty clause with empty list of literals and
-        its head set to NULL */
-    AstClause() : head(nullptr), plan(nullptr) {}
+    void print(std::ostream& os) const override {
+        if (head != nullptr) {
+            head->print(os);
+        }
+        if (getBodySize() > 0) {
+            os << " :- \n   ";
+            os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
+        }
+        os << ".";
+        if (getExecutionPlan() != nullptr) {
+            getExecutionPlan()->print(os);
+        }
+    }
 
     /** Add a Literal to the body of the clause */
     void addToBody(std::unique_ptr<AstLiteral> l) {
@@ -267,11 +202,13 @@ public:
     }
 
     /** Return the number of elements in the body of the Clause */
+    // TODO (b-scholz): remove this method
     size_t getBodySize() const {
         return atoms.size() + negations.size() + provNegations.size() + constraints.size();
     }
 
     /** Return the i-th Literal in body of the clause */
+    // TODO (b-scholz): remove this method
     AstLiteral* getBodyLiteral(size_t idx) const {
         if (idx < atoms.size()) {
             return atoms[idx].get();
@@ -307,6 +244,7 @@ public:
     }
 
     /** Re-orders atoms to be in the given order. */
+    // TODO (b-scholz): remove this method
     void reorderAtoms(const std::vector<unsigned int>& newOrder) {
         // Validate given order
         assert(newOrder.size() == atoms.size());
@@ -325,21 +263,25 @@ public:
     }
 
     /** Obtains a list of contained body-atoms. */
+    // TODO (b-scholz): remove this method
     std::vector<AstAtom*> getAtoms() const {
         return toPtrVector(atoms);
     }
 
     /** Obtains a list of contained negations. */
+    // TODO (b-scholz): remove this method
     std::vector<AstNegation*> getNegations() const {
         return toPtrVector(negations);
     }
 
     /** Obtains a list of constraints */
+    // TODO (b-scholz): remove this method
     std::vector<AstConstraint*> getConstraints() const {
         return toPtrVector(constraints);
     }
 
     /** Obtains a list of binary constraints */
+    // TODO (b-scholz): remove this method
     std::vector<AstBinaryConstraint*> getBinaryConstraints() const {
         std::vector<AstBinaryConstraint*> result;
         for (auto& constraint : constraints) {
@@ -395,18 +337,17 @@ public:
         clauseNum = num;
     }
 
-    void print(std::ostream& os) const override {
-        if (head != nullptr) {
-            head->print(os);
-        }
-        if (getBodySize() > 0) {
-            os << " :- \n   ";
-            os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
-        }
-        os << ".";
+    /** clone head */
+    // TODO (b-scholz): remove this method
+    AstClause* cloneHead() const {
+        auto* clone = new AstClause();
+        clone->setSrcLoc(getSrcLoc());
+        clone->setHead(std::unique_ptr<AstAtom>(getHead()->clone()));
         if (getExecutionPlan() != nullptr) {
-            getExecutionPlan()->print(os);
+            clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(getExecutionPlan()->clone()));
         }
+        clone->setFixedExecutionPlan(hasFixedExecutionPlan());
+        return clone;
     }
 
     AstClause* clone() const override {
@@ -449,17 +390,6 @@ public:
         }
     }
 
-    AstClause* cloneHead() const {
-        auto* clone = new AstClause();
-        clone->setSrcLoc(getSrcLoc());
-        clone->setHead(std::unique_ptr<AstAtom>(getHead()->clone()));
-        if (getExecutionPlan() != nullptr) {
-            clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(getExecutionPlan()->clone()));
-        }
-        clone->setFixedExecutionPlan(hasFixedExecutionPlan());
-        return clone;
-    }
-
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res = {head.get()};
         for (auto& cur : atoms) {
@@ -489,18 +419,23 @@ protected:
     std::unique_ptr<AstAtom> head;
 
     /** The atoms in the body of this clause */
+    // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstAtom>> atoms;
 
     /** The negations in the body of this clause */
+    // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstNegation>> negations;
 
     /** The provenance negations in the body of this clause */
+    // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstProvenanceNegation>> provNegations;
 
     /** The constraints in the body of this clause */
+    // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstConstraint>> constraints;
 
     /** Determines whether the given execution order should be enforced */
+    // TODO (b-scholz): confused state / double-check
     bool fixedPlan = false;
 
     /** The user defined execution plan -- if any */
@@ -511,6 +446,7 @@ protected:
 
     /** Stores a unique number for each clause in a relation,
         used for provenance */
+    // TODO (b-scholz): move to an AST analysis
     size_t clauseNum = 0;
 };
 

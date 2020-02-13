@@ -677,8 +677,16 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
     if (clause.getExecutionPlan() != nullptr) {
         auto numAtoms = clause.getAtoms().size();
         for (const auto& cur : clause.getExecutionPlan()->getOrders()) {
-            if (cur.second->size() != numAtoms || !cur.second->isComplete()) {
-                report.addError("Invalid execution plan", cur.second->getSrcLoc());
+            bool isComplete = true;
+            auto order = cur.second->getOrder();
+            for (unsigned i = 1; i <= order.size(); i++) {
+                if (!contains(order, i)) {
+                    isComplete = false;
+                    break;
+                }
+            }
+            if (order.size() != numAtoms || !isComplete) {
+                report.addError("Invalid execution order in plan", cur.second->getSrcLoc());
             }
         }
     }
@@ -1509,7 +1517,12 @@ bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
                         version++;
                     }
                 }
-                if (version <= clause->getExecutionPlan()->getMaxVersion()) {
+                int maxVersion = -1;
+                for (auto const& cur : clause->getExecutionPlan()->getOrders()) {
+                    maxVersion = std::max(cur.first, maxVersion);
+                }
+
+                if (version <= maxVersion) {
                     for (const auto& cur : clause->getExecutionPlan()->getOrders()) {
                         if (cur.first >= version) {
                             translationUnit.getErrorReport().addDiagnostic(Diagnostic(Diagnostic::ERROR,

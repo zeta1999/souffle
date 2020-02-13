@@ -310,12 +310,10 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
     class ConstraintTranslator : public AstVisitor<std::unique_ptr<RamCondition>> {
         AstTranslator& translator;
         const ValueIndex& index;
-        const AuxiliaryArity* auxArityAnalysis;
 
     public:
-        ConstraintTranslator(
-                AstTranslator& translator, const ValueIndex& index, const AuxiliaryArity* auxArityAnalysis)
-                : translator(translator), index(index), auxArityAnalysis(auxArityAnalysis) {}
+        ConstraintTranslator(AstTranslator& translator, const ValueIndex& index)
+                : translator(translator), index(index) {}
 
         /** for atoms */
         std::unique_ptr<RamCondition> visitAtom(const AstAtom&) override {
@@ -373,7 +371,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                     translator.translateRelation(atom), std::move(values)));
         }
     };
-    return ConstraintTranslator(*this, index, auxArityAnalysis)(*lit);
+    return ConstraintTranslator(*this, index)(*lit);
 }
 
 std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
@@ -381,29 +379,33 @@ std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
     const auto plan = clause.getExecutionPlan();
 
     // check whether there is an imposed order constraint
-    if (plan != nullptr && plan->hasOrderFor(version)) {
-        // get the imposed order
-        const auto& order = plan->getOrderFor(version);
-
-        // create a copy and fix order
-        std::unique_ptr<AstClause> reorderedClause(clause.clone());
-
-        // Change order to start at zero
-        std::vector<unsigned int> newOrder(order.size());
-        std::transform(order.begin(), order.end(), newOrder.begin(),
-                [](unsigned int i) -> unsigned int { return i - 1; });
-
-        // re-order atoms
-        reorderedClause->reorderAtoms(newOrder);
-
-        // clear other order and fix plan
-        reorderedClause->clearExecutionPlan();
-        reorderedClause->setFixedExecutionPlan();
-
-        return reorderedClause;
+    if (plan == nullptr) {
+        return nullptr;
+    }
+    auto orders = plan->getOrders();
+    if (orders.find(version) == orders.end()) {
+        return nullptr;
     }
 
-    return nullptr;
+    // get the imposed order
+    const auto& order = orders[version];
+
+    // create a copy and fix order
+    std::unique_ptr<AstClause> reorderedClause(clause.clone());
+
+    // Change order to start at zero
+    std::vector<unsigned int> newOrder(order->getOrder().size());
+    std::transform(order->getOrder().begin(), order->getOrder().end(), newOrder.begin(),
+            [](unsigned int i) -> unsigned int { return i - 1; });
+
+    // re-order atoms
+    reorderedClause->reorderAtoms(newOrder);
+
+    // clear other order and fix plan
+    reorderedClause->clearExecutionPlan();
+    reorderedClause->setFixedExecutionPlan();
+
+    return reorderedClause;
 }
 
 AstTranslator::ClauseTranslator::arg_list* AstTranslator::ClauseTranslator::getArgList(
@@ -1132,7 +1134,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 // increment version counter
                 version++;
             }
-            assert(cl->getExecutionPlan() == nullptr || version > cl->getExecutionPlan()->getMaxVersion());
+            assert(cl->getExecutionPlan() == nullptr);
         }
 
         // if there was no rule, continue
@@ -1524,13 +1526,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
         const auto& allInterns = sccGraph.getInternalRelations(scc);
         const auto& internIns = sccGraph.getInternalInputRelations(scc);
         const auto& internOuts = sccGraph.getInternalOutputRelations(scc);
-        const auto& externOutPreds = sccGraph.getExternalOutputPredecessorRelations(scc);
-        const auto& externNonOutPreds = sccGraph.getExternalNonOutputPredecessorRelations(scc);
-
-        // const auto& externPreds = sccGraph.getExternalPredecessorRelations(scc);
-        // const auto& internsWithExternSuccs = sccGraph.getInternalRelationsWithExternalSuccessors(scc);
-        const auto& internNonOutsWithExternSuccs =
-                sccGraph.getInternalNonOutputRelationsWithExternalSuccessors(scc);
 
         // make a variable for all relations that are expired at the current SCC
         const auto& internExps = expirySchedule.at(indexOfScc).expired();

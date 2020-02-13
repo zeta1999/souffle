@@ -274,20 +274,11 @@ private:
 
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) override {
-        std::string dbName = ioDirectives.get("dbname");
-        std::string relationName = ioDirectives.getRelationName();
-        return std::make_unique<WriteStreamSQLite>(
-                dbName, relationName, symbolMask, symbolTable, auxiliaryArity);
-    }
-
-    std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives, const SymbolTable& symbolTable) {
+    std::unique_ptr<WriteStream> getWriter(
+            const IODirectives& ioDirectives, const SymbolTable& symbolTable) override {
         return std::make_unique<WriteStreamSQLite>(ioDirectives, symbolTable);
     }
 
-    // std::unique_ptr<WriteStream> getWriter(
     const std::string& getName() const override {
         static const std::string name = "sqlite";
         return name;

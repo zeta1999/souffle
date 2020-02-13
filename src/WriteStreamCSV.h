@@ -53,15 +53,6 @@ public:
         }
     }
 
-    WriteFileCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
-              file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
-        if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
-            file << ioDirectives.get("attributeNames") << std::endl;
-        }
-    }
-
     ~WriteFileCSV() override = default;
 
 protected:
@@ -93,15 +84,6 @@ public:
         }
     }
 
-    WriteGZipFileCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
-              file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
-        if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
-            file << ioDirectives.get("attributeNames") << std::endl;
-        }
-    }
-
     ~WriteGZipFileCSV() override = default;
 
 protected:
@@ -127,16 +109,6 @@ class WriteCoutCSV : public WriteStreamCSV, public WriteStream {
 public:
     WriteCoutCSV(const IODirectives& ioDirectives, const SymbolTable& symbolTable)
             : WriteStream(ioDirectives, symbolTable), delimiter(getDelimiter(ioDirectives)) {
-        std::cout << "---------------\n" << ioDirectives.getRelationName();
-        if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
-            std::cout << "\n" << ioDirectives.get("attributeNames");
-        }
-        std::cout << "\n===============\n";
-    }
-
-    WriteCoutCSV(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : WriteStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)) {
         std::cout << "---------------\n" << ioDirectives.getRelationName();
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             std::cout << "\n" << ioDirectives.get("attributeNames");
@@ -193,9 +165,8 @@ protected:
 
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& /*symbolMask*/,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t /*auxiliaryArity*/) override {
+    std::unique_ptr<WriteStream> getWriter(
+            const IODirectives& ioDirectives, const SymbolTable& symbolTable) override {
 #ifdef USE_LIBZ
         if (ioDirectives.has("compress")) {
             return std::make_unique<WriteGZipFileCSV>(ioDirectives, symbolTable);
@@ -212,11 +183,11 @@ public:
 
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& /*symbolMask*/,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t /*auxiliaryArity*/) override {
+    std::unique_ptr<WriteStream> getWriter(
+            const IODirectives& ioDirectives, const SymbolTable& symbolTable) override {
         return std::make_unique<WriteCoutCSV>(ioDirectives, symbolTable);
     }
+
     const std::string& getName() const override {
         static const std::string name = "stdout";
         return name;
@@ -226,9 +197,7 @@ public:
 
 class WriteCoutPrintSizeFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& /* symbolMask */,
-            const SymbolTable& /* symbolTable */, const IODirectives& ioDirectives,
-            const size_t /* auxiliaryArity */) override {
+    std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives, const SymbolTable&) override {
         return std::make_unique<WriteCoutPrintSize>(ioDirectives);
     }
     const std::string& getName() const override {

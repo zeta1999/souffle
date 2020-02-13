@@ -790,9 +790,7 @@ private:
 
     void printRelationOutput(const std::vector<RamTypeAttribute>& symbolMask, const IODirectives& ioDir,
             const Relation& rel) override {
-        WriteCoutCSVFactory()
-                .getWriter(symbolMask, prog.getSymbolTable(), ioDir, rel.getAuxiliaryArity())
-                ->writeAll(rel);
+        WriteCoutCSVFactory().getWriter(ioDir, prog.getSymbolTable())->writeAll(rel);
     }
 
     /*

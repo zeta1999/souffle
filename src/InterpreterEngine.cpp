@@ -1297,20 +1297,15 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Load)
 
         CASE(Store)
-            for (IODirectives ioDirectives : cur.getIODirectives()) {
-                try {
-                    std::vector<RamTypeAttribute> symbolMask;
-                    for (auto& cur : cur.getRelation().getAttributeTypes()) {
-                        symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-                    }
+            try {
+                for (IODirectives ioDirectives : cur.getIODirectives()) {
                     IOSystem::getInstance()
-                            .getWriter(symbolMask, getSymbolTable(), ioDirectives,
-                                    cur.getRelation().getAuxiliaryArity())
+                            .getWriter(ioDirectives, getSymbolTable())
                             ->writeAll(*node->getRelation());
-                } catch (std::exception& e) {
-                    std::cerr << e.what();
-                    exit(1);
                 }
+            } catch (std::exception& e) {
+                std::cerr << e.what();
+                exit(1);
             }
             return true;
         ESAC(Store)

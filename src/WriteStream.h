@@ -27,33 +27,23 @@ namespace souffle {
 
 using Json = json11::Json;
 
-// Arguments:
-// 1) IOdirectives
-// 2) symbolTable
-// 3) (future) recordTable
-
 class WriteStream {
 public:
-    // Todo: drop this and fix printsize related issues.
-    WriteStream(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-            const size_t auxiliaryArity, bool summary = false)
-            : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
-              arity(symbolMask.size() - auxiliaryArity){};
-
     WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable, bool summary = false)
             : symbolTable(symbolTable), summary(summary) {
         const std::string& relationName{ioDirectives.getRelationName()};
 
         std::string parseErrors;
 
-        types = Json::parse(ioDirectives.get("typesystem"), parseErrors);
+        typesystem = Json::parse(ioDirectives.get("typesystem"), parseErrors);
 
         assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
 
-        arity = static_cast<size_t>(types[relationName]["arity"].long_value());
+        arity = static_cast<size_t>(typesystem[relationName]["arity"].long_value());
 
         for (size_t i = 0; i < arity; ++i) {
-            RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
+            RamTypeAttribute type =
+                    RamPrimitiveFromChar(typesystem[relationName]["types"][i].string_value()[0]);
             symbolMask.push_back(type);
         }
     }
@@ -85,7 +75,7 @@ public:
 protected:
     std::vector<RamTypeAttribute> symbolMask;
     const SymbolTable& symbolTable;
-    Json types;
+    Json typesystem;
 
     const bool summary;
     size_t arity;

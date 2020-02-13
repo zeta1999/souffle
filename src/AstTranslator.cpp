@@ -115,12 +115,11 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
         typeAttributes.push_back(getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
     }
     std::string name = getRelationName(rel->getName());
-    Json relJson = Json::object{// cast due to json weirdness.
-            {"arity",
-                    static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(
-                                                                     rel))},  // Arity = arity - axuliaryArity
-            {"attributes", Json::array(attributes.begin(), attributes.end())},
-            {"types", Json::array(typeAttributes.begin(), typeAttributes.end())}};
+    Json relJson =
+            Json::object{{"arity", static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(rel))},
+                    {"auxArity", static_cast<long long>(auxArityAnalysis->getArity(rel))},
+                    {"attributes", Json::array(attributes.begin(), attributes.end())},
+                    {"types", Json::array(typeAttributes.begin(), typeAttributes.end())}};
 
     Json typesystem = Json::object{{name, relJson}};
 

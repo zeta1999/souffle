@@ -36,15 +36,18 @@ namespace souffle {
 
 class ReadStreamCSV : public ReadStream {
 public:
-    ReadStreamCSV(std::istream& file, const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : ReadStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
-              file(file), lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
+    ReadStreamCSV(std::istream& file, const IODirectives& ioDirectives, SymbolTable& symbolTable)
+            : ReadStream(ioDirectives, symbolTable), delimiter(getDelimiter(ioDirectives)), file(file),
+              lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
         while (inputMap.size() < arity) {
             int size = static_cast<int>(inputMap.size());
             inputMap[size] = size;
         }
     }
+
+    ReadStreamCSV(std::istream& file, const std::vector<RamTypeAttribute>& /*symbolMask*/,
+            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t /*auxiliaryArity*/ = 0)
+            : ReadStreamCSV(file, ioDirectives, symbolTable){};
 
     ~ReadStreamCSV() override = default;
 
@@ -159,9 +162,8 @@ protected:
 
 class ReadFileCSV : public ReadStreamCSV {
 public:
-    ReadFileCSV(const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, auxiliaryArity),
+    ReadFileCSV(const IODirectives& ioDirectives, SymbolTable& symbolTable)
+            : ReadStreamCSV(fileHandle, ioDirectives, symbolTable),
               baseName(souffle::baseName(getFileName(ioDirectives))),
               fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {
         if (!ioDirectives.has("intermediate")) {
@@ -175,6 +177,10 @@ public:
             }
         }
     }
+
+    ReadFileCSV(const std::vector<RamTypeAttribute>& /*symbolMask*/, SymbolTable& symbolTable,
+            const IODirectives& ioDirectives, const size_t /*auxiliaryArity*/ = 0)
+            : ReadFileCSV(ioDirectives, symbolTable){};
     /**
      * Read and return the next tuple.
      *

@@ -30,6 +30,14 @@ namespace souffle {
 
 class ReadStreamSQLite : public ReadStream {
 public:
+    ReadStreamSQLite(const IODirectives& ioDirectives, SymbolTable& symbolTable)
+            : ReadStream(ioDirectives, symbolTable), dbFilename(ioDirectives.get("dbname")),
+              relationName(ioDirectives.getRelationName()) {
+        openDB();
+        checkTableExists();
+        prepareSelectStatement();
+    }
+
     ReadStreamSQLite(const std::string& dbFilename, const std::string& relationName,
             const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
             const size_t auxiliaryArity)

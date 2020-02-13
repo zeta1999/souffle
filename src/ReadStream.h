@@ -17,19 +17,38 @@
 #include "IODirectives.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
-
+#include "json11.h"
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace souffle {
 
+using Json = json11::Json;
+
 class ReadStream {
 public:
+    ReadStream(const IODirectives& ioDirectives, SymbolTable& symbolTable) : symbolTable(symbolTable) {
+        const std::string& relationName{ioDirectives.getRelationName()};
+
+        std::string parseErrors;
+
+        types = Json::parse(ioDirectives.get("typesystem"), parseErrors);
+
+        assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
+
+        arity = static_cast<size_t>(types[relationName]["arity"].long_value());
+        auxiliaryArity = static_cast<size_t>(types[relationName]["auxArity"].long_value());
+
+        for (size_t i = 0; i < arity; ++i) {
+            RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
+            symbolMask.push_back(type);
+        }
+    }
+
     ReadStream(const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
             const size_t auxiliaryArity)
-            : symbolMask(symbolMask), symbolTable(symbolTable),
-              arity(static_cast<uint8_t>(symbolMask.size() - auxiliaryArity)),
+            : symbolMask(symbolMask), symbolTable(symbolTable), arity(symbolMask.size() - auxiliaryArity),
               auxiliaryArity(auxiliaryArity) {}
     template <typename T>
     void readAll(T& relation) {
@@ -44,15 +63,18 @@ public:
     virtual ~ReadStream() = default;
 
 protected:
+    Json types;
+
     virtual std::unique_ptr<RamDomain[]> readNextTuple() = 0;
-    const std::vector<RamTypeAttribute>& symbolMask;
+    std::vector<RamTypeAttribute> symbolMask;
     SymbolTable& symbolTable;
-    const uint8_t arity;
-    const size_t auxiliaryArity;
+    size_t arity;
+    size_t auxiliaryArity;
 };
 
 class ReadStreamFactory {
 public:
+    // virtual getReader(const IODirectives& ioDirectives, SymbolTable& symbolTable) = 0;
     virtual std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
             SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t number) = 0;
     virtual const std::string& getName() const = 0;

@@ -110,13 +110,9 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
 
     // Prepare type system information.
     std::string name = getRelationName(rel->getName());
-    std::vector<std::string> attributesNames;
     std::vector<std::string> attributesTypes;
 
     for (size_t i = 0; i < rel->getArity(); ++i) {
-        auto attribute = rel->getAttribute(i)->getAttributeName();
-        attributesNames.push_back(attribute);
-
         auto type = getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName()));
         attributesTypes.push_back(type);
     }
@@ -126,7 +122,6 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     long long auxArity{static_cast<long long>(auxArityAnalysis->getArity(rel))};
 
     Json relJson = Json::object{{"arity", arity}, {"auxArity", auxArity},
-            {"attributesNames", Json::array(attributesNames.begin(), attributesNames.end())},
             {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
 
     Json typesystem = Json::object{{name, relJson}};

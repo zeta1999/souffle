@@ -177,16 +177,10 @@ public:
 
     /** Add a Literal to the body of the clause */
     void addToBody(std::unique_ptr<AstLiteral> l) {
-        if (dynamic_cast<AstAtom*>(l.get()) != nullptr) {
-            atoms.emplace_back(static_cast<AstAtom*>(l.release()));
-        } else if (dynamic_cast<AstNegation*>(l.get()) != nullptr) {
-            negations.emplace_back(static_cast<AstNegation*>(l.release()));
-        } else if (dynamic_cast<AstProvenanceNegation*>(l.get()) != nullptr) {
+        if (dynamic_cast<AstProvenanceNegation*>(l.get()) != nullptr) {
             provNegations.emplace_back(static_cast<AstProvenanceNegation*>(l.release()));
-        } else if (dynamic_cast<AstConstraint*>(l.get()) != nullptr) {
-            constraints.emplace_back(static_cast<AstConstraint*>(l.release()));
         } else {
-            assert(false && "Unsupported literal type!");
+            bodyLiterals.emplace_back(l.release());
         }
     }
 
@@ -204,92 +198,106 @@ public:
     /** Return the number of elements in the body of the Clause */
     // TODO (b-scholz): remove this method
     size_t getBodySize() const {
-        return atoms.size() + negations.size() + provNegations.size() + constraints.size();
+        return bodyLiterals.size() + provNegations.size();
     }
 
     /** Return the i-th Literal in body of the clause */
     // TODO (b-scholz): remove this method
     AstLiteral* getBodyLiteral(size_t idx) const {
-        if (idx < atoms.size()) {
-            return atoms[idx].get();
+        if (idx < bodyLiterals.size()) {
+            return bodyLiterals[idx].get();
         }
-        idx -= atoms.size();
-        if (idx < negations.size()) {
-            return negations[idx].get();
-        }
-        idx -= negations.size();
-        if (idx < provNegations.size()) {
-            return provNegations[idx].get();
-        }
-        idx -= provNegations.size();
-        return constraints[idx].get();
+        idx -= bodyLiterals.size();
+        return provNegations[idx].get();
     }
 
     /** Obtains a copy of the internally maintained body literals */
     std::vector<AstLiteral*> getBodyLiterals() const {
         std::vector<AstLiteral*> res;
-        for (auto& cur : atoms) {
-            res.push_back(cur.get());
-        }
-        for (auto& cur : negations) {
+        for (auto& cur : bodyLiterals) {
             res.push_back(cur.get());
         }
         for (auto& cur : provNegations) {
             res.push_back(cur.get());
         }
-        for (auto& cur : constraints) {
-            res.push_back(cur.get());
-        }
         return res;
     }
 
-    /** Re-orders atoms to be in the given order. */
+    /**
+     * Re-orders atoms to be in the given order.
+     * Remaining body literals remain in the same order.
+     **/
     // TODO (b-scholz): remove this method
     void reorderAtoms(const std::vector<unsigned int>& newOrder) {
+        std::vector<unsigned int> atomPositions;
+        std::vector<std::unique_ptr<AstLiteral>> oldAtoms;
+        for (unsigned int i = 0; i < bodyLiterals.size(); i++) {
+            if (dynamic_cast<AstAtom*>(bodyLiterals[i].get()) != nullptr) {
+                atomPositions.push_back(i);
+                oldAtoms.push_back(std::move(bodyLiterals[i]));
+            }
+        }
+
         // Validate given order
-        assert(newOrder.size() == atoms.size());
+        assert(newOrder.size() == oldAtoms.size());
         std::vector<unsigned int> nopOrder;
-        for (unsigned int i = 0; i < atoms.size(); i++) {
+        for (unsigned int i = 0; i < oldAtoms.size(); i++) {
             nopOrder.push_back(i);
         }
         assert(std::is_permutation(nopOrder.begin(), nopOrder.end(), newOrder.begin()));
 
         // Reorder atoms
-        std::vector<std::unique_ptr<AstAtom>> oldAtoms(atoms.size());
-        atoms.swap(oldAtoms);
         for (unsigned int i = 0; i < newOrder.size(); i++) {
-            atoms[i].swap(oldAtoms[newOrder[i]]);
+            bodyLiterals[atomPositions[i]] = std::move(oldAtoms[newOrder[i]]);
         }
     }
 
     /** Obtains a list of contained body-atoms. */
     // TODO (b-scholz): remove this method
     std::vector<AstAtom*> getAtoms() const {
-        return toPtrVector(atoms);
+        std::vector<AstAtom*> atoms;
+        for (const auto& lit : bodyLiterals) {
+            if (AstAtom* atom = dynamic_cast<AstAtom*>(lit.get())) {
+                atoms.push_back(atom);
+            }
+        }
+        return atoms;
     }
 
     /** Obtains a list of contained negations. */
     // TODO (b-scholz): remove this method
     std::vector<AstNegation*> getNegations() const {
-        return toPtrVector(negations);
+        std::vector<AstNegation*> negations;
+        for (const auto& lit : bodyLiterals) {
+            if (auto negation = dynamic_cast<AstNegation*>(lit.get())) {
+                negations.push_back(negation);
+            }
+        }
+        return negations;
     }
 
     /** Obtains a list of constraints */
     // TODO (b-scholz): remove this method
     std::vector<AstConstraint*> getConstraints() const {
-        return toPtrVector(constraints);
+        std::vector<AstConstraint*> constraints;
+        for (const auto& lit : bodyLiterals) {
+            if (auto constraint = dynamic_cast<AstConstraint*>(lit.get())) {
+                constraints.push_back(constraint);
+            }
+        }
+        return constraints;
     }
 
     /** Obtains a list of binary constraints */
     // TODO (b-scholz): remove this method
     std::vector<AstBinaryConstraint*> getBinaryConstraints() const {
-        std::vector<AstBinaryConstraint*> result;
-        for (auto& constraint : constraints) {
-            if (auto* br = dynamic_cast<AstBinaryConstraint*>(constraint.get())) {
-                result.push_back(br);
+        std::vector<AstBinaryConstraint*> binaryConstraints;
+        for (const auto& lit : bodyLiterals) {
+            if (auto bc = dynamic_cast<AstBinaryConstraint*>(lit.get())) {
+                binaryConstraints.push_back(bc);
             }
         }
-        return result;
+        return binaryConstraints;
     }
 
     /** Updates the fixed execution order flag */
@@ -357,17 +365,11 @@ public:
             res->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(plan->clone()));
         }
         res->head = (head) ? std::unique_ptr<AstAtom>(head->clone()) : nullptr;
-        for (const auto& cur : atoms) {
-            res->atoms.emplace_back(cur->clone());
-        }
-        for (const auto& cur : negations) {
-            res->negations.emplace_back(cur->clone());
+        for (const auto& lit : bodyLiterals) {
+            res->bodyLiterals.emplace_back(lit->clone());
         }
         for (const auto& cur : provNegations) {
             res->provNegations.emplace_back(cur->clone());
-        }
-        for (const auto& cur : constraints) {
-            res->constraints.emplace_back(cur->clone());
         }
         res->fixedPlan = fixedPlan;
         res->generated = generated;
@@ -376,32 +378,20 @@ public:
 
     void apply(const AstNodeMapper& map) override {
         head = map(std::move(head));
-        for (auto& lit : atoms) {
-            lit = map(std::move(lit));
-        }
-        for (auto& lit : negations) {
+        for (auto& lit : bodyLiterals) {
             lit = map(std::move(lit));
         }
         for (auto& lit : provNegations) {
-            lit = map(std::move(lit));
-        }
-        for (auto& lit : constraints) {
             lit = map(std::move(lit));
         }
     }
 
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res = {head.get()};
-        for (auto& cur : atoms) {
-            res.push_back(cur.get());
-        }
-        for (auto& cur : negations) {
+        for (auto& cur : bodyLiterals) {
             res.push_back(cur.get());
         }
         for (auto& cur : provNegations) {
-            res.push_back(cur.get());
-        }
-        for (auto& cur : constraints) {
             res.push_back(cur.get());
         }
         return res;
@@ -411,28 +401,19 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstClause*>(&node));
         const auto& other = static_cast<const AstClause&>(node);
-        return *head == *other.head && equal_targets(atoms, other.atoms) &&
-               equal_targets(negations, other.negations) && equal_targets(constraints, other.constraints);
+        return *head == *other.head && equal_targets(bodyLiterals, other.bodyLiterals)
+            && equal_targets(provNegations, other.provNegations);
     }
 
     /** The head of the clause */
     std::unique_ptr<AstAtom> head;
 
-    /** The atoms in the body of this clause */
-    // TODO (b-scholz): remove
-    std::vector<std::unique_ptr<AstAtom>> atoms;
-
-    /** The negations in the body of this clause */
-    // TODO (b-scholz): remove
-    std::vector<std::unique_ptr<AstNegation>> negations;
+    /** The literals in the body of this clause */
+    std::vector<std::unique_ptr<AstLiteral>> bodyLiterals;
 
     /** The provenance negations in the body of this clause */
     // TODO (b-scholz): remove
     std::vector<std::unique_ptr<AstProvenanceNegation>> provNegations;
-
-    /** The constraints in the body of this clause */
-    // TODO (b-scholz): remove
-    std::vector<std::unique_ptr<AstConstraint>> constraints;
 
     /** Determines whether the given execution order should be enforced */
     // TODO (b-scholz): confused state / double-check

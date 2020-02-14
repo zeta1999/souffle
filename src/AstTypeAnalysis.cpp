@@ -471,8 +471,9 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 return;
             }
 
-            for (size_t i = 0; i < fun.getArity(); i++) {
-                auto argumentVar = getVar(fun.getArg(i));
+            size_t i = 0;
+            for (auto arg : fun.getArguments()) {
+                auto argumentVar = getVar(arg);
                 switch (fun.getArgType(i)) {
                     case RamTypeAttribute::Signed:
                         addConstraint(isSubtypeOf(argumentVar, env.getNumberType()));
@@ -489,6 +490,7 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                     default:
                         assert(false && "Invalid argument type");
                 }
+                ++i;
             }
         }
 
@@ -509,20 +511,20 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 }
 
                 // add constraints for arguments
-                for (size_t i = 0; i < fun.getArity(); i++) {
-                    auto arg = getVar(fun.getArg(i));
-
+                size_t i = 0;
+                for (auto arg : fun.getArguments()) {
                     // check that usage does not exceed
                     // number of arguments in declaration
                     if (i < funDecl->getArity()) {
                         // add constraints for the i-th argument
                         if (funDecl->acceptsNumbers(i)) {
-                            addConstraint(isSubtypeOf(arg, env.getNumberType()));
+                            addConstraint(isSubtypeOf(getVar(arg), env.getNumberType()));
                         }
                         if (funDecl->acceptsSymbols(i)) {
-                            addConstraint(isSubtypeOf(arg, env.getSymbolType()));
+                            addConstraint(isSubtypeOf(getVar(arg), env.getSymbolType()));
                         }
                     }
+                    ++i;
                 }
             }
         }

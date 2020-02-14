@@ -613,11 +613,11 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
         }
     } else if (dynamic_cast<const AstFunctor*>(arg) != nullptr) {
         if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
-            for (size_t i = 0; i < functor->getArguments().size(); i++) {
+            size_t i = 0;
+            for (auto funArg : functor->getArguments()) {
                 // TODO (azreika): use unique pointers
                 // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions =
-                        getInlinedArgument(program, functor->getArguments()[i]);
+                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, funArg);
                 if (argumentVersions.isValid()) {
                     changed = true;
                     for (AstArgument* newArgVersion : argumentVersions.getVector()) {
@@ -629,12 +629,13 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // only one step at a time
                     break;
                 }
+                ++i;
             }
         } else if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-            for (size_t i = 0; i < udf->getArguments().size(); i++) {
+            size_t i = 0;
+            for (auto udfArg : udf->getArguments()) {
                 // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions =
-                        getInlinedArgument(program, udf->getArguments()[i]);
+                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, udfArg);
                 if (argumentVersions.isValid()) {
                     changed = true;
                     for (AstArgument* newArgVersion : argumentVersions.getVector()) {
@@ -646,6 +647,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // only one step at a time
                     break;
                 }
+                ++i;
             }
         }
     } else if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {

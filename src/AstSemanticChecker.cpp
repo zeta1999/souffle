@@ -247,8 +247,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             return;
         }
 
-        for (size_t i = 0; i < fun.getArguments().size(); i++) {
-            auto arg = fun.getArguments()[i];
+        size_t i = 0;
+        for (auto arg : fun.getArguments()) {
             if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
                 switch (fun.getArgType(i)) {
                     case RamTypeAttribute::Signed:
@@ -267,6 +267,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                         assert(false && "Invalid argument type");
                 }
             }
+            ++i;
         }
     });
 
@@ -293,8 +294,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
 
         // Check argument types.
-        for (size_t i = 0; i < fun.getArguments().size(); i++) {
-            const AstArgument* arg = fun.getArguments()[i];
+        size_t i = 0;
+        for (const auto arg : fun.getArguments()) {
             if (i < funDecl->getArity()) {
                 if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
                     report.addError("Non-numeric argument for functor", arg->getSrcLoc());
@@ -302,6 +303,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                 }
             }
+            i++;
         }
     });
 

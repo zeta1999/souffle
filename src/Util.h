@@ -1295,6 +1295,22 @@ inline std::string stringify(const std::string& input) {
     return str;
 }
 
+/**
+ * Escape JSON string.
+ */
+inline std::string escapeJSONstring(const std::string& JSONstr) {
+    std::ostringstream destination;
+
+    // Iterate over all characters except first and last
+    for (char c : JSONstr) {
+        if (c == '\"') {
+            destination << "\\";
+        }
+        destination << c;
+    }
+    return destination.str();
+}
+
 /** Valid C++ identifier, note that this does not ensure the uniqueness of identifiers returned. */
 inline std::string identifier(std::string id) {
     for (size_t i = 0; i < id.length(); i++) {

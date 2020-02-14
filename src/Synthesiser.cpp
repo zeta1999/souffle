@@ -34,6 +34,7 @@
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
 #include "Util.h"
+#include "json11.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -46,6 +47,8 @@
 #include <vector>
 
 namespace souffle {
+
+using Json = json11::Json;
 
 /** Lookup frequency counter */
 unsigned Synthesiser::lookupFreqIdx(const std::string& txt) {
@@ -2062,11 +2065,21 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     auto dumpRelation = [&](const RamRelation& ramRelation) {
         const auto& relName = getRelationName(ramRelation);
         const auto& name = ramRelation.getName();
+        const auto& attributesTypes = ramRelation.getAttributeTypes();
+
+        Json relJson = Json::object{{"arity", static_cast<long long>(attributesTypes.size())},
+                {"auxArity", static_cast<long long>(0)},
+                {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
+
+        Json typesystem = Json::object{{name, relJson}};
 
         os << "try {";
         os << "IODirectives ioDirectives;\n";
         os << "ioDirectives.setIOType(\"stdout\");\n";
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
+        os << "ioDirectives.set(\"typesystem\",";
+        os << "\"" << escapeJSONstring(typesystem.dump()) << "\"";
+        os << ");\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "ioDirectives, symTable";
         os << ")->writeAll(*" << relName << ");\n";

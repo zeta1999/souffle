@@ -24,6 +24,21 @@ namespace souffle {
 
 namespace test {
 
+inline std::unique_ptr<AstTranslationUnit> makeATU(std::string program) {
+    SymbolTable sym;
+    ErrorReport e;
+    DebugReport d;
+    return ParserDriver::parseTranslationUnit(program, sym, e, d);
+}
+
+inline std::unique_ptr<AstClause> makeClause(std::string name, std::unique_ptr<AstArgument> headArgument) {
+    auto headAtom = std::make_unique<AstAtom>(name);
+    headAtom->addArgument(std::move(headArgument));
+    auto clause = std::make_unique<AstClause>();
+    clause->setHead(std::move(headAtom));
+    return clause;
+}
+
 TEST(AstProgram, Parse) {
     SymbolTable sym;
     ErrorReport e;
@@ -165,6 +180,41 @@ TESTASTCLONEANDEQUAL(RelationCopies,
                 d(x,y) :- b(x,y), c(y,x).
 
             )");
+
+/** test removeClause, appendRelation and removeRelation */
+TEST(AstProgram, RemoveClause) {
+    auto atom = std::make_unique<AstAtom>("B");
+    atom->addArgument(std::make_unique<AstVariable>("x"));
+    auto sum = std::make_unique<AstAggregator>(AstAggregator::sum);
+    sum->setTargetExpression(std::make_unique<AstVariable>("x"));
+    sum->addBodyLiteral(std::move(atom));
+
+    auto tu1 = makeATU(".decl A,B(x:number) \n A(sum x : B(x)).");
+    auto clause = makeClause("A", std::move(sum));
+
+    tu1->getProgram()->removeClause(clause.get());
+    auto tu2 = makeATU(".decl A,B(x:number)");
+    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
+}
+
+TEST(AstProgram, AppendAstRelation) {
+    auto tu1 = makeATU(".decl A,B,C(x:number)");
+    auto* prog1 = tu1->getProgram();
+    auto rel = std::make_unique<AstRelation>();
+    rel->setName("D");
+    rel->addAttribute(std::make_unique<AstAttribute>("x", "number"));
+    prog1->appendRelation(std::move(rel));
+    auto tu2 = makeATU(".decl A,B,C,D(x:number)");
+    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
+}
+
+TEST(AstProgram, RemoveAstRelation) {
+    auto tu1 = makeATU(".decl A,B,C(x:number)");
+    auto* prog1 = tu1->getProgram();
+    prog1->removeRelation("B");
+    auto tu2 = makeATU(".decl A,C(x:number)");
+    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
+}
 
 }  // end namespace test
 }  // end namespace souffle

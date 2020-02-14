@@ -139,7 +139,7 @@ bool isRule(const AstClause& clause);
 /**
  * Returns a clause which contains head of the given clause
  * @param clause the clause which head to be cloned
- * @return pointer to clausw which has head cloned from given clause
+ * @return pointer to clause which has head cloned from given clause
  */
 AstClause* cloneHead(const AstClause* clause);
 }  // end of namespace souffle

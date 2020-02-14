@@ -795,7 +795,7 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
                 }
             }
         }
-    } else if (AstNegation* neg = dynamic_cast<AstNegation*>(lit)) {
+    } else if (auto neg = dynamic_cast<AstNegation*>(lit)) {
         // For negations, check the corresponding atom
         AstAtom* atom = neg->getAtom();
         NullableVector<std::vector<AstLiteral*>> atomVersions = getInlinedLiteral(program, atom);

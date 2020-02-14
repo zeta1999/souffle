@@ -105,14 +105,14 @@ public:
 
         std::vector<AstLiteral*> bodyLiterals = arg.clause->getBodyLiterals();
         for (AstLiteral* literal : bodyLiterals) {
-            if (AstAtom* corresAtom = dynamic_cast<AstAtom*>(literal)) {
+            if (auto* corresAtom = dynamic_cast<AstAtom*>(literal)) {
                 if (firstadded) {
                     firstadded = false;
                     out << corresAtom->getName() << "{_}";
                 } else {
                     out << ", " << corresAtom->getName() << "{_}";
                 }
-            } else if (AstAtomLiteral* lit = dynamic_cast<AstAtomLiteral*>(literal)) {
+            } else if (auto* lit = dynamic_cast<AstAtomLiteral*>(literal)) {
                 if (firstadded) {
                     firstadded = false;
                     out << lit->getAtom()->getName() << "{" << arg.bodyAdornment[currpos] << "}";

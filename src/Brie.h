@@ -1062,7 +1062,7 @@ public:
 
             // check whether there is a proper entry
             value_type value = node->cell[i & INDEX_MASK].value;
-            if (value == 0) {
+            if (value == value_type{}) {
                 return end();
             }
             // return iterator pointing to value
@@ -1095,7 +1095,7 @@ public:
 
         // check whether there is a proper entry
         value_type value = node->cell[i & INDEX_MASK].value;
-        if (value == 0) {
+        if (value == value_type{}) {
             return end();
         }
 

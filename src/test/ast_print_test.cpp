@@ -156,5 +156,4 @@ TEST(AstPrint, AggregatorSum) {
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
-
 }  // end namespace souffle::test

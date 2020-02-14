@@ -223,12 +223,6 @@ public:
         return toPtrVector(args);
     }
 
-    /** set argument */
-    void setArg(const size_t idx, std::unique_ptr<AstArgument> arg) {
-        assert(idx < args.size() && "argument index out of bounds");
-        args[idx] = std::move(arg);
-    }
-
     /** add argument to argument list */
     void addArgument(std::unique_ptr<AstArgument> arg) {
         args.push_back(std::move(arg));

@@ -21,6 +21,7 @@
 #include "ErrorReport.h"
 #include "RamAnalysis.h"
 #include "RamProgram.h"
+#include "RecordTable.h"
 #include "SymbolTable.h"
 
 #include <map>

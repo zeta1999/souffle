@@ -23,7 +23,7 @@ namespace souffle {
 class AstAtom;
 
 /**
- * Literal 
+ * Literal
  * e.g. atoms, binary relations, and negated atoms
  * in the body and head of a clause.
  */

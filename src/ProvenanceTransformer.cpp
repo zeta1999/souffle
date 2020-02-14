@@ -130,41 +130,43 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     // visit all body literals and add to info clause head
     for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
         auto lit = originalClause.getBodyLiterals()[i];
-        const AstAtom* atom = lit->getAtom();
+        if (const AstAtomLiteral* atomLiteral = dynamic_cast<const AstAtomLiteral*>(lit)) {
+            const AstAtom* atom = atomLiteral->getAtom();
 
-        // add an attribute for atoms and binary constraints
-        if (atom != nullptr || dynamic_cast<AstBinaryConstraint*>(lit) != nullptr) {
-            infoRelation->addAttribute(std::make_unique<AstAttribute>(
-                    std::string("rel_") + std::to_string(i), AstTypeIdentifier("symbol")));
-        }
-
-        if (atom != nullptr) {
-            std::string relName = identifierToString(atom->getName());
-
-            // for an atom, add its name and variables (converting aggregates to variables)
-            if (dynamic_cast<AstAtom*>(lit) != nullptr) {
-                std::string atomDescription = relName;
-
-                for (auto& arg : atom->getArguments()) {
-                    atomDescription.append("," + getArgInfo(arg));
-                }
-
-                infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
-                        translationUnit.getSymbolTable(), atomDescription));
-                // for a negation, add a marker with the relation name
-            } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
-                infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
-                        translationUnit.getSymbolTable(), ("!" + relName)));
+            // add an attribute for atoms and binary constraints
+            if (atom != nullptr || dynamic_cast<AstBinaryConstraint*>(lit) != nullptr) {
+                infoRelation->addAttribute(std::make_unique<AstAttribute>(
+                        std::string("rel_") + std::to_string(i), AstTypeIdentifier("symbol")));
             }
-            // for a constraint, add the constraint symbol and LHS and RHS
-        } else if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
-            std::string constraintDescription = toBinaryConstraintSymbol(con->getOperator());
 
-            constraintDescription.append("," + getArgInfo(con->getLHS()));
-            constraintDescription.append("," + getArgInfo(con->getRHS()));
+            if (atom != nullptr) {
+                std::string relName = identifierToString(atom->getName());
 
-            infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
-                    translationUnit.getSymbolTable(), constraintDescription));
+                // for an atom, add its name and variables (converting aggregates to variables)
+                if (dynamic_cast<AstAtom*>(lit) != nullptr) {
+                    std::string atomDescription = relName;
+
+                    for (auto& arg : atom->getArguments()) {
+                        atomDescription.append("," + getArgInfo(arg));
+                    }
+
+                    infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
+                            translationUnit.getSymbolTable(), atomDescription));
+                    // for a negation, add a marker with the relation name
+                } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
+                    infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
+                            translationUnit.getSymbolTable(), ("!" + relName)));
+                }
+                // for a constraint, add the constraint symbol and LHS and RHS
+            } else if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
+                std::string constraintDescription = toBinaryConstraintSymbol(con->getOperator());
+
+                constraintDescription.append("," + getArgInfo(con->getLHS()));
+                constraintDescription.append("," + getArgInfo(con->getRHS()));
+
+                infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
+                        translationUnit.getSymbolTable(), constraintDescription));
+            }
         }
     }
 

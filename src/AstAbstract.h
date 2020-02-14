@@ -20,24 +20,29 @@
 
 namespace souffle {
 
-/**
- * Intermediate representation of atoms, binary relations,
- * and negated atoms in the body and head of a clause.
- */
 class AstAtom;
 
+/**
+ * Literal
+ */
 class AstLiteral : public AstNode {
 public:
-    /** Obtains the atom referenced by this literal - if any */
-    /* TODO (b-scholz): revisit the following methods */
-    virtual const AstAtom* getAtom() const = 0;
-
-    /** Creates a clone of this AST sub-structure */
     AstLiteral* clone() const override = 0;
 };
 
 /**
- * Intermediate representation of an argument
+ * Atom Literal
+ */
+class AstAtomLiteral : public AstLiteral {
+public:
+    /** get atom */
+    virtual const AstAtom* getAtom() const = 0;
+
+    AstLiteral* clone() const override = 0;
+};
+
+/**
+ * Argument
  */
 class AstArgument : public AstNode {
 public:

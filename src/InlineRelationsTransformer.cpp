@@ -622,8 +622,19 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     changed = true;
                     for (AstArgument* newArgVersion : argumentVersions.getVector()) {
                         // same functor but with new argument version
-                        AstIntrinsicFunctor* newFunctor = functor->clone();
-                        newFunctor->setArg(i, std::unique_ptr<AstArgument>(newArgVersion));
+                        std::vector<std::unique_ptr<AstArgument>> argsCopy;
+                        size_t j = 0;
+                        for (auto& functorArg : functor->getArguments()) {
+                            if (j == i) {
+                                argsCopy.emplace_back(newArgVersion);
+                            } else {
+                                argsCopy.emplace_back(functorArg->clone());
+                            }
+                            ++j;
+                        }
+                        AstIntrinsicFunctor* newFunctor =
+                                new AstIntrinsicFunctor(functor->getFunction(), std::move(argsCopy));
+                        newFunctor->setSrcLoc(functor->getSrcLoc());
                         versions.push_back(newFunctor);
                     }
                     // only one step at a time
@@ -640,8 +651,19 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     changed = true;
                     for (AstArgument* newArgVersion : argumentVersions.getVector()) {
                         // same functor but with new argument version
-                        AstUserDefinedFunctor* newFunctor = udf->clone();
-                        newFunctor->setArg(i, std::unique_ptr<AstArgument>(newArgVersion));
+                        std::vector<std::unique_ptr<AstArgument>> argsCopy;
+                        size_t j = 0;
+                        for (auto& udfArg : udf->getArguments()) {
+                            if (j == i) {
+                                argsCopy.emplace_back(newArgVersion);
+                            } else {
+                                argsCopy.emplace_back(udfArg->clone());
+                            }
+                            ++j;
+                        }
+                        AstUserDefinedFunctor* newFunctor =
+                                new AstUserDefinedFunctor(udf->getName(), std::move(argsCopy));
+                        newFunctor->setSrcLoc(udf->getSrcLoc());
                         versions.push_back(newFunctor);
                     }
                     // only one step at a time

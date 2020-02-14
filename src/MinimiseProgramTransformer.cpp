@@ -149,22 +149,11 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
 
     // both must hence be body atoms
     int leftBodyAtomIdx = leftIdx - 1;
-    const AstAtomLiteral* leftAtomLiteral =
-            dynamic_cast<const AstAtomLiteral*>(left->getBodyLiteral(leftBodyAtomIdx));
-    const AstAtom* leftAtom = nullptr;
-    if (leftAtomLiteral != nullptr) {
-        leftAtom = leftAtomLiteral->getAtom();
-    }
-    assert(leftAtom != nullptr);
+    const AstAtom* leftAtom = dynamic_cast<AstAtomLiteral*>(left->getBodyLiteral(leftBodyAtomIdx))->getAtom();
 
     int rightBodyAtomIdx = rightIdx - 1;
-    const AstAtomLiteral* rightAtomLiteral =
-            dynamic_cast<const AstAtomLiteral*>(right->getBodyLiteral(rightBodyAtomIdx));
-    const AstAtom* rightAtom = nullptr;
-    if (rightAtomLiteral != nullptr) {
-        rightAtom = rightAtomLiteral->getAtom();
-    }
-    assert(rightAtom != nullptr);
+    const AstAtom* rightAtom =
+            dynamic_cast<AstAtomLiteral*>(right->getBodyLiteral(rightBodyAtomIdx))->getAtom();
 
     return leftAtom->getName() == rightAtom->getName();
 }
@@ -222,7 +211,6 @@ bool isValidPermutation(
     bool validMapping = true;
     for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
         // match arguments
-
         std::vector<AstArgument*> leftArgs =
                 dynamic_cast<AstAtomLiteral*>(leftAtoms[i])->getAtom()->getArguments();
         std::vector<AstArgument*> rightArgs =

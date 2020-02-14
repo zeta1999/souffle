@@ -23,6 +23,7 @@
 #include "AstRelationIdentifier.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
@@ -927,7 +928,7 @@ std::vector<AstClause*> getInlinedClause(AstProgram& program, const AstClause& c
                 std::vector<std::vector<AstLiteral*>> bodyVersions = litVersions.getVector();
 
                 // Create the base clause with the current literal removed
-                auto baseClause = std::unique_ptr<AstClause>(clause.cloneHead());
+                auto baseClause = std::unique_ptr<AstClause>(cloneHead(&clause));
                 for (AstLiteral* oldLit : bodyLiterals) {
                     if (currLit != oldLit) {
                         baseClause->addToBody(std::unique_ptr<AstLiteral>(oldLit->clone()));

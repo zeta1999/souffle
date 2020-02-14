@@ -337,19 +337,6 @@ public:
         clauseNum = num;
     }
 
-    /** clone head */
-    // TODO (b-scholz): remove this method
-    AstClause* cloneHead() const {
-        auto* clone = new AstClause();
-        clone->setSrcLoc(getSrcLoc());
-        clone->setHead(std::unique_ptr<AstAtom>(getHead()->clone()));
-        if (getExecutionPlan() != nullptr) {
-            clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(getExecutionPlan()->clone()));
-        }
-        clone->setFixedExecutionPlan(hasFixedExecutionPlan());
-        return clone;
-    }
-
     AstClause* clone() const override {
         auto res = new AstClause();
         res->setSrcLoc(getSrcLoc());

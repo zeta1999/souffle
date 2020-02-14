@@ -130,4 +130,14 @@ bool isRule(const AstClause& clause) {
     return (clause.getHead() != nullptr) && !isFact(clause);
 }
 
+AstClause* cloneHead(const AstClause* clause) {
+    auto* clone = new AstClause();
+    clone->setSrcLoc(clause->getSrcLoc());
+    clone->setHead(std::unique_ptr<AstAtom>(clause->getHead()->clone()));
+    if (clause->getExecutionPlan() != nullptr) {
+        clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(clause->getExecutionPlan()->clone()));
+    }
+    clone->setFixedExecutionPlan(clause->hasFixedExecutionPlan());
+    return clone;
+}
 }  // end of namespace souffle

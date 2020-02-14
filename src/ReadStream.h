@@ -43,7 +43,7 @@ public:
         for (size_t i = 0; i < arity; ++i) {
             RamTypeAttribute type =
                     RamPrimitiveFromChar(typesystem[relationName]["types"][i].string_value()[0]);
-            symbolMask.push_back(type);
+            typeAttributes.push_back(type);
         }
     }
 
@@ -63,7 +63,7 @@ protected:
     Json typesystem;
 
     virtual std::unique_ptr<RamDomain[]> readNextTuple() = 0;
-    std::vector<RamTypeAttribute> symbolMask;
+    std::vector<RamTypeAttribute> typeAttributes;
     SymbolTable& symbolTable;
     size_t arity;
     size_t auxiliaryArity;

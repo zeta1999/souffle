@@ -52,7 +52,7 @@ protected:
         for (size_t i = 0; i < arity; i++) {
             RamDomain value = 0;  // Silence warning
 
-            switch (symbolMask.at(i)) {
+            switch (typeAttributes.at(i)) {
                 case RamTypeAttribute::Symbol:
                     value = getSymbolTableID(tuple[i]);
                     break;
@@ -222,7 +222,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (symbolMask.at(i) == RamTypeAttribute::Symbol) {
+            if (typeAttributes.at(i) == RamTypeAttribute::Symbol) {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
                 fromClause << ",'" << symbolTableName << "' AS '_symtab_" << columnName << "'";
                 if (!firstWhere) {

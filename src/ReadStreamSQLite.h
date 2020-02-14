@@ -66,7 +66,7 @@ protected:
             }
 
             try {
-                switch (symbolMask.at(column)) {
+                switch (typeAttributes.at(column)) {
                     case RamTypeAttribute::Symbol:
                         tuple[column] = symbolTable.unsafeLookup(element);
                         break;

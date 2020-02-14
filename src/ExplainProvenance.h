@@ -186,10 +186,10 @@ public:
         }
 
         // create symbol mask
-        std::vector<RamTypeAttribute> symbolMask(rel->getArity());
+        std::vector<RamTypeAttribute> typeAttributes(rel->getArity());
 
         for (size_t i = 0; i < rel->getArity(); i++) {
-            symbolMask.at(i) = RamPrimitiveFromChar(*(rel->getAttrType(i)));
+            typeAttributes.at(i) = RamPrimitiveFromChar(*(rel->getAttrType(i)));
         }
 
         // create IODirectives
@@ -201,7 +201,7 @@ public:
         auto originalCoutBuf = std::cout.rdbuf(out.rdbuf());
 
         // print relation
-        printRelationOutput(symbolMask, dir, *rel);
+        printRelationOutput(typeAttributes, dir, *rel);
 
         // restore original cout buffer
         std::cout.rdbuf(originalCoutBuf);
@@ -258,7 +258,7 @@ protected:
         return args;
     }
 
-    virtual void printRelationOutput(const std::vector<RamTypeAttribute>& symbolMask,
+    virtual void printRelationOutput(const std::vector<RamTypeAttribute>& typeAttributes,
             const IODirectives& ioDir, const Relation& rel) = 0;
 };
 

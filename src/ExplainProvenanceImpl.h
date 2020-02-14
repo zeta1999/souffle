@@ -788,7 +788,7 @@ private:
         return std::make_tuple(-1, -1, std::vector<RamDomain>());
     }
 
-    void printRelationOutput(const std::vector<RamTypeAttribute>& symbolMask, const IODirectives& ioDir,
+    void printRelationOutput(const std::vector<RamTypeAttribute>& typeAttributes, const IODirectives& ioDir,
             const Relation& rel) override {
         WriteCoutCSVFactory().getWriter(ioDir, prog.getSymbolTable())->writeAll(rel);
     }

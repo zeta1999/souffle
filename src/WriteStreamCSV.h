@@ -62,10 +62,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        writeNextTupleElement(file, symbolMask.at(0), tuple[0]);
+        writeNextTupleElement(file, typeAttributes.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
-            writeNextTupleElement(file, symbolMask.at(col), tuple[col]);
+            writeNextTupleElement(file, typeAttributes.at(col), tuple[col]);
         }
         file << "\n";
     }
@@ -90,10 +90,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        writeNextTupleElement(file, symbolMask.at(0), tuple[0]);
+        writeNextTupleElement(file, typeAttributes.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             file << delimiter;
-            writeNextTupleElement(file, symbolMask.at(col), tuple[col]);
+            writeNextTupleElement(file, typeAttributes.at(col), tuple[col]);
         }
         file << "\n";
     }
@@ -124,10 +124,10 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        writeNextTupleElement(std::cout, symbolMask.at(0), tuple[0]);
+        writeNextTupleElement(std::cout, typeAttributes.at(0), tuple[0]);
         for (size_t col = 1; col < arity; ++col) {
             std::cout << delimiter;
-            writeNextTupleElement(std::cout, symbolMask.at(col), tuple[col]);
+            writeNextTupleElement(std::cout, typeAttributes.at(col), tuple[col]);
         }
         std::cout << "\n";
     }

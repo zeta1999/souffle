@@ -59,7 +59,7 @@ protected:
             return nullptr;
         }
         std::string line;
-        std::unique_ptr<RamDomain[]> tuple = std::make_unique<RamDomain[]>(symbolMask.size());
+        std::unique_ptr<RamDomain[]> tuple = std::make_unique<RamDomain[]>(typeAttributes.size());
 
         if (!getline(file, line)) {
             return nullptr;
@@ -91,7 +91,7 @@ protected:
             ++columnsFilled;
 
             try {
-                switch (symbolMask.at(inputMap[column])) {
+                switch (typeAttributes.at(inputMap[column])) {
                     case RamTypeAttribute::Symbol:
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;

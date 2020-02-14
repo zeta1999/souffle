@@ -471,8 +471,8 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 return;
             }
 
-            for (size_t i = 0; i < fun.getArity(); i++) {
-                auto argumentVar = getVar(fun.getArg(i));
+            for (size_t i = 0; i < fun.getArguments().size(); i++) {
+                auto argumentVar = getVar(fun.getArguments()[i]);
                 switch (fun.getArgType(i)) {
                     case RamTypeAttribute::Signed:
                         addConstraint(isSubtypeOf(argumentVar, env.getNumberType()));
@@ -509,8 +509,8 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 }
 
                 // add constraints for arguments
-                for (size_t i = 0; i < fun.getArity(); i++) {
-                    auto arg = getVar(fun.getArg(i));
+                for (size_t i = 0; i < fun.getArguments().size(); i++) {
+                    auto arg = getVar(fun.getArguments()[i]);
 
                     // check that usage does not exceed
                     // number of arguments in declaration

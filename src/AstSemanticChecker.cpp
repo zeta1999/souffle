@@ -247,8 +247,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             return;
         }
 
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            auto arg = fun.getArg(i);
+        for (size_t i = 0; i < fun.getArguments().size(); i++) {
+            auto arg = fun.getArguments()[i];
             if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
                 switch (fun.getArgType(i)) {
                     case RamTypeAttribute::Signed:
@@ -281,7 +281,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
 
         // Check arity.
-        if (funDecl->getArity() != fun.getArity()) {
+        if (funDecl->getArity() != fun.getArguments().size()) {
             report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
         }
 
@@ -293,8 +293,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
 
         // Check argument types.
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            const AstArgument* arg = fun.getArg(i);
+        for (size_t i = 0; i < fun.getArguments().size(); i++) {
+            const AstArgument* arg = fun.getArguments()[i];
             if (i < funDecl->getArity()) {
                 if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
                     report.addError("Non-numeric argument for functor", arg->getSrcLoc());
@@ -549,12 +549,12 @@ void AstSemanticChecker::checkArgument(
     if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg)) {
         checkAggregator(report, program, *agg);
     } else if (const auto* intrFunc = dynamic_cast<const AstIntrinsicFunctor*>(&arg)) {
-        for (size_t i = 0; i < intrFunc->getArity(); i++) {
-            checkArgument(report, program, *intrFunc->getArg(i));
+        for (auto arg : intrFunc->getArguments()) {
+            checkArgument(report, program, *arg);
         }
     } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for (size_t i = 0; i < userDefFunc->getArity(); i++) {
-            checkArgument(report, program, *userDefFunc->getArg(i));
+        for (auto arg : userDefFunc->getArguments()) {
+            checkArgument(report, program, *arg);
         }
     }
 }

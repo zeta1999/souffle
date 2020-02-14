@@ -223,17 +223,6 @@ public:
         return toPtrVector(args);
     }
 
-    /** get number of arguments */
-    size_t getArity() const {
-        return args.size();
-    }
-
-    /** get argument at idx */
-    AstArgument* getArg(const size_t idx) const {
-        assert(idx < args.size() && "argument index out of bounds");
-        return args[idx].get();
-    }
-
     /** set argument */
     void setArg(const size_t idx, std::unique_ptr<AstArgument> arg) {
         assert(idx < args.size() && "argument index out of bounds");
@@ -241,7 +230,7 @@ public:
     }
 
     /** add argument to argument list */
-    void add(std::unique_ptr<AstArgument> arg) {
+    void addArgument(std::unique_ptr<AstArgument> arg) {
         args.push_back(std::move(arg));
     }
 
@@ -289,7 +278,7 @@ public:
     AstIntrinsicFunctor(FunctorOp function, Operands... operands) : function(function) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
         for (auto& cur : tmp) {
-            add(std::move(cur));
+            addArgument(std::move(cur));
         }
         assert(isValidFunctorOpArity(function, args.size()) && "invalid number of arguments for functor");
     }

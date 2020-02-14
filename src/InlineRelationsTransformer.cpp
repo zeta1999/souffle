@@ -613,11 +613,11 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
         }
     } else if (dynamic_cast<const AstFunctor*>(arg) != nullptr) {
         if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
-            for (size_t i = 0; i < functor->getArity(); i++) {
+            for (size_t i = 0; i < functor->getArguments().size(); i++) {
                 // TODO (azreika): use unique pointers
                 // try inlining each argument from left to right
                 NullableVector<AstArgument*> argumentVersions =
-                        getInlinedArgument(program, functor->getArg(i));
+                        getInlinedArgument(program, functor->getArguments()[i]);
                 if (argumentVersions.isValid()) {
                     changed = true;
                     for (AstArgument* newArgVersion : argumentVersions.getVector()) {
@@ -631,9 +631,10 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                 }
             }
         } else if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-            for (size_t i = 0; i < udf->getArity(); i++) {
+            for (size_t i = 0; i < udf->getArguments().size(); i++) {
                 // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, udf->getArg(i));
+                NullableVector<AstArgument*> argumentVersions =
+                        getInlinedArgument(program, udf->getArguments()[i]);
                 if (argumentVersions.isValid()) {
                     changed = true;
                     for (AstArgument* newArgVersion : argumentVersions.getVector()) {
@@ -668,9 +669,10 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     auto* newRecordArg = new AstRecordInit();
                     for (size_t j = 0; j < recordArguments.size(); j++) {
                         if (i == j) {
-                            newRecordArg->add(std::unique_ptr<AstArgument>(newArgumentVersion));
+                            newRecordArg->addArgument(std::unique_ptr<AstArgument>(newArgumentVersion));
                         } else {
-                            newRecordArg->add(std::unique_ptr<AstArgument>(recordArguments[j]->clone()));
+                            newRecordArg->addArgument(
+                                    std::unique_ptr<AstArgument>(recordArguments[j]->clone()));
                         }
                     }
                     versions.push_back(newRecordArg);

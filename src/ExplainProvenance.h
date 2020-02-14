@@ -185,12 +185,7 @@ public:
             return "Relation " + relName + " not found\n";
         }
 
-        // create symbol mask
-        std::vector<RamTypeAttribute> typeAttributes(rel->getArity());
-
-        for (size_t i = 0; i < rel->getArity(); i++) {
-            typeAttributes.at(i) = RamPrimitiveFromChar(*(rel->getAttrType(i)));
-        }
+        // Create a JSON typesystem here?
 
         // create IODirectives
         IODirectives dir;
@@ -201,7 +196,7 @@ public:
         auto originalCoutBuf = std::cout.rdbuf(out.rdbuf());
 
         // print relation
-        printRelationOutput(typeAttributes, dir, *rel);
+        printRelationOutput(dir, *rel);
 
         // restore original cout buffer
         std::cout.rdbuf(originalCoutBuf);
@@ -258,8 +253,7 @@ protected:
         return args;
     }
 
-    virtual void printRelationOutput(const std::vector<RamTypeAttribute>& typeAttributes,
-            const IODirectives& ioDir, const Relation& rel) = 0;
+    virtual void printRelationOutput(const IODirectives& ioDir, const Relation& rel) = 0;
 };
 
 }  // end of namespace souffle

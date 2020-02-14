@@ -24,15 +24,15 @@ namespace souffle {
 
 namespace test {
 
-inline std::unique_ptr<AstTranslationUnit> makeATU(std::string program = ".decl A,B,C(x:number)") {
+inline std::unique_ptr<AstTranslationUnit> makeATU(std::string program) {
     SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     return ParserDriver::parseTranslationUnit(program, sym, e, d);
 }
 
-inline std::unique_ptr<AstClause> makeClauseA(std::unique_ptr<AstArgument> headArgument) {
-    auto headAtom = std::make_unique<AstAtom>("A");
+inline std::unique_ptr<AstClause> makeClause(std::string name, std::unique_ptr<AstArgument> headArgument) {
+    auto headAtom = std::make_unique<AstAtom>(name);
     headAtom->addArgument(std::move(headArgument));
     auto clause = std::make_unique<AstClause>();
     clause->setHead(std::move(headAtom));
@@ -182,97 +182,7 @@ TESTASTCLONEANDEQUAL(RelationCopies,
             )");
 
 /** test removeClause, appendRelation and removeRelation */
-TEST(AstProgram, RemoveNilConstant) {
-    auto testArgument = std::make_unique<AstNilConstant>();
-    auto tu1 = makeATU(".decl A,B,C(x:number) \n A(nil).");
-    auto clause = makeClauseA(std::move(testArgument));
-
-    tu1->getProgram()->removeClause(clause.get());
-    auto tu2 = makeATU(".decl A,B,C(x:number)");
-    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
-}
-
-TEST(AstProgram, RemoveNumberConstant) {
-    auto testArgument = std::make_unique<AstNumberConstant>(2);
-    auto tu1 = makeATU(".decl A,B,C(x:number) \n A(2).");
-    auto clause = makeClauseA(std::move(testArgument));
-
-    tu1->getProgram()->removeClause(clause.get());
-    auto tu2 = makeATU(".decl A,B,C(x:number)");
-    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
-}
-
-TEST(AstProgram, RemoveStringConstant) {
-    SymbolTable sym;
-    ErrorReport e;
-    DebugReport d;
-    auto testArgument = std::make_unique<AstStringConstant>(sym, "test string");
-
-    auto tu1 = ParserDriver::parseTranslationUnit(".decl A,B,C(x:symbol) \n A(\"test string\")", sym, e, d);
-    auto clause = makeClauseA(std::move(testArgument));
-
-    tu1->getProgram()->removeClause(clause.get());
-    auto tu2 = makeATU(".decl A,B,C(x:symbol)");
-    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
-}
-
-TEST(AstProgram, RemoveVariable) {
-    auto testArgument = std::make_unique<AstVariable>("testVar");
-
-    auto tu1 = makeATU(".decl A,B,C(x:number) \n A(testVar).");
-    auto clause = makeClauseA(std::move(testArgument));
-
-    tu1->getProgram()->removeClause(clause.get());
-    auto tu2 = makeATU(".decl A,B,C(x:number)");
-    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
-}
-
-TEST(AstProgram, RemoveAggregatorMin) {
-    auto atom = std::make_unique<AstAtom>("B");
-    atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto min = std::make_unique<AstAggregator>(AstAggregator::min);
-    min->setTargetExpression(std::make_unique<AstVariable>("x"));
-    min->addBodyLiteral(std::move(atom));
-
-    auto tu1 = makeATU(".decl A,B(x:number) \n A(min x : B(x)).");
-    auto clause = makeClauseA(std::move(min));
-
-    tu1->getProgram()->removeClause(clause.get());
-    auto tu2 = makeATU(".decl A,B(x:number)");
-    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
-}
-
-TEST(AstProgram, RemoveAggregatorMax) {
-    auto atom = std::make_unique<AstAtom>("B");
-    atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto max = std::make_unique<AstAggregator>(AstAggregator::max);
-    max->setTargetExpression(std::make_unique<AstVariable>("x"));
-    max->addBodyLiteral(std::move(atom));
-
-    auto tu1 = makeATU(".decl A,B(x:number) \n A(max x : B(x)).");
-    auto clause = makeClauseA(std::move(max));
-
-    tu1->getProgram()->removeClause(clause.get());
-    auto tu2 = makeATU(".decl A,B(x:number)");
-    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
-}
-
-TEST(AstProgram, RemoveAggregatorCount) {
-    auto atom = std::make_unique<AstAtom>("B");
-    atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto count = std::make_unique<AstAggregator>(AstAggregator::count);
-    count->setTargetExpression(std::make_unique<AstVariable>("x"));
-    count->addBodyLiteral(std::move(atom));
-
-    auto tu1 = makeATU(".decl A,B(x:number) \n A(count x : B(x)).");
-    auto clause = makeClauseA(std::move(count));
-
-    tu1->getProgram()->removeClause(clause.get());
-    auto tu2 = makeATU(".decl A,B(x:number)");
-    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
-}
-
-TEST(AstProgram, RemoveAggregatorSum) {
+TEST(AstProgram, RemoveClause) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
     auto sum = std::make_unique<AstAggregator>(AstAggregator::sum);
@@ -280,7 +190,7 @@ TEST(AstProgram, RemoveAggregatorSum) {
     sum->addBodyLiteral(std::move(atom));
 
     auto tu1 = makeATU(".decl A,B(x:number) \n A(sum x : B(x)).");
-    auto clause = makeClauseA(std::move(sum));
+    auto clause = makeClause("A", std::move(sum));
 
     tu1->getProgram()->removeClause(clause.get());
     auto tu2 = makeATU(".decl A,B(x:number)");
@@ -288,7 +198,7 @@ TEST(AstProgram, RemoveAggregatorSum) {
 }
 
 TEST(AstProgram, AppendAstRelation) {
-    auto tu1 = makeATU();
+    auto tu1 = makeATU(".decl A,B,C(x:number)");
     auto* prog1 = tu1->getProgram();
     auto rel = std::make_unique<AstRelation>();
     rel->setName("D");
@@ -299,7 +209,7 @@ TEST(AstProgram, AppendAstRelation) {
 }
 
 TEST(AstProgram, RemoveAstRelation) {
-    auto tu1 = makeATU();
+    auto tu1 = makeATU(".decl A,B,C(x:number)");
     auto* prog1 = tu1->getProgram();
     prog1->removeRelation("B");
     auto tu2 = makeATU(".decl A,C(x:number)");

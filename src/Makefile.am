@@ -94,7 +94,10 @@ souffle_sources = \
         AstUtils.cpp          AstUtils.h          \
         AstVisitor.h                              \
         BinaryConstraintOps.h                     \
-        ComponentModel.cpp    ComponentModel.h    \
+        ComponentInstantiationTransformer.cpp     \
+        ComponentInstantiationTransformer.h       \
+        ComponentLookupAnalysis.cpp               \
+        ComponentLookupAnalysis.h                 \
         Constraints.h                             \
         DebugReport.cpp       DebugReport.h       \
         DebugReporter.cpp     DebugReporter.h     \

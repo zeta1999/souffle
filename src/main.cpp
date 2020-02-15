@@ -21,7 +21,7 @@
 #include "AstTranslationUnit.h"
 #include "AstTranslator.h"
 #include "AstTypeAnalysis.h"
-#include "ComponentModel.h"
+#include "ComponentInstantiationTransformer.h"
 #include "DebugReport.h"
 #include "DebugReporter.h"
 #include "ErrorReport.h"

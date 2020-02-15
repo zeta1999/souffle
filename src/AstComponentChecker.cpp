@@ -21,7 +21,7 @@
 #include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
-#include "ComponentModel.h"
+#include "ComponentLookupAnalysis.h"
 #include "ErrorReport.h"
 #include "SrcLocation.h"
 #include "Util.h"

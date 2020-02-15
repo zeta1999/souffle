@@ -1634,8 +1634,7 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
                     "(" + std::to_string(std::chrono::duration<double>(ram_end - ram_start).count()) + "s)";
             std::stringstream ramProgStr;
             ramProgStr << *ramProg;
-            debugReport.addSection(DebugReporter::getCodeSection(
-                    "ram-program", "RAM Program " + runtimeStr, ramProgStr.str()));
+            debugReport.addSection("ram-program", "RAM Program " + runtimeStr, ramProgStr.str());
         }
     }
     return std::make_unique<RamTranslationUnit>(std::move(ramProg), symTab, errReport, debugReport);

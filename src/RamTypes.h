@@ -18,8 +18,8 @@
 
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <limits>
-#include <ostream>
 #include <type_traits>
 
 namespace souffle {
@@ -74,7 +74,8 @@ inline RamTypeAttribute RamPrimitiveFromChar(char c) {
             RamType = RamTypeAttribute::Record;
             break;
         default:
-            assert(false && "Invalid RamTypeAttribute Char");
+            std::cerr << "Invalid (RamTypeAttribute) char: " << c << std::endl;
+            assert(false);
     }
     return RamType;
 }

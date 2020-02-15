@@ -36,10 +36,9 @@ namespace souffle {
 
 class ReadStreamCSV : public ReadStream {
 public:
-    ReadStreamCSV(std::istream& file, const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : ReadStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
-              file(file), lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
+    ReadStreamCSV(std::istream& file, const IODirectives& ioDirectives, SymbolTable& symbolTable)
+            : ReadStream(ioDirectives, symbolTable), delimiter(getDelimiter(ioDirectives)), file(file),
+              lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
         while (inputMap.size() < arity) {
             int size = static_cast<int>(inputMap.size());
             inputMap[size] = size;
@@ -60,7 +59,7 @@ protected:
             return nullptr;
         }
         std::string line;
-        std::unique_ptr<RamDomain[]> tuple = std::make_unique<RamDomain[]>(symbolMask.size());
+        std::unique_ptr<RamDomain[]> tuple = std::make_unique<RamDomain[]>(typeAttributes.size());
 
         if (!getline(file, line)) {
             return nullptr;
@@ -92,11 +91,11 @@ protected:
             ++columnsFilled;
 
             try {
-                switch (symbolMask.at(inputMap[column])) {
+                switch (typeAttributes.at(inputMap[column])) {
                     case RamTypeAttribute::Symbol:
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;
-                    case RamTypeAttribute::Record:  // What should be done here?
+                    case RamTypeAttribute::Record:
                     case RamTypeAttribute::Signed:
                         tuple[inputMap[column]] = RamDomainFromString(element);
                         break;
@@ -159,9 +158,8 @@ protected:
 
 class ReadFileCSV : public ReadStreamCSV {
 public:
-    ReadFileCSV(const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, auxiliaryArity),
+    ReadFileCSV(const IODirectives& ioDirectives, SymbolTable& symbolTable)
+            : ReadStreamCSV(fileHandle, ioDirectives, symbolTable),
               baseName(souffle::baseName(getFileName(ioDirectives))),
               fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {
         if (!ioDirectives.has("intermediate")) {
@@ -175,6 +173,7 @@ public:
             }
         }
     }
+
     /**
      * Read and return the next tuple.
      *
@@ -211,12 +210,11 @@ protected:
 
 class ReadCinCSVFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) override {
-        return std::make_unique<ReadStreamCSV>(
-                std::cin, symbolMask, symbolTable, ioDirectives, auxiliaryArity);
+    std::unique_ptr<ReadStream> getReader(
+            const IODirectives& ioDirectives, SymbolTable& symbolTable) override {
+        return std::make_unique<ReadStreamCSV>(std::cin, ioDirectives, symbolTable);
     }
+
     const std::string& getName() const override {
         static const std::string name = "stdin";
         return name;
@@ -226,11 +224,11 @@ public:
 
 class ReadFileCSVFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) override {
-        return std::make_unique<ReadFileCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
+    std::unique_ptr<ReadStream> getReader(
+            const IODirectives& ioDirectives, SymbolTable& symbolTable) override {
+        return std::make_unique<ReadFileCSV>(ioDirectives, symbolTable);
     }
+
     const std::string& getName() const override {
         static const std::string name = "file";
         return name;

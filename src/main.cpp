@@ -23,6 +23,7 @@
 #include "AstTypeAnalysis.h"
 #include "ComponentModel.h"
 #include "DebugReport.h"
+#include "DebugReporter.h"
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
@@ -210,7 +211,6 @@ int main(int argc, char** argv) {
                                                   : option.substr(splitPoint + 1, option.length());
 
                 if (!Global::config().has(optionName)) {
-                    changed = true;
                     Global::config().set(optionName, optionValue);
                 }
             }

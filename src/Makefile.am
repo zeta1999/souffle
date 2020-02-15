@@ -97,6 +97,7 @@ souffle_sources = \
         ComponentModel.cpp    ComponentModel.h    \
         Constraints.h                             \
         DebugReport.cpp       DebugReport.h       \
+        DebugReporter.cpp     DebugReporter.h     \
         EventProcessor.h                          \
         FunctorOps.h                              \
         Global.cpp            Global.h            \

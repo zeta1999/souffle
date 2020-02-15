@@ -35,15 +35,14 @@ public:
 
         std::string parseErrors;
 
-        typesystem = Json::parse(ioDirectives.get("typesystem"), parseErrors);
+        types = Json::parse(ioDirectives.get("types"), parseErrors);
 
         assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
 
-        arity = static_cast<size_t>(typesystem[relationName]["arity"].long_value());
+        arity = static_cast<size_t>(types[relationName]["arity"].long_value());
 
         for (size_t i = 0; i < arity; ++i) {
-            RamTypeAttribute type =
-                    RamPrimitiveFromChar(typesystem[relationName]["types"][i].string_value()[0]);
+            RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
             typeAttributes.push_back(type);
         }
     }
@@ -75,7 +74,7 @@ public:
 protected:
     std::vector<RamTypeAttribute> typeAttributes;
     const SymbolTable& symbolTable;
-    Json typesystem;
+    Json types;
 
     const bool summary;
     size_t arity;

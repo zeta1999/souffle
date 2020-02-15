@@ -124,9 +124,9 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     Json relJson = Json::object{{"arity", arity}, {"auxArity", auxArity},
             {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
 
-    Json typesystem = Json::object{{name, relJson}};
+    Json types = Json::object{{name, relJson}};
 
-    ioDirective.set("typesystem", typesystem.dump());
+    ioDirective.set("types", types.dump());
 }
 
 std::vector<IODirectives> AstTranslator::getInputIODirectives(

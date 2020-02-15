@@ -2071,14 +2071,14 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 {"auxArity", static_cast<long long>(0)},
                 {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
 
-        Json typesystem = Json::object{{name, relJson}};
+        Json types = Json::object{{name, relJson}};
 
         os << "try {";
         os << "IODirectives ioDirectives;\n";
         os << "ioDirectives.setIOType(\"stdout\");\n";
         os << "ioDirectives.setRelationName(\"" << name << "\");\n";
-        os << "ioDirectives.set(\"typesystem\",";
-        os << "\"" << escapeJSONstring(typesystem.dump()) << "\"";
+        os << "ioDirectives.set(\"types\",";
+        os << "\"" << escapeJSONstring(types.dump()) << "\"";
         os << ");\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "ioDirectives, symTable";

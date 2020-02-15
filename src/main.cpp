@@ -15,7 +15,7 @@
  ***********************************************************************/
 
 #include "AstComponentChecker.h"
-#include "AstPragma.h"
+#include "AstPragmaChecker.h"
 #include "AstSemanticChecker.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
@@ -197,6 +197,24 @@ int main(int argc, char** argv) {
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
         // ------ command line arguments -------------
+
+        // Take in pragma options from the command line
+        if (Global::config().has("pragma")) {
+            std::vector<std::string> configOptions = splitString(Global::config().get("pragma"), ';');
+            for (const std::string& option : configOptions) {
+                size_t splitPoint = option.find(':');
+
+                std::string optionName = option.substr(0, splitPoint);
+                std::string optionValue = (splitPoint == std::string::npos)
+                                                  ? ""
+                                                  : option.substr(splitPoint + 1, option.length());
+
+                if (!Global::config().has(optionName)) {
+                    changed = true;
+                    Global::config().set(optionName, optionValue);
+                }
+            }
+        }
 
         /* for the version option, if given print the version text then exit */
         if (Global::config().has("version")) {

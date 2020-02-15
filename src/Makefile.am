@@ -75,7 +75,8 @@ souffle_sources = \
         AstLiteral.h                              \
         AstNode.h                                 \
         AstParserUtils.cpp    AstParserUtils.h    \
-        AstPragma.cpp         AstPragma.h         \
+        AstPragma.h                               \
+        AstPragmaChecker.cpp  AstPragmaChecker.h  \
         AstProgram.h                              \
         AstProfileUse.cpp     AstProfileUse.h     \
         AstRelation.h                             \

@@ -64,7 +64,7 @@
 
 namespace souffle {
 
-using Json = json11::Json;
+using json11::Json;
 
 class ErrorReport;
 class SymbolTable;

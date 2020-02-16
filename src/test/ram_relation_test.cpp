@@ -36,7 +36,7 @@
 
 namespace souffle::test {
 
-using Json = json11::Json;
+using json11::Json;
 
 #define RANDOM_TESTS 12
 

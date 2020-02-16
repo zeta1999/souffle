@@ -22,6 +22,7 @@
 #include "RamRelation.h"
 #include "RelationRepresentation.h"
 #include "Util.h"
+#include "json11.h"
 #include <cassert>
 #include <map>
 #include <memory>
@@ -31,6 +32,8 @@
 #include <utility>
 
 namespace souffle {
+
+using json11::Json;
 
 // forward declarations
 class AstAtom;
@@ -75,6 +78,9 @@ private:
 
     /** RAM relations */
     std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
+
+    /** Types information - used in Ram for I/O. */
+    Json RamTypes;
 
     /** Auxiliary Arity Analysis */
     const AuxiliaryArity* auxArityAnalysis;
@@ -238,13 +244,8 @@ private:
 
         bool isAggregator(const int level) const {
             // check for aggregator definitions
-            for (const auto& cur : aggregator_locations) {
-                if (cur.second.identifier == level) {
-                    return true;
-                }
-            }
-            // nothing defined on this location
-            return false;
+            return any_of(aggregator_locations,
+                    [&level](const auto& location) { return location.second.identifier == level; });
         }
 
         bool isSomethingDefinedOn(int level) const {

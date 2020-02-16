@@ -16,6 +16,7 @@
 
 #include "IODirectives.h"
 #include "RamTypes.h"
+#include "RecordTable.h"
 #include "SymbolTable.h"
 #include "json11.h"
 
@@ -29,8 +30,9 @@ using json11::Json;
 
 class WriteStream {
 public:
-    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable, bool summary = false)
-            : symbolTable(symbolTable), summary(summary) {
+    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable,
+            const RecordTable& recordTable, bool summary = false)
+            : symbolTable(symbolTable), recordTable(recordTable), summary(summary) {
         const std::string& relationName{ioDirectives.getRelationName()};
 
         std::string parseErrors;
@@ -74,6 +76,8 @@ public:
 protected:
     std::vector<RamTypeAttribute> typeAttributes;
     const SymbolTable& symbolTable;
+    const RecordTable& recordTable;
+
     Json types;
 
     const bool summary;
@@ -110,8 +114,8 @@ protected:
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(
-            const IODirectives& ioDirectives, const SymbolTable& symbolTable) = 0;
+    virtual std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives,
+            const SymbolTable& symbolTable, const RecordTable& recordTable) = 0;
 
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;

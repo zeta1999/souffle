@@ -16,6 +16,7 @@
 
 #include "IODirectives.h"
 #include "RamTypes.h"
+#include "RecordTable.h"
 #include "SymbolTable.h"
 #include "json11.h"
 #include <memory>
@@ -27,8 +28,9 @@ namespace souffle {
 using json11::Json;
 
 class ReadStream {
-public:
-    ReadStream(const IODirectives& ioDirectives, SymbolTable& symbolTable) : symbolTable(symbolTable) {
+protected:
+    ReadStream(const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
+            : symbolTable(symbolTable), recordTable(recordTable) {
         const std::string& relationName{ioDirectives.getRelationName()};
 
         std::string parseErrors;
@@ -46,6 +48,7 @@ public:
         }
     }
 
+public:
     template <typename T>
     void readAll(T& relation) {
         auto lease = symbolTable.acquireLock();
@@ -64,14 +67,15 @@ protected:
     virtual std::unique_ptr<RamDomain[]> readNextTuple() = 0;
     std::vector<RamTypeAttribute> typeAttributes;
     SymbolTable& symbolTable;
+    RecordTable& recordTable;
+
     size_t arity;
     size_t auxiliaryArity;
 };
 
 class ReadStreamFactory {
 public:
-    virtual std::unique_ptr<ReadStream> getReader(
-            const IODirectives& ioDirectives, SymbolTable& symbolTable) = 0;
+    virtual std::unique_ptr<ReadStream> getReader(const IODirectives&, SymbolTable&, RecordTable&) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~ReadStreamFactory() = default;
 };

@@ -92,24 +92,6 @@ protected:
     void writeNext(const Tuple tuple) {
         writeNextTuple(tuple.data);
     }
-    void writeNextTupleElement(std::ostream& destination, RamTypeAttribute type, RamDomain value) {
-        switch (type) {
-            case RamTypeAttribute::Symbol:
-                destination << symbolTable.unsafeResolve(value);
-                break;
-            case RamTypeAttribute::Signed:
-                destination << value;
-                break;
-            case RamTypeAttribute::Unsigned:
-                destination << ramBitCast<RamUnsigned>(value);
-                break;
-            case RamTypeAttribute::Float:
-                destination << ramBitCast<RamFloat>(value);
-                break;
-            case RamTypeAttribute::Record:
-                assert(false && "Record writing is not supported");
-        }
-    }
 };
 
 class WriteStreamFactory {

@@ -31,21 +31,57 @@
 
 namespace souffle {
 
-class WriteStreamCSV {
+class WriteStreamCSV : public WriteStream {
 protected:
-    virtual std::string getDelimiter(const IODirectives& ioDirectives) const {
+    WriteStreamCSV(
+            const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            : WriteStream(ioDirectives, symbolTable, recordTable), delimiter(getDelimiter(ioDirectives)){};
+
+    const std::string delimiter;
+
+    std::string getDelimiter(const IODirectives& ioDirectives) const {
         if (ioDirectives.has("delimiter")) {
             return ioDirectives.get("delimiter");
         }
         return "\t";
     }
+
+    void writeNextTupleCSV(std::ostream& destination, const RamDomain* tuple) {
+        writeNextTupleElement(destination, typeAttributes.at(0), tuple[0]);
+
+        for (size_t col = 1; col < arity; ++col) {
+            destination << delimiter;
+            writeNextTupleElement(destination, typeAttributes.at(col), tuple[col]);
+        }
+
+        destination << "\n";
+    }
+
+    void writeNextTupleElement(std::ostream& destination, RamTypeAttribute type, RamDomain value) {
+        switch (type) {
+            case RamTypeAttribute::Symbol:
+                destination << symbolTable.unsafeResolve(value);
+                break;
+            case RamTypeAttribute::Signed:
+                destination << value;
+                break;
+            case RamTypeAttribute::Unsigned:
+                destination << ramBitCast<RamUnsigned>(value);
+                break;
+            case RamTypeAttribute::Float:
+                destination << ramBitCast<RamFloat>(value);
+                break;
+            case RamTypeAttribute::Record:
+                assert(false && "Record writing is not supported");
+        }
+    }
 };
 
-class WriteFileCSV : public WriteStreamCSV, public WriteStream {
+class WriteFileCSV : public WriteStreamCSV {
 public:
     WriteFileCSV(
             const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStream(ioDirectives, symbolTable, recordTable), delimiter(getDelimiter(ioDirectives)),
+            : WriteStreamCSV(ioDirectives, symbolTable, recordTable),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
@@ -55,7 +91,6 @@ public:
     ~WriteFileCSV() override = default;
 
 protected:
-    const std::string delimiter;
     std::ofstream file;
 
     void writeNullary() override {
@@ -63,21 +98,16 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        writeNextTupleElement(file, typeAttributes.at(0), tuple[0]);
-        for (size_t col = 1; col < arity; ++col) {
-            file << delimiter;
-            writeNextTupleElement(file, typeAttributes.at(col), tuple[col]);
-        }
-        file << "\n";
+        writeNextTupleCSV(file, tuple);
     }
 };
 
 #ifdef USE_LIBZ
-class WriteGZipFileCSV : public WriteStreamCSV, public WriteStream {
+class WriteGZipFileCSV : public WriteStreamCSV {
 public:
     WriteGZipFileCSV(
             const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStream(ioDirectives, symbolTable, recordTable), delimiter(getDelimiter(ioDirectives)),
+            : WriteStreamCSV(ioDirectives, symbolTable, recordTable),
               file(ioDirectives.getFileName(), std::ios::out | std::ios::binary) {
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             file << ioDirectives.get("attributeNames") << std::endl;
@@ -92,24 +122,18 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        writeNextTupleElement(file, typeAttributes.at(0), tuple[0]);
-        for (size_t col = 1; col < arity; ++col) {
-            file << delimiter;
-            writeNextTupleElement(file, typeAttributes.at(col), tuple[col]);
-        }
-        file << "\n";
+        writeNextTupleCSV(file, tuple);
     }
 
-    const std::string delimiter;
     gzfstream::ogzfstream file;
 };
 #endif
 
-class WriteCoutCSV : public WriteStreamCSV, public WriteStream {
+class WriteCoutCSV : public WriteStreamCSV {
 public:
     WriteCoutCSV(
             const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStream(ioDirectives, symbolTable, recordTable), delimiter(getDelimiter(ioDirectives)) {
+            : WriteStreamCSV(ioDirectives, symbolTable, recordTable) {
         std::cout << "---------------\n" << ioDirectives.getRelationName();
         if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
             std::cout << "\n" << ioDirectives.get("attributeNames");
@@ -127,15 +151,8 @@ protected:
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
-        writeNextTupleElement(std::cout, typeAttributes.at(0), tuple[0]);
-        for (size_t col = 1; col < arity; ++col) {
-            std::cout << delimiter;
-            writeNextTupleElement(std::cout, typeAttributes.at(col), tuple[col]);
-        }
-        std::cout << "\n";
+        writeNextTupleCSV(std::cout, tuple);
     }
-
-    const std::string delimiter;
 };
 
 class WriteCoutPrintSize : public WriteStream {

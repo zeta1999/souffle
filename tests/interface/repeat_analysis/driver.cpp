@@ -33,7 +33,8 @@ void error(std::string txt) {
 void printSource2sink(std::unique_ptr<SouffleProgram>& prog) {
     Relation* source2sink = prog->getRelation("source2sink");
     for (tuple tuple : *source2sink) {
-        std::string field, field2;
+        std::string field;
+        std::string field2;
         tuple >> field;
         tuple >> field2;
         std::cout << field << "-" << field2 << std::endl;

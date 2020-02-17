@@ -294,7 +294,7 @@ std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inline
                 std::stringstream newName;
                 newName << "<inlined_" << var->getName() << "_" << varnum << ">";
                 newVar->setName(newName.str());
-                return std::move(newVar);
+                return newVar;
             }
             node->apply(*this);
             return node;
@@ -479,7 +479,7 @@ void renameVariables(AstArgument* arg) {
                 std::stringstream newName;
                 newName << var->getName() << "-v" << varnum;
                 newVar->setName(newName.str());
-                return std::move(newVar);
+                return newVar;
             }
             node->apply(*this);
             return node;
@@ -632,7 +632,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                             }
                             ++j;
                         }
-                        AstIntrinsicFunctor* newFunctor =
+                        auto* newFunctor =
                                 new AstIntrinsicFunctor(functor->getFunction(), std::move(argsCopy));
                         newFunctor->setSrcLoc(functor->getSrcLoc());
                         versions.push_back(newFunctor);
@@ -661,8 +661,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                             }
                             ++j;
                         }
-                        AstUserDefinedFunctor* newFunctor =
-                                new AstUserDefinedFunctor(udf->getName(), std::move(argsCopy));
+                        auto* newFunctor = new AstUserDefinedFunctor(udf->getName(), std::move(argsCopy));
                         newFunctor->setSrcLoc(udf->getSrcLoc());
                         versions.push_back(newFunctor);
                     }

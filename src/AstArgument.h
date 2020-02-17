@@ -39,7 +39,7 @@ namespace souffle {
  */
 class AstVariable : public AstArgument {
 public:
-    AstVariable(std::string name) : name(name) {}
+    AstVariable(std::string name) : name(std::move(name)) {}
 
     void print(std::ostream& os) const override {
         os << name;

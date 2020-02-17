@@ -1062,7 +1062,7 @@ public:
 
             // check whether there is a proper entry
             value_type value = node->cell[i & INDEX_MASK].value;
-            if (value == 0) {
+            if (value == value_type{}) {
                 return end();
             }
             // return iterator pointing to value
@@ -1095,7 +1095,7 @@ public:
 
         // check whether there is a proper entry
         value_type value = node->cell[i & INDEX_MASK].value;
-        if (value == 0) {
+        if (value == value_type{}) {
             return end();
         }
 
@@ -2479,7 +2479,8 @@ public:
         base::hint_stats.get_boundaries.addMiss();
 
         // start with two end iterators
-        iterator begin{}, end{};
+        iterator begin{};
+        iterator end{};
 
         // adapt them level by level
         auto found = detail::fix_binding<levels, 0, Dim>()(store, begin, end, entry);

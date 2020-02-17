@@ -83,7 +83,7 @@ private:
     Json RamRecordTypes;
 
     /** Auxiliary Arity Analysis */
-    const AuxiliaryArity* auxArityAnalysis;
+    const AuxiliaryArity* auxArityAnalysis = nullptr;
 
     /**
      * Concrete attribute

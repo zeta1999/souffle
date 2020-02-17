@@ -177,11 +177,7 @@ public:
 
     /** Add a Literal to the body of the clause */
     void addToBody(std::unique_ptr<AstLiteral> l) {
-        if (dynamic_cast<AstProvenanceNegation*>(l.get()) != nullptr) {
-            provNegations.emplace_back(static_cast<AstProvenanceNegation*>(l.release()));
-        } else {
-            bodyLiterals.emplace_back(l.release());
-        }
+        bodyLiterals.emplace_back(l.release());
     }
 
     /** Set the head of clause to @p h */
@@ -198,29 +194,18 @@ public:
     /** Return the number of elements in the body of the Clause */
     // TODO (b-scholz): remove this method
     size_t getBodySize() const {
-        return bodyLiterals.size() + provNegations.size();
+        return bodyLiterals.size();
     }
 
     /** Return the i-th Literal in body of the clause */
     // TODO (b-scholz): remove this method
     AstLiteral* getBodyLiteral(size_t idx) const {
-        if (idx < bodyLiterals.size()) {
-            return bodyLiterals[idx].get();
-        }
-        idx -= bodyLiterals.size();
-        return provNegations[idx].get();
+        return bodyLiterals[idx].get();
     }
 
     /** Obtains a copy of the internally maintained body literals */
     std::vector<AstLiteral*> getBodyLiterals() const {
-        std::vector<AstLiteral*> res;
-        for (auto& cur : bodyLiterals) {
-            res.push_back(cur.get());
-        }
-        for (auto& cur : provNegations) {
-            res.push_back(cur.get());
-        }
-        return res;
+        return toPtrVector(bodyLiterals);
     }
 
     /**
@@ -368,9 +353,6 @@ public:
         for (const auto& lit : bodyLiterals) {
             res->bodyLiterals.emplace_back(lit->clone());
         }
-        for (const auto& cur : provNegations) {
-            res->provNegations.emplace_back(cur->clone());
-        }
         res->fixedPlan = fixedPlan;
         res->generated = generated;
         return res;
@@ -381,17 +363,11 @@ public:
         for (auto& lit : bodyLiterals) {
             lit = map(std::move(lit));
         }
-        for (auto& lit : provNegations) {
-            lit = map(std::move(lit));
-        }
     }
 
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res = {head.get()};
         for (auto& cur : bodyLiterals) {
-            res.push_back(cur.get());
-        }
-        for (auto& cur : provNegations) {
             res.push_back(cur.get());
         }
         return res;
@@ -401,8 +377,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstClause*>(&node));
         const auto& other = static_cast<const AstClause&>(node);
-        return *head == *other.head && equal_targets(bodyLiterals, other.bodyLiterals)
-            && equal_targets(provNegations, other.provNegations);
+        return *head == *other.head && equal_targets(bodyLiterals, other.bodyLiterals);
     }
 
     /** The head of the clause */
@@ -410,10 +385,6 @@ protected:
 
     /** The literals in the body of this clause */
     std::vector<std::unique_ptr<AstLiteral>> bodyLiterals;
-
-    /** The provenance negations in the body of this clause */
-    // TODO (b-scholz): remove
-    std::vector<std::unique_ptr<AstProvenanceNegation>> provNegations;
 
     /** Determines whether the given execution order should be enforced */
     // TODO (b-scholz): confused state / double-check

@@ -669,7 +669,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
 
     // check execution plan
     if (clause.getExecutionPlan() != nullptr) {
-        auto numAtoms = clause.getTypedBodyLiterals<AstAtom>().size();
+        auto numAtoms = getBodyLiterals<AstAtom>(clause).size();
         for (const auto& cur : clause.getExecutionPlan()->getOrders()) {
             bool isComplete = true;
             auto order = cur.second->getOrder();
@@ -1506,7 +1506,7 @@ bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
                     continue;
                 }
                 int version = 0;
-                for (const AstAtom* atom : clause->getTypedBodyLiterals<AstAtom>()) {
+                for (const auto* atom : getBodyLiterals<AstAtom>(*clause)) {
                     if (scc.count(getAtomRelation(atom, translationUnit.getProgram())) != 0u) {
                         version++;
                     }

@@ -237,18 +237,6 @@ public:
         }
     }
 
-    /** TODO: move this to ast utils */
-    template <typename T>
-    std::vector<T*> getTypedBodyLiterals() const {
-        std::vector<T*> res;
-        for (auto& lit : bodyLiterals) {
-            if (T* t = dynamic_cast<T*>(lit.get())) {
-                res.push_back(t);
-            }
-        }
-        return res;
-    }
-
     /** Updates the fixed execution order flag */
     void setFixedExecutionPlan(bool value = true) {
         fixedPlan = value;

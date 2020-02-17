@@ -365,7 +365,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                 // max level
                 clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
                 // level numbers
-                size_t numAtoms = clause->getTypedBodyLiterals<AstAtom>().size();
+                size_t numAtoms = getBodyLiterals<AstAtom>(*clause).size();
                 for (size_t j = 0; j < numAtoms; j++) {
                     clause->getHead()->addArgument(
                             std::make_unique<AstVariable>("@level_number_" + std::to_string(j)));

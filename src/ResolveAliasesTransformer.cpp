@@ -218,7 +218,8 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
     // these variables are the source of groundedness
     // e.g. a(y) :- b(x), y = x + 1. -- y is only grounded because x appears in b(x)
     std::set<std::string> baseGroundedVariables;
-    for (const AstAtom* atom : clause.getTypedBodyLiterals<AstAtom>()) {
+    for (const auto* atom : getBodyLiterals<AstAtom>(clause)) {
+        // TODO (azreika): getArguments for atoms [same way]
         for (const AstArgument* arg : atom->getArguments()) {
             if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
                 baseGroundedVariables.insert(var->getName());
@@ -358,7 +359,7 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
     std::unique_ptr<AstClause> res(clause.clone());
 
     // get list of atoms
-    std::vector<AstAtom*> atoms = res->getTypedBodyLiterals<AstAtom>();
+    std::vector<AstAtom*> atoms = getBodyLiterals<AstAtom>(*res);
 
     // find all functors in atoms
     std::vector<const AstArgument*> terms;

@@ -23,6 +23,7 @@
 #include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
 #include "AstVisitor.h"
 #include "Global.h"
 #include <cmath>
@@ -336,7 +337,7 @@ bool reorderClauseWithSips(sips_t sipsFunction, AstClause* clause) {
     }
 
     // get the ordering corresponding to the SIPS
-    std::vector<unsigned int> newOrdering = applySips(sipsFunction, clause->getTypedBodyLiterals<AstAtom>());
+    std::vector<unsigned int> newOrdering = applySips(sipsFunction, getBodyLiterals<AstAtom>(*clause));
 
     // reorder the clause accordingly
     clause->reorderAtoms(newOrdering);

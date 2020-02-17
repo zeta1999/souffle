@@ -814,7 +814,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                     continue;
                 }
 
-                size_t numAtoms = clause->getTypedBodyLiterals<AstAtom>().size();
+                size_t numAtoms = getBodyLiterals<AstAtom>(*clause).size();
                 std::vector<std::string> clauseAtomAdornments(numAtoms);
                 std::vector<unsigned int> ordering(numAtoms);
                 std::set<std::string> boundArgs;
@@ -832,7 +832,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                 }
 
                 // mark all bound arguments from the body
-                for (const auto* bc : clause->getTypedBodyLiterals<AstBinaryConstraint>()) {
+                for (const auto* bc : getBodyLiterals<AstBinaryConstraint>(*clause)) {
                     BinaryConstraintOp op = bc->getOperator();
                     if (op != BinaryConstraintOp::EQ) {
                         continue;
@@ -849,7 +849,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                     }
                 }
 
-                std::vector<AstAtom*> atoms = clause->getTypedBodyLiterals<AstAtom>();
+                std::vector<AstAtom*> atoms = getBodyLiterals<AstAtom>(*clause);
                 int atomsAdorned = 0;
                 int atomsTotal = atoms.size();
 
@@ -1360,7 +1360,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
             // -- replace with H :- mag(H), T --
 
-            size_t originalNumAtoms = newClause->getTypedBodyLiterals<AstAtom>().size();
+            size_t originalNumAtoms = getBodyLiterals<AstAtom>(*newClause).size();
 
             // create the first argument of this new clause
             const AstAtom* newClauseHead = newClause->getHead()->getAtom();

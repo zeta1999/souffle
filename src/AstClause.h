@@ -165,7 +165,7 @@ public:
         if (head != nullptr) {
             head->print(os);
         }
-        if (getBodySize() > 0) {
+        if (bodyLiterals.size() > 0) {
             os << " :- \n   ";
             os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
         }
@@ -189,18 +189,6 @@ public:
     /** Return the atom that represents the head of the clause */
     AstAtom* getHead() const {
         return head.get();
-    }
-
-    /** Return the number of elements in the body of the Clause */
-    // TODO (b-scholz): remove this method
-    size_t getBodySize() const {
-        return bodyLiterals.size();
-    }
-
-    /** Return the i-th Literal in body of the clause */
-    // TODO (b-scholz): remove this method
-    AstLiteral* getBodyLiteral(size_t idx) const {
-        return bodyLiterals[idx].get();
     }
 
     /** Obtains a copy of the internally maintained body literals */

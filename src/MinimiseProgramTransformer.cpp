@@ -149,10 +149,10 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
 
     // both must hence be body atoms
     int leftBodyAtomIdx = leftIdx - 1;
-    const AstAtom* leftAtom = left->getBodyLiteral(leftBodyAtomIdx)->getAtom();
+    const AstAtom* leftAtom = left->getBodyLiterals()[leftBodyAtomIdx]->getAtom();
 
     int rightBodyAtomIdx = rightIdx - 1;
-    const AstAtom* rightAtom = right->getBodyLiteral(rightBodyAtomIdx)->getAtom();
+    const AstAtom* rightAtom = right->getBodyLiterals()[rightBodyAtomIdx]->getAtom();
 
     return leftAtom->getName() == rightAtom->getName();
 }

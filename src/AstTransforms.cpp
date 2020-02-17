@@ -97,7 +97,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
             // .. of shape r(x,y,..) :- s(x,y,..)
             AstClause* cl = rel->getClause(0);
             std::vector<AstAtom*> bodyAtoms = getBodyLiterals<AstAtom>(*cl);
-            if (!isFact(*cl) && cl->getBodySize() == 1u && bodyAtoms.size() == 1u) {
+            if (!isFact(*cl) && cl->getBodyLiterals().size() == 1u && bodyAtoms.size() == 1u) {
                 AstAtom* atom = bodyAtoms[0];
                 if (equal_targets(cl->getHead()->getArguments(), atom->getArguments())) {
                     // we have a match but have to check that all arguments are either

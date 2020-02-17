@@ -58,7 +58,6 @@ protected:
     }
 
     void writeNextTupleElement(std::ostream& destination, const std::string& type, RamDomain value) {
-        std::string recordName;
         switch (type[0]) {
             case 's':
                 destination << symbolTable.unsafeResolve(value);
@@ -73,8 +72,7 @@ protected:
                 destination << ramBitCast<RamFloat>(value);
                 break;
             case 'r':
-                recordName = type.substr(2);
-                outputRecord(destination, value, std::move(recordName));
+                outputRecord(destination, value, type);
                 break;
             default:
                 assert(false && "Unsupported type attribute");

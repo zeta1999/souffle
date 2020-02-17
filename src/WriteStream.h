@@ -93,9 +93,11 @@ protected:
         writeNextTuple(tuple.data);
     }
 
-    void outputRecord(std::ostream& destination, RamDomain value, const std::string& name) {
+    void outputRecord(std::ostream& destination, const RamDomain value, const std::string& name) {
+        Json recordInfo = types["records"][name];
+
         // Check if record type information are present
-        if (types[name].is_null()) {
+        if (recordInfo.is_null()) {
             std::cerr << "Missing record type information: " << name << std::endl;
             abort();
         }
@@ -106,11 +108,12 @@ protected:
             return;
         }
 
-        size_t recordArity = types[name]["arity"].long_value();
-        Json recordTypes = types[name]["types"];
+        Json recordTypes = recordInfo["types"];
+        size_t recordArity = recordInfo["arity"].long_value();
+
         const RamDomain* tuplePtr = recordTable.unpack(value, recordArity);
 
-        destination << "[ ";
+        destination << "[";
 
         // print record's elements
         for (size_t i = 0; i < recordArity; ++i) {
@@ -120,7 +123,6 @@ protected:
 
             const std::string& recordType = recordTypes[i].string_value();
             const RamDomain recordValue = tuplePtr[i];
-            std::string recordName;
 
             switch (recordType[0]) {
                 case 'i':
@@ -136,13 +138,13 @@ protected:
                     destination << symbolTable.unsafeResolve(recordValue);
                     break;
                 case 'r':
-                    recordName = recordType.substr(2);
-                    outputRecord(destination, value, std::move(recordName));
+                    outputRecord(destination, recordValue, std::move(recordType));
+                    break;
                 default:
                     assert(false && "Unsupported type attribute.");
             }
         }
-        destination << " ]";
+        destination << "]";
     }
 };
 

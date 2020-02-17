@@ -121,7 +121,10 @@ public:
      * A function obtaining a pointer to the tuple addressed by the given reference.
      */
     RamDomain* unpack(RamDomain ref, size_t arity) {
-        return getForArity(arity).unpack(ref);
+        auto iter = maps.find(arity);
+        assert(iter != maps.end() && "Attempting to unpack non-existing record");
+
+        return (iter->second).unpack(ref);
     }
 
     /**

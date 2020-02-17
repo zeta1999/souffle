@@ -79,8 +79,8 @@ private:
     /** RAM relations */
     std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
-    /** Types information - used in Ram for I/O. */
-    Json RamTypes;
+    /** Record types information - used in Ram for I/O. */
+    Json RamRecordTypes;
 
     /** Auxiliary Arity Analysis */
     const AuxiliaryArity* auxArityAnalysis;
@@ -378,6 +378,12 @@ private:
     public:
         ProvenanceClauseTranslator(AstTranslator& translator) : ClauseTranslator(translator) {}
     };
+
+    /**
+     * Get ram records types.
+     * If they don't exists - create them.
+     */
+    Json getRecordsTypes(void);
 
     /**
      * translate RAM code for the non-recursive clauses of the given relation.

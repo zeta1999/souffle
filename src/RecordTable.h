@@ -86,6 +86,15 @@ public:
 
         return res;
     }
+
+    const RamDomain* unpack(RamDomain index) const {
+        const RamDomain* res;
+
+#pragma omp critical(record_unpack)
+        res = &(indexToRecord[index][0]);
+
+        return res;
+    }
 };
 
 class RecordTable {
@@ -118,6 +127,16 @@ public:
     /**
      * A function obtaining a pointer to the tuple addressed by the given reference.
      */
+    const RamDomain* unpack(RamDomain ref, size_t arity) const {
+        auto iter = maps.find(arity);
+        assert(iter != maps.end() && "Attempting to unpack non-existing record");
+
+        return (iter->second).unpack(ref);
+    }
+
+    /**
+     * A function obtaining a pointer to the tuple addressed by the given reference.
+     */
     template <typename Domain, std::size_t Arity>
     ram::Tuple<Domain, Arity> unpackTuple(RamDomain ref) {
         ram::Tuple<RamDomain, Arity> tuple;
@@ -133,7 +152,7 @@ public:
      * Determines whether the given reference is the nil reference encoding
      * the absence of any nested record.
      */
-    bool isNil(RamDomain ref) {
+    bool isNil(RamDomain ref) const {
         return ref == 0;
     }
 

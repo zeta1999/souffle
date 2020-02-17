@@ -44,8 +44,8 @@ public:
         arity = static_cast<size_t>(types[relationName]["arity"].long_value());
 
         for (size_t i = 0; i < arity; ++i) {
-            RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
-            typeAttributes.push_back(type);
+            std::string type = types[relationName]["types"][i].string_value();
+            typeAttributes.push_back(std::move(type));
         }
     }
 
@@ -74,11 +74,11 @@ public:
     virtual ~WriteStream() = default;
 
 protected:
-    std::vector<RamTypeAttribute> typeAttributes;
     const SymbolTable& symbolTable;
     const RecordTable& recordTable;
 
     Json types;
+    std::vector<std::string> typeAttributes;
 
     const bool summary;
     size_t arity;
@@ -92,6 +92,10 @@ protected:
     void writeNext(const Tuple tuple) {
         writeNextTuple(tuple.data);
     }
+
+    // void outputRecord(std::ostream destination, const std::string& name) {
+
+    // }
 };
 
 class WriteStreamFactory {

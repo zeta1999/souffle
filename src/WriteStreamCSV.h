@@ -57,22 +57,24 @@ protected:
         destination << "\n";
     }
 
-    void writeNextTupleElement(std::ostream& destination, RamTypeAttribute type, RamDomain value) {
-        switch (type) {
-            case RamTypeAttribute::Symbol:
+    void writeNextTupleElement(std::ostream& destination, const std::string& type, RamDomain value) {
+        switch (type[0]) {
+            case 's':
                 destination << symbolTable.unsafeResolve(value);
                 break;
-            case RamTypeAttribute::Signed:
+            case 'i':
                 destination << value;
                 break;
-            case RamTypeAttribute::Unsigned:
+            case 'u':
                 destination << ramBitCast<RamUnsigned>(value);
                 break;
-            case RamTypeAttribute::Float:
+            case 'f':
                 destination << ramBitCast<RamFloat>(value);
                 break;
-            case RamTypeAttribute::Record:
+            case 'r':
                 assert(false && "Record writing is not supported");
+            default:
+                assert(false && "Unsupported type attribute");
         }
     }
 };

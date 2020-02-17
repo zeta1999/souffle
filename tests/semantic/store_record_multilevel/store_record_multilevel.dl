@@ -1,0 +1,17 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2020, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Test writing of nested records
+
+.type Seq = [ first : number, second : Seq ]
+
+.decl A(s: Seq)
+A(nil).
+A([5, [4, [3, nil]]]).
+A([-8, [-1, [2, [3, nil]]]]).
+
+
+.output A(IO=stdout,headers=true)

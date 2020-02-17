@@ -94,6 +94,12 @@ protected:
     }
 
     void outputRecord(std::ostream& destination, RamDomain value, const std::string& name) {
+        // Check if record type information are present
+        if (types[name].is_null()) {
+            std::cerr << "Missing record type information: " << name << std::endl;
+            abort();
+        }
+
         // Check for nil
         if (recordTable.isNil(value)) {
             destination << "nil";
@@ -106,6 +112,7 @@ protected:
 
         destination << "[ ";
 
+        // print record's elements
         for (size_t i = 0; i < recordArity; ++i) {
             if (i > 0) {
                 destination << ", ";

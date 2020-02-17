@@ -93,9 +93,50 @@ protected:
         writeNextTuple(tuple.data);
     }
 
-    // void outputRecord(std::ostream destination, const std::string& name) {
+    void outputRecord(std::ostream& destination, RamDomain value, const std::string& name) {
+        // Check for nil
+        if (recordTable.isNil(value)) {
+            destination << "nil";
+            return;
+        }
 
-    // }
+        size_t recordArity = types[name]["arity"].long_value();
+        Json recordTypes = types[name]["types"];
+        const RamDomain* tuplePtr = recordTable.unpack(value, recordArity);
+
+        destination << "[ ";
+
+        for (size_t i = 0; i < recordArity; ++i) {
+            if (i > 0) {
+                destination << ", ";
+            }
+
+            const std::string& recordType = recordTypes[i].string_value();
+            const RamDomain recordValue = tuplePtr[i];
+            std::string recordName;
+
+            switch (recordType[0]) {
+                case 'i':
+                    destination << recordValue;
+                    break;
+                case 'f':
+                    destination << ramBitCast<RamFloat>(recordValue);
+                    break;
+                case 'u':
+                    destination << ramBitCast<RamUnsigned>(recordValue);
+                    break;
+                case 's':
+                    destination << symbolTable.unsafeResolve(recordValue);
+                    break;
+                case 'r':
+                    recordName = recordType.substr(2);
+                    outputRecord(destination, value, std::move(recordName));
+                default:
+                    assert(false && "Unsupported type attribute.");
+            }
+        }
+        destination << " ]";
+    }
 };
 
 class WriteStreamFactory {

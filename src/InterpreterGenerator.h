@@ -433,7 +433,7 @@ public:
                     }
                 });
 
-                if (needView == true) {
+                if (needView) {
                     preamble->addViewOperationForFilter(visit(*cur));
                 } else {
                     preamble->addViewFreeOperationForFilter(visit(*cur));
@@ -442,7 +442,7 @@ public:
         }
 
         visitDepthFirst(*next, [&](const RamNode& node) {
-            if (requireView(&node) == true) {
+            if (requireView(&node)) {
                 const auto& rel = getRelationRefForView(&node);
                 preamble->addViewInfoForNested(encodeRelation(rel), indexTable[&node], encodeView(&node));
             };
@@ -574,7 +574,7 @@ private:
     NodePtrVec findAllViews(const RamNode& node) {
         NodePtrVec res;
         visitDepthFirst(node, [&](const RamNode& node) {
-            if (requireView(&node) == true) {
+            if (requireView(&node)) {
                 res.push_back(visit(node));
             };
         });

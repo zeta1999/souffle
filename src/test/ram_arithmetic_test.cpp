@@ -413,8 +413,8 @@ TEST(Binary, FloatExp) {
     for (int i = 0; i < TESTS_PER_OPERATION; ++i) {
         auto arg1 = vecArg1[i];
         auto arg2 = vecArg2[i];
-        RamFloat result = ramBitCast<RamFloat>(evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2)));
-        RamFloat expected = static_cast<RamFloat>(std::pow(arg1, arg2));
+        auto result = ramBitCast<RamFloat>(evalBinary(functor, ramBitCast(arg1), ramBitCast(arg2)));
+        auto expected = static_cast<RamFloat>(std::pow(arg1, arg2));
         EXPECT_TRUE((std::isnan(result) && std::isnan(expected)) || result == expected);
     }
 }

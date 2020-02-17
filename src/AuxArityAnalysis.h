@@ -61,7 +61,7 @@ private:
      */
     const size_t computeArity(const AstRelation* relation) const;
 
-    const AstProgram* program;
+    const AstProgram* program = nullptr;
 };
 
 }  // end of namespace souffle

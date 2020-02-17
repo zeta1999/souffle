@@ -628,7 +628,7 @@ TEST(LambdaBTreeTest, ParallelInsert) {
         // for another... so I go through and check anyway.
         std::vector<bool> verifier(N2 / num_threads, false);
         for (auto p : t) {
-            if (verifier.at(p.second) == true) {
+            if (verifier.at(p.second)) {
                 EXPECT_TRUE(false && "duplicate posteriors found within the lambdatree");
             }
             // set it to true unconditionally to indicate that we've seen a set value for this posterior.

@@ -207,7 +207,7 @@ public:
             tupleCurInd = tupleEnd;
         }
 
-        return std::move(internalNode);
+        return internalNode;
     }
 
     std::unique_ptr<TreeNode> explain(
@@ -282,10 +282,7 @@ public:
         auto headVariables = splitString(atoms[0], ',');
 
         auto isVariable = [&](std::string arg) {
-            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
-                return false;
-            }
-            return true;
+            return !(isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_");
         };
 
         // check that head variable bindings make sense, i.e. for a head like a(x, x), make sure both x are
@@ -344,10 +341,7 @@ public:
         uniqueVariables.insert(uniqueVariables.end(), headVariables.begin(), headVariables.end());
 
         auto isVariable = [&](std::string arg) {
-            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
-                return false;
-            }
-            return true;
+            return !(isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_");
         };
 
         // get body variables
@@ -432,10 +426,10 @@ public:
         // traverse return vector and construct child nodes
         // making sure we display existent and non-existent tuples correctly
         int literalCounter = 1;
-        for (size_t returnCounter = 0; returnCounter < ret.size(); returnCounter++) {
+        for (RamDomain returnCounter : ret) {
             // check what the next contained atom is
             bool atomExists = true;
-            if (ret[returnCounter] == 0) {
+            if (returnCounter == 0) {
                 atomExists = false;
             }
 
@@ -489,7 +483,7 @@ public:
             literalCounter++;
         }
 
-        return std::move(internalNode);
+        return internalNode;
     }
 
     std::string getRule(std::string relName, size_t ruleNum) override {
@@ -549,7 +543,7 @@ public:
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
                     tuple >> s;
-                    n = symTable.lookupExisting(s.c_str());
+                    n = symTable.lookupExisting(s);
                 } else {
                     tuple >> n;
                 }

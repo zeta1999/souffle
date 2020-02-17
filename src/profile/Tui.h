@@ -219,7 +219,7 @@ public:
                 continue;
             }
 
-            linereader.addHistory(input.c_str());
+            linereader.addHistory(input);
 
             std::vector<std::string> c = Tools::split(input, " ");
 

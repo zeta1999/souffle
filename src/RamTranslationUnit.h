@@ -80,12 +80,12 @@ public:
 
     /** @brief get the RAM Program of the translation unit  */
     const RamProgram& getProgram() const {
-        return *program.get();
+        return *program;
     }
 
     /** @brief get the RAM Program of the translation unit  */
     RamProgram& getProgram() {
-        return *program.get();
+        return *program;
     }
 
     /** @brief get symbol table  */

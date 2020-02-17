@@ -240,7 +240,8 @@ protected:
 
     /** @Brief count the number of bits in key */
     static size_t card(SearchSignature cols) {
-        size_t sz = 0, idx = 1;
+        size_t sz = 0;
+        size_t idx = 1;
         for (size_t i = 0; i < sizeof(SearchSignature) * 8; i++) {
             if ((idx & cols) != 0u) {
                 sz++;

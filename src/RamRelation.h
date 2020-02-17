@@ -31,9 +31,9 @@ namespace souffle {
  */
 class RamRelation : public RamNode {
 public:
-    RamRelation(const std::string name, const size_t arity, const size_t auxiliaryArity,
-            const std::vector<std::string> attributeNames, const std::vector<std::string> attributeTypes,
-            const RelationRepresentation representation)
+    RamRelation(std::string name, size_t arity, size_t auxiliaryArity,
+            std::vector<std::string> attributeNames, std::vector<std::string> attributeTypes,
+            RelationRepresentation representation)
             : representation(representation), name(std::move(name)), arity(arity),
               auxiliaryArity(auxiliaryArity), attributeNames(std::move(attributeNames)),
               attributeTypes(std::move(attributeTypes)) {

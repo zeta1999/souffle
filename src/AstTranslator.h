@@ -77,7 +77,7 @@ private:
     std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
     /** Auxiliary Arity Analysis */
-    const AuxiliaryArity* auxArityAnalysis;
+    const AuxiliaryArity* auxArityAnalysis = nullptr;
 
     /**
      * Concrete attribute

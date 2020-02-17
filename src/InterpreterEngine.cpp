@@ -1250,13 +1250,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Exit)
 
         CASE(LogRelationTimer)
-            Logger logger(cur.getMessage().c_str(), getIterationNumber(),
+            Logger logger(cur.getMessage(), getIterationNumber(),
                     std::bind(&InterpreterRelation::size, node->getRelation()));
             return execute(node->getChild(0), ctxt);
         ESAC(LogRelationTimer)
 
         CASE(LogTimer)
-            Logger logger(cur.getMessage().c_str(), getIterationNumber());
+            Logger logger(cur.getMessage(), getIterationNumber());
             return execute(node->getChild(0), ctxt);
         ESAC(LogTimer)
 

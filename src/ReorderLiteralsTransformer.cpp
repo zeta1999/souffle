@@ -336,7 +336,7 @@ bool reorderClauseWithSips(sips_t sipsFunction, AstClause* clause) {
     }
 
     // get the ordering corresponding to the SIPS
-    std::vector<unsigned int> newOrdering = applySips(sipsFunction, clause->getAtoms());
+    std::vector<unsigned int> newOrdering = applySips(sipsFunction, clause->getTypedBodyLiterals<AstAtom>());
 
     // reorder the clause accordingly
     clause->reorderAtoms(newOrdering);

@@ -814,7 +814,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                     continue;
                 }
 
-                size_t numAtoms = clause->getAtoms().size();
+                size_t numAtoms = clause->getTypedBodyLiterals<AstAtom>().size();
                 std::vector<std::string> clauseAtomAdornments(numAtoms);
                 std::vector<unsigned int> ordering(numAtoms);
                 std::set<std::string> boundArgs;
@@ -832,16 +832,15 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                 }
 
                 // mark all bound arguments from the body
-                std::vector<AstBinaryConstraint*> constraints = clause->getBinaryConstraints();
-                for (AstBinaryConstraint* constraint : constraints) {
-                    BinaryConstraintOp op = constraint->getOperator();
-
+                for (const auto* bc : clause->getTypedBodyLiterals<AstBinaryConstraint>()) {
+                    BinaryConstraintOp op = bc->getOperator();
                     if (op != BinaryConstraintOp::EQ) {
                         continue;
                     }
 
-                    AstArgument* lhs = constraint->getLHS();
-                    AstArgument* rhs = constraint->getRHS();
+                    // have an equality constraint
+                    AstArgument* lhs = bc->getLHS();
+                    AstArgument* rhs = bc->getRHS();
                     if (isBindingConstraint(lhs, rhs, boundArgs)) {
                         boundArgs.insert(getString(lhs));
                     }
@@ -850,7 +849,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                     }
                 }
 
-                std::vector<AstAtom*> atoms = clause->getAtoms();
+                std::vector<AstAtom*> atoms = clause->getTypedBodyLiterals<AstAtom>();
                 int atomsAdorned = 0;
                 int atomsTotal = atoms.size();
 
@@ -1361,7 +1360,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
             // -- replace with H :- mag(H), T --
 
-            size_t originalNumAtoms = newClause->getAtoms().size();
+            size_t originalNumAtoms = newClause->getTypedBodyLiterals<AstAtom>().size();
 
             // create the first argument of this new clause
             const AstAtom* newClauseHead = newClause->getHead()->getAtom();

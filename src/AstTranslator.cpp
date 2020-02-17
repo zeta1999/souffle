@@ -457,7 +457,7 @@ void AstTranslator::ClauseTranslator::indexValues(const AstNode* curNode,
 
 /** index values in rule */
 void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) {
-    for (const AstAtom* atom : clause.getAtoms()) {
+    for (const auto* atom : clause.getTypedBodyLiterals<AstAtom>()) {
         // std::map<const arg_list*, int> arg_level;
         std::map<const AstNode*, std::unique_ptr<arg_list>> nodeArgs;
 
@@ -969,7 +969,7 @@ void AstTranslator::nameUnnamedVariables(AstClause* clause) {
 
     // name all variables in the atoms
     Instantiator init;
-    for (auto& atom : clause->getAtoms()) {
+    for (auto& atom : clause->getTypedBodyLiterals<AstAtom>()) {
         atom->apply(init);
     }
 }
@@ -1068,7 +1068,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
             // each recursive rule results in several operations
             int version = 0;
-            const auto& atoms = cl->getAtoms();
+            const auto& atoms = cl->getTypedBodyLiterals<AstAtom>();
             for (size_t j = 0; j < atoms.size(); ++j) {
                 const AstAtom* atom = atoms[j];
                 const AstRelation* atomRelation = getAtomRelation(atom, program);
@@ -1081,7 +1081,8 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 // modify the processed rule to use delta relation and write to new relation
                 std::unique_ptr<AstClause> r1(cl->clone());
                 r1->getHead()->setName(translateNewRelation(rel)->get()->getName());
-                r1->getAtoms()[j]->setName(translateDeltaRelation(atomRelation)->get()->getName());
+                r1->getTypedBodyLiterals<AstAtom>()[j]->setName(
+                        translateDeltaRelation(atomRelation)->get()->getName());
                 if (Global::config().has("provenance")) {
                     r1->addToBody(std::make_unique<AstProvenanceNegation>(
                             std::unique_ptr<AstAtom>(cl->getHead()->clone())));
@@ -1099,7 +1100,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 // reduce R to P ...
                 for (size_t k = j + 1; k < atoms.size(); k++) {
                     if (isInSameSCC(getAtomRelation(atoms[k], program))) {
-                        AstAtom* cur = r1->getAtoms()[k]->clone();
+                        AstAtom* cur = r1->getTypedBodyLiterals<AstAtom>()[k]->clone();
                         cur->setName(
                                 translateDeltaRelation(getAtomRelation(atoms[k], program))->get()->getName());
                         r1->addToBody(std::make_unique<AstNegation>(std::unique_ptr<AstAtom>(cur)));

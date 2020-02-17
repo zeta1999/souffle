@@ -237,52 +237,16 @@ public:
         }
     }
 
-    /** Obtains a list of contained body-atoms. */
-    // TODO (b-scholz): remove this method
-    std::vector<AstAtom*> getAtoms() const {
-        std::vector<AstAtom*> atoms;
-        for (const auto& lit : bodyLiterals) {
-            if (AstAtom* atom = dynamic_cast<AstAtom*>(lit.get())) {
-                atoms.push_back(atom);
+    /** TODO: move this to ast utils */
+    template <typename T>
+    std::vector<T*> getTypedBodyLiterals() const {
+        std::vector<T*> res;
+        for (auto& lit : bodyLiterals) {
+            if (T* t = dynamic_cast<T*>(lit.get())) {
+                res.push_back(t);
             }
         }
-        return atoms;
-    }
-
-    /** Obtains a list of contained negations. */
-    // TODO (b-scholz): remove this method
-    std::vector<AstNegation*> getNegations() const {
-        std::vector<AstNegation*> negations;
-        for (const auto& lit : bodyLiterals) {
-            if (auto negation = dynamic_cast<AstNegation*>(lit.get())) {
-                negations.push_back(negation);
-            }
-        }
-        return negations;
-    }
-
-    /** Obtains a list of constraints */
-    // TODO (b-scholz): remove this method
-    std::vector<AstConstraint*> getConstraints() const {
-        std::vector<AstConstraint*> constraints;
-        for (const auto& lit : bodyLiterals) {
-            if (auto constraint = dynamic_cast<AstConstraint*>(lit.get())) {
-                constraints.push_back(constraint);
-            }
-        }
-        return constraints;
-    }
-
-    /** Obtains a list of binary constraints */
-    // TODO (b-scholz): remove this method
-    std::vector<AstBinaryConstraint*> getBinaryConstraints() const {
-        std::vector<AstBinaryConstraint*> binaryConstraints;
-        for (const auto& lit : bodyLiterals) {
-            if (auto bc = dynamic_cast<AstBinaryConstraint*>(lit.get())) {
-                binaryConstraints.push_back(bc);
-            }
-        }
-        return binaryConstraints;
+        return res;
     }
 
     /** Updates the fixed execution order flag */

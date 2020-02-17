@@ -30,7 +30,7 @@ const size_t AuxiliaryArity::computeArity(const AstRelation* relation) const {
         if (Global::config().get("provenance") == "subtreeHeights") {
             size_t maxNrOfPremises = 0;
             for (auto& cur : relation->getClauses()) {
-                size_t numberOfAtoms = cur->getAtoms().size();
+                size_t numberOfAtoms = cur->getTypedBodyLiterals<AstAtom>().size();
                 if (numberOfAtoms > maxNrOfPremises) {
                     maxNrOfPremises = numberOfAtoms;
                 }

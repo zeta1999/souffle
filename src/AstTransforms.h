@@ -20,7 +20,7 @@
 #include "AstTransformer.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
-#include "DebugReport.h"
+#include "DebugReporter.h"
 #include "Util.h"
 #include <functional>
 #include <memory>

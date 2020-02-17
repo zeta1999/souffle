@@ -742,6 +742,8 @@ private:
             return std::make_tuple(-1, -1, std::vector<RamDomain>());
         }
 
+        // TODO (darth_tytus): update to reflect new types.
+
         // find correct tuple
         for (auto& tuple : *rel) {
             bool match = true;
@@ -788,11 +790,8 @@ private:
         return std::make_tuple(-1, -1, std::vector<RamDomain>());
     }
 
-    void printRelationOutput(const std::vector<RamTypeAttribute>& symbolMask, const IODirectives& ioDir,
-            const Relation& rel) override {
-        WriteCoutCSVFactory()
-                .getWriter(symbolMask, prog.getSymbolTable(), ioDir, rel.getAuxiliaryArity())
-                ->writeAll(rel);
+    void printRelationOutput(const IODirectives& ioDir, const Relation& rel) override {
+        WriteCoutCSVFactory().getWriter(ioDir, prog.getSymbolTable())->writeAll(rel);
     }
 
     /*

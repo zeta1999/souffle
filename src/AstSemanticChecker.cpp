@@ -247,8 +247,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             return;
         }
 
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            auto arg = fun.getArg(i);
+        size_t i = 0;
+        for (auto arg : fun.getArguments()) {
             if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
                 switch (fun.getArgType(i)) {
                     case RamTypeAttribute::Signed:
@@ -267,6 +267,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                         assert(false && "Invalid argument type");
                 }
             }
+            ++i;
         }
     });
 
@@ -281,7 +282,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
 
         // Check arity.
-        if (funDecl->getArity() != fun.getArity()) {
+        if (funDecl->getArity() != fun.getArguments().size()) {
             report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
         }
 
@@ -293,8 +294,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
 
         // Check argument types.
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            const AstArgument* arg = fun.getArg(i);
+        size_t i = 0;
+        for (const auto arg : fun.getArguments()) {
             if (i < funDecl->getArity()) {
                 if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
                     report.addError("Non-numeric argument for functor", arg->getSrcLoc());
@@ -302,6 +303,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                 }
             }
+            i++;
         }
     });
 
@@ -445,8 +447,8 @@ static bool hasUnnamedVariable(const AstLiteral* lit) {
 void AstSemanticChecker::checkLiteral(
         ErrorReport& report, const AstProgram& program, const AstLiteral& literal) {
     // check potential nested atom
-    if (auto* atom = literal.getAtom()) {
-        checkAtom(report, program, *atom);
+    if (const auto* atomLiteral = dynamic_cast<const AstAtomLiteral*>(&literal)) {
+        checkAtom(report, program, *atomLiteral->getAtom());
     }
 
     if (const auto* constraint = dynamic_cast<const AstBinaryConstraint*>(&literal)) {
@@ -549,12 +551,12 @@ void AstSemanticChecker::checkArgument(
     if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg)) {
         checkAggregator(report, program, *agg);
     } else if (const auto* intrFunc = dynamic_cast<const AstIntrinsicFunctor*>(&arg)) {
-        for (size_t i = 0; i < intrFunc->getArity(); i++) {
-            checkArgument(report, program, *intrFunc->getArg(i));
+        for (auto arg : intrFunc->getArguments()) {
+            checkArgument(report, program, *arg);
         }
     } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for (size_t i = 0; i < userDefFunc->getArity(); i++) {
-            checkArgument(report, program, *userDefFunc->getArg(i));
+        for (auto arg : userDefFunc->getArguments()) {
+            checkArgument(report, program, *arg);
         }
     }
 }

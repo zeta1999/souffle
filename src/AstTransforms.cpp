@@ -464,7 +464,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
             if (rewrite) {
                 // clone clause without negation for empty relations
 
-                auto res = std::unique_ptr<AstClause>(cl->cloneHead());
+                auto res = std::unique_ptr<AstClause>(cloneHead(cl));
 
                 for (AstLiteral* lit : cl->getBodyLiterals()) {
                     if (auto* neg = dynamic_cast<AstNegation*>(lit)) {
@@ -583,7 +583,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                 // Clause will always fail
                 rel->removeClause(clause);
             } else if (containsTrue) {
-                auto replacementClause = std::unique_ptr<AstClause>(clause->cloneHead());
+                auto replacementClause = std::unique_ptr<AstClause>(cloneHead(clause));
 
                 // Only keep non-'true' literals
                 for (AstLiteral* lit : clause->getBodyLiterals()) {

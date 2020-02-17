@@ -903,7 +903,7 @@ arg
         auto record = new AstRecordInit();
 
         for (auto* arg : $non_empty_arg_list) {
-            record->add(std::unique_ptr<AstArgument>(arg));
+            record->addArgument(std::unique_ptr<AstArgument>(arg));
         }
 
         $$ = record;
@@ -924,7 +924,7 @@ arg
         functor->setName($IDENT);
 
         for (auto* arg : $non_empty_arg_list) {
-            functor->add(std::unique_ptr<AstArgument>(arg));
+            functor->addArgument(std::unique_ptr<AstArgument>(arg));
         }
 
         $$ = functor;

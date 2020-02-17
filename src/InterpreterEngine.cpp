@@ -1278,39 +1278,27 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(LogSize)
 
         CASE(Load)
-            for (IODirectives ioDirectives : cur.getIODirectives()) {
-                try {
+            try {
+                for (IODirectives ioDirectives : cur.getIODirectives()) {
                     InterpreterRelation& relation = *node->getRelation();
-                    std::vector<RamTypeAttribute> symbolMask;
-                    for (auto& cur : cur.getRelation().getAttributeTypes()) {
-                        symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-                    }
-                    IOSystem::getInstance()
-                            .getReader(
-                                    symbolMask, getSymbolTable(), ioDirectives, relation.getAuxiliaryArity())
-                            ->readAll(relation);
-                } catch (std::exception& e) {
-                    std::cerr << "Error loading data: " << e.what() << "\n";
+                    IOSystem::getInstance().getReader(ioDirectives, getSymbolTable())->readAll(relation);
                 }
+            } catch (std::exception& e) {
+                std::cerr << "Error loading data: " << e.what() << "\n";
             }
             return true;
         ESAC(Load)
 
         CASE(Store)
-            for (IODirectives ioDirectives : cur.getIODirectives()) {
-                try {
-                    std::vector<RamTypeAttribute> symbolMask;
-                    for (auto& cur : cur.getRelation().getAttributeTypes()) {
-                        symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-                    }
+            try {
+                for (IODirectives ioDirectives : cur.getIODirectives()) {
                     IOSystem::getInstance()
-                            .getWriter(symbolMask, getSymbolTable(), ioDirectives,
-                                    cur.getRelation().getAuxiliaryArity())
+                            .getWriter(ioDirectives, getSymbolTable())
                             ->writeAll(*node->getRelation());
-                } catch (std::exception& e) {
-                    std::cerr << e.what();
-                    exit(1);
                 }
+            } catch (std::exception& e) {
+                std::cerr << e.what();
+                exit(1);
             }
             return true;
         ESAC(Store)

@@ -8,14 +8,13 @@
 
 /************************************************************************
  *
- * @file ComponentModel.h
+ * @file ComponentLookupAnalysis.h
  *
  ***********************************************************************/
 
 #pragma once
 
 #include "AstAnalysis.h"
-#include "AstTransformer.h"
 #include "AstType.h"
 #include <cstddef>
 #include <map>
@@ -26,7 +25,6 @@
 namespace souffle {
 
 class AstComponent;
-class AstTranslationUnit;
 
 /**
  * Class that encapsulates std::map of types binding that comes from .init c = Comp<MyType>
@@ -96,16 +94,6 @@ private:
     std::map<const AstComponent*, std::set<const AstComponent*>> nestedComponents;
     // component definition enclosing a component definition
     std::map<const AstComponent*, const AstComponent*> enclosingComponent;
-};
-
-class ComponentInstantiationTransformer : public AstTransformer {
-public:
-    std::string getName() const override {
-        return "ComponentInstantiationTransformer";
-    }
-
-private:
-    bool transform(AstTranslationUnit& translationUnit) override;
 };
 
 }  // end of namespace souffle

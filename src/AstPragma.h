@@ -17,16 +17,12 @@
 #pragma once
 
 #include "AstNode.h"
-#include "AstTransformer.h"
 #include <cassert>
 #include <ostream>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace souffle {
-
-class AstTranslationUnit;
 
 /**
  * @class AstPragma
@@ -34,18 +30,14 @@ class AstTranslationUnit;
  */
 class AstPragma : public AstNode {
 public:
-    AstPragma() = default;
-
-    AstPragma(std::string k, std::string v) : key(std::move(k)), value(std::move(v)) {}
+    AstPragma(std::string key, std::string value) : key(std::move(key)), value(std::move(value)) {}
 
     void print(std::ostream& os) const override {
         os << ".pragma " << key << " " << value << "\n";
     }
 
     AstPragma* clone() const override {
-        auto res = new AstPragma();
-        res->key = key;
-        res->value = value;
+        auto res = new AstPragma(key, value);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -68,17 +60,6 @@ protected:
 
     /** Value */
     std::string value;
-};
-
-/** TODO (b-scholz): this should not be here */
-class AstPragmaChecker : public AstTransformer {
-public:
-    std::string getName() const override {
-        return "AstPragmaChecker";
-    }
-
-private:
-    bool transform(AstTranslationUnit&) override;
 };
 
 }  // end of namespace souffle

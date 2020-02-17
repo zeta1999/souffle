@@ -279,7 +279,7 @@ private:
     static std::unique_ptr<RamTupleElement> makeRamTupleElement(const Location& loc);
 
     /** determine the auxiliary for relations */
-    const size_t getEvaluationArity(const AstAtom* atom) const;
+    size_t getEvaluationArity(const AstAtom* atom) const;
 
     /**
      * assigns names to unnamed variables such that enclosing

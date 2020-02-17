@@ -45,11 +45,12 @@ class AstAtom;
  * either in the head or in the body of a Clause, e.g., parent(x,y).
  * The arguments of the atom can be variables or constants.
  */
-class AstAtom : public AstLiteral {
+class AstAtom : public AstAtomLiteral {
 public:
     AstAtom(AstRelationIdentifier name = AstRelationIdentifier()) : name(std::move(name)) {}
 
     /** Return the name of this atom */
+    // TODO (b-scholz): rename to getIdent
     const AstRelationIdentifier& getName() const {
         return name;
     }
@@ -151,7 +152,7 @@ protected:
  * Subclass of Literal that represents a negated atom, * e.g., !parent(x,y).
  * A Negated atom occurs in a body of clause and cannot occur in a head of a clause.
  */
-class AstNegation : public AstLiteral {
+class AstNegation : public AstAtomLiteral {
 public:
     AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
@@ -160,30 +161,26 @@ public:
         return atom.get();
     }
 
-    /** Return the negated atom */
+    /** Returns the nested atom as the referenced atom */
     AstAtom* getAtom() {
         return atom.get();
     }
 
-    /** Output to a given stream */
     void print(std::ostream& os) const override {
         os << "!";
         atom->print(os);
     }
 
-    /** Creates a clone of this AST sub-structure */
     AstNegation* clone() const override {
         auto* res = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
-    /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
         atom = map(std::move(atom));
     }
 
-    /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         return {atom.get()};
     }
@@ -205,17 +202,12 @@ protected:
  *
  * Specialised for provenance: used for existence check that tuple doesn't already exist
  */
-class AstProvenanceNegation : public AstLiteral {
+class AstProvenanceNegation : public AstAtomLiteral {
 public:
     AstProvenanceNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     /** Returns the nested atom as the referenced atom */
     const AstAtom* getAtom() const override {
-        return atom.get();
-    }
-
-    /** Return the negated atom */
-    AstAtom* getAtom() {
         return atom.get();
     }
 
@@ -254,11 +246,6 @@ protected:
  */
 class AstConstraint : public AstLiteral {
 public:
-    const AstAtom* getAtom() const override {
-        // This kind of literal has no nested atom
-        return nullptr;
-    }
-
     /** Negates the constraint */
     virtual void negate() = 0;
 

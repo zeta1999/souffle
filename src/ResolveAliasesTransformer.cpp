@@ -23,6 +23,7 @@
 #include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "Util.h"
@@ -336,7 +337,7 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
 }
 
 std::unique_ptr<AstClause> ResolveAliasesTransformer::removeTrivialEquality(const AstClause& clause) {
-    std::unique_ptr<AstClause> res(clause.cloneHead());
+    std::unique_ptr<AstClause> res(cloneHead(&clause));
 
     // add all literals, except filtering out t = t constraints
     for (AstLiteral* literal : clause.getBodyLiterals()) {

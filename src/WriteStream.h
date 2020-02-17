@@ -17,6 +17,7 @@
 #include "IODirectives.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
+#include "json11.h"
 
 #include <cassert>
 #include <string>
@@ -24,19 +25,35 @@
 
 namespace souffle {
 
+using Json = json11::Json;
+
 class WriteStream {
 public:
-    WriteStream(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-            const size_t auxiliaryArity, bool summary = false)
-            : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
-              arity(symbolMask.size() - auxiliaryArity) {}
+    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable, bool summary = false)
+            : symbolTable(symbolTable), summary(summary) {
+        const std::string& relationName{ioDirectives.getRelationName()};
+
+        std::string parseErrors;
+
+        types = Json::parse(ioDirectives.get("types"), parseErrors);
+
+        assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
+
+        arity = static_cast<size_t>(types[relationName]["arity"].long_value());
+
+        for (size_t i = 0; i < arity; ++i) {
+            RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
+            typeAttributes.push_back(type);
+        }
+    }
+
     template <typename T>
     void writeAll(const T& relation) {
         if (summary) {
             return writeSize(relation.size());
         }
         auto lease = symbolTable.acquireLock();
-        (void)lease;
+        (void)lease;  // silence "unused variable" warning
         if (arity == 0) {
             if (relation.begin() != relation.end()) {
                 writeNullary();
@@ -55,10 +72,12 @@ public:
     virtual ~WriteStream() = default;
 
 protected:
-    const std::vector<RamTypeAttribute>& symbolMask;
+    std::vector<RamTypeAttribute> typeAttributes;
     const SymbolTable& symbolTable;
+    Json types;
+
     const bool summary;
-    const size_t arity;
+    size_t arity;
 
     virtual void writeNullary() = 0;
     virtual void writeNextTuple(const RamDomain* tuple) = 0;
@@ -91,9 +110,9 @@ protected:
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) = 0;
+    virtual std::unique_ptr<WriteStream> getWriter(
+            const IODirectives& ioDirectives, const SymbolTable& symbolTable) = 0;
+
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

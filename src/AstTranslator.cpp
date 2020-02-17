@@ -47,6 +47,7 @@
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
+#include "json11.h"
 #include <algorithm>
 #include <cassert>
 #include <chrono>
@@ -63,6 +64,8 @@
 
 namespace souffle {
 
+using Json = json11::Json;
+
 class ErrorReport;
 class SymbolTable;
 
@@ -70,7 +73,7 @@ std::unique_ptr<RamTupleElement> AstTranslator::makeRamTupleElement(const Locati
     return std::make_unique<RamTupleElement>(loc.identifier, loc.element);
 }
 
-const size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
+size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     if (atom->getName().getName().find("@delta_") == 0) {
         const AstRelationIdentifier& originalRel = AstRelationIdentifier(atom->getName().getName().substr(7));
         return auxArityAnalysis->getArity(program->getRelation(originalRel));
@@ -104,6 +107,26 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
             ioDirective.setFileName(filePath + "/" + ioDirective.getFileName());
         }
     }
+
+    // Prepare type system information.
+    std::string name = getRelationName(rel->getName());
+    std::vector<std::string> attributesTypes;
+
+    for (size_t i = 0; i < rel->getArity(); ++i) {
+        auto type = getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName()));
+        attributesTypes.push_back(type);
+    }
+
+    // Casting due to json11.h type requirements.
+    long long arity{static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(rel))};
+    long long auxArity{static_cast<long long>(auxArityAnalysis->getArity(rel))};
+
+    Json relJson = Json::object{{"arity", arity}, {"auxArity", auxArity},
+            {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
+
+    Json types = Json::object{{name, relJson}};
+
+    ioDirective.set("types", types.dump());
 }
 
 std::vector<IODirectives> AstTranslator::getInputIODirectives(
@@ -238,7 +261,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             return makeRamTupleElement(index.getDefinitionPoint(var));
         }
 
-        std::unique_ptr<RamExpression> visitUnnamedVariable(const AstUnnamedVariable& var) override {
+        std::unique_ptr<RamExpression> visitUnnamedVariable(const AstUnnamedVariable&) override {
             return std::make_unique<RamUndefValue>();
         }
 
@@ -324,9 +347,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         std::unique_ptr<RamCondition> visitBinaryConstraint(const AstBinaryConstraint& binRel) override {
             std::unique_ptr<RamExpression> valLHS = translator.translateValue(binRel.getLHS(), index);
             std::unique_ptr<RamExpression> valRHS = translator.translateValue(binRel.getRHS(), index);
-            return std::make_unique<RamConstraint>(binRel.getOperator(),
-                    translator.translateValue(binRel.getLHS(), index),
-                    translator.translateValue(binRel.getRHS(), index));
+            return std::make_unique<RamConstraint>(
+                    binRel.getOperator(), std::move(valLHS), std::move(valRHS));
         }
 
         /** for negations */
@@ -525,7 +547,7 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
         for (size_t i = 0; i < arity; i++) {
             auto arg = head->getArgument(i);
             // don't add counters
-            visitDepthFirst(*arg, [&](const AstCounter& cur) { isVolatile = false; });
+            visitDepthFirst(*arg, [&](const AstCounter&) { isVolatile = false; });
             values.push_back(translator.translateValue(arg, valueIndex));
         }
         for (size_t i = 0; i < auxiliaryArity; i++) {
@@ -588,7 +610,7 @@ std::unique_ptr<RamCondition> AstTranslator::ClauseTranslator::createCondition(
 }
 
 std::unique_ptr<RamCondition> AstTranslator::ProvenanceClauseTranslator::createCondition(
-        const AstClause& originalClause) {
+        const AstClause& /* originalClause */) {
     return nullptr;
 }
 
@@ -1615,8 +1637,7 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
                     "(" + std::to_string(std::chrono::duration<double>(ram_end - ram_start).count()) + "s)";
             std::stringstream ramProgStr;
             ramProgStr << *ramProg;
-            debugReport.addSection(DebugReporter::getCodeSection(
-                    "ram-program", "RAM Program " + runtimeStr, ramProgStr.str()));
+            debugReport.addSection("ram-program", "RAM Program " + runtimeStr, ramProgStr.str());
         }
     }
     return std::make_unique<RamTranslationUnit>(std::move(ramProg), symTab, errReport, debugReport);

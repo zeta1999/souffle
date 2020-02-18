@@ -59,7 +59,7 @@ TEST(AstUtils, Grounded) {
     clause->addToBody(std::unique_ptr<AstLiteral>(neg));
 
     // check construction
-    EXPECT_EQ("r(X,Y,Z) :- \n   a(X),\n   !b(Z),\n   X = Y.", toString(*clause));
+    EXPECT_EQ("r(X,Y,Z) :- \n   a(X),\n   X = Y,\n   !b(Z).", toString(*clause));
 
     // obtain groundness
     auto isGrounded = getGroundedTerms(*clause);
@@ -102,7 +102,7 @@ TEST(AstUtils, GroundedRecords) {
     auto isGrounded = getGroundedTerms(*clause);
 
     const AstAtom* s = clause->getHead();
-    const auto* r = dynamic_cast<const AstAtom*>(clause->getBodyLiteral(0));
+    const auto* r = dynamic_cast<const AstAtom*>(clause->getBodyLiterals()[0]);
 
     EXPECT_TRUE(s);
     EXPECT_TRUE(r);

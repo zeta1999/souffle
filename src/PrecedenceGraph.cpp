@@ -141,7 +141,7 @@ bool RecursiveClauses::computeIsRecursive(
     std::vector<const AstRelation*> worklist;
 
     // set up start list
-    for (const AstAtom* cur : clause.getAtoms()) {
+    for (const auto* cur : getBodyLiterals<AstAtom>(clause)) {
         auto rel = program.getRelation(cur->getName());
         if (rel == trg) {
             return true;
@@ -167,7 +167,7 @@ bool RecursiveClauses::computeIsRecursive(
 
         // check all atoms in the relations
         for (const AstClause* cl : cur->getClauses()) {
-            for (const AstAtom* at : cl->getAtoms()) {
+            for (const AstAtom* at : getBodyLiterals<AstAtom>(*cl)) {
                 auto rel = program.getRelation(at->getName());
                 if (rel == trg) {
                     return true;

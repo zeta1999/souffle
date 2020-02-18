@@ -811,7 +811,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                     continue;
                 }
 
-                size_t numAtoms = clause->getAtoms().size();
+                size_t numAtoms = getBodyLiterals<AstAtom>(*clause).size();
                 std::vector<std::string> clauseAtomAdornments(numAtoms);
                 std::vector<unsigned int> ordering(numAtoms);
                 std::set<std::string> boundArgs;
@@ -829,16 +829,15 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                 }
 
                 // mark all bound arguments from the body
-                std::vector<AstBinaryConstraint*> constraints = clause->getBinaryConstraints();
-                for (AstBinaryConstraint* constraint : constraints) {
-                    BinaryConstraintOp op = constraint->getOperator();
-
+                for (const auto* bc : getBodyLiterals<AstBinaryConstraint>(*clause)) {
+                    BinaryConstraintOp op = bc->getOperator();
                     if (op != BinaryConstraintOp::EQ) {
                         continue;
                     }
 
-                    AstArgument* lhs = constraint->getLHS();
-                    AstArgument* rhs = constraint->getRHS();
+                    // have an equality constraint
+                    AstArgument* lhs = bc->getLHS();
+                    AstArgument* rhs = bc->getRHS();
                     if (isBindingConstraint(lhs, rhs, boundArgs)) {
                         boundArgs.insert(getString(lhs));
                     }
@@ -847,7 +846,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                     }
                 }
 
-                std::vector<AstAtom*> atoms = clause->getAtoms();
+                std::vector<AstAtom*> atoms = getBodyLiterals<AstAtom>(*clause);
                 int atomsAdorned = 0;
                 int atomsTotal = atoms.size();
 
@@ -1207,9 +1206,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // -- For each clause C = A^a :- A1^a1, A2^a2, ..., An^an
             // -- -- For each IDB literal A_i in the body of C
             // -- -- -- Add mag(Ai^ai) :- mag(A^a), A1^a1, ..., Ai-1^ai-1 to the program
-            std::vector<AstLiteral*> body = newClause->getBodyLiterals();
+            std::vector<AstAtom*> body = getBodyLiterals<AstAtom>(*newClause);
             for (size_t i = 0; i < body.size(); i++) {
-                AstLiteral* currentLiteral = body[i];
+                AstAtom* currentLiteral = body[i];
 
                 // only care about atoms in the body
                 if (dynamic_cast<AstAtom*>(currentLiteral) != nullptr) {
@@ -1358,7 +1357,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
             // -- replace with H :- mag(H), T --
 
-            size_t originalNumAtoms = newClause->getAtoms().size();
+            size_t originalNumAtoms = getBodyLiterals<AstAtom>(*newClause).size();
 
             // create the first argument of this new clause
             const AstAtom* newClauseHead = newClause->getHead()->getAtom();

@@ -19,6 +19,7 @@
 #include "RecordTable.h"
 #include "SymbolTable.h"
 #include "json11.h"
+#include <cctype>
 #include <memory>
 #include <string>
 #include <vector>
@@ -43,8 +44,8 @@ protected:
         auxiliaryArity = static_cast<size_t>(types[relationName]["auxArity"].long_value());
 
         for (size_t i = 0; i < arity; ++i) {
-            RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
-            typeAttributes.push_back(type);
+            std::string type = types[relationName]["types"][i].string_value();
+            typeAttributes.push_back(std::move(type));
         }
     }
 
@@ -62,10 +63,28 @@ public:
     virtual ~ReadStream() = default;
 
 protected:
+    /**
+     * Read a record from a string.
+     *
+     * This function assumes that the parenthesis are balanced.
+     */
+    // RamDomain readRecord(const std::string& source, const std::string& name, size_t pos = 0) {
+    //     std::vector<RamDomain> recordValues();
+    // }
+
+    /**
+     * Advance position in the string until first non-whitespace character.
+     */
+    void consumeWhiteSpace(const std::string& str, size_t& pos) {
+        while (pos < str.length() && std::isspace(static_cast<unsigned char>(str[pos]))) {
+            ++pos;
+        }
+    }
+
     Json types;
 
     virtual std::unique_ptr<RamDomain[]> readNextTuple() = 0;
-    std::vector<RamTypeAttribute> typeAttributes;
+    std::vector<std::string> typeAttributes;
     SymbolTable& symbolTable;
     RecordTable& recordTable;
 

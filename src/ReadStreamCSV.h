@@ -83,22 +83,24 @@ protected:
             ++columnsFilled;
 
             try {
-                switch (typeAttributes.at(inputMap[column])) {
-                    case RamTypeAttribute::Symbol:
+                switch (typeAttributes.at(inputMap[column])[0]) {
+                    case 's':
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;
-                    case RamTypeAttribute::Record:
-                        //                        tuple[inputMap[column]] = readRecord(element);
+                    case 'r':
+                        // tuple[inputMap[column]] = readRecord(element);
                         break;
-                    case RamTypeAttribute::Signed:
+                    case 'i':
                         tuple[inputMap[column]] = RamDomainFromString(element);
                         break;
-                    case RamTypeAttribute::Unsigned:
+                    case 'u':
                         tuple[inputMap[column]] = ramBitCast(RamUnsignedFromString(element));
                         break;
-                    case RamTypeAttribute::Float:
+                    case 'f':
                         tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element));
                         break;
+                    default:
+                        assert(false && "Invalid type attribute");
                 }
             } catch (...) {
                 std::stringstream errorMessage;

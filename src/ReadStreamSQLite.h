@@ -66,16 +66,18 @@ protected:
             }
 
             try {
-                switch (typeAttributes.at(column)) {
-                    case RamTypeAttribute::Symbol:
+                switch (typeAttributes.at(column)[0]) {
+                    case 's':
                         tuple[column] = symbolTable.unsafeLookup(element);
                         break;
-                    case RamTypeAttribute::Signed:
-                    case RamTypeAttribute::Unsigned:
-                    case RamTypeAttribute::Float:
-                    case RamTypeAttribute::Record:
+                    case 'i':
+                    case 'u':
+                    case 'f':
+                    case 'r':
                         tuple[column] = RamDomainFromString(element);
                         break;
+                    default:
+                        assert(false && "Invalid type attribute");
                 }
             } catch (...) {
                 std::stringstream errorMessage;

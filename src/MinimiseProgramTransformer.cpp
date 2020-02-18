@@ -151,7 +151,7 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
     int leftBodyAtomIdx = leftIdx - 1;
     const AstAtom* leftAtom =
             dynamic_cast<AstAtomLiteral*>(left->getBodyLiterals()[leftBodyAtomIdx])->getAtom();
-  
+
     int rightBodyAtomIdx = rightIdx - 1;
     const AstAtom* rightAtom =
             dynamic_cast<AstAtomLiteral*>(right->getBodyLiterals()[rightBodyAtomIdx])->getAtom();

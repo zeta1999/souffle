@@ -116,7 +116,7 @@ bool isFact(const AstClause& clause) {
         return false;
     }
     // there must not be any body clauses
-    if (clause.getBodyLiterals().size() != 0) {
+    if (!clause.getBodyLiterals().empty()) {
         return false;
     }
 

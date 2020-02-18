@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "AstClause.h"
 #include <cstddef>
 #include <set>
 #include <vector>
@@ -25,6 +24,7 @@ namespace souffle {
 
 // some forward declarations
 class AstAtom;
+class AstClause;
 class AstLiteral;
 class AstNode;
 class AstProgram;
@@ -79,8 +79,8 @@ std::vector<const AstRecordInit*> getRecords(const AstNode* root);
  * @return vector of body literals of the specified type
  */
 // TODO (azreika): add caching
-template <typename T>
-std::vector<T*> getBodyLiterals(const AstClause& clause) {
+template <typename T, typename C>
+std::vector<T*> getBodyLiterals(const C& clause) {
     std::vector<T*> res;
     for (auto& lit : clause.getBodyLiterals()) {
         if (T* t = dynamic_cast<T*>(lit)) {

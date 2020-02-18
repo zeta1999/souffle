@@ -165,7 +165,7 @@ public:
         if (head != nullptr) {
             head->print(os);
         }
-        if (bodyLiterals.size() > 0) {
+        if (!bodyLiterals.empty()) {
             os << " :- \n   ";
             os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
         }
@@ -176,8 +176,8 @@ public:
     }
 
     /** Add a Literal to the body of the clause */
-    void addToBody(std::unique_ptr<AstLiteral> l) {
-        bodyLiterals.emplace_back(l.release());
+    void addToBody(std::unique_ptr<AstLiteral> literal) {
+        bodyLiterals.push_back(std::move(literal));
     }
 
     /** Set the head of clause to @p h */

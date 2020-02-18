@@ -47,7 +47,7 @@ public:
     /**
      * Pack the given vector -- create a new reference in necessary.
      */
-    RamDomain pack(std::vector<RamDomain> vector) {
+    RamDomain pack(const std::vector<RamDomain>& vector) {
         RamDomain index;
 #pragma omp critical(record_pack)
         {
@@ -66,7 +66,6 @@ public:
                 }
             }
         }
-
         return index;
     }
 
@@ -119,9 +118,8 @@ public:
     /**
      * A function packing a vector into a reference.
      */
-    RamDomain pack(std::vector<RamDomain> vector) {
-        auto map = getForArity(vector.size());
-        return map.pack(std::move(vector));
+    RamDomain pack(const std::vector<RamDomain>& vector) {
+        return getForArity(vector.size()).pack(vector);
     }
 
     /**

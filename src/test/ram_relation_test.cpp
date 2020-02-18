@@ -220,7 +220,7 @@ TEST(IO_store, Unsigned) {
 }
 
 // Test (store) with different delimiter
-TEST(IO_store, SignedChangedDelimeter) {
+TEST(IO_store, SignedChangedDelimiter) {
     std::vector<RamDomain> randomNumbers = testutil::generateRandomVector<RamDomain>(RANDOM_TESTS);
     const std::string delimiter{", "};
 

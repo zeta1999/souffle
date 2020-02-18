@@ -6,12 +6,15 @@
 
 // Test writing of nested records
 
-.type Seq = [ first : number, second : Seq ]
-
-.decl A(s: Seq)
-A(nil).
-A([5, [4, [3, nil]]]).
-A([-8, [-1, [2, [3, nil]]]]).
+.type Tree = [ left: Tree, val: number, right: Tree ]
 
 
-.output A(IO=stdout,headers=true)
+.decl T(t: Tree, height: number)
+T(nil, 0).
+T([left, m + 1,right], m + 1) :- T(left, m), T(right, m),
+                               m < 10.
+
+.decl O(t: Tree)
+O(t) :- T(t, _).
+
+.output O

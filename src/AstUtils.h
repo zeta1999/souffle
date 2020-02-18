@@ -46,15 +46,6 @@ class AstRecordInit;
 std::vector<const AstVariable*> getVariables(const AstNode& root);
 
 /**
- * Obtains a list of all variables referenced within the AST rooted
- * by the given root node.
- *
- * @param root the root of the AST to be searched
- * @return a list of all variables referenced within
- */
-std::vector<const AstVariable*> getVariables(const AstNode* root);
-
-/**
  * Obtains a list of all records referenced within the AST rooted
  * by the given root node.
  *
@@ -62,15 +53,6 @@ std::vector<const AstVariable*> getVariables(const AstNode* root);
  * @return a list of all records referenced within
  */
 std::vector<const AstRecordInit*> getRecords(const AstNode& root);
-
-/**
- * Obtains a list of all records referenced within the AST rooted
- * by the given root node.
- *
- * @param root the root of the AST to be searched
- * @return a list of all records referenced within
- */
-std::vector<const AstRecordInit*> getRecords(const AstNode* root);
 
 /**
  * Returns literals of a particular type in the body of a clause.

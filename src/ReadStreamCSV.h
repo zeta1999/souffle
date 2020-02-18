@@ -76,19 +76,7 @@ protected:
         size_t end = 0;
         size_t columnsFilled = 0;
         for (uint32_t column = 0; columnsFilled < arity; column++) {
-            end = line.find(delimiter, start);
-            if (end == std::string::npos) {
-                end = line.length();
-            }
-            std::string element;
-            if (start <= end) {
-                element = line.substr(start, end - start);
-            } else {
-                std::stringstream errorMessage;
-                errorMessage << "Values missing in line " << lineNumber << "; ";
-                throw std::invalid_argument(errorMessage.str());
-            }
-            start = end + delimiter.size();
+            std::string element = nextElement(line, start, end);
             if (inputMap.count(column) == 0) {
                 continue;
             }
@@ -100,6 +88,8 @@ protected:
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;
                     case RamTypeAttribute::Record:
+                        //                        tuple[inputMap[column]] = readRecord(element);
+                        break;
                     case RamTypeAttribute::Signed:
                         tuple[inputMap[column]] = RamDomainFromString(element);
                         break;
@@ -119,6 +109,60 @@ protected:
         }
 
         return tuple;
+    }
+
+    std::string nextElement(const std::string& line, size_t& start, size_t& end) {
+        std::string element;
+
+        // Handle record/tuple delimiter coincidence.
+        if (delimiter.at(0) == ',') {
+            int record_parens = 0;
+            size_t next_delimiter = line.find(delimiter, start);
+
+            // Find first delimiter after the record.
+            while (end < std::min(next_delimiter, line.length()) || record_parens != 0) {
+                // Track the number of parenthesis.
+                if (line[end] == '[') {
+                    ++record_parens;
+                } else if (line[end] == ']') {
+                    --record_parens;
+                }
+
+                // Check for unbalanced parenthesis.
+                if (record_parens < 0) {
+                    break;
+                };
+
+                ++end;
+
+                // Find a next delimiter if the old one is invalid.
+                // But only if inside the unbalance parenthesis.
+                if (end == next_delimiter && record_parens != 0) {
+                    next_delimiter = line.find(delimiter, end);
+                }
+            }
+
+            // Handle the end-of-the-line case where parenthesis are unbalanced.
+            if (record_parens != 0) {
+                std::stringstream errorMessage;
+                errorMessage << "Unbalanced record parenthesis " << lineNumber << "; ";
+                throw std::invalid_argument(errorMessage.str());
+            }
+        } else {
+            end = std::min(line.find(delimiter, start), line.length());
+        }
+
+        // Check for missing value.
+        if (start > end) {
+            std::stringstream errorMessage;
+            errorMessage << "Values missing in line " << lineNumber << "; ";
+            throw std::invalid_argument(errorMessage.str());
+        }
+
+        element = line.substr(start, end - start);
+        start = end + delimiter.size();
+
+        return element;
     }
 
     std::string getDelimiter(const IODirectives& ioDirectives) const {

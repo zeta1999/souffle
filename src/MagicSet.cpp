@@ -1206,9 +1206,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // -- For each clause C = A^a :- A1^a1, A2^a2, ..., An^an
             // -- -- For each IDB literal A_i in the body of C
             // -- -- -- Add mag(Ai^ai) :- mag(A^a), A1^a1, ..., Ai-1^ai-1 to the program
-            std::vector<AstLiteral*> body = newClause->getBodyLiterals();
+            std::vector<AstAtom*> body = getBodyLiterals<AstAtom>(*newClause);
             for (size_t i = 0; i < body.size(); i++) {
-                AstLiteral* currentLiteral = body[i];
+                AstAtom* currentLiteral = body[i];
 
                 // only care about atoms in the body
                 if (dynamic_cast<AstAtom*>(currentLiteral) != nullptr) {

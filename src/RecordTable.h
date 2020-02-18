@@ -45,26 +45,21 @@ public:
     explicit RecordMap(size_t arity) : arity(arity), indexToRecord(1) {}  // note: index 0 element left free
 
     /**
-     * Packs the given tuple -- and may create a new reference if necessary.
+     * Pack the given vector -- create a new reference in necessary.
      */
-    RamDomain pack(const RamDomain* tuple) {
-        std::vector<RamDomain> tmp(arity);
-        for (size_t i = 0; i < arity; i++) {
-            tmp[i] = tuple[i];
-        }
-
+    RamDomain pack(std::vector<RamDomain> vector) {
         RamDomain index;
 #pragma omp critical(record_pack)
         {
-            auto pos = recordToIndex.find(tmp);
+            auto pos = recordToIndex.find(vector);
             if (pos != recordToIndex.end()) {
                 index = pos->second;
             } else {
 #pragma omp critical(record_unpack)
                 {
-                    indexToRecord.push_back(tmp);
+                    indexToRecord.push_back(vector);
                     index = indexToRecord.size() - 1;
-                    recordToIndex[tmp] = index;
+                    recordToIndex[vector] = index;
 
                     // assert that new index is smaller than the range
                     assert(index != std::numeric_limits<RamDomain>::max());
@@ -73,6 +68,18 @@ public:
         }
 
         return index;
+    }
+
+    /**
+     * Packs the given tuple -- and may create a new reference if necessary.
+     */
+    RamDomain pack(const RamDomain* tuple) {
+        std::vector<RamDomain> tmp(arity);
+        for (size_t i = 0; i < arity; i++) {
+            tmp[i] = tuple[i];
+        }
+
+        return pack(std::move(tmp));
     }
 
     /**
@@ -107,6 +114,14 @@ public:
      */
     RamDomain pack(RamDomain* tuple, size_t arity) {
         return getForArity(arity).pack(tuple);
+    }
+
+    /**
+     * A function packing a vector into a reference.
+     */
+    RamDomain pack(std::vector<RamDomain> vector) {
+        auto map = getForArity(vector.size());
+        return map.pack(std::move(vector));
     }
 
     /**

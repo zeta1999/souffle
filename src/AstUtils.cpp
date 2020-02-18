@@ -70,7 +70,7 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
     for (const AstClause* cl : relation->getClauses()) {
-        for (const AstNegation* neg : cl->getNegations()) {
+        for (const auto* neg : getBodyLiterals<AstNegation>(*cl)) {
             if (negRelation == getAtomRelation(neg->getAtom(), program)) {
                 foundLiteral = neg;
                 return true;
@@ -116,7 +116,7 @@ bool isFact(const AstClause& clause) {
         return false;
     }
     // there must not be any body clauses
-    if (clause.getBodySize() != 0) {
+    if (clause.getBodyLiterals().size() != 0) {
         return false;
     }
 

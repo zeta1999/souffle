@@ -642,13 +642,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
     }
 
     // check body literals
-    for (AstLiteral* lit : clause.getAtoms()) {
-        checkLiteral(report, program, *lit);
-    }
-    for (AstNegation* neg : clause.getNegations()) {
-        checkLiteral(report, program, *neg);
-    }
-    for (AstLiteral* lit : clause.getConstraints()) {
+    for (AstLiteral* lit : clause.getBodyLiterals()) {
         checkLiteral(report, program, *lit);
     }
 
@@ -677,7 +671,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
 
     // check execution plan
     if (clause.getExecutionPlan() != nullptr) {
-        auto numAtoms = clause.getAtoms().size();
+        auto numAtoms = getBodyLiterals<AstAtom>(clause).size();
         for (const auto& cur : clause.getExecutionPlan()->getOrders()) {
             bool isComplete = true;
             auto order = cur.second->getOrder();
@@ -1514,7 +1508,7 @@ bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
                     continue;
                 }
                 int version = 0;
-                for (const AstAtom* atom : clause->getAtoms()) {
+                for (const auto* atom : getBodyLiterals<AstAtom>(*clause)) {
                     if (scc.count(getAtomRelation(atom, translationUnit.getProgram())) != 0u) {
                         version++;
                     }

@@ -1244,8 +1244,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
         // add level constraints
         const auto& bodyLiterals = intermediateClause->getBodyLiterals();
-        for (size_t i = 0; i < bodyLiterals.size(); i++) {
-            auto lit = bodyLiterals[i];
+        for (auto lit : bodyLiterals) {
             if (auto atom = dynamic_cast<AstAtom*>(lit)) {
                 auto arity = atom->getArity();
                 auto auxiliaryArity = auxArityAnalysis->getArity(atom);
@@ -1263,8 +1262,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
         // add level constraints
         const auto& bodyLiterals = intermediateClause->getBodyLiterals();
-        for (size_t i = 0; i < bodyLiterals.size(); i++) {
-            auto lit = bodyLiterals[i];
+        for (auto lit : bodyLiterals) {
             if (auto atom = dynamic_cast<AstAtom*>(lit)) {
                 auto arity = atom->getArity();
 

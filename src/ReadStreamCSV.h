@@ -88,7 +88,7 @@ protected:
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;
                     case 'r':
-                        // tuple[inputMap[column]] = readRecord(element);
+                        tuple[inputMap[column]] = readRecord(element, typeAttributes[inputMap[column]]);
                         break;
                     case 'i':
                         tuple[inputMap[column]] = RamDomainFromString(element);

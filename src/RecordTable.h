@@ -169,7 +169,11 @@ public:
      * the absence of any nested record.
      */
     bool isNil(RamDomain ref) const {
-        return ref == 0;
+        return ref == getNil();
+    }
+
+    RamDomain getNil() const {
+        return 0;
     }
 
 private:

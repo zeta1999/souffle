@@ -18,6 +18,7 @@
 #include "RamTypes.h"
 #include "RecordTable.h"
 #include "SymbolTable.h"
+#include "Util.h"
 #include "json11.h"
 #include <cctype>
 #include <memory>
@@ -27,6 +28,8 @@
 namespace souffle {
 
 using json11::Json;
+
+// class RecordParser;
 
 class ReadStream {
 protected:
@@ -68,9 +71,91 @@ protected:
      *
      * This function assumes that the parenthesis are balanced.
      */
-    // RamDomain readRecord(const std::string& source, const std::string& name, size_t pos = 0) {
-    //     std::vector<RamDomain> recordValues();
-    // }
+    RamDomain readRecord(const std::string& source, const std::string& name, size_t pos = 0) {
+        Json recordInfo = types["records"][name];
+
+        // Check if record type information are present
+        if (recordInfo.is_null()) {
+            throw std::invalid_argument("Missing record type information: " + name);
+        }
+
+        // Handle nil case
+        consumeWhiteSpace(source, pos);
+        if (source.substr(pos, 3) == "nil") {
+            return recordTable.getNil();
+        }
+
+        const Json recordTypes = recordInfo["types"];
+        const size_t recordArity = recordInfo["arity"].long_value();
+
+        std::vector<RamDomain> recordValues(recordArity);
+
+        consumeChar(source, '[', pos);
+
+        for (size_t i = 0; i < recordArity; ++i) {
+            const std::string& recordType = recordTypes[i].string_value();
+            size_t consumed;
+
+            if (i > 0) {
+                consumeChar(source, ',', pos);
+            }
+            consumeWhiteSpace(source, pos);
+            switch (recordType[0]) {
+                case 's':
+                    recordValues[i] = readStringInRecord(source, pos);
+                    break;
+                case 'i':
+                    recordValues[i] = RamDomainFromString(source.substr(pos), &consumed);
+                    pos += consumed;
+                    break;
+                case 'u':
+                    recordValues[i] = ramBitCast(RamUnsignedFromString(source, &pos));
+                    break;
+                case 'f':
+                    recordValues[i] = ramBitCast(RamFloatFromString(source, &pos));
+                    break;
+                case 'r':
+                    recordValues[i] = readRecord(
+                            source, recordType, pos);  // Pos must be a reference, otherwise this won't work.
+                    break;
+                default:
+                    assert(false && "Invalid type attribute");
+            }
+        }
+        consumeChar(source, ']', pos);
+        return recordTable.pack(recordValues);
+    }
+
+    RamDomain readStringInRecord(const std::string& source, size_t& pos) {
+        size_t index = pos;
+
+        auto notWhiteSpace = [](char c) { return !std::isspace(static_cast<unsigned char>(c)); };
+
+        while (index < source.length() && notWhiteSpace(source[index]) && source[index] != ',') {
+            ++index;
+        }
+
+        std::string str = source.substr(pos, index - pos);
+        pos = index;
+
+        return symbolTable.unsafeLookup(std::move(str));
+    }
+
+    /**
+     * Read past given character, consuming any preceding whitespace.
+     */
+    void consumeChar(const std::string& str, char c, size_t& pos) {
+        consumeWhiteSpace(str, pos);
+        if (pos == str.length()) {
+            throw std::invalid_argument("Invalid record");
+        }
+        if (str[pos] != c) {
+            std::stringstream error;
+            error << "Expected: \'" << c << "\', got: " << str[pos];
+            throw std::invalid_argument(error.str());
+        }
+        ++pos;
+    }
 
     /**
      * Advance position in the string until first non-whitespace character.
@@ -98,5 +183,25 @@ public:
     virtual const std::string& getName() const = 0;
     virtual ~ReadStreamFactory() = default;
 };
+
+// class RecordParser final {
+// public:
+//     static RamDomain parseRecord(const std::string& source, RecordTable& recordTable, SymbolTable&
+//     symbolTable) {
+//         RecordParser(recordTable, symbolTable);
+//     }
+
+// private:
+//     RecordTable& recordTable;
+//     SymbolTable& symbolTable;
+//     const std::string& source;
+
+//     // Position in the string.
+//     size_t& position;
+
+//     RecordParser(RecordTable& recordTable, SymbolTable& symbolTable, size_t& position) :
+//     recordTable(recordTable), symbolTable(symbolTable), position(position) {}; virtual ~RecordParser() =
+//     default;
+// };
 
 } /* namespace souffle */

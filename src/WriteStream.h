@@ -108,8 +108,8 @@ protected:
             return;
         }
 
-        Json recordTypes = recordInfo["types"];
-        size_t recordArity = recordInfo["arity"].long_value();
+        const Json recordTypes = recordInfo["types"];
+        const size_t recordArity = recordInfo["arity"].long_value();
 
         const RamDomain* tuplePtr = recordTable.unpack(value, recordArity);
 

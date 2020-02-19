@@ -1167,7 +1167,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             AstClause* newClause = clause->clone();
             newClause->getHead()->setName(newRelName);
             // reorder atoms based on SIPS ordering
-            newClause->reorderAtoms(reorderOrdering(adornedClause.getOrdering()));
+            AstClause* tmp = reorderAtoms(newClause, reorderOrdering(adornedClause.getOrdering()));
+            delete newClause;
+            newClause = tmp;
 
             // get corresponding adornments for each body atom
             std::vector<std::string> bodyAdornment =
@@ -1376,7 +1378,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 newClauseOrder[k] = k + 1;
             }
             newClauseOrder[originalNumAtoms] = 0;
-            newClause->reorderAtoms(reorderOrdering(newClauseOrder));
+            tmp = reorderAtoms(newClause, reorderOrdering(newClauseOrder));
+            delete newClause;
+            newClause = tmp;
 
             // add the clause to the program and the set of new clauses
             newClause->setSrcLoc(nextSrcLoc(newClause->getSrcLoc()));

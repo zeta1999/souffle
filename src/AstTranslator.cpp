@@ -421,7 +421,7 @@ std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
             [](unsigned int i) -> unsigned int { return i - 1; });
 
     // re-order atoms
-    reorderedClause->reorderAtoms(newOrder);
+    reorderedClause.reset(reorderAtoms(reorderedClause.get(), newOrder));
 
     // clear other order and fix plan
     reorderedClause->clearExecutionPlan();

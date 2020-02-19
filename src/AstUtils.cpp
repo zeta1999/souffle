@@ -159,7 +159,7 @@ AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>
             // Atoms should be reordered
             literalToAdd = bodyLiterals[atomPositions[newOrder[currentAtom++]]];
         }
-        newClause->addToBody(literalToAdd->clone());
+        newClause->addToBody(std::unique_ptr<AstLiteral>(literalToAdd->clone()));
     }
 
     return newClause;

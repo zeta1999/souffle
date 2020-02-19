@@ -153,5 +153,5 @@ AstClause* cloneHead(const AstClause* clause);
  * @param clause clause to reorder atoms in
  * @param newOrder new order of atoms; atoms[i] = atoms[newOrder[i]]
  */
-AstClause* reorderAtoms(const AstClause& clause, const std::vector<unsigned int>& newOrder);
+AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>& newOrder);
 }  // end of namespace souffle

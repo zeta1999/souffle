@@ -148,7 +148,7 @@ protected:
         *_consumed = endOfSymbol - pos;
         std::string str = source.substr(pos, *_consumed);
 
-        return symbolTable.unsafeLookup(std::move(str));
+        return symbolTable.unsafeLookup(str);
     }
 
     /**

@@ -78,7 +78,7 @@ public:
             tmp[i] = tuple[i];
         }
 
-        return pack(std::move(tmp));
+        return pack(tmp);
     }
 
     /**

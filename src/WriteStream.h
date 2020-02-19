@@ -138,7 +138,7 @@ protected:
                     destination << symbolTable.unsafeResolve(recordValue);
                     break;
                 case 'r':
-                    outputRecord(destination, recordValue, std::move(recordType));
+                    outputRecord(destination, recordValue, recordType);
                     break;
                 default:
                     assert(false && "Unsupported type attribute.");

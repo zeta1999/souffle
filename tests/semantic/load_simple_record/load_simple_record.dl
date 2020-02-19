@@ -6,12 +6,13 @@
 
 // Test reading of a simple record. 
 
-.type pair = [first: number, second: number]
+.type tuple = [f: number, s: number, t: symbol]
 
-.decl A(x: pair)
+
+.decl A(x: tuple)
 .input A()
 
-.decl B(x: pair)
+.decl B(x: tuple)
 B(x) :- A(x).
 
 .output B()

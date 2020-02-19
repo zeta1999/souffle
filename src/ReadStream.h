@@ -29,8 +29,6 @@ namespace souffle {
 
 using json11::Json;
 
-// class RecordParser;
-
 class ReadStream {
 protected:
     ReadStream(const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
@@ -94,7 +92,7 @@ protected:
 
         for (size_t i = 0; i < recordArity; ++i) {
             const std::string& recordType = recordTypes[i].string_value();
-            size_t consumed;
+            size_t consumed = 0;
 
             if (i > 0) {
                 consumeChar(source, ',', pos);
@@ -106,21 +104,21 @@ protected:
                     break;
                 case 'i':
                     recordValues[i] = RamDomainFromString(source.substr(pos), &consumed);
-                    pos += consumed;
                     break;
                 case 'u':
-                    recordValues[i] = ramBitCast(RamUnsignedFromString(source, &pos));
+                    recordValues[i] = ramBitCast(RamUnsignedFromString(source.substr(pos), &consumed));
                     break;
                 case 'f':
-                    recordValues[i] = ramBitCast(RamFloatFromString(source, &pos));
+                    recordValues[i] = ramBitCast(RamFloatFromString(source.substr(pos), &consumed));
                     break;
                 case 'r':
-                    recordValues[i] = readRecord(
-                            source, recordType, pos);  // Pos must be a reference, otherwise this won't work.
+                    recordValues[i] = readRecord(source, recordType,
+                            consumed);  // Pos must be a reference, otherwise this won't work.
                     break;
                 default:
                     assert(false && "Invalid type attribute");
             }
+            pos += consumed;
         }
         consumeChar(source, ']', pos);
         return recordTable.pack(recordValues);
@@ -129,9 +127,11 @@ protected:
     RamDomain readStringInRecord(const std::string& source, size_t& pos) {
         size_t index = pos;
 
-        auto notWhiteSpace = [](char c) { return !std::isspace(static_cast<unsigned char>(c)); };
+        auto endOfElement = [](char c) {
+            return std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == ']';
+        };
 
-        while (index < source.length() && notWhiteSpace(source[index]) && source[index] != ',') {
+        while (index < source.length() && !endOfElement(source[index])) {
             ++index;
         }
 
@@ -183,25 +183,5 @@ public:
     virtual const std::string& getName() const = 0;
     virtual ~ReadStreamFactory() = default;
 };
-
-// class RecordParser final {
-// public:
-//     static RamDomain parseRecord(const std::string& source, RecordTable& recordTable, SymbolTable&
-//     symbolTable) {
-//         RecordParser(recordTable, symbolTable);
-//     }
-
-// private:
-//     RecordTable& recordTable;
-//     SymbolTable& symbolTable;
-//     const std::string& source;
-
-//     // Position in the string.
-//     size_t& position;
-
-//     RecordParser(RecordTable& recordTable, SymbolTable& symbolTable, size_t& position) :
-//     recordTable(recordTable), symbolTable(symbolTable), position(position) {}; virtual ~RecordParser() =
-//     default;
-// };
 
 } /* namespace souffle */

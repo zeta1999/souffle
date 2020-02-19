@@ -9,6 +9,9 @@
 .functor hoo():symbol
 .functor ioo(number):symbol
 
+.functor factorial(unsigned):unsigned
+.functor rnd(float):number
+
 .decl A(x:number)
 A(@foo(1,"123")) :- true.
 A(@goo("1234",2)) :- true.
@@ -30,3 +33,20 @@ B(@ioo(x)) :- I(x), I(@foo(x, @ioo(x))).
 .decl C(x:number)
 C(r) :- r = @foo(x, y), A(x), B(y).
 .output C
+
+
+
+// Test float and unsigned
+
+.decl F(x:unsigned)
+F(@factorial(itou(3))) :- true.
+F(@factorial(itou(5))) :- true.
+F(@factorial(itou(10))) :- true.
+.output F
+
+.decl R(i:number)
+R(@rnd(-12.35)) :- true.
+R(@rnd(-1.1231)) :- true.
+R(@rnd(0.7)) :- true.
+R(@rnd(0.2)) :- true.
+.output R

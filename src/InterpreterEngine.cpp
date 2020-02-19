@@ -546,11 +546,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         strVal[i] = getSymbolTable().resolve(arg).c_str();
                         values[i] = &strVal[i];
                         break;
-                    default:
+                    case RamTypeAttribute::Signed:
                         args[i] = &FFI_RamDomain;
                         intVal[i] = arg;
                         values[i] = &intVal[i];
                         break;
+                    default:
+                        assert(false && "Not implemented");
                 }
             }
 
@@ -564,13 +566,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         exit(1);
                     }
                     break;
-                default:
+                case RamTypeAttribute::Signed:
                     // Initialize for numeric value.
                     if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &FFI_RamDomain, args) != FFI_OK) {
                         std::cerr << "Failed to prepare CIF for user-defined operator ";
                         std::cerr << name << std::endl;
                         exit(1);
                     }
+                    break;
+                default:
+                    assert(false && "Not implemented");
             }
 
             ffi_call(&cif, fn, &rc, values);

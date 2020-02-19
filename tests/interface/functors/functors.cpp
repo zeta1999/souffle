@@ -13,6 +13,7 @@
  * Testing the user-defined functor interface
  *
  ***********************************************************************/
+#include <cmath>
 #include <cstdint>
 #include <cstring>
 
@@ -38,5 +39,24 @@ const char* ioo(int32_t n) {
     } else {
         return "POS";
     }
+}
+
+uint32_t factorial(uint32_t x) {
+    if (x == 0) {
+        return 1;
+    }
+
+    uint32_t accum = 1;
+
+    while (x > 1) {
+        accum *= x;
+        --x;
+    }
+
+    return accum;
+}
+
+int32_t rnd(float x) {
+    return round(x);
 }
 }

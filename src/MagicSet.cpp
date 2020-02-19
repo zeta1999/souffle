@@ -45,12 +45,6 @@ bool isEqualAdornment(const AstRelationIdentifier& pred1, const std::string& ado
     return ((pred1 == pred2) && (adorn1 == adorn2));
 }
 
-// checks whether an element is contained within a set
-template <class T>
-bool contains(std::set<T> set, T element) {
-    return (set.find(element) != set.end());
-}
-
 // checks whether a given adorned predicate is contained within a set
 bool contains(std::set<AdornedPredicate> adornedPredicates, const AstRelationIdentifier& atomName,
         const std::string& atomAdornment) {

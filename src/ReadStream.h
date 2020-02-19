@@ -67,17 +67,21 @@ protected:
     /**
      * Read a record from a string.
      *
-     * This function assumes that the parenthesis are balanced.
+     * @param source - string containing a record
+     * @param recordTypeName - record type.
+     * @parem pos - start parsing from this position.
+     * @param consumed - if not nullptr: number of characters read.
+     *
      */
-    RamDomain readRecord(
-            const std::string& source, const std::string& name, size_t pos = 0, size_t* _consumed = nullptr) {
+    RamDomain readRecord(const std::string& source, const std::string& recordTypeName, size_t pos = 0,
+            size_t* _consumed = nullptr) {
         const size_t initial_position = pos;
 
-        Json recordInfo = types["records"][name];
+        Json recordInfo = types["records"][recordTypeName];
 
         // Check if record type information are present
         if (recordInfo.is_null()) {
-            throw std::invalid_argument("Missing record type information: " + name);
+            throw std::invalid_argument("Missing record type information: " + recordTypeName);
         }
 
         // Handle nil case
@@ -148,7 +152,7 @@ protected:
      */
     void consumeChar(const std::string& str, char c, size_t& pos) {
         consumeWhiteSpace(str, pos);
-        if (pos == str.length()) {
+        if (pos >= str.length()) {
             throw std::invalid_argument("Unexpected end of input in record");
         }
         if (str[pos] != c) {

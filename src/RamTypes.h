@@ -54,32 +54,6 @@ inline std::ostream& operator<<(std::ostream& os, RamTypeAttribute T) {
     return os;
 }
 
-/** Convert a char to RamTypeAttribute */
-inline RamTypeAttribute RamPrimitiveFromChar(char c) {
-    RamTypeAttribute RamType;
-    switch (c) {
-        case 's':
-            RamType = RamTypeAttribute::Symbol;
-            break;
-        case 'i':
-            RamType = RamTypeAttribute::Signed;
-            break;
-        case 'f':
-            RamType = RamTypeAttribute::Float;
-            break;
-        case 'u':
-            RamType = RamTypeAttribute::Unsigned;
-            break;
-        case 'r':
-            RamType = RamTypeAttribute::Record;
-            break;
-        default:
-            std::cerr << "Invalid (RamTypeAttribute) char: " << c << std::endl;
-            assert(false);
-    }
-    return RamType;
-}
-
 /**
  * Check if type is numeric.
  */

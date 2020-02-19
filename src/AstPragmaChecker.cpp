@@ -8,12 +8,13 @@
 
 /************************************************************************
  *
- * @file AstPragma.cpp
+ * @file AstPragmaChecker.cpp
  *
- * Define the class AstPragma to update global options based on parameter.
+ * Defines a transformer that applies pragmas found in parsed input.
  *
  ***********************************************************************/
 
+#include "AstPragmaChecker.h"
 #include "AstPragma.h"
 #include "AstProgram.h"
 #include "AstTranslationUnit.h"
@@ -26,24 +27,7 @@ bool AstPragmaChecker::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     AstProgram* program = translationUnit.getProgram();
 
-    // Take in pragma options from the command line
-    if (Global::config().has("pragma")) {
-        std::vector<std::string> configOptions = splitString(Global::config().get("pragma"), ';');
-        for (const std::string& option : configOptions) {
-            size_t splitPoint = option.find(':');
-
-            std::string optionName = option.substr(0, splitPoint);
-            std::string optionValue =
-                    (splitPoint == std::string::npos) ? "" : option.substr(splitPoint + 1, option.length());
-
-            if (!Global::config().has(optionName)) {
-                changed = true;
-                Global::config().set(optionName, optionValue);
-            }
-        }
-    }
-
-    // Take in pragma options from the datalog file itself
+    // Take in pragma options from the datalog file
     visitDepthFirst(*program, [&](const AstPragma& pragma) {
         std::pair<std::string, std::string> kvp = pragma.getkvp();
 

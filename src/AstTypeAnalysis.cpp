@@ -472,10 +472,9 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                     return;
                 }
             }
-
-            // Add types constraints of arguments
-            for (size_t i = 0; i < fun.getArity(); i++) {
-                auto argumentVar = getVar(fun.getArg(i));
+            size_t i = 0;
+            for (auto arg : fun.getArguments()) {
+                auto argumentVar = getVar(arg);
                 switch (fun.getArgType(i)) {
                     case RamTypeAttribute::Signed:
                         addConstraint(isSubtypeOf(argumentVar, env.getNumberType()));
@@ -492,9 +491,9 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                     default:
                         assert(false && "Invalid argument type");
                 }
+                ++i;
             }
         }
-
         // counter
         void visitCounter(const AstCounter& counter) override {
             // this value must be a number value

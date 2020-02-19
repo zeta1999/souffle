@@ -51,25 +51,24 @@ public:
     /**
      * Return a new WriteStream
      */
-    std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) const {
+    std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives, const SymbolTable& symbolTable,
+            const RecordTable& recordTable) const {
         std::string ioType = ioDirectives.getIOType();
         if (outputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested output type <" + ioType + "> is not supported.");
         }
-        return outputFactories.at(ioType)->getWriter(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
+        return outputFactories.at(ioType)->getWriter(ioDirectives, symbolTable, recordTable);
     }
     /**
      * Return a new ReadStream
      */
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t auxiliaryArity) const {
+    std::unique_ptr<ReadStream> getReader(
+            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) const {
         std::string ioType = ioDirectives.getIOType();
         if (inputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested input type <" + ioType + "> is not supported.");
         }
-        return inputFactories.at(ioType)->getReader(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
+        return inputFactories.at(ioType)->getReader(ioDirectives, symbolTable, recordTable);
     }
     ~IOSystem() = default;
 

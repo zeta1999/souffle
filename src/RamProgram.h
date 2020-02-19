@@ -88,7 +88,7 @@ public:
 
     /** @brief Get main program */
     RamStatement& getMain() const {
-        return *main.get();
+        return *main;
     }
 
     /** @brief Get all relations of RAM program  */

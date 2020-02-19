@@ -96,8 +96,9 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
         if (!ioType->isIO(rel) && rel->getClauses().size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
             AstClause* cl = rel->getClause(0);
-            if (!isFact(*cl) && cl->getBodySize() == 1u && cl->getAtoms().size() == 1u) {
-                AstAtom* atom = cl->getAtoms()[0];
+            std::vector<AstAtom*> bodyAtoms = getBodyLiterals<AstAtom>(*cl);
+            if (!isFact(*cl) && cl->getBodyLiterals().size() == 1u && bodyAtoms.size() == 1u) {
+                AstAtom* atom = bodyAtoms[0];
                 if (equal_targets(cl->getHead()->getArguments(), atom->getArguments())) {
                     // we have a match but have to check that all arguments are either
                     // variables or records containing variables
@@ -463,7 +464,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
             if (rewrite) {
                 // clone clause without negation for empty relations
 
-                auto res = std::unique_ptr<AstClause>(cl->cloneHead());
+                auto res = std::unique_ptr<AstClause>(cloneHead(cl));
 
                 for (AstLiteral* lit : cl->getBodyLiterals()) {
                     if (auto* neg = dynamic_cast<AstNegation*>(lit)) {
@@ -554,7 +555,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                                 std::make_unique<AstNumberConstant>(1)));
                     }
 
-                    return std::move(replacementAggregator);
+                    return replacementAggregator;
                 }
             }
 
@@ -582,7 +583,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                 // Clause will always fail
                 rel->removeClause(clause);
             } else if (containsTrue) {
-                auto replacementClause = std::unique_ptr<AstClause>(clause->cloneHead());
+                auto replacementClause = std::unique_ptr<AstClause>(cloneHead(clause));
 
                 // Only keep non-'true' literals
                 for (AstLiteral* lit : clause->getBodyLiterals()) {
@@ -1072,7 +1073,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
                         auto result = std::make_unique<AstIntrinsicFunctor>(
                                 FunctorOp::MUL, std::move(number), std::move(count));
 
-                        return std::move(result);
+                        return result;
                     }
                 }
             }
@@ -1136,7 +1137,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                         std::unique_ptr<AstArgument>(stringConstant->clone())));
 
                 // update constant to be the variable created
-                return std::move(newVariable);
+                return newVariable;
             } else if (auto* numberConstant = dynamic_cast<AstNumberConstant*>(node.get())) {
                 // number constant found
                 changeCount++;
@@ -1153,7 +1154,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                         std::unique_ptr<AstArgument>(numberConstant->clone())));
 
                 // update constant to be the variable created
-                return std::move(newVariable);
+                return newVariable;
             } else if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
                 // underscore found
                 changeCount++;

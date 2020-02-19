@@ -247,9 +247,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             }
         }
 
-        // Check argument types.
-        for (size_t i = 0; i < fun.getArity(); i++) {
-            auto arg = fun.getArg(i);
+        size_t i = 0;
+        for (auto arg : fun.getArguments()) {
             if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
                 switch (fun.getArgType(i)) {
                     case RamTypeAttribute::Signed:
@@ -268,6 +267,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                         assert(false && "Invalid argument type");
                 }
             }
+            ++i;
         }
     });
 
@@ -411,8 +411,8 @@ static bool hasUnnamedVariable(const AstLiteral* lit) {
 void AstSemanticChecker::checkLiteral(
         ErrorReport& report, const AstProgram& program, const AstLiteral& literal) {
     // check potential nested atom
-    if (auto* atom = literal.getAtom()) {
-        checkAtom(report, program, *atom);
+    if (const auto* atomLiteral = dynamic_cast<const AstAtomLiteral*>(&literal)) {
+        checkAtom(report, program, *atomLiteral->getAtom());
     }
 
     if (const auto* constraint = dynamic_cast<const AstBinaryConstraint*>(&literal)) {
@@ -515,12 +515,12 @@ void AstSemanticChecker::checkArgument(
     if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg)) {
         checkAggregator(report, program, *agg);
     } else if (const auto* intrFunc = dynamic_cast<const AstIntrinsicFunctor*>(&arg)) {
-        for (size_t i = 0; i < intrFunc->getArity(); i++) {
-            checkArgument(report, program, *intrFunc->getArg(i));
+        for (auto arg : intrFunc->getArguments()) {
+            checkArgument(report, program, *arg);
         }
     } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for (size_t i = 0; i < userDefFunc->getArity(); i++) {
-            checkArgument(report, program, *userDefFunc->getArg(i));
+        for (auto arg : userDefFunc->getArguments()) {
+            checkArgument(report, program, *arg);
         }
     }
 }
@@ -606,13 +606,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
     }
 
     // check body literals
-    for (AstLiteral* lit : clause.getAtoms()) {
-        checkLiteral(report, program, *lit);
-    }
-    for (AstNegation* neg : clause.getNegations()) {
-        checkLiteral(report, program, *neg);
-    }
-    for (AstLiteral* lit : clause.getConstraints()) {
+    for (AstLiteral* lit : clause.getBodyLiterals()) {
         checkLiteral(report, program, *lit);
     }
 
@@ -641,7 +635,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
 
     // check execution plan
     if (clause.getExecutionPlan() != nullptr) {
-        auto numAtoms = clause.getAtoms().size();
+        auto numAtoms = getBodyLiterals<AstAtom>(clause).size();
         for (const auto& cur : clause.getExecutionPlan()->getOrders()) {
             bool isComplete = true;
             auto order = cur.second->getOrder();
@@ -684,28 +678,6 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
                 report.addError("Doubly defined attribute name " + attr->getAttributeName() + ":" +
                                         toString(attr->getTypeName()),
                         attr->getSrcLoc());
-            }
-        }
-
-        /* check whether type is a record type */
-        if (typeEnv.isType(typeName)) {
-            const Type& type = typeEnv.getType(typeName);
-            if (isRecordType(type)) {
-                if (ioTypes.isInput(&relation)) {
-                    report.addError(
-                            "Input relations must not have record types. "
-                            "Attribute " +
-                                    attr->getAttributeName() + " has record type " +
-                                    toString(attr->getTypeName()),
-                            attr->getSrcLoc());
-                }
-                if (ioTypes.isOutput(&relation) && !ioTypes.isPrintSize(&relation)) {
-                    report.addWarning(
-                            "Record types in output relations are not printed verbatim: attribute " +
-                                    attr->getAttributeName() + " has record type " +
-                                    toString(attr->getTypeName()),
-                            attr->getSrcLoc());
-                }
             }
         }
     }
@@ -1478,7 +1450,7 @@ bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
                     continue;
                 }
                 int version = 0;
-                for (const AstAtom* atom : clause->getAtoms()) {
+                for (const auto* atom : getBodyLiterals<AstAtom>(*clause)) {
                     if (scc.count(getAtomRelation(atom, translationUnit.getProgram())) != 0u) {
                         version++;
                     }

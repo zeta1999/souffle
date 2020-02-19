@@ -15,7 +15,6 @@
  ***********************************************************************/
 #pragma once
 
-#include "AstTransformer.h"
 #include "Global.h"
 
 #include <fstream>
@@ -29,8 +28,6 @@
 
 namespace souffle {
 
-class AstTranslationUnit;
-
 /**
  * Class representing a section of a HTML report.
  * Consists of a unique identifier, a title, a number of subsections,
@@ -38,6 +35,9 @@ class AstTranslationUnit;
  */
 class DebugReportSection {
 public:
+    DebugReportSection(const std::string& id, std::string title, std::string body)
+            : id(generateUniqueID(id)), title(std::move(title)), body(std::move(body)) {}
+
     DebugReportSection(const std::string& id, std::string title, std::vector<DebugReportSection> subsections,
             std::string body)
             : id(generateUniqueID(id)), title(std::move(title)), subsections(std::move(subsections)),
@@ -97,12 +97,31 @@ public:
         sections.push_back(section);
     }
 
+    void addSection(const std::string& id, std::string title, std::string code) {
+        std::stringstream codeHTML;
+        std::string escapedCode = std::move(code);
+        while (true) {
+            size_t i = escapedCode.find("<");
+            if (i == std::string::npos) {
+                break;
+            }
+            escapedCode.replace(i, 1, "&lt;");
+        }
+        codeHTML << "<pre>" << escapedCode << "</pre>\n";
+        sections.push_back(DebugReportSection(id, std::move(title), {}, codeHTML.str()));
+    }
+
     /**
      * Outputs a complete HTML document to the given stream,
      * consisting of an index of all of the sections of the report,
      * followed by the content of each section.
      */
     void print(std::ostream& out) const;
+
+    /**
+     * Generate a debug report section for code (preserving formatting), with the given id and title.
+     */
+    static DebugReportSection getCodeSection(const std::string& id, std::string title, std::string code);
 
     friend std::ostream& operator<<(std::ostream& out, const DebugReport& report) {
         report.print(out);
@@ -111,64 +130,6 @@ public:
 
 private:
     std::vector<DebugReportSection> sections;
-};
-
-/**
- * Transformation pass which wraps another transformation pass and generates
- * a debug report section for the stage after applying the wrapped transformer,
- * and adds it to the translation unit's debug report.
- */
-class DebugReporter : public MetaTransformer {
-public:
-    DebugReporter(std::unique_ptr<AstTransformer> wrappedTransformer)
-            : wrappedTransformer(std::move(wrappedTransformer)) {}
-
-    void setDebugReport() override {}
-
-    void setVerbosity(bool verbose) override {
-        this->verbose = verbose;
-        if (auto* mt = dynamic_cast<MetaTransformer*>(wrappedTransformer.get())) {
-            mt->setVerbosity(verbose);
-        }
-    }
-
-    void disableTransformers(const std::set<std::string>& transforms) override {
-        if (auto* mt = dynamic_cast<MetaTransformer*>(wrappedTransformer.get())) {
-            mt->disableTransformers(transforms);
-        } else if (transforms.find(wrappedTransformer->getName()) != transforms.end()) {
-            wrappedTransformer = std::unique_ptr<AstTransformer>(new NullTransformer());
-        }
-    }
-
-    std::string getName() const override {
-        return "DebugReporter";
-    }
-
-    /**
-     * Generate a debug report section for the current state of the given translation unit
-     * with the given id and title, and add the section to the translation unit's debug report.
-     * @param translationUnit translation unit to generate and add debug report section
-     * @param id the unique id of the generated section
-     * @param title the text to display as the heading of the section
-     */
-    static void generateDebugReport(
-            AstTranslationUnit& translationUnit, const std::string& id, std::string title);
-
-    /**
-     * Generate a debug report section for code (preserving formatting), with the given id and title.
-     */
-    static DebugReportSection getCodeSection(const std::string& id, std::string title, std::string code);
-
-    /**
-     * Generated a debug report section for a dot graph specification, with the given id and title.
-     */
-    static DebugReportSection getDotGraphSection(
-            const std::string& id, std::string title, const std::string& dotSpec);
-
-private:
-    std::unique_ptr<AstTransformer> wrappedTransformer;
-
-    bool transform(AstTranslationUnit& translationUnit) override;
 };
 
 }  // end of namespace souffle

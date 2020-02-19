@@ -30,20 +30,20 @@ namespace test {
 
 TEST(AstUtils, Grounded) {
     // create an example clause:
-    AstClause* clause = new AstClause();
+    auto* clause = new AstClause();
 
     // something like:
     //   r(X,Y,Z) :- a(X), X = Y, !b(Z).
 
     // r(X,Y,Z)
-    AstAtom* head = new AstAtom("r");
+    auto* head = new AstAtom("r");
     head->addArgument(std::unique_ptr<AstArgument>(new AstVariable("X")));
     head->addArgument(std::unique_ptr<AstArgument>(new AstVariable("Y")));
     head->addArgument(std::unique_ptr<AstArgument>(new AstVariable("Z")));
     clause->setHead(std::unique_ptr<AstAtom>(head));
 
     // a(X)
-    AstAtom* a = new AstAtom("a");
+    auto* a = new AstAtom("a");
     a->addArgument(std::unique_ptr<AstArgument>(new AstVariable("X")));
     clause->addToBody(std::unique_ptr<AstLiteral>(a));
 
@@ -53,13 +53,13 @@ TEST(AstUtils, Grounded) {
     clause->addToBody(std::unique_ptr<AstLiteral>(e1));
 
     // !b(Z)
-    AstAtom* b = new AstAtom("b");
+    auto* b = new AstAtom("b");
     b->addArgument(std::unique_ptr<AstArgument>(new AstVariable("Z")));
-    AstNegation* neg = new AstNegation(std::unique_ptr<AstAtom>(b));
+    auto* neg = new AstNegation(std::unique_ptr<AstAtom>(b));
     clause->addToBody(std::unique_ptr<AstLiteral>(neg));
 
     // check construction
-    EXPECT_EQ("r(X,Y,Z) :- \n   a(X),\n   !b(Z),\n   X = Y.", toString(*clause));
+    EXPECT_EQ("r(X,Y,Z) :- \n   a(X),\n   X = Y,\n   !b(Z).", toString(*clause));
 
     // obtain groundness
     auto isGrounded = getGroundedTerms(*clause);
@@ -102,7 +102,7 @@ TEST(AstUtils, GroundedRecords) {
     auto isGrounded = getGroundedTerms(*clause);
 
     const AstAtom* s = clause->getHead();
-    const AstAtom* r = dynamic_cast<const AstAtom*>(clause->getBodyLiteral(0));
+    const auto* r = dynamic_cast<const AstAtom*>(clause->getBodyLiterals()[0]);
 
     EXPECT_TRUE(s);
     EXPECT_TRUE(r);

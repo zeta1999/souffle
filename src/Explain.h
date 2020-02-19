@@ -384,7 +384,7 @@ public:
             printPrompt("Enter command > ");
             std::string line = getInput();
             // a return value of false indicates that an exit/q command has been processed
-            if (processCommand(line) == false) {
+            if (!processCommand(line)) {
                 break;
             }
         }
@@ -473,7 +473,7 @@ public:
             std::string line = getInput();
 
             // a return value of false indicates that an exit/q command has been processed
-            if (processCommand(line) == false) {
+            if (!processCommand(line)) {
                 break;
             }
 

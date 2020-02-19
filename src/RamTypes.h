@@ -18,8 +18,8 @@
 
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <limits>
-#include <ostream>
 #include <type_traits>
 
 namespace souffle {
@@ -52,31 +52,6 @@ inline std::ostream& operator<<(std::ostream& os, RamTypeAttribute T) {
             os << "RamTypeAttribute::Record";
     }
     return os;
-}
-
-/** Convert a char to RamTypeAttribute */
-inline RamTypeAttribute RamPrimitiveFromChar(char c) {
-    RamTypeAttribute RamType;
-    switch (c) {
-        case 's':
-            RamType = RamTypeAttribute::Symbol;
-            break;
-        case 'i':
-            RamType = RamTypeAttribute::Signed;
-            break;
-        case 'f':
-            RamType = RamTypeAttribute::Float;
-            break;
-        case 'u':
-            RamType = RamTypeAttribute::Unsigned;
-            break;
-        case 'r':
-            RamType = RamTypeAttribute::Record;
-            break;
-        default:
-            assert(false && "Invalid RamTypeAttribute Char");
-    }
-    return RamType;
 }
 
 /**

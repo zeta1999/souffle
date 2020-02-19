@@ -8,13 +8,13 @@
 
 /************************************************************************
  *
- * @file ComponentModel.cpp
+ * @file ComponentInstantiationTransformer.cpp
  *
- * Implements the component model
+ * Instantiate Components
  *
  ***********************************************************************/
 
-#include "ComponentModel.h"
+#include "ComponentInstantiationTransformer.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstComponent.h"
@@ -25,6 +25,7 @@
 #include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
+#include "ComponentLookupAnalysis.h"
 #include "ErrorReport.h"
 #include "Util.h"
 #include <algorithm>
@@ -33,58 +34,6 @@
 namespace souffle {
 
 class AstNode;
-
-void ComponentLookup::run(const AstTranslationUnit& translationUnit) {
-    const AstProgram* program = translationUnit.getProgram();
-    for (AstComponent* component : program->getComponents()) {
-        globalScopeComponents.insert(component);
-        enclosingComponent[component] = nullptr;
-    }
-    visitDepthFirst(*program, [&](const AstComponent& cur) {
-        nestedComponents[&cur];
-        for (AstComponent* nestedComponent : cur.getComponents()) {
-            nestedComponents[&cur].insert(nestedComponent);
-            enclosingComponent[nestedComponent] = &cur;
-        }
-    });
-}
-
-const AstComponent* ComponentLookup::getComponent(
-        const AstComponent* scope, const std::string& name, const TypeBinding& activeBinding) const {
-    // forward according to binding (we do not do this recursively on purpose)
-    AstTypeIdentifier boundName = activeBinding.find(name);
-    if (boundName.empty()) {
-        // compName is not bound to anything => just just compName
-        boundName = name;
-    }
-
-    // search nested scopes bottom up
-    const AstComponent* searchScope = scope;
-    while (searchScope != nullptr) {
-        for (const AstComponent* cur : searchScope->getComponents()) {
-            if (cur->getComponentType()->getName() == toString(boundName)) {
-                return cur;
-            }
-        }
-        auto found = enclosingComponent.find(searchScope);
-        if (found != enclosingComponent.end()) {
-            searchScope = found->second;
-        } else {
-            searchScope = nullptr;
-            break;
-        }
-    }
-
-    // check global scope
-    for (const AstComponent* cur : globalScopeComponents) {
-        if (cur->getComponentType()->getName() == toString(boundName)) {
-            return cur;
-        }
-    }
-
-    // no such component in scope
-    return nullptr;
-}
 
 namespace {
 

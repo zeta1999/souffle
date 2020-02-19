@@ -23,6 +23,7 @@
 #include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "Util.h"
@@ -218,7 +219,8 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
     // these variables are the source of groundedness
     // e.g. a(y) :- b(x), y = x + 1. -- y is only grounded because x appears in b(x)
     std::set<std::string> baseGroundedVariables;
-    for (const AstAtom* atom : clause.getAtoms()) {
+    for (const auto* atom : getBodyLiterals<AstAtom>(clause)) {
+        // TODO (azreika): getArguments for atoms [same way]
         for (const AstArgument* arg : atom->getArguments()) {
             if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
                 baseGroundedVariables.insert(var->getName());
@@ -335,7 +337,7 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
 }
 
 std::unique_ptr<AstClause> ResolveAliasesTransformer::removeTrivialEquality(const AstClause& clause) {
-    std::unique_ptr<AstClause> res(clause.cloneHead());
+    std::unique_ptr<AstClause> res(cloneHead(&clause));
 
     // add all literals, except filtering out t = t constraints
     for (AstLiteral* literal : clause.getBodyLiterals()) {
@@ -358,7 +360,7 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
     std::unique_ptr<AstClause> res(clause.clone());
 
     // get list of atoms
-    std::vector<AstAtom*> atoms = res->getAtoms();
+    std::vector<AstAtom*> atoms = getBodyLiterals<AstAtom>(*res);
 
     // find all functors in atoms
     std::vector<const AstArgument*> terms;

@@ -70,7 +70,7 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
     for (const AstClause* cl : relation->getClauses()) {
-        for (const AstNegation* neg : cl->getNegations()) {
+        for (const auto* neg : getBodyLiterals<AstNegation>(*cl)) {
             if (negRelation == getAtomRelation(neg->getAtom(), program)) {
                 foundLiteral = neg;
                 return true;
@@ -116,7 +116,7 @@ bool isFact(const AstClause& clause) {
         return false;
     }
     // there must not be any body clauses
-    if (clause.getBodySize() != 0) {
+    if (clause.getBodyLiterals().size() != 0) {
         return false;
     }
 
@@ -130,4 +130,14 @@ bool isRule(const AstClause& clause) {
     return (clause.getHead() != nullptr) && !isFact(clause);
 }
 
+AstClause* cloneHead(const AstClause* clause) {
+    auto* clone = new AstClause();
+    clone->setSrcLoc(clause->getSrcLoc());
+    clone->setHead(std::unique_ptr<AstAtom>(clause->getHead()->clone()));
+    if (clause->getExecutionPlan() != nullptr) {
+        clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(clause->getExecutionPlan()->clone()));
+    }
+    clone->setFixedExecutionPlan(clause->hasFixedExecutionPlan());
+    return clone;
+}
 }  // end of namespace souffle

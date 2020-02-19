@@ -16,7 +16,9 @@
 
 #include "IODirectives.h"
 #include "RamTypes.h"
+#include "RecordTable.h"
 #include "SymbolTable.h"
+#include "json11.h"
 
 #include <cassert>
 #include <string>
@@ -24,19 +26,36 @@
 
 namespace souffle {
 
+using json11::Json;
+
 class WriteStream {
 public:
-    WriteStream(const std::vector<RamTypeAttribute>& symbolMask, const SymbolTable& symbolTable,
-            const size_t auxiliaryArity, bool summary = false)
-            : symbolMask(symbolMask), symbolTable(symbolTable), summary(summary),
-              arity(symbolMask.size() - auxiliaryArity) {}
+    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable,
+            const RecordTable& recordTable, bool summary = false)
+            : symbolTable(symbolTable), recordTable(recordTable), summary(summary) {
+        const std::string& relationName{ioDirectives.getRelationName()};
+
+        std::string parseErrors;
+
+        types = Json::parse(ioDirectives.get("types"), parseErrors);
+
+        assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
+
+        arity = static_cast<size_t>(types[relationName]["arity"].long_value());
+
+        for (size_t i = 0; i < arity; ++i) {
+            std::string type = types[relationName]["types"][i].string_value();
+            typeAttributes.push_back(std::move(type));
+        }
+    }
+
     template <typename T>
     void writeAll(const T& relation) {
         if (summary) {
             return writeSize(relation.size());
         }
         auto lease = symbolTable.acquireLock();
-        (void)lease;
+        (void)lease;  // silence "unused variable" warning
         if (arity == 0) {
             if (relation.begin() != relation.end()) {
                 writeNullary();
@@ -55,10 +74,14 @@ public:
     virtual ~WriteStream() = default;
 
 protected:
-    const std::vector<RamTypeAttribute>& symbolMask;
     const SymbolTable& symbolTable;
+    const RecordTable& recordTable;
+
+    Json types;
+    std::vector<std::string> typeAttributes;
+
     const bool summary;
-    const size_t arity;
+    size_t arity;
 
     virtual void writeNullary() = 0;
     virtual void writeNextTuple(const RamDomain* tuple) = 0;
@@ -69,31 +92,67 @@ protected:
     void writeNext(const Tuple tuple) {
         writeNextTuple(tuple.data);
     }
-    void writeNextTupleElement(std::ostream& destination, RamTypeAttribute type, RamDomain value) {
-        switch (type) {
-            case RamTypeAttribute::Symbol:
-                destination << symbolTable.unsafeResolve(value);
-                break;
-            case RamTypeAttribute::Signed:
-                destination << value;
-                break;
-            case RamTypeAttribute::Unsigned:
-                destination << ramBitCast<RamUnsigned>(value);
-                break;
-            case RamTypeAttribute::Float:
-                destination << ramBitCast<RamFloat>(value);
-                break;
-            case RamTypeAttribute::Record:
-                assert(false && "Record writing is not supported");
+
+    void outputRecord(std::ostream& destination, const RamDomain value, const std::string& name) {
+        Json recordInfo = types["records"][name];
+
+        // Check if record type information are present
+        if (recordInfo.is_null()) {
+            std::cerr << "Missing record type information: " << name << std::endl;
+            abort();
         }
+
+        // Check for nil
+        if (recordTable.isNil(value)) {
+            destination << "nil";
+            return;
+        }
+
+        const Json recordTypes = recordInfo["types"];
+        const size_t recordArity = recordInfo["arity"].long_value();
+
+        const RamDomain* tuplePtr = recordTable.unpack(value, recordArity);
+
+        destination << "[";
+
+        // print record's elements
+        for (size_t i = 0; i < recordArity; ++i) {
+            if (i > 0) {
+                destination << ", ";
+            }
+
+            const std::string& recordType = recordTypes[i].string_value();
+            const RamDomain recordValue = tuplePtr[i];
+
+            switch (recordType[0]) {
+                case 'i':
+                    destination << recordValue;
+                    break;
+                case 'f':
+                    destination << ramBitCast<RamFloat>(recordValue);
+                    break;
+                case 'u':
+                    destination << ramBitCast<RamUnsigned>(recordValue);
+                    break;
+                case 's':
+                    destination << symbolTable.unsafeResolve(recordValue);
+                    break;
+                case 'r':
+                    outputRecord(destination, recordValue, recordType);
+                    break;
+                default:
+                    assert(false && "Unsupported type attribute.");
+            }
+        }
+        destination << "]";
     }
 };
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(const std::vector<RamTypeAttribute>& symbolMask,
-            const SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) = 0;
+    virtual std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives,
+            const SymbolTable& symbolTable, const RecordTable& recordTable) = 0;
+
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;
 };

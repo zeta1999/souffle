@@ -104,20 +104,15 @@ public:
         out << arg.clause->getHead()->getName() << "{" << arg.headAdornment << "} :- ";
 
         std::vector<AstLiteral*> bodyLiterals = arg.clause->getBodyLiterals();
-        for (AstLiteral* lit : bodyLiterals) {
-            if (dynamic_cast<AstAtom*>(lit) == nullptr) {
-                const AstAtom* corresAtom = lit->getAtom();
-                if (corresAtom != nullptr) {
-                    if (firstadded) {
-                        firstadded = false;
-                        out << corresAtom->getName() << "{_}";
-                    } else {
-                        out << ", " << corresAtom->getName() << "{_}";
-                    }
+        for (AstLiteral* literal : bodyLiterals) {
+            if (auto* corresAtom = dynamic_cast<AstAtom*>(literal)) {
+                if (firstadded) {
+                    firstadded = false;
+                    out << corresAtom->getName() << "{_}";
                 } else {
-                    continue;
+                    out << ", " << corresAtom->getName() << "{_}";
                 }
-            } else {
+            } else if (auto* lit = dynamic_cast<AstAtomLiteral*>(literal)) {
                 if (firstadded) {
                     firstadded = false;
                     out << lit->getAtom()->getName() << "{" << arg.bodyAdornment[currpos] << "}";

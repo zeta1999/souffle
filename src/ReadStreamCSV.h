@@ -17,6 +17,7 @@
 #include "IODirectives.h"
 #include "RamTypes.h"
 #include "ReadStream.h"
+#include "RecordTable.h"
 #include "SymbolTable.h"
 #include "Util.h"
 
@@ -36,9 +37,9 @@ namespace souffle {
 
 class ReadStreamCSV : public ReadStream {
 public:
-    ReadStreamCSV(std::istream& file, const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : ReadStream(symbolMask, symbolTable, auxiliaryArity), delimiter(getDelimiter(ioDirectives)),
+    ReadStreamCSV(std::istream& file, const IODirectives& ioDirectives, SymbolTable& symbolTable,
+            RecordTable& recordTable)
+            : ReadStream(ioDirectives, symbolTable, recordTable), delimiter(getDelimiter(ioDirectives)),
               file(file), lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
         while (inputMap.size() < arity) {
             int size = static_cast<int>(inputMap.size());
@@ -60,7 +61,7 @@ protected:
             return nullptr;
         }
         std::string line;
-        std::unique_ptr<RamDomain[]> tuple = std::make_unique<RamDomain[]>(symbolMask.size());
+        std::unique_ptr<RamDomain[]> tuple = std::make_unique<RamDomain[]>(typeAttributes.size());
 
         if (!getline(file, line)) {
             return nullptr;
@@ -71,51 +72,99 @@ protected:
         }
         ++lineNumber;
 
-        size_t start = 0, end = 0, columnsFilled = 0;
+        size_t start = 0;
+        size_t end = 0;
+        size_t columnsFilled = 0;
         for (uint32_t column = 0; columnsFilled < arity; column++) {
-            end = line.find(delimiter, start);
-            if (end == std::string::npos) {
-                end = line.length();
-            }
-            std::string element;
-            if (start <= end) {
-                element = line.substr(start, end - start);
-            } else {
-                std::stringstream errorMessage;
-                errorMessage << "Values missing in line " << lineNumber << "; ";
-                throw std::invalid_argument(errorMessage.str());
-            }
-            start = end + delimiter.size();
+            std::string element = nextElement(line, start, end);
             if (inputMap.count(column) == 0) {
                 continue;
             }
             ++columnsFilled;
 
             try {
-                switch (symbolMask.at(inputMap[column])) {
-                    case RamTypeAttribute::Symbol:
+                switch (typeAttributes.at(inputMap[column])[0]) {
+                    case 's':
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         break;
-                    case RamTypeAttribute::Record:  // What should be done here?
-                    case RamTypeAttribute::Signed:
+                    case 'r':
+                        tuple[inputMap[column]] = readRecord(element, typeAttributes[inputMap[column]]);
+                        break;
+                    case 'i':
                         tuple[inputMap[column]] = RamDomainFromString(element);
                         break;
-                    case RamTypeAttribute::Unsigned:
+                    case 'u':
                         tuple[inputMap[column]] = ramBitCast(RamUnsignedFromString(element));
                         break;
-                    case RamTypeAttribute::Float:
+                    case 'f':
                         tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element));
                         break;
+                    default:
+                        assert(false && "Invalid type attribute");
                 }
             } catch (...) {
                 std::stringstream errorMessage;
-                errorMessage << "Error converting number <" + element + "> in column " << column + 1
-                             << " in line " << lineNumber << "; ";
+                errorMessage << "Error converting <" + element + "> in column " << column + 1 << " in line "
+                             << lineNumber << "; ";
                 throw std::invalid_argument(errorMessage.str());
             }
         }
 
         return tuple;
+    }
+
+    std::string nextElement(const std::string& line, size_t& start, size_t& end) {
+        std::string element;
+
+        // Handle record/tuple delimiter coincidence.
+        if (delimiter.find(',') != std::string::npos) {
+            int record_parens = 0;
+            size_t next_delimiter = line.find(delimiter, start);
+
+            // Find first delimiter after the record.
+            while (end < std::min(next_delimiter, line.length()) || record_parens != 0) {
+                // Track the number of parenthesis.
+                if (line[end] == '[') {
+                    ++record_parens;
+                } else if (line[end] == ']') {
+                    --record_parens;
+                }
+
+                // Check for unbalanced parenthesis.
+                if (record_parens < 0) {
+                    break;
+                };
+
+                ++end;
+
+                // Find a next delimiter if the old one is invalid.
+                // But only if inside the unbalance parenthesis.
+                if (end == next_delimiter && record_parens != 0) {
+                    next_delimiter = line.find(delimiter, end);
+                }
+            }
+
+            // Handle the end-of-the-line case where parenthesis are unbalanced.
+            if (record_parens != 0) {
+                std::stringstream errorMessage;
+                errorMessage << "Unbalanced record parenthesis " << lineNumber << "; ";
+                throw std::invalid_argument(errorMessage.str());
+            }
+        } else {
+            end = std::min(line.find(delimiter, start), line.length());
+        }
+
+        // Check for missing value.
+        if (start > end) {
+            std::stringstream errorMessage;
+            errorMessage << "Values missing in line " << lineNumber << "; ";
+            throw std::invalid_argument(errorMessage.str());
+        }
+
+        element = line.substr(start, end - start);
+        start = end + delimiter.size();
+
+        return element;
     }
 
     std::string getDelimiter(const IODirectives& ioDirectives) const {
@@ -159,9 +208,8 @@ protected:
 
 class ReadFileCSV : public ReadStreamCSV {
 public:
-    ReadFileCSV(const std::vector<RamTypeAttribute>& symbolMask, SymbolTable& symbolTable,
-            const IODirectives& ioDirectives, const size_t auxiliaryArity = 0)
-            : ReadStreamCSV(fileHandle, symbolMask, symbolTable, ioDirectives, auxiliaryArity),
+    ReadFileCSV(const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
+            : ReadStreamCSV(fileHandle, ioDirectives, symbolTable, recordTable),
               baseName(souffle::baseName(getFileName(ioDirectives))),
               fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {
         if (!ioDirectives.has("intermediate")) {
@@ -175,6 +223,7 @@ public:
             }
         }
     }
+
     /**
      * Read and return the next tuple.
      *
@@ -211,12 +260,11 @@ protected:
 
 class ReadCinCSVFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) override {
-        return std::make_unique<ReadStreamCSV>(
-                std::cin, symbolMask, symbolTable, ioDirectives, auxiliaryArity);
+    std::unique_ptr<ReadStream> getReader(
+            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
+        return std::make_unique<ReadStreamCSV>(std::cin, ioDirectives, symbolTable, recordTable);
     }
+
     const std::string& getName() const override {
         static const std::string name = "stdin";
         return name;
@@ -226,11 +274,11 @@ public:
 
 class ReadFileCSVFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(const std::vector<RamTypeAttribute>& symbolMask,
-            SymbolTable& symbolTable, const IODirectives& ioDirectives,
-            const size_t auxiliaryArity) override {
-        return std::make_unique<ReadFileCSV>(symbolMask, symbolTable, ioDirectives, auxiliaryArity);
+    std::unique_ptr<ReadStream> getReader(
+            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
+        return std::make_unique<ReadFileCSV>(ioDirectives, symbolTable, recordTable);
     }
+
     const std::string& getName() const override {
         static const std::string name = "file";
         return name;

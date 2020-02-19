@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "RamTransformer.h"
+#include "DebugReport.h"
 #include "RamTranslationUnit.h"
 
 #include <algorithm>
@@ -38,8 +39,8 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
                 std::stringstream ramAnalysisStr;
                 analysis->print(ramAnalysisStr);
                 if (!ramAnalysisStr.str().empty()) {
-                    translationUnit.getDebugReport().addSection(DebugReporter::getCodeSection(
-                            getName(), "RAM Analysis " + analysis->getName(), ramAnalysisStr.str()));
+                    translationUnit.getDebugReport().addSection(
+                            getName(), "RAM Analysis " + analysis->getName(), ramAnalysisStr.str());
                 }
             }
         }
@@ -50,11 +51,11 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
         std::stringstream ramProgStr;
         ramProgStr << translationUnit.getProgram();
         translationUnit.getDebugReport().addSection(
-                DebugReporter::getCodeSection(getName(), "RAM Program after " + getName(), ramProgStr.str()));
+                getName(), "RAM Program after " + getName(), ramProgStr.str());
 
     } else {
         translationUnit.getDebugReport().addSection(
-                DebugReportSection(getName(), "After " + getName() + " " + " (unchanged)", {}, ""));
+                getName(), "After " + getName() + " " + " (unchanged)", "");
     }
 
     /* Abort evaluation of the program if errors were encountered */

@@ -179,36 +179,6 @@ public:
      * */
     virtual void queryProcess(const std::vector<std::pair<std::string, std::vector<std::string>>>& rels) = 0;
 
-    virtual std::string getRelationOutput(const std::string& relName) {
-        auto rel = prog.getRelation(relName);
-        if (rel == nullptr) {
-            return "Relation " + relName + " not found\n";
-        }
-
-        // create symbol mask
-        std::vector<RamTypeAttribute> symbolMask(rel->getArity());
-
-        for (size_t i = 0; i < rel->getArity(); i++) {
-            symbolMask.at(i) = RamPrimitiveFromChar(*(rel->getAttrType(i)));
-        }
-
-        // create IODirectives
-        IODirectives dir;
-        dir.setRelationName(relName);
-
-        // redirect cout to stringstream
-        std::stringstream out;
-        auto originalCoutBuf = std::cout.rdbuf(out.rdbuf());
-
-        // print relation
-        printRelationOutput(symbolMask, dir, *rel);
-
-        // restore original cout buffer
-        std::cout.rdbuf(originalCoutBuf);
-
-        return out.str();
-    }
-
 protected:
     SouffleProgram& prog;
     SymbolTable& symTable;
@@ -257,9 +227,6 @@ protected:
 
         return args;
     }
-
-    virtual void printRelationOutput(const std::vector<RamTypeAttribute>& symbolMask,
-            const IODirectives& ioDir, const Relation& rel) = 0;
 };
 
 }  // end of namespace souffle

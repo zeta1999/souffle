@@ -1261,13 +1261,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Exit)
 
         CASE(LogRelationTimer)
-            Logger logger(cur.getMessage().c_str(), getIterationNumber(),
+            Logger logger(cur.getMessage(), getIterationNumber(),
                     std::bind(&InterpreterRelation::size, node->getRelation()));
             return execute(node->getChild(0), ctxt);
         ESAC(LogRelationTimer)
 
         CASE(LogTimer)
-            Logger logger(cur.getMessage().c_str(), getIterationNumber());
+            Logger logger(cur.getMessage(), getIterationNumber());
             return execute(node->getChild(0), ctxt);
         ESAC(LogTimer)
 
@@ -1289,39 +1289,29 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(LogSize)
 
         CASE(Load)
-            for (IODirectives ioDirectives : cur.getIODirectives()) {
-                try {
+            try {
+                for (IODirectives ioDirectives : cur.getIODirectives()) {
                     InterpreterRelation& relation = *node->getRelation();
-                    std::vector<RamTypeAttribute> symbolMask;
-                    for (auto& cur : cur.getRelation().getAttributeTypes()) {
-                        symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-                    }
                     IOSystem::getInstance()
-                            .getReader(
-                                    symbolMask, getSymbolTable(), ioDirectives, relation.getAuxiliaryArity())
+                            .getReader(ioDirectives, getSymbolTable(), getRecordTable())
                             ->readAll(relation);
-                } catch (std::exception& e) {
-                    std::cerr << "Error loading data: " << e.what() << "\n";
                 }
+            } catch (std::exception& e) {
+                std::cerr << "Error loading data: " << e.what() << "\n";
             }
             return true;
         ESAC(Load)
 
         CASE(Store)
-            for (IODirectives ioDirectives : cur.getIODirectives()) {
-                try {
-                    std::vector<RamTypeAttribute> symbolMask;
-                    for (auto& cur : cur.getRelation().getAttributeTypes()) {
-                        symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-                    }
+            try {
+                for (IODirectives ioDirectives : cur.getIODirectives()) {
                     IOSystem::getInstance()
-                            .getWriter(symbolMask, getSymbolTable(), ioDirectives,
-                                    cur.getRelation().getAuxiliaryArity())
+                            .getWriter(ioDirectives, getSymbolTable(), getRecordTable())
                             ->writeAll(*node->getRelation());
-                } catch (std::exception& e) {
-                    std::cerr << e.what();
-                    exit(1);
                 }
+            } catch (std::exception& e) {
+                std::cerr << e.what();
+                exit(1);
             }
             return true;
         ESAC(Store)

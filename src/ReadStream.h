@@ -110,7 +110,7 @@ protected:
             consumeWhiteSpace(source, pos);
             switch (recordType[0]) {
                 case 's':
-                    recordValues[i] = readStringInRecord(source, pos);
+                    recordValues[i] = readStringInRecord(source, pos, &consumed);
                     break;
                 case 'i':
                     recordValues[i] = RamDomainFromString(source.substr(pos), &consumed);
@@ -138,11 +138,15 @@ protected:
         return recordTable.pack(recordValues);
     }
 
-    RamDomain readStringInRecord(const std::string& source, size_t& pos) {
-        size_t endOfString = source.find_first_of(",]", pos);
+    RamDomain readStringInRecord(const std::string& source, const size_t pos, size_t* _consumed) {
+        size_t endOfSymbol = source.find_first_of(",]", pos);
 
-        std::string str = source.substr(pos, endOfString - pos);
-        pos = endOfString;
+        if (endOfSymbol == std::string::npos) {
+            throw std::invalid_argument("Unexpected end of input in record");
+        }
+
+        *_consumed = endOfSymbol - pos;
+        std::string str = source.substr(pos, *_consumed);
 
         return symbolTable.unsafeLookup(std::move(str));
     }

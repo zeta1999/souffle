@@ -29,8 +29,9 @@ namespace souffle {
 
 class WriteStreamSQLite : public WriteStream {
 public:
-    WriteStreamSQLite(const IODirectives& ioDirectives, const SymbolTable& symbolTable)
-            : WriteStream(ioDirectives, symbolTable), dbFilename(ioDirectives.get("dbname")),
+    WriteStreamSQLite(
+            const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            : WriteStream(ioDirectives, symbolTable, recordTable), dbFilename(ioDirectives.get("dbname")),
               relationName(ioDirectives.getRelationName()) {
         openDB();
         createTables();
@@ -52,14 +53,11 @@ protected:
         for (size_t i = 0; i < arity; i++) {
             RamDomain value = 0;  // Silence warning
 
-            switch (typeAttributes.at(i)) {
-                case RamTypeAttribute::Symbol:
+            switch (typeAttributes.at(i)[0]) {
+                case 's':
                     value = getSymbolTableID(tuple[i]);
                     break;
-                case RamTypeAttribute::Signed:
-                case RamTypeAttribute::Unsigned:
-                case RamTypeAttribute::Float:
-                case RamTypeAttribute::Record:
+                default:
                     value = tuple[i];
                     break;
             }
@@ -222,7 +220,7 @@ private:
             if (i != 0) {
                 projectionClause << ",";
             }
-            if (typeAttributes.at(i) == RamTypeAttribute::Symbol) {
+            if (typeAttributes.at(i)[0] == 's') {
                 projectionClause << "'_symtab_" << columnName << "'.symbol AS '" << columnName << "'";
                 fromClause << ",'" << symbolTableName << "' AS '_symtab_" << columnName << "'";
                 if (!firstWhere) {
@@ -263,9 +261,9 @@ private:
 
 class WriteSQLiteFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(
-            const IODirectives& ioDirectives, const SymbolTable& symbolTable) override {
-        return std::make_unique<WriteStreamSQLite>(ioDirectives, symbolTable);
+    std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives, const SymbolTable& symbolTable,
+            const RecordTable& recordTable) override {
+        return std::make_unique<WriteStreamSQLite>(ioDirectives, symbolTable, recordTable);
     }
 
     const std::string& getName() const override {

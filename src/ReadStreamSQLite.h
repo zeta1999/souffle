@@ -16,8 +16,8 @@
 
 #include "RamTypes.h"
 #include "ReadStream.h"
+#include "RecordTable.h"
 #include "SymbolTable.h"
-
 #include <fstream>
 #include <memory>
 #include <sstream>
@@ -30,8 +30,8 @@ namespace souffle {
 
 class ReadStreamSQLite : public ReadStream {
 public:
-    ReadStreamSQLite(const IODirectives& ioDirectives, SymbolTable& symbolTable)
-            : ReadStream(ioDirectives, symbolTable), dbFilename(ioDirectives.get("dbname")),
+    ReadStreamSQLite(const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
+            : ReadStream(ioDirectives, symbolTable, recordTable), dbFilename(ioDirectives.get("dbname")),
               relationName(ioDirectives.getRelationName()) {
         openDB();
         checkTableExists();
@@ -66,16 +66,18 @@ protected:
             }
 
             try {
-                switch (typeAttributes.at(column)) {
-                    case RamTypeAttribute::Symbol:
+                switch (typeAttributes.at(column)[0]) {
+                    case 's':
                         tuple[column] = symbolTable.unsafeLookup(element);
                         break;
-                    case RamTypeAttribute::Signed:
-                    case RamTypeAttribute::Unsigned:
-                    case RamTypeAttribute::Float:
-                    case RamTypeAttribute::Record:
+                    case 'i':
+                    case 'u':
+                    case 'f':
+                    case 'r':
                         tuple[column] = RamDomainFromString(element);
                         break;
+                    default:
+                        assert(false && "Invalid type attribute");
                 }
             } catch (...) {
                 std::stringstream errorMessage;
@@ -157,8 +159,8 @@ protected:
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(
-            const IODirectives& ioDirectives, SymbolTable& symbolTable) override {
-        return std::make_unique<ReadStreamSQLite>(ioDirectives, symbolTable);
+            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
+        return std::make_unique<ReadStreamSQLite>(ioDirectives, symbolTable, recordTable);
     }
 
     const std::string& getName() const override {

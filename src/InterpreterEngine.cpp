@@ -1281,7 +1281,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             try {
                 for (IODirectives ioDirectives : cur.getIODirectives()) {
                     InterpreterRelation& relation = *node->getRelation();
-                    IOSystem::getInstance().getReader(ioDirectives, getSymbolTable())->readAll(relation);
+                    IOSystem::getInstance()
+                            .getReader(ioDirectives, getSymbolTable(), getRecordTable())
+                            ->readAll(relation);
                 }
             } catch (std::exception& e) {
                 std::cerr << "Error loading data: " << e.what() << "\n";
@@ -1293,7 +1295,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             try {
                 for (IODirectives ioDirectives : cur.getIODirectives()) {
                     IOSystem::getInstance()
-                            .getWriter(ioDirectives, getSymbolTable())
+                            .getWriter(ioDirectives, getSymbolTable(), getRecordTable())
                             ->writeAll(*node->getRelation());
                 }
             } catch (std::exception& e) {

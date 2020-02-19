@@ -27,6 +27,18 @@
 
 namespace souffle {
 
+#if RAM_DOMAIN_SIZE == 64
+#define FFI_RamDomain ffi_type_sint64
+#define FFI_RamUnsigned ffi_type_uint64
+#define FFI_RamFloat ffi_type_double
+#else
+#define FFI_RamDomain ffi_type_sint32
+#define FFI_RamUnsigned ffi_type_uint32
+#define FFI_RamFloat ffi_type_float
+#endif
+
+#define FFI_Symbol ffi_type_pointer
+
 InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const size_t idx) {
     return generator.getRelationHandle(idx);
 }
@@ -530,12 +542,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 RamDomain arg = execute(node->getChild(i), ctxt);
                 switch (type[i]) {
                     case RamTypeAttribute::Symbol:
-                        args[i] = &ffi_type_pointer;
+                        args[i] = &FFI_Symbol;
                         strVal[i] = getSymbolTable().resolve(arg).c_str();
                         values[i] = &strVal[i];
                         break;
                     default:
-                        args[i] = &ffi_type_uint32;
+                        args[i] = &FFI_RamDomain;
                         intVal[i] = arg;
                         values[i] = &intVal[i];
                         break;
@@ -546,7 +558,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             switch (cur.getReturnType()) {
                 // initialize for string value.
                 case RamTypeAttribute::Symbol:
-                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
+                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &FFI_Symbol, args) != FFI_OK) {
                         std::cerr << "Failed to prepare CIF for user-defined operator ";
                         std::cerr << name << std::endl;
                         exit(1);
@@ -554,7 +566,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
                 default:
                     // Initialize for numeric value.
-                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_uint32, args) != FFI_OK) {
+                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &FFI_RamDomain, args) != FFI_OK) {
                         std::cerr << "Failed to prepare CIF for user-defined operator ";
                         std::cerr << name << std::endl;
                         exit(1);

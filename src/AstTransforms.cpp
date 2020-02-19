@@ -1316,7 +1316,7 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
                 }
 
                 // Check arity correctness.
-                if (functorDeclaration->getArity() != userFunctor->getArity()) {
+                if (functorDeclaration->getArity() != userFunctor->getArguments().size()) {
                     report.addError("Mismatching number of arguments of functor", userFunctor->getSrcLoc());
                     return node;
                 }

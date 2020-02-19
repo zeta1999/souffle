@@ -131,4 +131,37 @@ AstClause* cloneHead(const AstClause* clause) {
     }
     return clone;
 }
+
+AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>& newOrder) {
+    // Find all atom positions
+    std::vector<unsigned int> atomPositions;
+    std::vector<AstLiteral*> bodyLiterals = clause->getBodyLiterals();
+    for (unsigned int i = 0; i < bodyLiterals.size(); i++) {
+        if (dynamic_cast<AstAtom*>(bodyLiterals[i]) != nullptr) {
+            atomPositions.push_back(i);
+        }
+    }
+
+    // Validate given order
+    assert(newOrder.size() == atomPositions.size());
+    std::vector<unsigned int> nopOrder;
+    for (unsigned int i = 0; i < atomPositions.size(); i++) {
+        nopOrder.push_back(i);
+    }
+    assert(std::is_permutation(nopOrder.begin(), nopOrder.end(), newOrder.begin()));
+
+    // Create a new clause with the given atom order, leaving the rest unchanged
+    AstClause* newClause = cloneHead(clause);
+    unsigned int currentAtom = 0;
+    for (unsigned int currentLiteral = 0; currentLiteral < bodyLiterals.size(); currentLiteral++) {
+        AstLiteral* literalToAdd = bodyLiterals[currentLiteral];
+        if (dynamic_cast<AstAtom*>(literalToAdd) != nullptr) {
+            // Atoms should be reordered
+            literalToAdd = bodyLiterals[atomPositions[newOrder[currentAtom++]]];
+        }
+        newClause->addToBody(literalToAdd->clone());
+    }
+
+    return newClause;
+}
 }  // end of namespace souffle

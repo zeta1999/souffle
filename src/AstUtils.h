@@ -142,4 +142,16 @@ bool isRule(const AstClause& clause);
  * @return pointer to clause which has head cloned from given clause
  */
 AstClause* cloneHead(const AstClause* clause);
+
+/**
+ * Reorders the atoms of a clause to be in the given order.
+ * Remaining body literals remain in the same order.
+ *
+ * E.g. if atoms are [a,b,c] and given order is [1,2,0], then
+ * the final atom order will be [b,c,a].
+ *
+ * @param clause clause to reorder atoms in
+ * @param newOrder new order of atoms; atoms[i] = atoms[newOrder[i]]
+ */
+AstClause* reorderAtoms(const AstClause& clause, const std::vector<unsigned int>& newOrder);
 }  // end of namespace souffle

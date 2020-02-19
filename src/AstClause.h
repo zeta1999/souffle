@@ -196,35 +196,6 @@ public:
         return toPtrVector(bodyLiterals);
     }
 
-    /**
-     * Re-orders atoms to be in the given order.
-     * Remaining body literals remain in the same order.
-     **/
-    // TODO (b-scholz): remove this method
-    void reorderAtoms(const std::vector<unsigned int>& newOrder) {
-        std::vector<unsigned int> atomPositions;
-        std::vector<std::unique_ptr<AstLiteral>> oldAtoms;
-        for (unsigned int i = 0; i < bodyLiterals.size(); i++) {
-            if (dynamic_cast<AstAtom*>(bodyLiterals[i].get()) != nullptr) {
-                atomPositions.push_back(i);
-                oldAtoms.push_back(std::move(bodyLiterals[i]));
-            }
-        }
-
-        // Validate given order
-        assert(newOrder.size() == oldAtoms.size());
-        std::vector<unsigned int> nopOrder;
-        for (unsigned int i = 0; i < oldAtoms.size(); i++) {
-            nopOrder.push_back(i);
-        }
-        assert(std::is_permutation(nopOrder.begin(), nopOrder.end(), newOrder.begin()));
-
-        // Reorder atoms
-        for (unsigned int i = 0; i < newOrder.size(); i++) {
-            bodyLiterals[atomPositions[i]] = std::move(oldAtoms[newOrder[i]]);
-        }
-    }
-
     /** Obtains the execution plan associated to this clause or null if there is none */
     const AstExecutionPlan* getExecutionPlan() const {
         return plan.get();

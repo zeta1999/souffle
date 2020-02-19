@@ -900,7 +900,6 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
                 if (const AstExecutionPlan* plan = clause->getExecutionPlan()) {
                     newClause->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(plan->clone()));
                 }
-                newClause->setGenerated(clause->isGenerated());
                 newClause->setHead(std::make_unique<AstAtom>(newRelationName.str()));
                 for (AstLiteral* lit : clause->getBodyLiterals()) {
                     newClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));

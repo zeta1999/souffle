@@ -574,14 +574,11 @@ rule_def
         auto heads = $head;
         auto bodies = $body->toClauseBodies();
 
-        bool generated = heads.size() != 1 || bodies.size() != 1;
-
         for (const auto* head : heads) {
             for (const auto* body : bodies) {
                 AstClause* cur = body->clone();
                 cur->setHead(std::unique_ptr<AstAtom>(head->clone()));
                 cur->setSrcLoc(@$);
-                cur->setGenerated(generated);
                 $$.push_back(cur);
             }
         }

@@ -211,16 +211,6 @@ public:
         plan = nullptr;
     }
 
-    /** Determines whether this is a internally generated clause */
-    bool isGenerated() const {
-        return generated;
-    }
-
-    /** Updates the generated flag */
-    void setGenerated(bool value = true) {
-        generated = value;
-    }
-
     /** Gets the clause number */
     size_t getClauseNum() const {
         return clauseNum;
@@ -241,7 +231,6 @@ public:
         for (const auto& lit : bodyLiterals) {
             res->bodyLiterals.emplace_back(lit->clone());
         }
-        res->generated = generated;
         return res;
     }
 
@@ -275,9 +264,6 @@ protected:
 
     /** The user defined execution plan -- if any */
     std::unique_ptr<AstExecutionPlan> plan;
-
-    /** Determines whether this is an internally generated clause resulting from resolving syntactic sugar */
-    bool generated = false;
 
     /** Stores a unique number for each clause in a relation,
         used for provenance */

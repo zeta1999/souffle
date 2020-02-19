@@ -171,6 +171,9 @@ souffle::SymbolTable& ParserDriver::getSymbolTable() {
     return translationUnit->getSymbolTable();
 }
 
+void ParserDriver::warning(const SrcLocation& loc, const std::string& msg) {
+    translationUnit->getErrorReport().addWarning(msg, loc);
+}
 void ParserDriver::error(const SrcLocation& loc, const std::string& msg) {
     translationUnit->getErrorReport().addError(msg, loc);
 }

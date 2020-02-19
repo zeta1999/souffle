@@ -1483,13 +1483,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         program->appendClause(std::unique_ptr<AstClause>(referringClause));
     }
 
-    // add in all the output directives to their corresponding relations
-    for (auto& iopair : outputDirectives) {
-        for (auto& iodir : iopair.second) {
-            program->addStore(std::move(iodir));
-        }
-    }
-
     // replace all "+underscoreX" variables with actual underscores
     replaceUnderscores(program);
 

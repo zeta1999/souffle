@@ -511,11 +511,13 @@ non_empty_attributes
 /* Relation qualifiers */
 qualifiers
   : qualifiers OUTPUT_QUALIFIER {
+        driver.warning(@2, "Deprecated io qualifier was used");
         if($1 & OUTPUT_RELATION)
             driver.error(@2, "output qualifier already set");
         $$ = $1 | OUTPUT_RELATION;
     }
   | qualifiers INPUT_QUALIFIER {
+        driver.warning(@2, "Deprecated io qualifier was used");
         if($1 & INPUT_RELATION)
             driver.error(@2, "input qualifier already set");
         $$ = $1 | INPUT_RELATION;

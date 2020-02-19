@@ -125,18 +125,10 @@ protected:
     }
 
     RamDomain readStringInRecord(const std::string& source, size_t& pos) {
-        size_t index = pos;
+        size_t endOfString = source.find_first_of(",]", pos);
 
-        auto endOfElement = [](char c) {
-            return std::isspace(static_cast<unsigned char>(c)) || c == ',' || c == ']';
-        };
-
-        while (index < source.length() && !endOfElement(source[index])) {
-            ++index;
-        }
-
-        std::string str = source.substr(pos, index - pos);
-        pos = index;
+        std::string str = source.substr(pos, endOfString - pos);
+        pos = endOfString;
 
         return symbolTable.unsafeLookup(std::move(str));
     }

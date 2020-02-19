@@ -168,6 +168,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
             IODirectives ioDirectives;
             if (dynamic_cast<const AstPrintSize*>(current) != nullptr) {
                 ioDirectives.setIOType("stdoutprintsize");
+                ioDirectives.set("summary", "true");
                 outputDirectives.push_back(ioDirectives);
             } else if (!hasOutput) {
                 hasOutput = true;
@@ -179,6 +180,9 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
     } else {
         for (const auto* current : rel->getStores()) {
             IODirectives ioDirectives;
+            if (dynamic_cast<const AstPrintSize*>(current) != nullptr) {
+                ioDirectives.set("summary", "true");
+            }
             for (const auto& currentPair : current->getIODirectiveMap()) {
                 ioDirectives.set(currentPair.first, currentPair.second);
             }

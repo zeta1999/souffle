@@ -30,9 +30,9 @@ using json11::Json;
 
 class WriteStream {
 public:
-    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable,
-            const RecordTable& recordTable, bool summary = false)
-            : symbolTable(symbolTable), recordTable(recordTable), summary(summary) {
+    WriteStream(
+            const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            : symbolTable(symbolTable), recordTable(recordTable), summary(getSummary(ioDirectives)) {
         const std::string& relationName{ioDirectives.getRelationName()};
 
         std::string parseErrors;
@@ -145,6 +145,14 @@ protected:
             }
         }
         destination << "]";
+    }
+
+private:
+    bool getSummary(const IODirectives& IOdirs) {
+        if (IOdirs.has("summary")) {
+            return IOdirs.get("summary") == "true";
+        }
+        return false;
     }
 };
 

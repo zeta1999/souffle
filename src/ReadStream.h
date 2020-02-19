@@ -69,7 +69,10 @@ protected:
      *
      * This function assumes that the parenthesis are balanced.
      */
-    RamDomain readRecord(const std::string& source, const std::string& name, size_t pos = 0) {
+    RamDomain readRecord(
+            const std::string& source, const std::string& name, size_t pos = 0, size_t* _consumed = nullptr) {
+        const size_t initial_position = pos;
+
         Json recordInfo = types["records"][name];
 
         // Check if record type information are present
@@ -80,6 +83,9 @@ protected:
         // Handle nil case
         consumeWhiteSpace(source, pos);
         if (source.substr(pos, 3) == "nil") {
+            if (_consumed != nullptr) {
+                *_consumed = 3;
+            }
             return recordTable.getNil();
         }
 
@@ -112,8 +118,7 @@ protected:
                     recordValues[i] = ramBitCast(RamFloatFromString(source.substr(pos), &consumed));
                     break;
                 case 'r':
-                    recordValues[i] = readRecord(source, recordType,
-                            consumed);  // Pos must be a reference, otherwise this won't work.
+                    recordValues[i] = readRecord(source, recordType, pos, &consumed);
                     break;
                 default:
                     assert(false && "Invalid type attribute");
@@ -121,6 +126,11 @@ protected:
             pos += consumed;
         }
         consumeChar(source, ']', pos);
+
+        if (_consumed != nullptr) {
+            *_consumed = pos - initial_position;
+        }
+
         return recordTable.pack(recordValues);
     }
 
@@ -139,7 +149,7 @@ protected:
     void consumeChar(const std::string& str, char c, size_t& pos) {
         consumeWhiteSpace(str, pos);
         if (pos == str.length()) {
-            throw std::invalid_argument("Invalid record");
+            throw std::invalid_argument("Unexpected end of input in record");
         }
         if (str[pos] != c) {
             std::stringstream error;

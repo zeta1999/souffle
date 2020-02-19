@@ -383,7 +383,7 @@ private:
      * Get ram records types.
      * If they don't exists - create them.
      */
-    Json getRecordsTypes(void);
+    const Json getRecordsTypes(void);
 
     /**
      * translate RAM code for the non-recursive clauses of the given relation.

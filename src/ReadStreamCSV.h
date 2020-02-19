@@ -117,7 +117,7 @@ protected:
         std::string element;
 
         // Handle record/tuple delimiter coincidence.
-        if (delimiter.at(0) == ',') {
+        if (delimiter.find(',') != std::string::npos) {
             int record_parens = 0;
             size_t next_delimiter = line.find(delimiter, start);
 

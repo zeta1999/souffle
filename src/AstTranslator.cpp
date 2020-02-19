@@ -121,7 +121,7 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     long long arity{static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(rel))};
     long long auxArity{static_cast<long long>(auxArityAnalysis->getArity(rel))};
 
-    Json rec = getRecordsTypes();
+    const Json rec = getRecordsTypes();
 
     Json relJson = Json::object{{"arity", arity}, {"auxArity", auxArity},
             {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
@@ -1614,7 +1614,8 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     }
 }
 
-Json AstTranslator::getRecordsTypes(void) {
+const Json AstTranslator::getRecordsTypes(void) {
+    // Check if the types where already constructed
     if (!RamRecordTypes.is_null()) {
         return RamRecordTypes;
     }
@@ -1623,6 +1624,7 @@ Json AstTranslator::getRecordsTypes(void) {
     std::map<std::string, Json> records;
     std::string recordType;
 
+    // Iterate over all record types in the program populating the records map.
     for (auto* astType : program->getTypes()) {
         if (const auto* elementType = dynamic_cast<const AstRecordType*>(astType)) {
             types.clear();

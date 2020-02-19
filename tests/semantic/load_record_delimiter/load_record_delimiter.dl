@@ -13,10 +13,12 @@
 .input A(delimiter=",")
 
 .decl B(x: pair, y: pair, z: pair)
-.input B(delimiter=",")
+.input B(delimiter=", ")
 
+.decl C(x: pair, y: pair, z: pair)
+.input C(delimiter=" , ")
 
 .decl O(x: pair, y: pair, z: pair)
-O(x, y, z) :- A(x, y, z); B(x, y, z).
+O(x, y, z) :- A(x, y, z); B(x, y, z); C(x, y, z).
 
 .output O(IO=stdout, delimiter=", ")

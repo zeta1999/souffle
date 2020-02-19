@@ -157,7 +157,6 @@ private:
  *       clauses, such as rules, queries and facts. This solution was to quickly
  *       overcome issues related to bottom-up construction of IR. In future,
  *       Clause should be  made abstract and have 2 subclasses: Rule and Fact.
- *       Tidy-up interface/classes: this is a mess...
  */
 class AstClause : public AstNode {
 public:
@@ -211,16 +210,6 @@ public:
         plan = nullptr;
     }
 
-    /** Gets the clause number */
-    size_t getClauseNum() const {
-        return clauseNum;
-    }
-
-    /** Sets the clause number */
-    void setClauseNum(size_t num) {
-        clauseNum = num;
-    }
-
     AstClause* clone() const override {
         auto res = new AstClause();
         res->setSrcLoc(getSrcLoc());
@@ -264,11 +253,6 @@ protected:
 
     /** The user defined execution plan -- if any */
     std::unique_ptr<AstExecutionPlan> plan;
-
-    /** Stores a unique number for each clause in a relation,
-        used for provenance */
-    // TODO (b-scholz): move to an AST analysis
-    size_t clauseNum = 0;
 };
 
 }  // end of namespace souffle

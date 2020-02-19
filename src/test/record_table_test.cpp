@@ -73,4 +73,34 @@ TEST(PackUnpack, Tuple) {
     }
 }
 
+// Generate random vectors
+// pack them all
+// unpack and test for equality
+TEST(PackUnpack, Vector) {
+    constexpr size_t vectorSize = 10;
+
+    RecordTable recordTable;
+
+    // Tuples that will be packed
+    std::vector<std::vector<RamDomain>> toPack(NUMBER_OF_TESTS);
+
+    // Tuple reference after they are packed.
+    std::vector<RamDomain> tupleRef(NUMBER_OF_TESTS);
+
+    // Generate and pack the tuples
+    for (size_t i = 0; i < NUMBER_OF_TESTS; ++i) {
+        toPack[i] = testutil::generateRandomVector<RamDomain>(10);
+        tupleRef[i] = recordTable.pack(toPack[i]);
+        std::cerr << "Ref: " << tupleRef[i] << std::endl;
+    }
+
+    // unpack and test
+    for (size_t i = 0; i < NUMBER_OF_TESTS; ++i) {
+        const RamDomain* unpacked{recordTable.unpack(tupleRef[i], vectorSize)};
+        for (size_t j = 0; j < vectorSize; ++j) {
+            EXPECT_EQ(toPack[i][j], unpacked[j]);
+        }
+    }
+}
+
 }  // namespace souffle::test

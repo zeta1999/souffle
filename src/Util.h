@@ -841,32 +841,6 @@ template <typename Lambda>
 struct lambda_traits : public detail::lambda_traits_helper<decltype(&Lambda::operator())> {};
 
 // -------------------------------------------------------------------------------
-//                              Functional Wrappers
-// -------------------------------------------------------------------------------
-
-/**
- * A struct wrapping a object and an associated member function pointer into a
- * callable object.
- */
-template <typename Class, typename R, typename... Args>
-struct member_fun {
-    using fun_type = R (Class::*)(Args...);
-    Class& obj;
-    fun_type fun;
-    R operator()(Args... args) const {
-        return (obj.*fun)(args...);
-    }
-};
-
-/**
- * Wraps an object and matching member function pointer into a callable object.
- */
-template <typename C, typename R, typename... Args>
-member_fun<C, R, Args...> mfun(C& obj, R (C::*f)(Args...)) {
-    return member_fun<C, R, Args...>({obj, f});
-}
-
-// -------------------------------------------------------------------------------
 //                              General Algorithms
 // -------------------------------------------------------------------------------
 

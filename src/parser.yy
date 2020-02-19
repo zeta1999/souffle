@@ -103,7 +103,6 @@
 %token SUM                       "sum aggregator"
 %token TRUE                      "true literal constraint"
 %token FALSE                     "false literal constraint"
-%token STRICT                    "strict marker"
 %token PLAN                      "plan keyword"
 %token IF                        ":-"
 %token DECL                      "relation declaration"
@@ -558,14 +557,6 @@ rule
         $$ = $rule_def;
 
         $rule_def.clear();
-    }
-  | rule[nested_rule] STRICT {
-        $$ = $nested_rule;
-        for (auto* rule : $$) {
-            rule->setFixedExecutionPlan();
-        }
-
-        $nested_rule.clear();
     }
   | rule[nested_rule] exec_plan {
         $$ = $nested_rule;

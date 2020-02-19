@@ -225,16 +225,6 @@ public:
         }
     }
 
-    /** Updates the fixed execution order flag */
-    void setFixedExecutionPlan(bool value = true) {
-        fixedPlan = value;
-    }
-
-    /** Determines whether the execution order plan is fixed */
-    bool hasFixedExecutionPlan() const {
-        return fixedPlan;
-    }
-
     /** Obtains the execution plan associated to this clause or null if there is none */
     const AstExecutionPlan* getExecutionPlan() const {
         return plan.get();
@@ -280,7 +270,6 @@ public:
         for (const auto& lit : bodyLiterals) {
             res->bodyLiterals.emplace_back(lit->clone());
         }
-        res->fixedPlan = fixedPlan;
         res->generated = generated;
         return res;
     }
@@ -312,10 +301,6 @@ protected:
 
     /** The literals in the body of this clause */
     std::vector<std::unique_ptr<AstLiteral>> bodyLiterals;
-
-    /** Determines whether the given execution order should be enforced */
-    // TODO (b-scholz): confused state / double-check
-    bool fixedPlan = false;
 
     /** The user defined execution plan -- if any */
     std::unique_ptr<AstExecutionPlan> plan;

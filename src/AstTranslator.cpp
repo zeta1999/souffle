@@ -425,7 +425,6 @@ std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
 
     // clear other order and fix plan
     reorderedClause->clearExecutionPlan();
-    reorderedClause->setFixedExecutionPlan();
 
     return reorderedClause;
 }

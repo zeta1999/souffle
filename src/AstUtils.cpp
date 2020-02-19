@@ -129,7 +129,6 @@ AstClause* cloneHead(const AstClause* clause) {
     if (clause->getExecutionPlan() != nullptr) {
         clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(clause->getExecutionPlan()->clone()));
     }
-    clone->setFixedExecutionPlan(clause->hasFixedExecutionPlan());
     return clone;
 }
 }  // end of namespace souffle

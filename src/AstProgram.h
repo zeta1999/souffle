@@ -359,41 +359,22 @@ protected:
         assert(nullptr != dynamic_cast<const AstProgram*>(&node));
         const auto& other = static_cast<const AstProgram&>(node);
 
-        // check list sizes
-        if (types.size() != other.types.size()) {
+        if (!equal_targets(pragmaDirectives, other.pragmaDirectives)) {
             return false;
         }
-        if (relations.size() != other.relations.size()) {
-            return false;
-        }
-
-        // check types
-        for (const auto& cur : types) {
-            auto pos = other.types.find(cur.first);
-            if (pos == other.types.end()) {
-                return false;
-            }
-            if (*cur.second != *pos->second) {
-                return false;
-            }
-        }
-
-        // check relations
-        for (const auto& cur : relations) {
-            auto pos = other.relations.find(cur.first);
-            if (pos == other.relations.end()) {
-                return false;
-            }
-            if (*cur.second != *pos->second) {
-                return false;
-            }
-        }
-
-        // check components
         if (!equal_targets(components, other.components)) {
             return false;
         }
         if (!equal_targets(instantiations, other.instantiations)) {
+            return false;
+        }
+        if (!equal_targets(functors, other.functors)) {
+            return false;
+        }
+        if (!equal_targets(types, other.types)) {
+            return false;
+        }
+        if (!equal_targets(relations, other.relations)) {
             return false;
         }
         if (!equal_targets(clauses, other.clauses)) {
@@ -408,8 +389,6 @@ protected:
         if (!equal_targets(stores, other.stores)) {
             return false;
         }
-
-        // no different found => programs are equal
         return true;
     }
 

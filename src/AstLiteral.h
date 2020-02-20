@@ -49,6 +49,14 @@ class AstAtom : public AstAtomLiteral {
 public:
     AstAtom(AstRelationIdentifier name = AstRelationIdentifier()) : name(std::move(name)) {}
 
+    // construct AstAtom with given atom and replace the arguments with args
+    AstAtom(const AstAtom& atom, std::vector<AstArgument*> args) : name(atom.getName()) {
+        setSrcLoc(atom.getSrcLoc());
+        for (const auto& arg : args) {
+            arguments.emplace_back(arg);
+        }
+    }
+
     /** Return the name of this atom */
     // TODO (b-scholz): rename to getIdent
     const AstRelationIdentifier& getName() const {
@@ -73,11 +81,6 @@ public:
     /** Add argument to the atom */
     void addArgument(std::unique_ptr<AstArgument> arg) {
         arguments.push_back(std::move(arg));
-    }
-
-    /** Replace the argument at the given index with the given argument */
-    void setArgument(size_t idx, std::unique_ptr<AstArgument> newArg) {
-        arguments[idx].swap(newArg);
     }
 
     /** Provides access to the list of arguments of this atom */

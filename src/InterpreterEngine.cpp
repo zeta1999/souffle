@@ -28,11 +28,11 @@
 namespace souffle {
 
 #if RAM_DOMAIN_SIZE == 64
-#define FFI_RamDomain ffi_type_sint64
+#define FFI_RamSigned ffi_type_sint64
 #define FFI_RamUnsigned ffi_type_uint64
 #define FFI_RamFloat ffi_type_double
 #else
-#define FFI_RamDomain ffi_type_sint32
+#define FFI_RamSigned ffi_type_sint32
 #define FFI_RamUnsigned ffi_type_uint32
 #define FFI_RamFloat ffi_type_float
 #endif
@@ -534,6 +534,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             ffi_type* args[arity];
             void* values[arity];
             RamDomain intVal[arity];
+            RamUnsigned uintVal[arity];
+            RamFloat floatVal[arity];
             const char* strVal[arity];
             ffi_arg rc;
 
@@ -547,49 +549,71 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         values[i] = &strVal[i];
                         break;
                     case RamTypeAttribute::Signed:
-                        args[i] = &FFI_RamDomain;
+                        args[i] = &FFI_RamSigned;
                         intVal[i] = arg;
                         values[i] = &intVal[i];
                         break;
-                    default:
-                        assert(false && "Not implemented");
+                    case RamTypeAttribute::Unsigned:
+                        args[i] = &FFI_RamUnsigned;
+                        uintVal[i] = ramBitCast<RamUnsigned>(arg);
+                        values[i] = &uintVal[i];
+                        break;
+                    case RamTypeAttribute::Float:
+                        args[i] = &FFI_RamFloat;
+                        floatVal[i] = ramBitCast<RamFloat>(arg);
+                        values[i] = &floatVal[i];
+                        break;
+                    case RamTypeAttribute::Record:
+                        assert(false && "Record support is not implemented");
                 }
             }
 
-            // call external function
+            // Get codomain.
+            auto codomain = &FFI_RamSigned;
             switch (cur.getReturnType()) {
                 // initialize for string value.
                 case RamTypeAttribute::Symbol:
-                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &FFI_Symbol, args) != FFI_OK) {
-                        std::cerr << "Failed to prepare CIF for user-defined operator ";
-                        std::cerr << name << std::endl;
-                        exit(1);
-                    }
+                    codomain = &FFI_Symbol;
                     break;
                 case RamTypeAttribute::Signed:
-                    // Initialize for numeric value.
-                    if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &FFI_RamDomain, args) != FFI_OK) {
-                        std::cerr << "Failed to prepare CIF for user-defined operator ";
-                        std::cerr << name << std::endl;
-                        exit(1);
-                    }
+                    codomain = &FFI_RamSigned;
+                    break;
+                case RamTypeAttribute::Unsigned:
+                    codomain = &FFI_RamUnsigned;
+                    break;
+                case RamTypeAttribute::Float:
+                    codomain = &FFI_RamFloat;
                     break;
                 default:
                     assert(false && "Not implemented");
             }
 
+            // Call the external function.
+            if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, codomain, args) != FFI_OK) {
+                std::cerr << "Failed to prepare CIF for user-defined operator ";
+                std::cerr << name << std::endl;
+                exit(1);
+            }
             ffi_call(&cif, fn, &rc, values);
+
             RamDomain result;
             switch (cur.getReturnType()) {
                 case RamTypeAttribute::Signed:
-                    result = ((RamDomain)rc);
+                    result = static_cast<RamDomain>(rc);
                     break;
                 case RamTypeAttribute::Symbol:
-                    result = getSymbolTable().lookup(((const char*)rc));
+                    result = getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
+                    break;
+                case RamTypeAttribute::Unsigned:
+                    result = ramBitCast(static_cast<RamUnsigned>(rc));
+                    break;
+                case RamTypeAttribute::Float:
+                    result = ramBitCast(static_cast<RamFloat>(rc));
                     break;
                 default:
-                    abort();
+                    assert(false && "Not implemented");
             }
+
             return result;
         ESAC(UserDefinedOperator)
 

@@ -337,6 +337,11 @@ inline RamTypeAttribute functorReturnType(const FunctorOp op) {
  */
 inline RamTypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
     switch (op) {
+        // Special case
+        case FunctorOp::ORD:
+            assert(false &&
+                    "ord is a special (polymorphic) function that returns a Ram Representation (number) of "
+                    "the element");
         case FunctorOp::ITOF:
         case FunctorOp::ITOU:
         case FunctorOp::NEG:
@@ -350,7 +355,6 @@ inline RamTypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::FTOU:
             assert(arg == 0 && "unary functor out of bound");
             return RamTypeAttribute::Float;
-        case FunctorOp::ORD:
         case FunctorOp::STRLEN:
         case FunctorOp::TONUMBER:
             assert(arg == 0 && "unary functor out of bound");

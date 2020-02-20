@@ -125,20 +125,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstExecutionPlan*>(&node));
         const auto& other = static_cast<const AstExecutionPlan&>(node);
-        if (plans.size() != other.plans.size()) {
-            return false;
-        }
-        auto iter = plans.begin();
-        auto otherIter = other.plans.begin();
-        for (; iter != plans.end(); ++iter, ++otherIter) {
-            if (iter->first != otherIter->first) {
-                return false;
-            }
-            if (*iter->second != *otherIter->second) {
-                return false;
-            }
-        }
-        return true;
+        return equal_targets(plans, other.plans);
     }
 
 private:

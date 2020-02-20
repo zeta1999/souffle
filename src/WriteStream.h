@@ -16,6 +16,7 @@
 
 #include "IODirectives.h"
 #include "RamTypes.h"
+#include "RecordTable.h"
 #include "SymbolTable.h"
 #include "json11.h"
 
@@ -25,12 +26,14 @@
 
 namespace souffle {
 
-using Json = json11::Json;
+using json11::Json;
 
 class WriteStream {
 public:
-    WriteStream(const IODirectives& ioDirectives, const SymbolTable& symbolTable, bool summary = false)
-            : symbolTable(symbolTable), summary(summary) {
+    WriteStream(
+            const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            : symbolTable(symbolTable), recordTable(recordTable),
+              summary(ioDirectives.getIOType() == "stdoutprintsize") {
         const std::string& relationName{ioDirectives.getRelationName()};
 
         std::string parseErrors;
@@ -42,8 +45,8 @@ public:
         arity = static_cast<size_t>(types[relationName]["arity"].long_value());
 
         for (size_t i = 0; i < arity; ++i) {
-            RamTypeAttribute type = RamPrimitiveFromChar(types[relationName]["types"][i].string_value()[0]);
-            typeAttributes.push_back(type);
+            std::string type = types[relationName]["types"][i].string_value();
+            typeAttributes.push_back(std::move(type));
         }
     }
 
@@ -72,9 +75,11 @@ public:
     virtual ~WriteStream() = default;
 
 protected:
-    std::vector<RamTypeAttribute> typeAttributes;
     const SymbolTable& symbolTable;
+    const RecordTable& recordTable;
+
     Json types;
+    std::vector<std::string> typeAttributes;
 
     const bool summary;
     size_t arity;
@@ -88,30 +93,66 @@ protected:
     void writeNext(const Tuple tuple) {
         writeNextTuple(tuple.data);
     }
-    void writeNextTupleElement(std::ostream& destination, RamTypeAttribute type, RamDomain value) {
-        switch (type) {
-            case RamTypeAttribute::Symbol:
-                destination << symbolTable.unsafeResolve(value);
-                break;
-            case RamTypeAttribute::Signed:
-                destination << value;
-                break;
-            case RamTypeAttribute::Unsigned:
-                destination << ramBitCast<RamUnsigned>(value);
-                break;
-            case RamTypeAttribute::Float:
-                destination << ramBitCast<RamFloat>(value);
-                break;
-            case RamTypeAttribute::Record:
-                assert(false && "Record writing is not supported");
+
+    void outputRecord(std::ostream& destination, const RamDomain value, const std::string& name) {
+        Json recordInfo = types["records"][name];
+
+        // Check if record type information are present
+        if (recordInfo.is_null()) {
+            std::cerr << "Missing record type information: " << name << std::endl;
+            abort();
         }
+
+        // Check for nil
+        if (recordTable.isNil(value)) {
+            destination << "nil";
+            return;
+        }
+
+        const Json recordTypes = recordInfo["types"];
+        const size_t recordArity = recordInfo["arity"].long_value();
+
+        const RamDomain* tuplePtr = recordTable.unpack(value, recordArity);
+
+        destination << "[";
+
+        // print record's elements
+        for (size_t i = 0; i < recordArity; ++i) {
+            if (i > 0) {
+                destination << ", ";
+            }
+
+            const std::string& recordType = recordTypes[i].string_value();
+            const RamDomain recordValue = tuplePtr[i];
+
+            switch (recordType[0]) {
+                case 'i':
+                    destination << recordValue;
+                    break;
+                case 'f':
+                    destination << ramBitCast<RamFloat>(recordValue);
+                    break;
+                case 'u':
+                    destination << ramBitCast<RamUnsigned>(recordValue);
+                    break;
+                case 's':
+                    destination << symbolTable.unsafeResolve(recordValue);
+                    break;
+                case 'r':
+                    outputRecord(destination, recordValue, recordType);
+                    break;
+                default:
+                    assert(false && "Unsupported type attribute.");
+            }
+        }
+        destination << "]";
     }
 };
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(
-            const IODirectives& ioDirectives, const SymbolTable& symbolTable) = 0;
+    virtual std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives,
+            const SymbolTable& symbolTable, const RecordTable& recordTable) = 0;
 
     virtual const std::string& getName() const = 0;
     virtual ~WriteStreamFactory() = default;

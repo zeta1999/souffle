@@ -715,28 +715,6 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
                         attr->getSrcLoc());
             }
         }
-
-        /* check whether type is a record type */
-        if (typeEnv.isType(typeName)) {
-            const Type& type = typeEnv.getType(typeName);
-            if (isRecordType(type)) {
-                if (ioTypes.isInput(&relation)) {
-                    report.addError(
-                            "Input relations must not have record types. "
-                            "Attribute " +
-                                    attr->getAttributeName() + " has record type " +
-                                    toString(attr->getTypeName()),
-                            attr->getSrcLoc());
-                }
-                if (ioTypes.isOutput(&relation) && !ioTypes.isPrintSize(&relation)) {
-                    report.addWarning(
-                            "Record types in output relations are not printed verbatim: attribute " +
-                                    attr->getAttributeName() + " has record type " +
-                                    toString(attr->getTypeName()),
-                            attr->getSrcLoc());
-                }
-            }
-        }
     }
 }
 

@@ -161,7 +161,7 @@ protected:
 class WriteCoutPrintSize : public WriteStream {
 public:
     explicit WriteCoutPrintSize(const IODirectives& ioDirectives)
-            : WriteStream(ioDirectives, {}, {}, true), lease(souffle::getOutputLock().acquire()) {
+            : WriteStream(ioDirectives, {}, {}), lease(souffle::getOutputLock().acquire()) {
         std::cout << ioDirectives.getRelationName() << "\t";
     }
 

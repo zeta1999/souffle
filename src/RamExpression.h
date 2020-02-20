@@ -146,7 +146,6 @@ public:
         assert(argsTypes.size() == args.size());
     }
 
-    // TODO (darth_tytus): update printing to correctly show types.
     void print(std::ostream& os) const override {
         os << "@" << name << "_" << argsTypes << "(";
         os << join(arguments, ",",

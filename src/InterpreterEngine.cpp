@@ -27,6 +27,7 @@
 
 namespace souffle {
 
+// Aliases for foreign function interface.
 #if RAM_DOMAIN_SIZE == 64
 #define FFI_RamSigned ffi_type_sint64
 #define FFI_RamUnsigned ffi_type_uint64

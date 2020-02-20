@@ -378,8 +378,7 @@ public:
     }
 
     void setArgsTypes(std::vector<RamTypeAttribute> types) {
-        assert(types.size() == args.size() &&
-                "Size of types must match size of arguments (astUserDefinedFunctor)");
+        assert(types.size() == args.size() && "Size of types must match size of arguments");
         argTypes = types;
     }
 

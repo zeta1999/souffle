@@ -339,9 +339,7 @@ inline RamTypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
     switch (op) {
         // Special case
         case FunctorOp::ORD:
-            assert(false &&
-                    "ord is a special (polymorphic) function that returns a Ram Representation (number) of "
-                    "the element");
+            assert(false && "ord is a special function that returns a Ram Representation of the element");
         case FunctorOp::ITOF:
         case FunctorOp::ITOU:
         case FunctorOp::NEG:

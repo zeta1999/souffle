@@ -1192,16 +1192,8 @@ inline std::string identifier(std::string id) {
 }
 
 /** string operation for I/O directives */
-std::string unescape(const std::string& inputString) const {
-    std::string unescaped = unescape(inputString, "\\\"", "\"");
-    unescaped = unescape(unescaped, "\\t", "\t");
-    unescaped = unescape(unescaped, "\\r", "\r");
-    unescaped = unescape(unescaped, "\\n", "\n");
-    return unescaped;
-}
-
-std::string unescape(
-        const std::string& inputString, const std::string& needle, const std::string& replacement) const {
+inline std::string unescape(
+        const std::string& inputString, const std::string& needle, const std::string& replacement) {
     std::string result = inputString;
     size_t pos = 0;
     while ((pos = result.find(needle, pos)) != std::string::npos) {
@@ -1210,6 +1202,15 @@ std::string unescape(
     }
     return result;
 }
+
+inline std::string unescape(const std::string& inputString) {
+    std::string unescaped = unescape(inputString, "\\\"", "\"");
+    unescaped = unescape(unescaped, "\\t", "\t");
+    unescaped = unescape(unescaped, "\\r", "\r");
+    unescaped = unescape(unescaped, "\\n", "\n");
+    return unescaped;
+}
+
 // -------------------------------------------------------------------------------
 //                              Hint / Cache
 // -------------------------------------------------------------------------------

@@ -36,7 +36,9 @@ public:
     void print(std::ostream& os) const override {
         os << name;
         if (!kvps.empty()) {
-            os << "(" << join(kvps, ",") << ")";
+            os << "(" << join(kvps, ",", [](std::ostream& out, const auto& arg) {
+                out << arg.first << "=\"" << arg.second << "\"";
+            }) << ")";
         }
     }
 

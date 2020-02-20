@@ -67,14 +67,6 @@ TEST(Util, LambdaTraits) {
     EXPECT_EQ(typeid(int).name(), typeid(lambda_traits<decltype(lambda)>::arg0_type).name());
 }
 
-TEST(Util, NullStream) {
-    NullStream nullstream;
-
-    std::ostream* out;
-    out = &nullstream;
-    (*out) << "Hello World!\n";
-}
-
 TEST(Util, LRUCache) {
     using cache = LRUCache<int, 4>;
     cache c;

@@ -279,6 +279,24 @@ unit
     }
   | unit relation_decl {
         for (auto* cur : $relation_decl) {
+            if ((cur->getQualifier() & INPUT_RELATION) != 0) {
+                auto load = std::make_unique<AstLoad>();
+                load->addName(cur->getName());
+                load->setSrcLoc(cur->getSrcLoc());
+                driver.addLoad(std::move(load));
+            }
+            if ((cur->getQualifier() & OUTPUT_RELATION) != 0) {
+                auto store = std::make_unique<AstStore>();
+                store->addName(cur->getName());
+                store->setSrcLoc(cur->getSrcLoc());
+                driver.addStore(std::move(store));
+            }
+            if ((cur->getQualifier() & PRINTSIZE_RELATION) != 0) {
+                auto printSize = std::make_unique<AstPrintSize>();
+                printSize->addName(cur->getName());
+                printSize->setSrcLoc(cur->getSrcLoc());
+                driver.addStore(std::move(printSize));
+            }
             driver.addRelation(std::unique_ptr<AstRelation>(cur));
         }
 
@@ -493,16 +511,19 @@ non_empty_attributes
 /* Relation qualifiers */
 qualifiers
   : qualifiers OUTPUT_QUALIFIER {
+        driver.warning(@2, "Deprecated io qualifier was used");
         if($1 & OUTPUT_RELATION)
             driver.error(@2, "output qualifier already set");
         $$ = $1 | OUTPUT_RELATION;
     }
   | qualifiers INPUT_QUALIFIER {
+        driver.warning(@2, "Deprecated io qualifier was used");
         if($1 & INPUT_RELATION)
             driver.error(@2, "input qualifier already set");
         $$ = $1 | INPUT_RELATION;
     }
   | qualifiers PRINTSIZE_QUALIFIER {
+        driver.warning(@2, "Deprecated io qualifier was used");
         if($1 & PRINTSIZE_RELATION)
             driver.error(@2, "printsize qualifier already set");
         $$ = $1 | PRINTSIZE_RELATION;
@@ -1411,6 +1432,24 @@ component_body
   | component_body[comp] relation_decl {
         $$ = $comp;
         for (auto* rel : $relation_decl) {
+            if ((rel->getQualifier() & INPUT_RELATION) != 0) {
+                auto load = std::make_unique<AstLoad>();
+                load->addName(rel->getName());
+                load->setSrcLoc(rel->getSrcLoc());
+                driver.addLoad(std::move(load));
+            }
+            if ((rel->getQualifier() & OUTPUT_RELATION) != 0) {
+                auto store = std::make_unique<AstStore>();
+                store->addName(rel->getName());
+                store->setSrcLoc(rel->getSrcLoc());
+                driver.addStore(std::move(store));
+            }
+            if ((rel->getQualifier() & PRINTSIZE_RELATION) != 0) {
+                auto printSize = std::make_unique<AstPrintSize>();
+                printSize->addName(rel->getName());
+                printSize->setSrcLoc(rel->getSrcLoc());
+                driver.addStore(std::move(printSize));
+            }
             $$->addRelation(std::unique_ptr<AstRelation>(rel));
         }
 

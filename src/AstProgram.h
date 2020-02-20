@@ -92,12 +92,6 @@ public:
             for (const auto clause : rel->getClauses()) {
                 os << *clause << "\n\n";
             }
-            for (const auto ioDirective : rel->getLoads()) {
-                os << *ioDirective << "\n\n";
-            }
-            for (const auto ioDirective : rel->getStores()) {
-                os << *ioDirective << "\n\n";
-            }
         }
 
         if (!clauses.empty()) {
@@ -396,6 +390,7 @@ protected:
     friend class ComponentInstantiationTransformer;
     friend class ParserDriver;
     friend class ProvenanceTransformer;
+    friend class MagicSetTransformer;
 
     /* add type */
     void addType(std::unique_ptr<AstType> type) {
@@ -479,31 +474,6 @@ protected:
         // unbound directives with no relation defined
         std::vector<std::unique_ptr<AstLoad>> unboundLoads;
         std::vector<std::unique_ptr<AstStore>> unboundStores;
-
-        // add IO directives
-        for (auto& cur : loads) {
-            auto pos = relations.find(cur->getName());
-            if (pos != relations.end()) {
-                pos->second->addLoad(std::move(cur));
-            } else {
-                unboundLoads.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan directives
-        loads.clear();
-        loads.swap(unboundLoads);
-
-        for (auto& cur : stores) {
-            auto pos = relations.find(cur->getName());
-            if (pos != relations.end()) {
-                pos->second->addStore(std::move(cur));
-            } else {
-                unboundStores.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan directives
-        stores.clear();
-        stores.swap(unboundStores);
     }
 
     /** Program types  */

@@ -51,23 +51,24 @@ public:
     /**
      * Return a new WriteStream
      */
-    std::unique_ptr<WriteStream> getWriter(
-            const IODirectives& ioDirectives, const SymbolTable& symbolTable) const {
+    std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives, const SymbolTable& symbolTable,
+            const RecordTable& recordTable) const {
         std::string ioType = ioDirectives.getIOType();
         if (outputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested output type <" + ioType + "> is not supported.");
         }
-        return outputFactories.at(ioType)->getWriter(ioDirectives, symbolTable);
+        return outputFactories.at(ioType)->getWriter(ioDirectives, symbolTable, recordTable);
     }
     /**
      * Return a new ReadStream
      */
-    std::unique_ptr<ReadStream> getReader(const IODirectives& ioDirectives, SymbolTable& symbolTable) const {
+    std::unique_ptr<ReadStream> getReader(
+            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) const {
         std::string ioType = ioDirectives.getIOType();
         if (inputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested input type <" + ioType + "> is not supported.");
         }
-        return inputFactories.at(ioType)->getReader(ioDirectives, symbolTable);
+        return inputFactories.at(ioType)->getReader(ioDirectives, symbolTable, recordTable);
     }
     ~IOSystem() = default;
 

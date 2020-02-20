@@ -357,9 +357,9 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             size_t auxiliaryArity = translator.getEvaluationArity(atom);
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
-            auto args = atom->getArguments();
-            for (size_t i = 0; i < arity; i++) {
-                values.push_back(translator.translateValue(args[i], index));
+
+            for (auto arg : atom->getArguments()) {
+                values.push_back(translator.translateValue(arg, index));
             }
             for (size_t i = 0; i < auxiliaryArity; i++) {
                 values.push_back(std::make_unique<RamUndefValue>());
@@ -379,8 +379,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             int arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
             auto args = atom->getArguments();
-            for (int i = 0; i < arity; i++) {
-                values.push_back(translator.translateValue(args[i], index));
+            for (auto arg : args) {
+                values.push_back(translator.translateValue(arg, index));
             }
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
@@ -508,11 +508,12 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
         // bind aggregator variables to locations
         assert(nullptr != dynamic_cast<const AstAtom*>(cur.getBodyLiterals()[0]));
         const AstAtom& atom = static_cast<const AstAtom&>(*cur.getBodyLiterals()[0]);
-        auto args = atom.getArguments();
-        for (size_t pos = 0; pos < atom.getArity(); ++pos) {
-            if (const auto* var = dynamic_cast<const AstVariable*>(args[pos])) {
+        size_t pos = 0;
+        for (auto arg : atom.getArguments()) {
+            if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
                 valueIndex.addVarReference(*var, aggLoc, (int)pos, translator.translateRelation(&atom));
             }
+            ++pos;
         };
 
         // and remember aggregator
@@ -680,15 +681,16 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // add constraints
-            auto args = atom->getArguments();
-            for (size_t pos = 0; pos < atom->getArity(); ++pos) {
-                if (auto* agg = dynamic_cast<AstAggregator*>(args[pos])) {
+            size_t pos = 0;
+            for (auto arg : atom->getArguments()) {
+                if (auto* agg = dynamic_cast<AstAggregator*>(arg)) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                                              std::make_unique<RamTupleElement>(curLevel, pos),
                                                              makeRamTupleElement(loc)),
                             std::move(op));
                 }
+                ++pos;
             }
         }
     }
@@ -746,11 +748,11 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         // translate arguments's of atom (if exists) to conditions
         if (atom != nullptr) {
-            auto args = atom->getArguments();
-            for (size_t pos = 0; pos < atom->getArity(); ++pos) {
+            size_t pos = 0;
+            for (auto arg : atom->getArguments()) {
                 // variable bindings are issued differently since we don't want self
                 // referential variable bindings
-                if (const auto* var = dynamic_cast<const AstVariable*>(args[pos])) {
+                if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
                     for (const Location& loc :
                             valueIndex.getVariableReferences().find(var->getName())->second) {
                         if (level != loc.identifier || (int)pos != loc.element) {
@@ -761,8 +763,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                             break;
                         }
                     }
-                } else if (args[pos] != nullptr) {
-                    std::unique_ptr<RamExpression> value = translator.translateValue(args[pos], valueIndex);
+                } else if (arg != nullptr) {
+                    std::unique_ptr<RamExpression> value = translator.translateValue(arg, valueIndex);
                     if (value != nullptr && !isRamUndefValue(value.get())) {
                         std::unique_ptr<RamCondition> newCondition =
                                 std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
@@ -770,6 +772,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                         addAggCondition(newCondition);
                     }
                 }
+                ++pos;
             }
         }
 
@@ -801,15 +804,16 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // add constraints
-            auto args = atom->getArguments();
-            for (size_t pos = 0; pos < atom->getArity(); ++pos) {
-                if (auto* c = dynamic_cast<AstConstant*>(args[pos])) {
+            size_t pos = 0;
+            for (auto arg : atom->getArguments()) {
+                if (auto* c = dynamic_cast<AstConstant*>(arg)) {
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamTupleElement>(level, pos),
                                     std::make_unique<RamSignedConstant>(c->getRamRepresentation())),
                             std::move(op));
                 }
+                ++pos;
             }
 
             // check whether all arguments are unnamed variables

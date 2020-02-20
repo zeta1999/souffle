@@ -176,7 +176,7 @@ public:
         }
         if (!overrideRules.empty()) {
             os << ".override ";
-            os << join(relations, ",") << "\n";
+            os << join(overrideRules, ",") << "\n";
         }
         if (!clauses.empty()) {
             os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";

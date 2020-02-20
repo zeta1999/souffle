@@ -36,13 +36,13 @@ public:
     void print(std::ostream& os) const override {
         os << name;
         if (!kvps.empty()) {
-           os << "(" << join(kvps, ",") << ")"; 
+            os << "(" << join(kvps, ",") << ")";
         }
     }
 
     /** relation name of I/O-directive */
     const AstRelationIdentifier& getName() const {
-        return name; 
+        return name;
     }
 
     /** set relation name of I/O-directive */

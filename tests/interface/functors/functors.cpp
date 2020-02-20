@@ -17,13 +17,28 @@
 #include <cstdint>
 #include <cstring>
 
+// TODO:
+// Enable engine testing
+
+#if RAM_DOMAIN_SIZE == 64
+using FF_int = int64_t;
+using FF_uint = uint64_t;
+using FF_float = double;
+#elif RAM_DOMAIN_SIZE == 32
+using FF_int = int32_t;
+using FF_uint = uint32_t;
+using FF_float = float;
+#else
+#error Ram domain size must be specified
+#endif
+
 extern "C" {
 
-int32_t foo(int32_t n, const char* s) {
+FF_int foo(FF_int n, const char* s) {
     return n + strlen(s);
 }
 
-int32_t goo(const char* s, int32_t n) {
+FF_int goo(const char* s, FF_int n) {
     return strlen(s) + n;
 }
 
@@ -31,7 +46,7 @@ const char* hoo() {
     return "Hello world!\n";
 }
 
-const char* ioo(int32_t n) {
+const char* ioo(FF_int n) {
     if (n < 0) {
         return "NEG";
     } else if (n == 0) {
@@ -41,12 +56,12 @@ const char* ioo(int32_t n) {
     }
 }
 
-uint32_t factorial(uint32_t x) {
+FF_int factorial(FF_uint x) {
     if (x == 0) {
         return 1;
     }
 
-    uint32_t accum = 1;
+    FF_uint accum = 1;
 
     while (x > 1) {
         accum *= x;
@@ -56,7 +71,7 @@ uint32_t factorial(uint32_t x) {
     return accum;
 }
 
-int32_t rnd(float x) {
+FF_int rnd(FF_float x) {
     return round(x);
 }
 }

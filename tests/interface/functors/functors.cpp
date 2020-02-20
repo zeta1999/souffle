@@ -24,12 +24,10 @@
 using FF_int = int64_t;
 using FF_uint = uint64_t;
 using FF_float = double;
-#elif RAM_DOMAIN_SIZE == 32
+#else
 using FF_int = int32_t;
 using FF_uint = uint32_t;
 using FF_float = float;
-#else
-#error Ram domain size must be specified
 #endif
 
 extern "C" {

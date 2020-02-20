@@ -29,9 +29,6 @@
 
 namespace souffle {
 
-// forward declaration
-class Type;
-
 /**
  *  Intermediate representation of an attribute which stores the name and the type of an attribute
  *
@@ -39,8 +36,7 @@ class Type;
  */
 class AstAttribute : public AstNode {
 public:
-    AstAttribute(std::string n, AstTypeIdentifier t, const Type* /*type*/ = nullptr)
-            : name(std::move(n)), typeName(std::move(t)) {}
+    AstAttribute(std::string n, AstTypeIdentifier t) : name(std::move(n)), typeName(std::move(t)) {}
 
     void print(std::ostream& os) const override {
         os << name << ":" << typeName;

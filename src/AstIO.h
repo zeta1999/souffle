@@ -30,102 +30,57 @@ namespace souffle {
  */
 class AstIO : public AstNode {
 public:
-    AstIO(const AstIO& io) : names(io.names), kvps(io.kvps) {}
+    AstIO(const AstIO& io) : name(io.name), kvps(io.kvps) {}
     AstIO() = default;
+
     void print(std::ostream& os) const override {
-        bool first = true;
-        for (auto& relationName : getNames()) {
-            if (first) {
-                first = false;
-            } else {
-                os << ',';
-            }
-            os << relationName;
+        os << name;
+        if (!kvps.empty()) {
+            os << "(" << join(kvps, ",", [](std::ostream& out, const auto& arg) {
+                out << arg.first << "=\"" << arg.second << "\"";
+            }) << ")";
         }
-        if (kvps.empty()) {
-            return;
-        }
-        os << "(";
-        first = true;
-        for (auto& pair : kvps) {
-            if (first) {
-                first = false;
-            } else {
-                os << ',';
-            }
-            os << pair.first << "=\"" << pair.second << "\"";
-        }
-        os << ')';
     }
 
-    /** Return the name of this kvp map */
+    /** relation name of I/O-directive */
     const AstRelationIdentifier& getName() const {
-        return *names.begin();
+        return name;
     }
 
-    /** Return the names of this kvp map */
-    const std::set<AstRelationIdentifier>& getNames() const {
-        return names;
-    }
-
-    /** Set kvp map name */
-    void addName(const AstRelationIdentifier& name) {
-        names.insert(name);
-    }
-    /** Set kvp map name */
+    /** set relation name of I/O-directive */
     void setName(const AstRelationIdentifier& name) {
-        names.clear();
-        names.insert(name);
+        this->name = name;
     }
 
-    /** Add kvp */
+    /** add key-value pair */
     void addKVP(const std::string& key, const std::string& value) {
         kvps[key] = unescape(value);
     }
 
-    /** Get IO directive map */
+    /** get I/O-directive map */
     const std::map<std::string, std::string>& getIODirectiveMap() const {
         return kvps;
     }
 
     AstIO* clone() const override {
         auto res = new AstIO();
-        res->names = names;
+        res->name = name;
         res->kvps = kvps;
         res->setSrcLoc(getSrcLoc());
         return res;
-    }
-
-    std::string unescape(const std::string& inputString) const {
-        std::string unescaped = unescape(inputString, "\\\"", "\"");
-        unescaped = unescape(unescaped, "\\t", "\t");
-        unescaped = unescape(unescaped, "\\r", "\r");
-        unescaped = unescape(unescaped, "\\n", "\n");
-        return unescaped;
-    }
-
-    std::string unescape(
-            const std::string& inputString, const std::string& needle, const std::string& replacement) const {
-        std::string result = inputString;
-        size_t pos = 0;
-        while ((pos = result.find(needle, pos)) != std::string::npos) {
-            result = result.replace(pos, needle.length(), replacement);
-            pos += replacement.length();
-        }
-        return result;
     }
 
 protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstIO*>(&node));
         const auto& other = static_cast<const AstIO&>(node);
-        return other.names == names && other.kvps == kvps;
+        return other.name == name && other.kvps == kvps;
     }
 
-    /** Name of the kvp */
-    std::set<AstRelationIdentifier> names;
+    /** relation name of I/O directive */
+    AstRelationIdentifier name;
 
-    /** kvp map */
+    /** key-value pair map */
     std::map<std::string, std::string> kvps;
 };
 
@@ -147,7 +102,7 @@ public:
 
     AstStore* clone() const override {
         auto res = new AstStore();
-        res->names = names;
+        res->name = name;
         res->kvps = kvps;
         res->setSrcLoc(getSrcLoc());
         return res;
@@ -172,7 +127,7 @@ public:
 
     AstLoad* clone() const override {
         auto res = new AstLoad();
-        res->names = names;
+        res->name = name;
         res->kvps = kvps;
         res->setSrcLoc(getSrcLoc());
         return res;
@@ -199,7 +154,7 @@ public:
 
     AstPrintSize* clone() const override {
         auto res = new AstPrintSize();
-        res->names = names;
+        res->name = name;
         res->kvps = kvps;
         res->setSrcLoc(getSrcLoc());
         return res;

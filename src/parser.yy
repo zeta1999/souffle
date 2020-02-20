@@ -281,19 +281,19 @@ unit
         for (auto* cur : $relation_decl) {
             if ((cur->getQualifier() & INPUT_RELATION) != 0) {
                 auto load = std::make_unique<AstLoad>();
-                load->addName(cur->getName());
+                load->setName(cur->getName());
                 load->setSrcLoc(cur->getSrcLoc());
                 driver.addLoad(std::move(load));
             }
             if ((cur->getQualifier() & OUTPUT_RELATION) != 0) {
                 auto store = std::make_unique<AstStore>();
-                store->addName(cur->getName());
+                store->setName(cur->getName());
                 store->setSrcLoc(cur->getSrcLoc());
                 driver.addStore(std::move(store));
             }
             if ((cur->getQualifier() & PRINTSIZE_RELATION) != 0) {
                 auto printSize = std::make_unique<AstPrintSize>();
-                printSize->addName(cur->getName());
+                printSize->setName(cur->getName());
                 printSize->setSrcLoc(cur->getSrcLoc());
                 driver.addStore(std::move(printSize));
             }
@@ -1434,19 +1434,19 @@ component_body
         for (auto* rel : $relation_decl) {
             if ((rel->getQualifier() & INPUT_RELATION) != 0) {
                 auto load = std::make_unique<AstLoad>();
-                load->addName(rel->getName());
+                load->setName(rel->getName());
                 load->setSrcLoc(rel->getSrcLoc());
                 driver.addLoad(std::move(load));
             }
             if ((rel->getQualifier() & OUTPUT_RELATION) != 0) {
                 auto store = std::make_unique<AstStore>();
-                store->addName(rel->getName());
+                store->setName(rel->getName());
                 store->setSrcLoc(rel->getSrcLoc());
                 driver.addStore(std::move(store));
             }
             if ((rel->getQualifier() & PRINTSIZE_RELATION) != 0) {
                 auto printSize = std::make_unique<AstPrintSize>();
-                printSize->addName(rel->getName());
+                printSize->setName(rel->getName());
                 printSize->setSrcLoc(rel->getSrcLoc());
                 driver.addStore(std::move(printSize));
             }

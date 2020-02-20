@@ -1161,7 +1161,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         newDirective->addKVP("filename", originalName.getNames()[0] + ".facts");
                     }
 
-                    newRelation->addLoad(std::unique_ptr<AstLoad>(newDirective));
+                    program->addLoad(std::unique_ptr<AstLoad>(newDirective));
                 }
 
                 // add the created adorned relation to the program
@@ -1481,13 +1481,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         referringClause->addToBody(std::unique_ptr<AstAtom>(bodyatom));
 
         program->appendClause(std::unique_ptr<AstClause>(referringClause));
-    }
-
-    // add in all the output directives to their corresponding relations
-    for (auto& iopair : outputDirectives) {
-        for (auto& iodir : iopair.second) {
-            program->getRelation(iopair.first)->addStore(std::move(iodir));
-        }
     }
 
     // replace all "+underscoreX" variables with actual underscores

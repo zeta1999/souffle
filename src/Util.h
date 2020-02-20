@@ -430,36 +430,35 @@ bool equal(const std::vector<T>& a, const std::vector<T>& b, const Comp& comp = 
             return false;
         }
     }
-
-    // all the same
     return true;
 }
 
 /**
- * A function testing whether two vector of pointers are referencing to equivalent
- * targets.
+ * A function testing whether two maps are equal.
  */
-template <typename T>
-bool equal_targets(const std::vector<T*>& a, const std::vector<T*>& b) {
-    return equal(a, b, comp_deref<T*>());
-}
+template <typename T1, typename T2, typename Comp = std::equal_to<T2>>
+bool equal(const std::map<T1, T2>& a, const std::map<T1, T2>& b, const Comp& comp = Comp()) {
+    // check reference
+    if (&a == &b) {
+        return true;
+    }
 
-/**
- * A function testing whether two vector of pointers are referencing to equivalent
- * targets.
- */
-template <typename T>
-bool equal_targets(const std::vector<std::unique_ptr<T>>& a, const std::vector<std::unique_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::unique_ptr<T>>());
-}
+    // check size
+    if (a.size() != a.size()) {
+        return false;
+    }
 
-/**
- * A function testing whether two vector of pointers are referencing to equivalent
- * targets.
- */
-template <typename T>
-bool equal_targets(const std::vector<std::shared_ptr<T>>& a, const std::vector<std::shared_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::shared_ptr<T>>());
+    // check contents
+    auto itB = b.begin();
+    for (auto itA = a.begin(); itA != a.end(); ++itA, ++itB) {
+        if (itA->first != itB->first) {
+            return false;
+        }
+        if (!comp(itA->second, itB->second)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 /**
@@ -492,6 +491,33 @@ bool equal(const std::set<T>& a, const std::set<T>& b, const Comp& comp = Comp()
 }
 
 /**
+ * A function testing whether two vector of pointers are referencing to equivalent
+ * targets.
+ */
+template <typename T>
+bool equal_targets(const std::vector<T*>& a, const std::vector<T*>& b) {
+    return equal(a, b, comp_deref<T*>());
+}
+
+/**
+ * A function testing whether two vector of unique pointers are referencing to equivalent
+ * targets.
+ */
+template <typename T>
+bool equal_targets(const std::vector<std::unique_ptr<T>>& a, const std::vector<std::unique_ptr<T>>& b) {
+    return equal(a, b, comp_deref<std::unique_ptr<T>>());
+}
+
+/**
+ * A function testing whether two maps of unique pointers are referencing to equivalent
+ * targets.
+ */
+template <typename T1, typename T2>
+bool equal_targets(const std::map<T1, std::unique_ptr<T2>>& a, const std::map<T1, std::unique_ptr<T2>>& b) {
+    return equal(a, b, comp_deref<std::unique_ptr<T2>>());
+}
+
+/**
  * A function testing whether two set of pointers are referencing to equivalent
  * targets.
  */
@@ -507,15 +533,6 @@ bool equal_targets(const std::set<T*>& a, const std::set<T*>& b) {
 template <typename T>
 bool equal_targets(const std::set<std::unique_ptr<T>>& a, const std::set<std::unique_ptr<T>>& b) {
     return equal(a, b, comp_deref<std::unique_ptr<T>>());
-}
-
-/**
- * A function testing whether two set of pointers are referencing to equivalent
- * targets.
- */
-template <typename T>
-bool equal_targets(const std::set<std::shared_ptr<T>>& a, const std::set<std::shared_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::shared_ptr<T>>());
 }
 
 /**

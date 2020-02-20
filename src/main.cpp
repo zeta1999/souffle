@@ -70,19 +70,16 @@ void executeBinary(const std::string& binaryFilename) {
     }
 
     // run the executable
-    int exitCode;
-    {
-        if (Global::config().has("library-dir")) {
-            std::string ldPath;
-            for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
-                ldPath += library + ':';
-            }
-            ldPath.back() = ' ';
-            setenv("LD_LIBRARY_PATH", ldPath.c_str(), 1);
+    if (Global::config().has("library-dir")) {
+        std::string ldPath;
+        for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
+            ldPath += library + ':';
         }
-
-        exitCode = system(binaryFilename.c_str());
+        ldPath.back() = ' ';
+        setenv("LD_LIBRARY_PATH", ldPath.c_str(), 1);
     }
+
+    int exitCode = system(binaryFilename.c_str());
 
     if (Global::config().get("dl-program").empty()) {
         remove(binaryFilename.c_str());
@@ -90,7 +87,7 @@ void executeBinary(const std::string& binaryFilename) {
     }
 
     // exit with same code as executable
-    if (exitCode != 0) {
+    if (exitCode != EXIT_SUCCESS) {
         exit(exitCode);
     }
 }

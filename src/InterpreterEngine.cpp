@@ -27,6 +27,13 @@
 
 namespace souffle {
 
+// Handle difference in dynamic libraries suffixes.
+#ifdef __APPLE__
+#define dynamicLibSuffix ".dylib";
+#else
+#define dynamicLibSuffix ".so";
+#endif
+
 // Aliases for foreign function interface.
 #if RAM_DOMAIN_SIZE == 64
 #define FFI_RamSigned ffi_type_sint64
@@ -92,6 +99,7 @@ const std::vector<void*>& InterpreterEngine::loadDLL() {
     if (!Global::config().has("library-dir")) {
         Global::config().set("library-dir", ".");
     }
+
     for (const std::string& library : splitString(Global::config().get("libraries"), ' ')) {
         // The library may be blank
         if (library.empty()) {
@@ -113,7 +121,7 @@ const std::vector<void*>& InterpreterEngine::loadDLL() {
 
         void* tmp = nullptr;
         for (const std::string& path : paths) {
-            std::string fullpath = path + "lib" + library + ".so";
+            std::string fullpath = path + "lib" + library + dynamicLibSuffix;
             tmp = dlopen(fullpath.c_str(), RTLD_LAZY);
             if (tmp != nullptr) {
                 dll.push_back(tmp);

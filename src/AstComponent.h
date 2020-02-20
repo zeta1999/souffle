@@ -34,7 +34,7 @@ namespace souffle {
  *
  *                  name < Type1, Type2, ... >
  *
- * where name is the component name and < Type, Type, ... > is a 
+ * where name is the component name and < Type, Type, ... > is a
  * list of component type parameters (either actual or formal).
  */
 class AstComponentType : public AstNode {
@@ -92,7 +92,7 @@ private:
 };
 
 /**
- * Component intialization 
+ * Component intialization
  */
 class AstComponentInit : public AstNode {
 public:
@@ -421,37 +421,37 @@ protected:
         assert(nullptr != dynamic_cast<const AstComponent*>(&node));
         const auto& other = static_cast<const AstComponent&>(node);
 
-        if(equal_ptr(componentType, other.componentType)) {
+        if (equal_ptr(componentType, other.componentType)) {
             return true;
         }
-        if(!equal_targets(baseComponents, other.baseComponents)) {
-            return false;
-        } 
-        if(!equal_targets(components, other.components)){
+        if (!equal_targets(baseComponents, other.baseComponents)) {
             return false;
         }
-        if(!equal_targets(instantiations, other.instantiations)) {
-            return false; 
-        }
-        if(!equal_targets(types, other.types)) {
-            return false;
-        } 
-        if(!equal_targets(relations, other.relations)) {
+        if (!equal_targets(components, other.components)) {
             return false;
         }
-        if(!equal_targets(clauses, other.clauses)) {
+        if (!equal_targets(instantiations, other.instantiations)) {
             return false;
         }
-        if(!equal_targets(loads, other.loads)) {
+        if (!equal_targets(types, other.types)) {
             return false;
         }
-        if(!equal_targets(printSizes, other.printSizes)) {
+        if (!equal_targets(relations, other.relations)) {
             return false;
         }
-        if(!equal_targets(stores, other.stores)) {
+        if (!equal_targets(clauses, other.clauses)) {
             return false;
         }
-        if(overrideRules != other.overrideRules) {
+        if (!equal_targets(loads, other.loads)) {
+            return false;
+        }
+        if (!equal_targets(printSizes, other.printSizes)) {
+            return false;
+        }
+        if (!equal_targets(stores, other.stores)) {
+            return false;
+        }
+        if (overrideRules != other.overrideRules) {
             return false;
         }
         return true;

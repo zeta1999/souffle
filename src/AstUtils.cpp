@@ -59,6 +59,24 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
     return bodyRelations;
 }
 
+size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
+    for (const AstRelation* rel : program->getRelations()) {
+        size_t clauseNum = 1;
+        const auto& clauses = rel->getClauses();
+        for (size_t i = 0; i < clauses.size(); i++) {
+            if (clauses[i] == clause) {
+                if (clause->getBodyLiterals().empty()) {
+                    return 0;
+                }
+                return clauseNum;
+            } else if (!clauses[i]->getBodyLiterals().empty()) {
+                clauseNum++;
+            }
+        }
+    }
+    assert(false && "clause does not exist in program");
+}
+
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
     for (const AstClause* cl : relation->getClauses()) {

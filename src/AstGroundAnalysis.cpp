@@ -216,7 +216,7 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstClause& clause) {
             addConstraint(isTrue(getVar(c)));
         }
 
-        //  with grounded values are grounded values
+        // functors with grounded values are grounded values
         void visitFunctor(const AstFunctor& cur) override {
             auto fun = getVar(cur);
             std::vector<BoolDisjunctVar> varArgs;

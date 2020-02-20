@@ -523,6 +523,7 @@ qualifiers
         $$ = $1 | INPUT_RELATION;
     }
   | qualifiers PRINTSIZE_QUALIFIER {
+        driver.warning(@2, "Deprecated io qualifier was used");
         if($1 & PRINTSIZE_RELATION)
             driver.error(@2, "printsize qualifier already set");
         $$ = $1 | PRINTSIZE_RELATION;

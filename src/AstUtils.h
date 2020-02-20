@@ -97,10 +97,11 @@ const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* pr
 std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const AstProgram* program);
 
 /**
- * Returns the index of the given clause in the given program.
+ * Returns the index of a clause within its relation, ignoring facts.
+ * Used in provenance as a unique ID for clauses within their relations.
  * @param program the program
  * @param clause the clause to get the index of
- * @return the index of the clause
+ * @return the index of the clause ignoring facts; 0 for facts
  */
 size_t getClauseNum(const AstProgram* program, const AstClause* clause);
 

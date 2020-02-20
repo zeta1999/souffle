@@ -60,21 +60,23 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
 }
 
 size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
-    for (const AstRelation* rel : program->getRelations()) {
-        size_t clauseNum = 1;
-        const auto& clauses = rel->getClauses();
-        for (size_t i = 0; i < clauses.size(); i++) {
-            if (clauses[i] == clause) {
-                if (clause->getBodyLiterals().empty()) {
-                    return 0;
-                }
-                return clauseNum;
-            } else if (!clauses[i]->getBodyLiterals().empty()) {
-                clauseNum++;
-            }
+    // TODO (azreika): This number might change between the provenance transformer and the AST->RAM
+    // translation. Might need a better way to assign IDs to clauses... (see PR #1288).
+    const AstRelation* rel = program->getRelation(clause->getHead()->getName());
+    assert(rel != nullptr && "clause relation does not exist");
+
+    size_t clauseNum = 1;
+    for (const auto* cur : rel->getClauses()) {
+        bool isFact = cur->getBodyLiterals().empty();
+        if (cur == clause) {
+            return isFact ? 0 : clauseNum;
+        }
+
+        if (!isFact) {
+            clauseNum++;
         }
     }
-    assert(false && "clause does not exist in program");
+    assert(false && "clause does not exist");
 }
 
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,

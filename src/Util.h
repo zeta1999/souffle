@@ -220,85 +220,6 @@ std::vector<T*> toPtrVector(const std::vector<std::unique_ptr<T>>& v) {
     return res;
 }
 
-/**
- * A utility function enabling the creation of a vector of pointers.
- */
-template <typename T>
-std::vector<const T*> toConstPtrVector(const std::vector<std::unique_ptr<T>>& v) {
-    std::vector<const T*> res;
-    for (auto& e : v) {
-        res.push_back(e.get());
-    }
-    return res;
-}
-
-/**
- * A utility function enabling the creation of a vector of pointers.
- */
-template <typename T>
-std::vector<T*> toPtrVector(const std::vector<std::shared_ptr<T>>& v) {
-    std::vector<T*> res;
-    for (auto& e : v) {
-        res.push_back(e.get());
-    }
-    return res;
-}
-
-/**
- * A utility function that moves a vector of unique pointers from a source to a destination.
- */
-template <typename X, typename Y>
-void movePtrVector(std::vector<std::unique_ptr<X>>& source, std::vector<std::unique_ptr<Y>>& destination) {
-    for (auto& cur : source) {
-        destination.emplace_back(cur.release());
-    }
-    source.clear();
-}
-
-/**
- * A utility function enabling the creation of a set with a fixed set of
- * elements within a single expression. This is the base case covering empty
- * sets.
- */
-template <typename T>
-std::set<T> toSet() {
-    return std::set<T>();
-}
-
-/**
- * A utility function enabling the creation of a set with a fixed set of
- * elements within a single expression. This is the step case covering sets
- * of arbitrary length.
- */
-template <typename T, typename... R>
-std::set<T> toSet(const T& first, const R&... rest) {
-    return {first, rest...};
-}
-
-/**
- * A utility function enabling the creation of a set of pointers.
- */
-template <typename T>
-std::set<T*> toPtrSet(const std::set<std::unique_ptr<T>>& v) {
-    std::set<T*> res;
-    for (auto& e : v) {
-        res.insert(e.get());
-    }
-    return res;
-}
-
-/**
- * A utility function enabling the creation of a set of pointers.
- */
-template <typename T>
-std::set<T*> toPtrSet(const std::set<std::shared_ptr<T>>& v) {
-    std::set<T*> res;
-    for (auto& e : v) {
-        res.insert(e.get());
-    }
-    return res;
-}
-
 // -------------------------------------------------------------
 //                             Ranges
 // -------------------------------------------------------------
@@ -564,48 +485,6 @@ bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
     }
     return false;
 }
-
-// -------------------------------------------------------------------------------
-//                               I/O Utils
-// -------------------------------------------------------------------------------
-
-/**
- * A stream ignoring everything written to it.
- * Note, avoiding the write in the first place may be more efficient.
- */
-class NullStream : public std::ostream {
-public:
-    NullStream() : std::ostream(&buffer) {}
-
-private:
-    struct NullBuffer : public std::streambuf {
-        int overflow(int c) override {
-            return c;
-        }
-    };
-    NullBuffer buffer;
-};
-
-/**
- * A stream copying its input to multiple output streams.
- */
-class SplitStream : public std::ostream, public std::streambuf {
-private:
-    std::vector<std::ostream*> streams;
-
-public:
-    SplitStream(std::vector<std::ostream*> streams) : std::ostream(this), streams(std::move(streams)) {}
-    SplitStream(std::ostream* stream1, std::ostream* stream2) : std::ostream(this) {
-        streams.push_back(stream1);
-        streams.push_back(stream2);
-    }
-    int overflow(int c) override {
-        for (auto stream : streams) {
-            stream->put(static_cast<char>(c));
-        }
-        return c;
-    }
-};
 
 // -------------------------------------------------------------------------------
 //                           General Print Utilities
@@ -977,32 +856,6 @@ struct lambda_traits_helper<R (C::*)(Args...) const> : public lambda_traits_help
  */
 template <typename Lambda>
 struct lambda_traits : public detail::lambda_traits_helper<decltype(&Lambda::operator())> {};
-
-// -------------------------------------------------------------------------------
-//                              Functional Wrappers
-// -------------------------------------------------------------------------------
-
-/**
- * A struct wrapping a object and an associated member function pointer into a
- * callable object.
- */
-template <typename Class, typename R, typename... Args>
-struct member_fun {
-    using fun_type = R (Class::*)(Args...);
-    Class& obj;
-    fun_type fun;
-    R operator()(Args... args) const {
-        return (obj.*fun)(args...);
-    }
-};
-
-/**
- * Wraps an object and matching member function pointer into a callable object.
- */
-template <typename C, typename R, typename... Args>
-member_fun<C, R, Args...> mfun(C& obj, R (C::*f)(Args...)) {
-    return member_fun<C, R, Args...>({obj, f});
-}
 
 // -------------------------------------------------------------------------------
 //                              General Algorithms

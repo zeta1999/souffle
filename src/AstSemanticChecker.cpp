@@ -217,7 +217,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // - intrinsic functors -
+    // - functors -
     visitDepthFirst(nodes, [&](const AstFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
@@ -371,14 +371,8 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
         return hasUnnamedVariable(cast->getValue());
     }
-    if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
-        return any_of(inf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
-    }
-    if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-        return any_of(udf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
-    }
-    if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
-        return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
+    if (const auto* term = dynamic_cast<const AstTerm*>(arg)) {
+        return any_of(term->getArguments(), hasUnnamedVariable);
     }
     if (dynamic_cast<const AstAggregator*>(arg) != nullptr) {
         return false;
@@ -514,12 +508,8 @@ void AstSemanticChecker::checkArgument(
         ErrorReport& report, const AstProgram& program, const AstArgument& arg) {
     if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg)) {
         checkAggregator(report, program, *agg);
-    } else if (const auto* intrFunc = dynamic_cast<const AstIntrinsicFunctor*>(&arg)) {
-        for (auto arg : intrFunc->getArguments()) {
-            checkArgument(report, program, *arg);
-        }
-    } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for (auto arg : userDefFunc->getArguments()) {
+    } else if (const auto* func = dynamic_cast<const AstFunctor*>(&arg)) {
+        for (auto arg : func->getArguments()) {
             checkArgument(report, program, *arg);
         }
     }

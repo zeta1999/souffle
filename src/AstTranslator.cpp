@@ -1606,8 +1606,9 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
                     relName.str() + "_" + std::to_string(getClauseNum(program, &clause)) + "_subproof";
             ramSubs[subroutineLabel] = makeSubproofSubroutine(clause);
 
-            std::string negationSubroutineLabel =
-                    relName.str() + "_" + std::to_string(getClauseNum(program, &clause)) + "_negation_subproof";
+            std::string negationSubroutineLabel = relName.str() + "_" +
+                                                  std::to_string(getClauseNum(program, &clause)) +
+                                                  "_negation_subproof";
             ramSubs[negationSubroutineLabel] = makeNegationSubproofSubroutine(clause);
         });
     }

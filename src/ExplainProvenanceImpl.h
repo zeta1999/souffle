@@ -784,10 +784,6 @@ private:
         return std::make_tuple(-1, -1, std::vector<RamDomain>());
     }
 
-    void printRelationOutput(const IODirectives& ioDir, const Relation& rel) override {
-        WriteCoutCSVFactory().getWriter(ioDir, prog.getSymbolTable())->writeAll(rel);
-    }
-
     /*
      * Find solution for parameterised query satisfying constant constraints and equivalence constraints
      * @param varRels, reference to vector of relation of tuple contains at least one variable in its

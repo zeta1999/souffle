@@ -64,7 +64,7 @@
 
 namespace souffle {
 
-using Json = json11::Json;
+using json11::Json;
 
 class ErrorReport;
 class SymbolTable;
@@ -121,10 +121,12 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     long long arity{static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(rel))};
     long long auxArity{static_cast<long long>(auxArityAnalysis->getArity(rel))};
 
+    const Json rec = getRecordsTypes();
+
     Json relJson = Json::object{{"arity", arity}, {"auxArity", auxArity},
             {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
 
-    Json types = Json::object{{name, relJson}};
+    Json types = Json::object{{name, relJson}, {"records", getRecordsTypes()}};
 
     ioDirective.set("types", types.dump());
 }
@@ -133,7 +135,13 @@ std::vector<IODirectives> AstTranslator::getInputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> inputDirectives;
 
-    for (const auto& current : rel->getLoads()) {
+    std::vector<AstLoad*> relLoads;
+    for (const auto& load : program->getLoads()) {
+        if (load->getName() == rel->getName()) {
+            relLoads.push_back(load.get());
+        }
+    }
+    for (const auto& current : relLoads) {
         IODirectives ioDirectives;
         for (const auto& currentPair : current->getIODirectiveMap()) {
             ioDirectives.set(currentPair.first, currentPair.second);
@@ -159,10 +167,16 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> outputDirectives;
 
+    std::vector<AstStore*> relStores;
+    for (const auto& store : program->getStores()) {
+        if (store->getName() == rel->getName()) {
+            relStores.push_back(store.get());
+        }
+    }
     // If stdout is requested then remove all directives from the datalog file.
     if (Global::config().get("output-dir") == "-") {
         bool hasOutput = false;
-        for (const auto* current : rel->getStores()) {
+        for (const auto* current : relStores) {
             IODirectives ioDirectives;
             if (dynamic_cast<const AstPrintSize*>(current) != nullptr) {
                 ioDirectives.setIOType("stdoutprintsize");
@@ -175,7 +189,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
             }
         }
     } else {
-        for (const auto* current : rel->getStores()) {
+        for (const auto* current : relStores) {
             IODirectives ioDirectives;
             for (const auto& currentPair : current->getIODirectiveMap()) {
                 ioDirectives.set(currentPair.first, currentPair.second);
@@ -1621,6 +1635,38 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             ramSubs[negationSubroutineLabel] = makeNegationSubproofSubroutine(clause);
         });
     }
+}
+
+const Json AstTranslator::getRecordsTypes(void) {
+    // Check if the types where already constructed
+    if (!RamRecordTypes.is_null()) {
+        return RamRecordTypes;
+    }
+
+    std::vector<std::string> types;
+    std::map<std::string, Json> records;
+    std::string recordType;
+
+    // Iterate over all record types in the program populating the records map.
+    for (auto* astType : program->getTypes()) {
+        if (const auto* elementType = dynamic_cast<const AstRecordType*>(astType)) {
+            types.clear();
+            recordType.clear();
+
+            recordType = getTypeQualifier(typeEnv->getType(elementType->getName()));
+
+            for (auto field : elementType->getFields()) {
+                types.push_back(getTypeQualifier(typeEnv->getType(field.type)));
+            }
+            const size_t recordArity = types.size();
+            Json recordInfo =
+                    Json::object{{"types", std::move(types)}, {"arity", static_cast<long long>(recordArity)}};
+            records.emplace(std::move(recordType), std::move(recordInfo));
+        }
+    }
+
+    RamRecordTypes = Json(records);
+    return RamRecordTypes;
 }
 
 std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationUnit& tu) {

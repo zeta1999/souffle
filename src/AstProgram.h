@@ -92,12 +92,6 @@ public:
             for (const auto clause : rel->getClauses()) {
                 os << *clause << "\n\n";
             }
-            for (const auto ioDirective : rel->getLoads()) {
-                os << *ioDirective << "\n\n";
-            }
-            for (const auto ioDirective : rel->getStores()) {
-                os << *ioDirective << "\n\n";
-            }
         }
 
         if (!clauses.empty()) {
@@ -359,41 +353,22 @@ protected:
         assert(nullptr != dynamic_cast<const AstProgram*>(&node));
         const auto& other = static_cast<const AstProgram&>(node);
 
-        // check list sizes
-        if (types.size() != other.types.size()) {
+        if (!equal_targets(pragmaDirectives, other.pragmaDirectives)) {
             return false;
         }
-        if (relations.size() != other.relations.size()) {
-            return false;
-        }
-
-        // check types
-        for (const auto& cur : types) {
-            auto pos = other.types.find(cur.first);
-            if (pos == other.types.end()) {
-                return false;
-            }
-            if (*cur.second != *pos->second) {
-                return false;
-            }
-        }
-
-        // check relations
-        for (const auto& cur : relations) {
-            auto pos = other.relations.find(cur.first);
-            if (pos == other.relations.end()) {
-                return false;
-            }
-            if (*cur.second != *pos->second) {
-                return false;
-            }
-        }
-
-        // check components
         if (!equal_targets(components, other.components)) {
             return false;
         }
         if (!equal_targets(instantiations, other.instantiations)) {
+            return false;
+        }
+        if (!equal_targets(functors, other.functors)) {
+            return false;
+        }
+        if (!equal_targets(types, other.types)) {
+            return false;
+        }
+        if (!equal_targets(relations, other.relations)) {
             return false;
         }
         if (!equal_targets(clauses, other.clauses)) {
@@ -408,8 +383,6 @@ protected:
         if (!equal_targets(stores, other.stores)) {
             return false;
         }
-
-        // no different found => programs are equal
         return true;
     }
 
@@ -417,6 +390,7 @@ protected:
     friend class ComponentInstantiationTransformer;
     friend class ParserDriver;
     friend class ProvenanceTransformer;
+    friend class MagicSetTransformer;
 
     /* add type */
     void addType(std::unique_ptr<AstType> type) {
@@ -500,31 +474,6 @@ protected:
         // unbound directives with no relation defined
         std::vector<std::unique_ptr<AstLoad>> unboundLoads;
         std::vector<std::unique_ptr<AstStore>> unboundStores;
-
-        // add IO directives
-        for (auto& cur : loads) {
-            auto pos = relations.find(cur->getName());
-            if (pos != relations.end()) {
-                pos->second->addLoad(std::move(cur));
-            } else {
-                unboundLoads.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan directives
-        loads.clear();
-        loads.swap(unboundLoads);
-
-        for (auto& cur : stores) {
-            auto pos = relations.find(cur->getName());
-            if (pos != relations.end()) {
-                pos->second->addStore(std::move(cur));
-            } else {
-                unboundStores.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan directives
-        stores.clear();
-        stores.swap(unboundStores);
     }
 
     /** Program types  */

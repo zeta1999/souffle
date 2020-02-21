@@ -3,6 +3,8 @@ A(11).
 A(4711).
 A(121233).
 A(1234).
+A(-1).
+A(-100).
 
 .decl r_band(x:number, y:number, z:number)
 .output r_band()
@@ -19,4 +21,16 @@ r_bor(x bor y, x, y) :- A(x), A(y).
 .decl r_bnot(x:number, y:number)
 .output r_bnot()
 r_bnot(bnot x, x) :- A(x).
+
+.decl r_shift_L(x:number, y:number, z:number)
+.output r_shift_L()
+r_shift_L(x << y, x, y) :- A(x), A(y).
+
+.decl r_shift_R(x:number, y:number, z:number)
+.output r_shift_R()
+r_shift_R(x >> y, x, y) :- A(x), A(y).
+
+.decl r_shift_R_unsigned(x:number, y:number, z:number)
+.output r_shift_R_unsigned()
+r_shift_R_unsigned(x >>> y, x, y) :- A(x), A(y).
 

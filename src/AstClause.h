@@ -140,10 +140,7 @@ private:
  *      - a fact  - a clause with no body (e.g., X(a,b))
  *      - a rule  - a clause with a head and a body (e.g., Y(a,b) -: X(a,b))
  *
- * TODO: Currently Clause object is used to represent 2 different types of datalog
- *       clauses, such as rules, queries and facts. This solution was to quickly
- *       overcome issues related to bottom-up construction of IR. In future,
- *       Clause should be  made abstract and have 2 subclasses: Rule and Fact.
+ * TODO (azreika): make clause abstract and split into two subclasses: Rule and Fact
  */
 class AstClause : public AstNode {
 public:

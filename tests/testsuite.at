@@ -214,8 +214,11 @@ m4_define([TEST_EVAL_FUNCTOR],[
   m4_define([FACTS],[TESTDIR/facts])
   dnl copy libs from where they were built
   cp ../../evaluation/functors/.libs/libfunctors* .
+  # hack for System Integrity Protection (on Travis)
+  # TODO (darth_tytus): Investigate a better solution.
+  cp ../../evaluation/functors/.libs/libfunctors.dylib /usr/local/lib/
   # invoke souffle
-  AT_CHECK([DYLD_FRAMEWORK_PATH=. LD_LIBRARY_PATH=. "$SOUFFLE" FLAGS -L. -D. -F FACTS PROGRAM 1>TESTNAME.out 2>TESTNAME.err], [0])
+  AT_CHECK([LD_LIBRARY_PATH=. "$SOUFFLE" FLAGS -L. -D. -F FACTS PROGRAM 1>TESTNAME.out 2>TESTNAME.err], [0])
   SORTED_SAME_FILES([*.csv],[TESTDIR])
   SAME_FILE([TESTNAME.out],[TESTDIR/TESTNAME.out])
   SAME_FILE([TESTNAME.err],[TESTDIR/TESTNAME.err])

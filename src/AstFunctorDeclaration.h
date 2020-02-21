@@ -19,9 +19,9 @@
 #include "AstNode.h"
 #include "RamTypes.h"
 #include "Util.h"
-
 #include <algorithm>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {

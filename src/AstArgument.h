@@ -312,17 +312,17 @@ public:
         function = functor;
     }
 
-    virtual bool isOverloaded() const override {
+    bool isOverloaded() const override {
         return isOverloadedFunctor(function);
     }
 
     /** get the return type of the functor. */
-    virtual RamTypeAttribute getReturnType() const override {
+    RamTypeAttribute getReturnType() const override {
         return functorReturnType(function);
     }
 
     /** get type of the functor argument*/
-    virtual RamTypeAttribute getArgType(const size_t arg) const override {
+    RamTypeAttribute getArgType(const size_t arg) const override {
         return functorOpArgType(arg, function);
     }
 

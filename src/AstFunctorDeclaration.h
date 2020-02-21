@@ -32,9 +32,9 @@ namespace souffle {
 
 class AstFunctorDeclaration : public AstNode {
 public:
-    AstFunctorDeclaration(const std::string& name, const std::vector<RamTypeAttribute>& argsTypes,
-            RamTypeAttribute returnType)
-            : name(name), argsTypes(argsTypes), returnType(returnType) {
+    AstFunctorDeclaration(
+            const std::string& name, std::vector<RamTypeAttribute> argsTypes, RamTypeAttribute returnType)
+            : name(name), argsTypes(std::move(argsTypes)), returnType(returnType) {
         assert(name.length() > 0 && "functor name is empty");
     }
 

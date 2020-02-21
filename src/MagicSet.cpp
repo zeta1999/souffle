@@ -1138,7 +1138,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                     IODirectives inputDirectives;  // to more easily work with the directive
                     auto* newDirective = new AstLoad();
                     inputDirectives.setRelationName(newRelName.getNames()[0]);
-                    newDirective->addName(newRelName);
+                    newDirective->setName(newRelName);
                     visitDepthFirst(*program, [&](const AstLoad& current) {
                         if (current.getName() == originalName) {
                             for (const auto& currentPair : current.getIODirectiveMap()) {

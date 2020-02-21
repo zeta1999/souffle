@@ -26,7 +26,6 @@
 #include "AstUtils.h"
 #include "BinaryConstraintOps.h"
 #include "Global.h"
-#include "IODirectives.h"
 #include "RelationRepresentation.h"
 #include "SrcLocation.h"
 #include "Util.h"
@@ -1134,34 +1133,26 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 AstRelation* originalRelation = program->getRelation(originalName);
                 AstRelation* newRelation = createNewRelation(originalRelation, newRelName);
 
+                // add the created adorned relation to the program
+                program->appendRelation(std::unique_ptr<AstRelation>(newRelation));
+
                 // copy over input directives to new adorned relation
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
-                    IODirectives inputDirectives;  // to more easily work with the directive
-                    auto* newDirective = new AstLoad();
-                    inputDirectives.setRelationName(newRelName.getNames()[0]);
-                    newDirective->setName(newRelName);
-                    visitDepthFirst(*program, [&](const AstLoad& current) {
-                        if (current.getName() == originalName) {
-                            for (const auto& currentPair : current.getIODirectiveMap()) {
-                                newDirective->addKVP(currentPair.first, currentPair.second);
-                                inputDirectives.set(currentPair.first, currentPair.second);
-                            }
+                    visitDepthFirst(*program, [&](AstLoad& current) {
+                        if (current.getName() != originalName) {
+                            return;
+                        }
+                        current.setName(newRelName);
+                        auto directives = current.getIODirectiveMap();
+                        if (directives.find("IO") == directives.end()) {
+                            current.addKVP("IO", "file");
+                        }
+                        if (directives["IO"] == "file" && directives.find("filename") == directives.end()) {
+                            current.addKVP("filename", originalName.getNames()[0] + ".facts");
                         }
                     });
-                    if (!inputDirectives.has("IO")) {
-                        inputDirectives.setIOType("file");
-                        newDirective->addKVP("IO", "file");
-                    }
-                    if (inputDirectives.getIOType() == "file" && !inputDirectives.has("filename")) {
-                        newDirective->addKVP("filename", originalName.getNames()[0] + ".facts");
-                    }
-
-                    program->addLoad(std::unique_ptr<AstLoad>(newDirective));
                 }
-
-                // add the created adorned relation to the program
-                program->appendRelation(std::unique_ptr<AstRelation>(newRelation));
                 adornedRelation = newRelation;
             }
 

@@ -17,9 +17,6 @@
 #include <cstdint>
 #include <cstring>
 
-// TODO:
-// Enable engine testing
-
 #if RAM_DOMAIN_SIZE == 64
 using FF_int = int64_t;
 using FF_uint = uint64_t;

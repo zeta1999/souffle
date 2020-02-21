@@ -662,9 +662,17 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
     // check for variables only occurring once
     for (const auto& cur : var_count) {
         int numAppearances = cur.second;
-        const std::string& varName = cur.first;
-        if (numAppearances == 1 && (varName[0] != '_' || varName.size() > 1)) {
-            report.addWarning("Variable " + varName + " only occurs once", var_pos[varName]->getSrcLoc());
+        const auto& varName = cur.first;
+        const auto& varLocation = var_pos[varName]->getSrcLoc();
+
+        if (varName[0] == '_') {
+            assert(varName.size() > 1 && "named variable should not be a single underscore");
+            if (numAppearances > 1) {
+                report.addWarning("Variable " + varName + " marked as singleton but occurs more than once",
+                        varLocation);
+            }
+        } else if (numAppearances == 1) {
+            report.addWarning("Variable " + varName + " only occurs once", varLocation);
         }
     }
 

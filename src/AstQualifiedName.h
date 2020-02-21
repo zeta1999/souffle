@@ -10,7 +10,8 @@
  *
  * @file AstQualifiedName.h
  *
- * Defines the token utilized to address relations.
+ * Defines a class for qualified names so that components can be accessed.
+ * Qualified names are used for types and relations.
  *
  ***********************************************************************/
 
@@ -28,6 +29,7 @@ namespace souffle {
 /**
  * Qualified name class, e.g.,
  *       problem.graph.edge
+ * used to access names inside and outside of components.
  */
 class AstQualifiedName {
 public:
@@ -91,7 +93,7 @@ public:
     std::vector<std::string> qualifiers;
 };
 
-std::ostream& operator<<(std::ostream& out, const AstQualifiedName& qualifiedName) {
+inline std::ostream& operator<<(std::ostream& out, const AstQualifiedName& qualifiedName) {
     qualifiedName.print(out);
     return out;
 }

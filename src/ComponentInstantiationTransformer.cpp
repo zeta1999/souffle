@@ -347,7 +347,7 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
     for (const auto& cur : res.types) {
         auto newName = componentInit.getInstanceName() + cur->getQualifiedName();
         typeNameMapping[cur->getQualifiedName()] = newName;
-        cur->setName(newName);
+        cur->setQualifiedName(newName);
     }
 
     // update relation names

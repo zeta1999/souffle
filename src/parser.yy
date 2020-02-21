@@ -384,19 +384,19 @@ type
     }
   | TYPE IDENT EQUALS union_type_list {
         $$ = $union_type_list;
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
 
         $union_type_list = nullptr;
     }
   | TYPE IDENT EQUALS LBRACKET RBRACKET {
         $$ = new AstRecordType();
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS LBRACKET non_empty_record_type_list RBRACKET {
         $$ = $non_empty_record_type_list;
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
 
         $non_empty_record_type_list = nullptr;
@@ -469,14 +469,14 @@ relation_decl
 relation_list
   : IDENT {
         auto* rel = new AstRelation();
-        rel->setName($IDENT);
+        rel->setQualifiedName($IDENT);
         rel->setSrcLoc(@$);
 
         $$.push_back(rel);
     }
   | relation_list[curr_list] COMMA IDENT {
         auto* rel = new AstRelation();
-        rel->setName($IDENT);
+        rel->setQualifiedName($IDENT);
         rel->setSrcLoc(@IDENT);
 
         $$ = $curr_list;

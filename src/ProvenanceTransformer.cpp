@@ -69,7 +69,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
 
     // initialise info relation
     auto infoRelation = new AstRelation();
-    infoRelation->setName(name);
+    infoRelation->setQualifiedName(name);
     // set qualifier to INFO_RELATION
     infoRelation->setQualifier(INFO_RELATION);
 

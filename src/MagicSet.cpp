@@ -1081,8 +1081,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
     // output handling
     std::vector<AstRelationIdentifier> outputQueries = adornment->getRelations();
-    std::set<AstRelationIdentifier> addAsOutput;
-    std::map<AstRelationIdentifier, std::vector<std::unique_ptr<AstStore>>> outputDirectives;
 
     // ignore negated atoms
     for (AstRelationIdentifier relation : negatedAtoms) {
@@ -1389,23 +1387,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         }
     }
 
-    // remove all transformed old IDB relations, making sure to preserve input/output directives
     for (AstRelationIdentifier relationName : oldIdb) {
-        AstRelation* relation = program->getRelation(relationName);
-
-        // before deleting, store the directives of computed relations
-        // for restoration later on
-        if (ioTypes->isOutput(relation)) {
-            addAsOutput.insert(relationName);
-            std::vector<std::unique_ptr<AstStore>> clonedDirectives;
-            visitDepthFirst(*program, [&](const AstStore current) {
-                if (current.getName() == relationName) {
-                    clonedDirectives.emplace_back(current.clone());
-                }
-            });
-            outputDirectives[relationName] = std::move(clonedDirectives);
-        }
-
         // do not delete negated atoms, ignored atoms, or atoms added by aggregate relations
         if (!(contains(ignoredAtoms, relationName) || contains(negatedAtoms, relationName) ||
                     isAggRel(relationName))) {
@@ -1445,15 +1427,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
             // rename it back to its original name
             outputRelation->setName(oldName);
-            /*
-             * Should this actually happen? If so, where do the attributes come from?
-                        // set as output relation
-                        if (addAsOutput.find(oldName) != addAsOutput.end()) {
-                            outputRelation->addStore(std::make_unique<AstStore>());
-                        } else {
-                            outputRelation->setPrintSize(std::make_unique<AstPrintSize>());
-                        }
-            */
             // add the new output to the program
             program->appendRelation(std::unique_ptr<AstRelation>(outputRelation));
         }

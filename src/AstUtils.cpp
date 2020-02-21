@@ -47,7 +47,7 @@ std::vector<const AstRecordInit*> getRecords(const AstNode* root) {
 }
 
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
-    return program->getRelation(atom->getName());
+    return program->getRelation(atom->getQualifiedName());
 }
 
 const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* program) {
@@ -100,10 +100,10 @@ bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelat
 }
 
 bool isRecursiveClause(const AstClause& clause) {
-    AstRelationIdentifier relationName = clause.getHead()->getName();
+    AstQualifiedName relationName = clause.getHead()->getQualifiedName();
     bool recursive = false;
     visitDepthFirst(clause.getBodyLiterals(), [&](const AstAtom& atom) {
-        if (atom.getName() == relationName) {
+        if (atom.getQualifiedName() == relationName) {
             recursive = true;
         }
     });

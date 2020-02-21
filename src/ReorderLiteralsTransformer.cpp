@@ -406,7 +406,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 int numBound = numBoundArguments(currAtom, boundVariables);
                 int numArgs = currAtom->getArity();
                 int numFree = numArgs - numBound;
-                double value = log(profileUse->getRelationSize(currAtom->getName()));
+                double value = log(profileUse->getRelationSize(currAtom->getQualifiedName()));
                 value *= (numFree * 1.0) / numArgs;
 
                 if (!set || value < currOptimalVal) {

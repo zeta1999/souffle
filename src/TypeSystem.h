@@ -37,14 +37,14 @@ class TypeEnvironment;
  */
 class Type {
 public:
-    Type(const TypeEnvironment& environment, AstTypeIdentifier name)
+    Type(const TypeEnvironment& environment, AstQualifiedName name)
             : environment(environment), name(std::move(name)) {}
 
     Type(const Type& other) = delete;
 
     virtual ~Type() = default;
 
-    const AstTypeIdentifier& getName() const {
+    const AstQualifiedName& getName() const {
         return name;
     }
 
@@ -85,7 +85,7 @@ protected:
 
 private:
     /** The name of this type. */
-    AstTypeIdentifier name;
+    AstQualifiedName name;
 };
 
 /**
@@ -106,7 +106,7 @@ private:
     /** The base type -- may be symbol or numeric */
     const Type& baseType;
 
-    PrimitiveType(const TypeEnvironment& environment, const AstTypeIdentifier& name, const Type& base)
+    PrimitiveType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type& base)
             : Type(environment, name), baseType(base) {}
 };
 
@@ -130,7 +130,7 @@ private:
     /** The contained element types */
     std::vector<const Type*> elementTypes;
 
-    UnionType(const TypeEnvironment& environment, const AstTypeIdentifier& name) : Type(environment, name) {}
+    UnionType(const TypeEnvironment& environment, const AstQualifiedName& name) : Type(environment, name) {}
 };
 
 /**
@@ -159,7 +159,7 @@ private:
 
     std::vector<Field> fields;
 
-    RecordType(const TypeEnvironment& environment, const AstTypeIdentifier& name) : Type(environment, name) {}
+    RecordType(const TypeEnvironment& environment, const AstQualifiedName& name) : Type(environment, name) {}
 };
 
 /**
@@ -306,7 +306,7 @@ private:
 class TypeEnvironment {
 public:
     /** The type utilized for identifying types */
-    using identifier = AstTypeIdentifier;
+    using identifier = AstQualifiedName;
 
     // -- constructors / destructores --
     TypeEnvironment();

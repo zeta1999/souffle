@@ -20,8 +20,8 @@
 #include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
@@ -142,7 +142,7 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
     if (leftIdx == 0 && rightIdx == 0) {
         const AstAtom* leftHead = left->getHead()->getAtom();
         const AstAtom* rightHead = right->getHead()->getAtom();
-        return leftHead->getName() == rightHead->getName();
+        return leftHead->getQualifiedName() == rightHead->getQualifiedName();
     } else if (leftIdx == 0 || rightIdx == 0) {
         return false;
     }
@@ -156,7 +156,7 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
     const AstAtom* rightAtom =
             dynamic_cast<AstAtomLiteral*>(right->getBodyLiterals()[rightBodyAtomIdx])->getAtom();
 
-    return leftAtom->getName() == rightAtom->getName();
+    return leftAtom->getQualifiedName() == rightAtom->getQualifiedName();
 }
 
 /**
@@ -402,7 +402,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     std::set<AstClause*> redundantClauses;
 
     // Keep track of canonical relation name for each redundant clause
-    std::map<AstRelationIdentifier, AstRelationIdentifier> canonicalName;
+    std::map<AstQualifiedName, AstQualifiedName> canonicalName;
 
     // Check pairwise equivalence of each singleton relation
     for (size_t i = 0; i < singletonRelationClauses.size(); i++) {
@@ -417,8 +417,8 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
 
             // Note: Bijective-equivalence check does not care about the head relation name
             if (areBijectivelyEquivalent(first, second)) {
-                AstRelationIdentifier firstName = first->getHead()->getName();
-                AstRelationIdentifier secondName = second->getHead()->getName();
+                AstQualifiedName firstName = first->getHead()->getQualifiedName();
+                AstQualifiedName secondName = second->getHead()->getQualifiedName();
                 redundantClauses.insert(second);
                 canonicalName.insert(std::pair(secondName, firstName));
             }
@@ -427,7 +427,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
 
     // Remove redundant relation definitions
     for (AstClause* clause : redundantClauses) {
-        auto relName = clause->getHead()->getName();
+        auto relName = clause->getHead()->getQualifiedName();
         AstRelation* rel = program.getRelation(relName);
         assert(rel != nullptr && "relation does not exist in program");
         program.removeClause(clause);
@@ -436,9 +436,9 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
 
     // Replace each redundant relation appearance with its canonical name
     struct replaceRedundantRelations : public AstNodeMapper {
-        const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName;
+        const std::map<AstQualifiedName, AstQualifiedName>& canonicalName;
 
-        replaceRedundantRelations(const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName)
+        replaceRedundantRelations(const std::map<AstQualifiedName, AstQualifiedName>& canonicalName)
                 : canonicalName(canonicalName) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
@@ -446,10 +446,10 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
             node->apply(*this);
 
             if (auto* atom = dynamic_cast<AstAtom*>(node.get())) {
-                auto pos = canonicalName.find(atom->getName());
+                auto pos = canonicalName.find(atom->getQualifiedName());
                 if (pos != canonicalName.end()) {
                     auto newAtom = std::unique_ptr<AstAtom>(atom->clone());
-                    newAtom->setName(pos->second);
+                    newAtom->setQualifiedName(pos->second);
                     return newAtom;
                 }
             }

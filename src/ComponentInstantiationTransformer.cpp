@@ -21,8 +21,8 @@
 #include "AstIO.h"
 #include "AstLiteral.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
 #include "ComponentLookupAnalysis.h"
@@ -53,11 +53,12 @@ struct ComponentContent {
         // add to result content (check existence first)
         auto foundItem =
                 std::find_if(types.begin(), types.end(), [&](const std::unique_ptr<AstType>& element) {
-                    return (element->getName() == type->getName());
+                    return (element->getQualifiedName() == type->getQualifiedName());
                 });
         if (foundItem != types.end()) {
             Diagnostic err(Diagnostic::ERROR,
-                    DiagnosticMessage("Redefinition of type " + toString(type->getName()), type->getSrcLoc()),
+                    DiagnosticMessage(
+                            "Redefinition of type " + toString(type->getQualifiedName()), type->getSrcLoc()),
                     {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
             report.addDiagnostic(err);
         }
@@ -68,12 +69,12 @@ struct ComponentContent {
         // add to result content (check existence first)
         auto foundItem = std::find_if(
                 relations.begin(), relations.end(), [&](const std::unique_ptr<AstRelation>& element) {
-                    return (element->getName() == rel->getName());
+                    return (element->getQualifiedName() == rel->getQualifiedName());
                 });
         if (foundItem != relations.end()) {
             Diagnostic err(Diagnostic::ERROR,
-                    DiagnosticMessage(
-                            "Redefinition of relation " + toString(rel->getName()), rel->getSrcLoc()),
+                    DiagnosticMessage("Redefinition of relation " + toString(rel->getQualifiedName()),
+                            rel->getSrcLoc()),
                     {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
             report.addDiagnostic(err);
         }
@@ -83,12 +84,13 @@ struct ComponentContent {
     void add(std::unique_ptr<AstLoad>& directive, ErrorReport& report) {
         // Check if load directive already exists
         auto foundItem = std::find_if(loads.begin(), loads.end(), [&](const std::unique_ptr<AstLoad>& load) {
-            return load->getName() == directive->getName();
+            return load->getQualifiedName() == directive->getQualifiedName();
         });
         // if yes, add error
         if (foundItem != loads.end()) {
             Diagnostic err(Diagnostic::ERROR,
-                    DiagnosticMessage("Redefinition of IO directive " + toString(directive->getName()),
+                    DiagnosticMessage(
+                            "Redefinition of IO directive " + toString(directive->getQualifiedName()),
                             directive->getSrcLoc()),
                     {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
             report.addDiagnostic(err);
@@ -101,12 +103,13 @@ struct ComponentContent {
         // Check if load directive already exists
         auto foundItem = std::find_if(
                 printSizes.begin(), printSizes.end(), [&](const std::unique_ptr<AstPrintSize>& printSize) {
-                    return printSize->getName() == directive->getName();
+                    return printSize->getQualifiedName() == directive->getQualifiedName();
                 });
         // if yes, add error
         if (foundItem != printSizes.end()) {
             Diagnostic err(Diagnostic::ERROR,
-                    DiagnosticMessage("Redefinition of IO directive " + toString(directive->getName()),
+                    DiagnosticMessage(
+                            "Redefinition of IO directive " + toString(directive->getQualifiedName()),
                             directive->getSrcLoc()),
                     {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
             report.addDiagnostic(err);
@@ -191,9 +194,9 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
         // instantiate elements of union types
         visitDepthFirst(*type, [&](const AstUnionType& type) {
             for (const auto& name : type.getTypes()) {
-                AstTypeIdentifier newName = binding.find(name);
+                AstQualifiedName newName = binding.find(name);
                 if (!newName.empty()) {
-                    const_cast<AstTypeIdentifier&>(name) = newName;
+                    const_cast<AstQualifiedName&>(name) = newName;
                 }
             }
         });
@@ -201,9 +204,9 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
         // instantiate elements of record types
         visitDepthFirst(*type, [&](const AstRecordType& type) {
             for (const auto& field : type.getFields()) {
-                AstTypeIdentifier newName = binding.find(field.type);
+                AstQualifiedName newName = binding.find(field.type);
                 if (!newName.empty()) {
-                    const_cast<AstTypeIdentifier&>(field.type) = newName;
+                    const_cast<AstQualifiedName&>(field.type) = newName;
                 }
             }
         });
@@ -219,7 +222,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
 
         // update attribute types
         for (AstAttribute* attr : rel->getAttributes()) {
-            AstTypeIdentifier forward = binding.find(attr->getTypeName());
+            AstQualifiedName forward = binding.find(attr->getTypeName());
             if (!forward.empty()) {
                 attr->setTypeName(forward);
             }
@@ -250,15 +253,15 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
     }
 
     // index the available relations
-    std::map<AstRelationIdentifier, AstRelation*> index;
+    std::map<AstQualifiedName, AstRelation*> index;
     for (const auto& cur : res.relations) {
-        index[cur->getName()] = cur.get();
+        index[cur->getQualifiedName()] = cur.get();
     }
 
     // add the local clauses
     for (const auto& cur : component.getClauses()) {
-        if (overridden.count(cur->getHead()->getName().getNames()[0]) == 0) {
-            AstRelation* rel = index[cur->getHead()->getName()];
+        if (overridden.count(cur->getHead()->getQualifiedName().getQualifiers()[0]) == 0) {
+            AstRelation* rel = index[cur->getHead()->getQualifiedName()];
             if (rel != nullptr) {
                 rel->addClause(std::unique_ptr<AstClause>(cur->clone()));
             } else {
@@ -270,7 +273,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
     // add orphan clauses at the current level if they can be resolved
     for (auto iter = orphans.begin(); iter != orphans.end();) {
         auto& cur = *iter;
-        AstRelation* rel = index[cur->getHead()->getName()];
+        AstRelation* rel = index[cur->getHead()->getQualifiedName()];
         if (rel != nullptr) {
             // add orphan to current instance and delete from orphan list
             rel->addClause(std::unique_ptr<AstClause>(cur->clone()));
@@ -340,19 +343,19 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
             report, maxDepth);
 
     // update type names
-    std::map<AstTypeIdentifier, AstTypeIdentifier> typeNameMapping;
+    std::map<AstQualifiedName, AstQualifiedName> typeNameMapping;
     for (const auto& cur : res.types) {
-        auto newName = componentInit.getInstanceName() + cur->getName();
-        typeNameMapping[cur->getName()] = newName;
+        auto newName = componentInit.getInstanceName() + cur->getQualifiedName();
+        typeNameMapping[cur->getQualifiedName()] = newName;
         cur->setName(newName);
     }
 
     // update relation names
-    std::map<AstRelationIdentifier, AstRelationIdentifier> relationNameMapping;
+    std::map<AstQualifiedName, AstQualifiedName> relationNameMapping;
     for (const auto& cur : res.relations) {
-        auto newName = componentInit.getInstanceName() + cur->getName();
-        relationNameMapping[cur->getName()] = newName;
-        cur->setName(newName);
+        auto newName = componentInit.getInstanceName() + cur->getQualifiedName();
+        relationNameMapping[cur->getQualifiedName()] = newName;
+        cur->setQualifiedName(newName);
     }
 
     // create a helper function fixing type and relation references
@@ -367,29 +370,29 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
 
         // rename atoms in clauses
         visitDepthFirst(node, [&](const AstAtom& atom) {
-            auto pos = relationNameMapping.find(atom.getName());
+            auto pos = relationNameMapping.find(atom.getQualifiedName());
             if (pos != relationNameMapping.end()) {
-                const_cast<AstAtom&>(atom).setName(pos->second);
+                const_cast<AstAtom&>(atom).setQualifiedName(pos->second);
             }
         });
 
         // rename IO directives
         visitDepthFirst(node, [&](const AstLoad& load) {
-            auto pos = relationNameMapping.find(load.getName());
+            auto pos = relationNameMapping.find(load.getQualifiedName());
             if (pos != relationNameMapping.end()) {
-                const_cast<AstLoad&>(load).setName(pos->second);
+                const_cast<AstLoad&>(load).setQualifiedName(pos->second);
             }
         });
         visitDepthFirst(node, [&](const AstPrintSize& printSize) {
-            auto pos = relationNameMapping.find(printSize.getName());
+            auto pos = relationNameMapping.find(printSize.getQualifiedName());
             if (pos != relationNameMapping.end()) {
-                const_cast<AstPrintSize&>(printSize).setName(pos->second);
+                const_cast<AstPrintSize&>(printSize).setQualifiedName(pos->second);
             }
         });
         visitDepthFirst(node, [&](const AstStore& store) {
-            auto pos = relationNameMapping.find(store.getName());
+            auto pos = relationNameMapping.find(store.getQualifiedName());
             if (pos != relationNameMapping.end()) {
-                const_cast<AstStore&>(store).setName(pos->second);
+                const_cast<AstStore&>(store).setQualifiedName(pos->second);
             }
         });
 
@@ -472,10 +475,10 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         ComponentContent content = getInstantiatedContent(
                 *cur, nullptr, *componentLookup, orphans, translationUnit.getErrorReport());
         for (auto& type : content.types) {
-            program.types.insert(std::make_pair(type->getName(), std::move(type)));
+            program.types.insert(std::make_pair(type->getQualifiedName(), std::move(type)));
         }
         for (auto& rel : content.relations) {
-            program.relations.insert(std::make_pair(rel->getName(), std::move(rel)));
+            program.relations.insert(std::make_pair(rel->getQualifiedName(), std::move(rel)));
         }
         for (auto& io : content.loads) {
             program.loads.push_back(std::move(io));
@@ -487,7 +490,7 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
             program.stores.push_back(std::move(io));
         }
         for (auto& cur : orphans) {
-            auto pos = program.relations.find(cur->getHead()->getName());
+            auto pos = program.relations.find(cur->getHead()->getQualifiedName());
             if (pos != program.relations.end()) {
                 pos->second->addClause(std::move(cur));
             } else {
@@ -498,7 +501,7 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
 
     // add clauses
     for (auto& cur : program.clauses) {
-        auto pos = program.relations.find(cur->getHead()->getName());
+        auto pos = program.relations.find(cur->getHead()->getQualifiedName());
         if (pos != program.relations.end()) {
             pos->second->addClause(std::move(cur));
         } else {

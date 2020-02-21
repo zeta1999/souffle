@@ -1082,9 +1082,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
     // output handling
     std::vector<AstRelationIdentifier> outputQueries = adornment->getRelations();
     std::set<AstRelationIdentifier> addAsOutput;
-    std::set<AstRelationIdentifier> addAsPrintSize;
     std::map<AstRelationIdentifier, std::vector<std::unique_ptr<AstStore>>> outputDirectives;
-    std::map<AstRelationIdentifier, std::vector<std::unique_ptr<AstPrintSize>>> printSizeDirectives;
 
     // ignore negated atoms
     for (AstRelationIdentifier relation : negatedAtoms) {

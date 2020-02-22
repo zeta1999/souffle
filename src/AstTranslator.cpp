@@ -435,11 +435,10 @@ std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
             [](unsigned int i) -> unsigned int { return i - 1; });
 
     // re-order atoms
-    reorderedClause->reorderAtoms(newOrder);
+    reorderedClause.reset(reorderAtoms(reorderedClause.get(), newOrder));
 
     // clear other order and fix plan
     reorderedClause->clearExecutionPlan();
-    reorderedClause->setFixedExecutionPlan();
 
     return reorderedClause;
 }
@@ -1624,11 +1623,12 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             }
 
             std::string subroutineLabel =
-                    relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
+                    relName.str() + "_" + std::to_string(getClauseNum(program, &clause)) + "_subproof";
             ramSubs[subroutineLabel] = makeSubproofSubroutine(clause);
 
-            std::string negationSubroutineLabel =
-                    relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";
+            std::string negationSubroutineLabel = relName.str() + "_" +
+                                                  std::to_string(getClauseNum(program, &clause)) +
+                                                  "_negation_subproof";
             ramSubs[negationSubroutineLabel] = makeNegationSubproofSubroutine(clause);
         });
     }

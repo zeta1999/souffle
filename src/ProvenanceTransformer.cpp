@@ -63,9 +63,9 @@ inline AstQualifiedName makeRelationName(
 }
 
 std::unique_ptr<AstRelation> makeInfoRelation(
-        AstClause& originalClause, AstTranslationUnit& translationUnit) {
-    AstQualifiedName name = makeRelationName(
-            originalClause.getHead()->getQualifiedName(), "@info", originalClause.getClauseNum());
+        AstClause& originalClause, size_t originalClauseNum, AstTranslationUnit& translationUnit) {
+    AstRelationIdentifier name =
+            makeRelationName(originalClause.getHead()->getQualifiedName(), "@info", originalClauseNum);
 
     // initialise info relation
     auto infoRelation = new AstRelation();
@@ -79,7 +79,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     infoClauseHead->setQualifiedName(name);
 
     infoRelation->addAttribute(std::make_unique<AstAttribute>("clause_num", AstQualifiedName("number")));
-    infoClauseHead->addArgument(std::make_unique<AstNumberConstant>(originalClause.getClauseNum()));
+    infoClauseHead->addArgument(std::make_unique<AstNumberConstant>(originalClauseNum));
 
     // add head relation as meta info
     std::vector<std::string> headVariables;
@@ -275,21 +275,20 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
 
     for (auto relation : program->getRelations()) {
         if (relation->getRepresentation() == RelationRepresentation::EQREL) {
+            // Explicitly expand eqrel relation
             transformEqrelRelation(*relation);
         }
+    }
 
+    for (auto relation : program->getRelations()) {
         // generate info relations for each clause
         // do this before all other transformations so that we record
         // the original rule without any instrumentation
-        size_t clauseNum = 1;
         for (auto clause : relation->getClauses()) {
             if (!isFact(*clause)) {
-                clause->setClauseNum(clauseNum);
-
                 // add info relation
-                program->addRelation(makeInfoRelation(*clause, translationUnit));
-
-                clauseNum++;
+                program->addRelation(
+                        makeInfoRelation(*clause, getClauseNum(program, clause), translationUnit));
             }
         }
 
@@ -302,9 +301,11 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     std::string("@sublevel_number_" + std::to_string(i)), AstQualifiedName("number")));
         }
         for (auto clause : relation->getClauses()) {
+            size_t clauseNum = getClauseNum(program, clause);
             std::function<std::unique_ptr<AstNode>(std::unique_ptr<AstNode>)> rewriter =
                     [&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
                 // add provenance columns
+
                 if (auto atom = dynamic_cast<AstAtom*>(node.get())) {
                     // rule number
                     atom->addArgument(std::make_unique<AstUnnamedVariable>());
@@ -365,7 +366,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
 
                 // add provenance columns to head lit
                 // rule number
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(clause->getClauseNum()));
+                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(clauseNum));
                 // max level
                 clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
                 // level numbers
@@ -411,21 +412,20 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
 
     for (auto relation : program->getRelations()) {
         if (relation->getRepresentation() == RelationRepresentation::EQREL) {
+            // Explicitly expand eqrel relation
             transformEqrelRelation(*relation);
         }
+    }
 
+    for (auto relation : program->getRelations()) {
         // generate info relations for each clause
         // do this before all other transformations so that we record
         // the original rule without any instrumentation
-        size_t clauseNum = 1;
         for (auto clause : relation->getClauses()) {
             if (!isFact(*clause)) {
-                clause->setClauseNum(clauseNum);
-
                 // add info relation
-                program->addRelation(makeInfoRelation(*clause, translationUnit));
-
-                clauseNum++;
+                program->addRelation(
+                        makeInfoRelation(*clause, getClauseNum(program, clause), translationUnit));
             }
         }
 
@@ -435,6 +435,8 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
                 std::make_unique<AstAttribute>(std::string("@level_number"), AstQualifiedName("number")));
 
         for (auto clause : relation->getClauses()) {
+            size_t clauseNum = getClauseNum(program, clause);
+
             // mapper to add two provenance columns to atoms
             struct M : public AstNodeMapper {
                 using AstNodeMapper::operator();
@@ -481,7 +483,7 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
                 }
 
                 // add two provenance columns to head lit
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(clause->getClauseNum()));
+                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(clauseNum));
                 clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
             }
         }

@@ -9,7 +9,7 @@
 /************************************************************************
  *
  * @file AstQualifiedName.h
- *
+ * 
  * Defines a class for qualified names so that components can be accessed.
  * Qualified names are used for types and relations.
  *
@@ -27,47 +27,47 @@
 namespace souffle {
 
 /**
- * Qualified name class, e.g.,
- *       problem.graph.edge
- * used to access names inside and outside of components.
+ * Qualified Name class
  */
 class AstQualifiedName {
 public:
-    AstQualifiedName(const std::string& name = "") : qualifiers(toVector(name)) {}
+    AstQualifiedName() : qualifiers() {}
+    AstQualifiedName(const std::string& name) : qualifiers({name}) {}
     AstQualifiedName(const char* name) : AstQualifiedName(std::string(name)) {}
-    AstQualifiedName(std::vector<std::string> qualifiers) : qualifiers(std::move(qualifiers)) {}
+    AstQualifiedName(const std::vector<std::string> qualifiers) : qualifiers(qualifiers) {}
     AstQualifiedName(const AstQualifiedName&) = default;
     AstQualifiedName(AstQualifiedName&&) = default;
-
     AstQualifiedName& operator=(const AstQualifiedName&) = default;
     AstQualifiedName& operator=(AstQualifiedName&&) = default;
 
-    /** append qualifier */
-    void append(const std::string& qualifier) {
-        qualifiers.push_back(qualifier);
+    /** append qualifiers */ 
+    void append(const std::string& name) {
+        qualifiers.push_back(name);
     }
 
-    /** prepend qualifier */
-    void prepend(const std::string& qualifier) {
-        qualifiers.insert(qualifiers.begin(), qualifier);
+    /** prepend qualifiers */ 
+    void prepend(const std::string& name) {
+        qualifiers.insert(qualifiers.begin(), name);
     }
 
-    /** check whether qualified name is the empty name */
+
+    /** check for emptiness */ 
     bool empty() const {
         return qualifiers.empty();
     }
 
-    /** get qualifiers */
+    /** get qualifiers */ 
     const std::vector<std::string>& getQualifiers() const {
         return qualifiers;
     }
 
-    /** get qualified name as a string */
+    /** convert to a string separated by fullstop */ 
     std::string toString() const {
         std::stringstream ss;
         ss << join(qualifiers, ".");
         return ss.str();
     }
+
 
     bool operator==(const AstQualifiedName& other) const {
         return qualifiers == other.qualifiers;
@@ -82,27 +82,26 @@ public:
                 qualifiers.begin(), qualifiers.end(), other.qualifiers.begin(), other.qualifiers.end());
     }
 
+ 
+    /** print qualified name */ 
     void print(std::ostream& out) const {
         out << join(qualifiers, ".");
     }
 
-    friend std::ostream& operator<<(std::ostream& out, const AstQualifiedName& qualifiedName);
+    friend std::ostream& operator<<(std::ostream& out, const AstQualifiedName& id) {
+        id.print(out);
+        return out;
+    }
 
-public:
-    /* list of name qualifiers */
+private:
+    /* array of name qualifiers */
     std::vector<std::string> qualifiers;
 };
 
-inline std::ostream& operator<<(std::ostream& out, const AstQualifiedName& qualifiedName) {
-    qualifiedName.print(out);
-    return out;
-}
-
-/** prefix operator for qualified names */
 inline AstQualifiedName operator+(const std::string& name, const AstQualifiedName& id) {
     AstQualifiedName res = id;
     res.prepend(name);
     return res;
 }
 
-}  // namespace souffle
+}  // end of qualifierspace souffle

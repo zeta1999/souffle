@@ -9,7 +9,7 @@
 /************************************************************************
  *
  * @file AstQualifiedName.h
- * 
+ *
  * Defines a class for qualified names so that components can be accessed.
  * Qualified names are used for types and relations.
  *
@@ -40,34 +40,32 @@ public:
     AstQualifiedName& operator=(const AstQualifiedName&) = default;
     AstQualifiedName& operator=(AstQualifiedName&&) = default;
 
-    /** append qualifiers */ 
+    /** append qualifiers */
     void append(const std::string& name) {
         qualifiers.push_back(name);
     }
 
-    /** prepend qualifiers */ 
+    /** prepend qualifiers */
     void prepend(const std::string& name) {
         qualifiers.insert(qualifiers.begin(), name);
     }
 
-
-    /** check for emptiness */ 
+    /** check for emptiness */
     bool empty() const {
         return qualifiers.empty();
     }
 
-    /** get qualifiers */ 
+    /** get qualifiers */
     const std::vector<std::string>& getQualifiers() const {
         return qualifiers;
     }
 
-    /** convert to a string separated by fullstop */ 
+    /** convert to a string separated by fullstop */
     std::string toString() const {
         std::stringstream ss;
         ss << join(qualifiers, ".");
         return ss.str();
     }
-
 
     bool operator==(const AstQualifiedName& other) const {
         return qualifiers == other.qualifiers;
@@ -82,8 +80,7 @@ public:
                 qualifiers.begin(), qualifiers.end(), other.qualifiers.begin(), other.qualifiers.end());
     }
 
- 
-    /** print qualified name */ 
+    /** print qualified name */
     void print(std::ostream& out) const {
         out << join(qualifiers, ".");
     }
@@ -104,4 +101,4 @@ inline AstQualifiedName operator+(const std::string& name, const AstQualifiedNam
     return res;
 }
 
-}  // end of qualifierspace souffle
+}  // namespace souffle

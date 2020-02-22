@@ -147,21 +147,6 @@ public:
         } else if ((q & INFO_RELATION) != 0) {
             representation = RelationRepresentation::INFO;
         }
-        if ((q & INPUT_RELATION) != 0) {
-            loads.emplace_back(new AstLoad());
-            loads.back()->setName(getName());
-            loads.back()->setSrcLoc(getSrcLoc());
-        }
-        if ((q & OUTPUT_RELATION) != 0) {
-            stores.emplace_back(new AstStore());
-            stores.back()->setName(getName());
-            stores.back()->setSrcLoc(getSrcLoc());
-        }
-        if ((q & PRINTSIZE_RELATION) != 0) {
-            stores.emplace_back(new AstPrintSize());
-            stores.back()->setName(getName());
-            stores.back()->setSrcLoc(getSrcLoc());
-        }
     }
 
     /** Get representation for this relation */
@@ -235,28 +220,6 @@ public:
         return clauses.size();
     }
 
-    /** add store */
-    void addStore(std::unique_ptr<AstStore> directive) {
-        assert(directive && "Undefined directive");
-        stores.push_back(std::move(directive));
-    }
-
-    /** add load */
-    void addLoad(std::unique_ptr<AstLoad> directive) {
-        assert(directive && "Undefined directive");
-        loads.push_back(std::move(directive));
-    }
-
-    /** get stores */
-    std::vector<AstStore*> getStores() const {
-        return toPtrVector(stores);
-    }
-
-    /** get loads */
-    std::vector<AstLoad*> getLoads() const {
-        return toPtrVector(loads);
-    }
-
     AstRelation* clone() const override {
         auto res = new AstRelation();
         res->name = name;
@@ -266,12 +229,6 @@ public:
         }
         for (const auto& cur : clauses) {
             res->clauses.emplace_back(cur->clone());
-        }
-        for (const auto& cur : stores) {
-            res->stores.emplace_back(cur->clone());
-        }
-        for (const auto& cur : loads) {
-            res->loads.emplace_back(cur->clone());
         }
         res->qualifier = qualifier;
         return res;
@@ -284,12 +241,6 @@ public:
         for (auto& cur : clauses) {
             cur = map(std::move(cur));
         }
-        for (auto& cur : stores) {
-            cur = map(std::move(cur));
-        }
-        for (auto& cur : loads) {
-            cur = map(std::move(cur));
-        }
     }
 
     std::vector<const AstNode*> getChildNodes() const override {
@@ -298,12 +249,6 @@ public:
             res.push_back(cur.get());
         }
         for (const auto& cur : clauses) {
-            res.push_back(cur.get());
-        }
-        for (const auto& cur : stores) {
-            res.push_back(cur.get());
-        }
-        for (const auto& cur : loads) {
             res.push_back(cur.get());
         }
         return res;
@@ -332,10 +277,6 @@ protected:
      * either facts or rules.
      */
     std::vector<std::unique_ptr<AstClause>> clauses;
-
-    /** IO directives associated with this relation. */
-    std::vector<std::unique_ptr<AstStore>> stores;
-    std::vector<std::unique_ptr<AstLoad>> loads;
 
     /** Datastructure to use for this relation */
     RelationRepresentation representation{RelationRepresentation::DEFAULT};

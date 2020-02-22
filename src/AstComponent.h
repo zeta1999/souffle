@@ -30,18 +30,15 @@
 namespace souffle {
 
 /**
- * A component type is the class utilized to represent a construct of the form
+ * A component type is
  *
- *                  name < Type, Type, ... >
+ *                  name < Type1, Type2, ... >
  *
- * where name is the name of the component and < Type, Type, ... > is an optional
- * list of type parameters.
+ * where name is the component name and < Type, Type, ... > is a
+ * list of component type parameters (either actual or formal).
  */
 class AstComponentType : public AstNode {
 public:
-    /**
-     * Creates a new component type based on the given name and parameters.
-     */
     AstComponentType(
             std::string name = "", std::vector<AstTypeIdentifier> params = std::vector<AstTypeIdentifier>())
             : name(std::move(name)), typeParams(std::move(params)) {}
@@ -53,22 +50,22 @@ public:
         }
     }
 
-    /** get name */
+    /** get component name */
     const std::string& getName() const {
         return name;
     }
 
-    /** set name */
+    /** set component name */
     void setName(const std::string& n) {
         name = n;
     }
 
-    /** get type parameters */
+    /** get component type parameters */
     const std::vector<AstTypeIdentifier>& getTypeParameters() const {
         return typeParams;
     }
 
-    /** set type parameters */
+    /** set component type parameters */
     void setTypeParameters(const std::vector<AstTypeIdentifier>& params) {
         typeParams = params;
     }
@@ -87,22 +84,20 @@ protected:
     }
 
 private:
-    /** The name of the addressed component. */
+    /** component name */
     std::string name;
 
-    /** The list of associated type parameters. */
+    /** component type parameters */
     std::vector<AstTypeIdentifier> typeParams;
 };
 
 /**
- * A node type representing expressions utilized to initialize components by
- * binding them to a name.
+ * Component intialization
  */
 class AstComponentInit : public AstNode {
 public:
     void print(std::ostream& os) const override {
-        os << ".init " << instanceName << " = ";
-        componentType->print(os);
+        os << ".init " << instanceName << " = " << *componentType;
     }
 
     /** get instance name */
@@ -149,10 +144,10 @@ protected:
         return instanceName == other.instanceName && *componentType == *other.componentType;
     }
 
-    /** The name of the resulting component instance. */
+    /** instance name */
     std::string instanceName;
 
-    /** The type of the component to be instantiated. */
+    /** actual component arguments for instantiation */
     std::unique_ptr<AstComponentType> componentType;
 };
 
@@ -162,13 +157,11 @@ protected:
 class AstComponent : public AstNode {
 public:
     void print(std::ostream& os) const override {
-        os << ".comp " << *getComponentType() << " ";
-
+        os << ".comp " << *componentType << " ";
         if (!baseComponents.empty()) {
             os << ": " << join(baseComponents, ",", print_deref<std::unique_ptr<AstComponentType>>()) << " ";
         }
         os << "{\n";
-
         if (!components.empty()) {
             os << join(components, "\n", print_deref<std::unique_ptr<AstComponent>>()) << "\n";
         }
@@ -181,8 +174,9 @@ public:
         if (!relations.empty()) {
             os << join(relations, "\n", print_deref<std::unique_ptr<AstRelation>>()) << "\n";
         }
-        for (const auto& cur : overrideRules) {
-            os << ".override " << cur << "\n";
+        if (!overrideRules.empty()) {
+            os << ".override ";
+            os << join(overrideRules, ",") << "\n";
         }
         if (!clauses.empty()) {
             os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
@@ -202,12 +196,12 @@ public:
 
     /** get component type */
     const AstComponentType* getComponentType() const {
-        return type.get();
+        return componentType.get();
     }
 
     /** set component type */
     void setComponentType(std::unique_ptr<AstComponentType> other) {
-        type = std::move(other);
+        componentType = std::move(other);
     }
 
     /** get base components */
@@ -320,8 +314,8 @@ public:
 
     AstComponent* clone() const override {
         auto* res = new AstComponent();
-        res->setComponentType(std::unique_ptr<AstComponentType>(type->clone()));
 
+        res->setComponentType(std::unique_ptr<AstComponentType>(componentType->clone()));
         for (const auto& cur : baseComponents) {
             res->baseComponents.emplace_back(cur->clone());
         }
@@ -357,11 +351,11 @@ public:
     }
 
     void apply(const AstNodeMapper& mapper) override {
-        type = mapper(std::move(type));
-        for (auto& cur : components) {
+        componentType = mapper(std::move(componentType));
+        for (auto& cur : baseComponents) {
             cur = mapper(std::move(cur));
         }
-        for (auto& cur : baseComponents) {
+        for (auto& cur : components) {
             cur = mapper(std::move(cur));
         }
         for (auto& cur : instantiations) {
@@ -390,11 +384,11 @@ public:
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res;
 
-        res.push_back(type.get());
-        for (const auto& cur : components) {
+        res.push_back(componentType.get());
+        for (const auto& cur : baseComponents) {
             res.push_back(cur.get());
         }
-        for (const auto& cur : baseComponents) {
+        for (const auto& cur : components) {
             res.push_back(cur.get());
         }
         for (const auto& cur : instantiations) {
@@ -427,42 +421,69 @@ protected:
         assert(nullptr != dynamic_cast<const AstComponent*>(&node));
         const auto& other = static_cast<const AstComponent&>(node);
 
-        // compare all fields
-        return *type == *other.type && equal_targets(baseComponents, other.baseComponents) &&
-               equal_targets(types, other.types) && equal_targets(relations, other.relations) &&
-               equal_targets(clauses, other.clauses) && equal_targets(loads, other.loads) &&
-               equal_targets(printSizes, other.printSizes) && equal_targets(stores, other.stores) &&
-               equal_targets(components, other.components) &&
-               equal_targets(instantiations, other.instantiations);
+        if (equal_ptr(componentType, other.componentType)) {
+            return true;
+        }
+        if (!equal_targets(baseComponents, other.baseComponents)) {
+            return false;
+        }
+        if (!equal_targets(components, other.components)) {
+            return false;
+        }
+        if (!equal_targets(instantiations, other.instantiations)) {
+            return false;
+        }
+        if (!equal_targets(types, other.types)) {
+            return false;
+        }
+        if (!equal_targets(relations, other.relations)) {
+            return false;
+        }
+        if (!equal_targets(clauses, other.clauses)) {
+            return false;
+        }
+        if (!equal_targets(loads, other.loads)) {
+            return false;
+        }
+        if (!equal_targets(printSizes, other.printSizes)) {
+            return false;
+        }
+        if (!equal_targets(stores, other.stores)) {
+            return false;
+        }
+        if (overrideRules != other.overrideRules) {
+            return false;
+        }
+        return true;
     }
 
-    /** The type of this component, including its name and type parameters. */
-    std::unique_ptr<AstComponentType> type;
+    /** name of component and its formal component arguments. */
+    std::unique_ptr<AstComponentType> componentType;
 
-    /** A list of base types to inherit relations and clauses from. */
+    /** base components of component */
     std::vector<std::unique_ptr<AstComponentType>> baseComponents;
 
-    /** A list of types declared in this component. */
+    /** types declarations */
     std::vector<std::unique_ptr<AstType>> types;
 
-    /** A list of relations declared in this component. */
+    /** relations */
     std::vector<std::unique_ptr<AstRelation>> relations;
 
-    /** A list of clauses defined in this component. */
+    /** clauses */
     std::vector<std::unique_ptr<AstClause>> clauses;
 
-    /** A list of IO directives defined in this component. */
+    /** I/O directives */
     std::vector<std::unique_ptr<AstLoad>> loads;
     std::vector<std::unique_ptr<AstPrintSize>> printSizes;
     std::vector<std::unique_ptr<AstStore>> stores;
 
-    /** A list of nested components. */
+    /** nested components */
     std::vector<std::unique_ptr<AstComponent>> components;
 
-    /** A list of nested component instantiations. */
+    /** nested component instantiations. */
     std::vector<std::unique_ptr<AstComponentInit>> instantiations;
 
-    /** Set of relations that are overwritten */
+    /** clauses of relations that are overwritten by this component */
     std::set<std::string> overrideRules;
 };
 

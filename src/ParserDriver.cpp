@@ -120,10 +120,6 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});
         translationUnit->getErrorReport().addDiagnostic(err);
     } else {
-        if (!r->getStores().empty() || !r->getLoads().empty()) {
-            translationUnit->getErrorReport().addWarning(
-                    "Deprecated io qualifier was used in relation " + toString(name), r->getSrcLoc());
-        }
         translationUnit->getProgram()->addRelation(std::move(r));
     }
 }
@@ -175,6 +171,9 @@ souffle::SymbolTable& ParserDriver::getSymbolTable() {
     return translationUnit->getSymbolTable();
 }
 
+void ParserDriver::warning(const SrcLocation& loc, const std::string& msg) {
+    translationUnit->getErrorReport().addWarning(msg, loc);
+}
 void ParserDriver::error(const SrcLocation& loc, const std::string& msg) {
     translationUnit->getErrorReport().addError(msg, loc);
 }

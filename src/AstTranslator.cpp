@@ -1170,7 +1170,15 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 // increment version counter
                 version++;
             }
-            assert(cl->getExecutionPlan() == nullptr);
+
+            if (cl->getExecutionPlan() != nullptr) {
+                // ensure that all required versions have been created, as expected
+                int maxVersion = -1;
+                for (auto const& cur : cl->getExecutionPlan()->getOrders()) {
+                    maxVersion = std::max(cur.first, maxVersion);
+                }
+                assert(version > maxVersion && "missing clause versions");
+            }
         }
 
         // if there was no rule, continue

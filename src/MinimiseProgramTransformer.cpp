@@ -185,7 +185,7 @@ bool isValidPermutation(
     }
 
     // perform the permutation
-    reorderedLeft->reorderAtoms(reorderedPermutation);
+    reorderedLeft.reset(reorderAtoms(reorderedLeft.get(), reorderedPermutation));
 
     // --- check if a valid variable exists corresponding to this permutation ---
 

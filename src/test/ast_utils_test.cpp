@@ -478,5 +478,43 @@ TEST(AstUtils, RemoveRelationCopiesOutput) {
     EXPECT_EQ(3, program.getRelations().size());
 }
 
+TEST(AstUtils, ReorderClauseAtoms) {
+    SymbolTable sym;
+    ErrorReport e;
+    DebugReport d;
+
+    std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
+            R"(
+                .decl a,b,c,d,e(x:number)
+                a(x) :- b(x), c(x), 1 != 2, d(y), !e(z), c(z), e(x).
+                .output a()
+            )",
+            sym, e, d);
+
+    AstProgram& program = *tu->getProgram();
+    EXPECT_EQ(5, program.getRelations().size());
+
+    AstRelation* a = program.getRelation("a");
+    EXPECT_NE(a, nullptr);
+    const auto& clauses = a->getClauses();
+    EXPECT_EQ(1, clauses.size());
+
+    AstClause* clause = clauses[0];
+    EXPECT_EQ("a(x) :- \n   b(x),\n   c(x),\n   1 != 2,\n   d(y),\n   !e(z),\n   c(z),\n   e(x).",
+            toString(*clause));
+
+    // Check trivial permutation
+    std::unique_ptr<AstClause> reorderedClause0 =
+            std::unique_ptr<AstClause>(reorderAtoms(clause, std::vector<unsigned int>({0, 1, 2, 3, 4})));
+    EXPECT_EQ("a(x) :- \n   b(x),\n   c(x),\n   1 != 2,\n   d(y),\n   !e(z),\n   c(z),\n   e(x).",
+            toString(*reorderedClause0));
+
+    // Check more complex permutation
+    std::unique_ptr<AstClause> reorderedClause1 =
+            std::unique_ptr<AstClause>(reorderAtoms(clause, std::vector<unsigned int>({2, 3, 4, 1, 0})));
+    EXPECT_EQ("a(x) :- \n   d(y),\n   c(z),\n   1 != 2,\n   e(x),\n   !e(z),\n   c(x),\n   b(x).",
+            toString(*reorderedClause1));
+}
+
 }  // end namespace test
 }  // end namespace souffle

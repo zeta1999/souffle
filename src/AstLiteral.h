@@ -57,6 +57,11 @@ public:
         }
     }
 
+    AstAtom(AstRelationIdentifier name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
+            : name(std::move(name)), arguments(std::move(args)) {
+        setSrcLoc(srcLoc);
+    }
+
     /** Return the name of this atom */
     // TODO (b-scholz): rename to getIdent
     const AstRelationIdentifier& getName() const {

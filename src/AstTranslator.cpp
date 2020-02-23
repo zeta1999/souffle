@@ -372,8 +372,9 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
 
-            for (auto arg : atom->getArguments()) {
-                values.push_back(translator.translateValue(arg, index));
+            auto args = atom->getArguments();
+            for (size_t i = 0; i < arity; i++) {
+                values.push_back(translator.translateValue(args[i], index));
             }
             for (size_t i = 0; i < auxiliaryArity; i++) {
                 values.push_back(std::make_unique<RamUndefValue>());
@@ -393,8 +394,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             int arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
             auto args = atom->getArguments();
-            for (auto arg : args) {
-                values.push_back(translator.translateValue(arg, index));
+            for (size_t i = 0; i < arity; i++) {
+                values.push_back(translator.translateValue(args[i], index));
             }
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
@@ -1392,7 +1393,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             size_t auxiliaryArity = auxArityAnalysis->getArity(atom);
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
-            auto atomArgs = atom->getArguments();
+            // auto atomArgs = atom->getArguments();
             // construct a query
             std::vector<std::unique_ptr<RamExpression>> query;
 
@@ -1400,6 +1401,7 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             VariablesToArguments varsToArgs(uniqueVariables);
             atom->apply(varsToArgs);
 
+            auto atomArgs = atom->getArguments();
             // add each value (subroutine argument) to the search query
             for (size_t i = 0; i < atom->getArity() - auxiliaryArity; i++) {
                 auto arg = atomArgs[i];

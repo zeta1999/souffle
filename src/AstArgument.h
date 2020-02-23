@@ -259,8 +259,8 @@ protected:
 
 class AstFunctor : public AstTerm {
 public:
-    virtual RamTypeAttribute getReturnType() const = 0;
-    virtual RamTypeAttribute getArgType(const size_t arg) const = 0;
+    virtual TypeAttribute getReturnType() const = 0;
+    virtual TypeAttribute getArgType(const size_t arg) const = 0;
 
 protected:
     AstFunctor() = default;
@@ -310,12 +310,12 @@ public:
     }
 
     /** get the return type of the functor. */
-    RamTypeAttribute getReturnType() const override {
+    TypeAttribute getReturnType() const override {
         return functorReturnType(function);
     }
 
     /** get type of the functor argument*/
-    RamTypeAttribute getArgType(const size_t arg) const override {
+    TypeAttribute getArgType(const size_t arg) const override {
         return functorOpArgType(arg, function);
     }
 
@@ -361,25 +361,25 @@ public:
     }
 
     /** get type of the functor argument*/
-    RamTypeAttribute getArgType(const size_t arg) const override {
+    TypeAttribute getArgType(const size_t arg) const override {
         return argTypes.at(arg);
     }
 
     /** get type of the functor argument*/
-    RamTypeAttribute getReturnType() const override {
+    TypeAttribute getReturnType() const override {
         return returnType;
     }
 
-    void setArgsTypes(std::vector<RamTypeAttribute> types) {
+    void setArgsTypes(std::vector<TypeAttribute> types) {
         assert(types.size() == args.size() && "Size of types must match size of arguments");
         argTypes = types;
     }
 
-    const std::vector<RamTypeAttribute>& getArgsTypes() const {
+    const std::vector<TypeAttribute>& getArgsTypes() const {
         return argTypes;
     }
 
-    void setReturnType(RamTypeAttribute type) {
+    void setReturnType(TypeAttribute type) {
         returnType = type;
     }
 
@@ -407,8 +407,8 @@ protected:
         return name == other.name && AstFunctor::equal(node);
     }
 
-    std::vector<RamTypeAttribute> argTypes;
-    RamTypeAttribute returnType;
+    std::vector<TypeAttribute> argTypes;
+    TypeAttribute returnType;
 
     /** name of user-defined functor */
     const std::string name;

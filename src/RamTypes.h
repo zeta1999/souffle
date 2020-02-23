@@ -24,7 +24,7 @@
 
 namespace souffle {
 
-enum class RamTypeAttribute {
+enum class TypeAttribute {
     Symbol,
     Signed,    // Signed number
     Unsigned,  // Unsigned number
@@ -32,24 +32,24 @@ enum class RamTypeAttribute {
     Record,
 };
 
-// Printing of the RamTypeAttribute Enum.
+// Printing of the TypeAttribute Enum.
 // To be utilised in synthesizer.
-inline std::ostream& operator<<(std::ostream& os, RamTypeAttribute T) {
+inline std::ostream& operator<<(std::ostream& os, TypeAttribute T) {
     switch (T) {
-        case RamTypeAttribute::Symbol:
-            os << "RamTypeAttribute::Symbol";
+        case TypeAttribute::Symbol:
+            os << "TypeAttribute::Symbol";
             break;
-        case RamTypeAttribute::Signed:
-            os << "RamTypeAttribute::Signed";
+        case TypeAttribute::Signed:
+            os << "TypeAttribute::Signed";
             break;
-        case RamTypeAttribute::Float:
-            os << "RamTypeAttribute::Float";
+        case TypeAttribute::Float:
+            os << "TypeAttribute::Float";
             break;
-        case RamTypeAttribute::Unsigned:
-            os << "RamTypeAttribute::Unsigned";
+        case TypeAttribute::Unsigned:
+            os << "TypeAttribute::Unsigned";
             break;
-        case RamTypeAttribute::Record:
-            os << "RamTypeAttribute::Record";
+        case TypeAttribute::Record:
+            os << "TypeAttribute::Record";
     }
     return os;
 }
@@ -57,14 +57,14 @@ inline std::ostream& operator<<(std::ostream& os, RamTypeAttribute T) {
 /**
  * Check if type is numeric.
  */
-inline bool isNumericType(RamTypeAttribute ramType) {
+inline bool isNumericType(TypeAttribute ramType) {
     switch (ramType) {
-        case RamTypeAttribute::Signed:
-        case RamTypeAttribute::Unsigned:
-        case RamTypeAttribute::Float:
+        case TypeAttribute::Signed:
+        case TypeAttribute::Unsigned:
+        case TypeAttribute::Float:
             return true;
-        case RamTypeAttribute::Symbol:
-        case RamTypeAttribute::Record:
+        case TypeAttribute::Symbol:
+        case TypeAttribute::Record:
             return false;
     }
     return false;  // silence warning

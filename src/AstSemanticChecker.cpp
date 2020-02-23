@@ -221,21 +221,21 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     visitDepthFirst(nodes, [&](const AstFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
-        if (!eqTypeRamTypeAttribute(fun.getReturnType(), resultType)) {
+        if (!eqTypeTypeAttribute(fun.getReturnType(), resultType)) {
             switch (fun.getReturnType()) {
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
                     break;
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     report.addError("Non-unsigned use for unsigned functor", fun.getSrcLoc());
                     break;
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     report.addError("Non-float use for float functor", fun.getSrcLoc());
                     break;
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
-                case RamTypeAttribute::Record:
+                case TypeAttribute::Record:
                     assert(false && "Invalid return type");
             }
         }
@@ -249,21 +249,21 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
         size_t i = 0;
         for (auto arg : fun.getArguments()) {
-            if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
+            if (!eqTypeTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
                 switch (fun.getArgType(i)) {
-                    case RamTypeAttribute::Signed:
+                    case TypeAttribute::Signed:
                         report.addError("Non-numeric argument for functor", arg->getSrcLoc());
                         break;
-                    case RamTypeAttribute::Symbol:
+                    case TypeAttribute::Symbol:
                         report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                         break;
-                    case RamTypeAttribute::Unsigned:
+                    case TypeAttribute::Unsigned:
                         report.addError("Non-unsigned argument for functor", arg->getSrcLoc());
                         break;
-                    case RamTypeAttribute::Float:
+                    case TypeAttribute::Float:
                         report.addError("Non-float argument for functor", arg->getSrcLoc());
                         break;
-                    case RamTypeAttribute::Record:
+                    case TypeAttribute::Record:
                         assert(false && "Invalid argument type");
                 }
             }

@@ -33,21 +33,21 @@ namespace souffle {
 class AstFunctorDeclaration : public AstNode {
 public:
     AstFunctorDeclaration(
-            const std::string& name, std::vector<RamTypeAttribute> argsTypes, RamTypeAttribute returnType)
+            const std::string& name, std::vector<TypeAttribute> argsTypes, TypeAttribute returnType)
             : name(name), argsTypes(std::move(argsTypes)), returnType(returnType) {
         assert(name.length() > 0 && "functor name is empty");
     }
 
     void print(std::ostream& out) const override {
-        auto convert = [&](RamTypeAttribute type) {
+        auto convert = [&](TypeAttribute type) {
             switch (type) {
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     return "number";
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     return "symbol";
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     return "float";
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     return "unsigned";
                 default:
                     abort();
@@ -67,11 +67,11 @@ public:
     }
 
     /** get type */
-    const std::vector<RamTypeAttribute>& getArgsTypes() const {
+    const std::vector<TypeAttribute>& getArgsTypes() const {
         return argsTypes;
     }
 
-    RamTypeAttribute getReturnType() const {
+    TypeAttribute getReturnType() const {
         return returnType;
     }
 
@@ -98,10 +98,10 @@ protected:
     const std::string name;
 
     /** Types of arguments */
-    const std::vector<RamTypeAttribute> argsTypes;
+    const std::vector<TypeAttribute> argsTypes;
 
     /** Type of the return value */
-    const RamTypeAttribute returnType;
+    const TypeAttribute returnType;
 };
 
 }  // end of namespace souffle

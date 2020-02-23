@@ -452,16 +452,16 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
             // add a constraint for the return type of the functor
             switch (fun.getReturnType()) {
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     addConstraint(isSubtypeOf(functorVar, env.getNumberType()));
                     break;
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     addConstraint(isSubtypeOf(functorVar, env.getFloatType()));
                     break;
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     addConstraint(isSubtypeOf(functorVar, env.getUnsignedType()));
                     break;
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     addConstraint(isSubtypeOf(functorVar, env.getSymbolType()));
                     break;
                 default:
@@ -478,16 +478,16 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             for (auto arg : fun.getArguments()) {
                 auto argumentVar = getVar(arg);
                 switch (fun.getArgType(i)) {
-                    case RamTypeAttribute::Signed:
+                    case TypeAttribute::Signed:
                         addConstraint(isSubtypeOf(argumentVar, env.getNumberType()));
                         break;
-                    case RamTypeAttribute::Float:
+                    case TypeAttribute::Float:
                         addConstraint(isSubtypeOf(argumentVar, env.getFloatType()));
                         break;
-                    case RamTypeAttribute::Unsigned:
+                    case TypeAttribute::Unsigned:
                         addConstraint(isSubtypeOf(argumentVar, env.getUnsignedType()));
                         break;
-                    case RamTypeAttribute::Symbol:
+                    case TypeAttribute::Symbol:
                         addConstraint(isSubtypeOf(argumentVar, env.getSymbolType()));
                         break;
                     default:

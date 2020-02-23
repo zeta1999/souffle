@@ -139,8 +139,8 @@ protected:
  */
 class RamUserDefinedOperator : public RamAbstractOperator {
 public:
-    RamUserDefinedOperator(std::string n, std::vector<RamTypeAttribute> argsTypes,
-            RamTypeAttribute returnType, std::vector<std::unique_ptr<RamExpression>> args)
+    RamUserDefinedOperator(std::string n, std::vector<TypeAttribute> argsTypes, TypeAttribute returnType,
+            std::vector<std::unique_ptr<RamExpression>> args)
             : RamAbstractOperator(std::move(args)), name(std::move(n)), argsTypes(std::move(argsTypes)),
               returnType(returnType) {
         assert(argsTypes.size() == args.size());
@@ -159,12 +159,12 @@ public:
     }
 
     /** @brief Get types of arguments */
-    const std::vector<RamTypeAttribute>& getArgsTypes() const {
+    const std::vector<TypeAttribute>& getArgsTypes() const {
         return argsTypes;
     }
 
     /** @brief Get return type */
-    RamTypeAttribute getReturnType() const {
+    TypeAttribute getReturnType() const {
         return returnType;
     }
 
@@ -188,9 +188,9 @@ protected:
     const std::string name;
 
     /** Argument types */
-    const std::vector<RamTypeAttribute> argsTypes;
+    const std::vector<TypeAttribute> argsTypes;
 
-    const RamTypeAttribute returnType;
+    const TypeAttribute returnType;
 };
 
 /**

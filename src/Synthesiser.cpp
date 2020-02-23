@@ -1599,10 +1599,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {
             const std::string& name = op.getName();
 
-            const std::vector<RamTypeAttribute>& argTypes = op.getArgsTypes();
+            const std::vector<TypeAttribute>& argTypes = op.getArgsTypes();
             auto args = op.getArguments();
 
-            if (op.getReturnType() == RamTypeAttribute::Symbol) {
+            if (op.getReturnType() == TypeAttribute::Symbol) {
                 out << "symTable.lookup(";
             }
             out << name << "(";
@@ -1612,32 +1612,32 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ",";
                 }
                 switch (argTypes[i]) {
-                    case RamTypeAttribute::Signed:
+                    case TypeAttribute::Signed:
                         out << "((RamDomain)";
                         visit(args[i], out);
                         out << ")";
                         break;
-                    case RamTypeAttribute::Unsigned:
+                    case TypeAttribute::Unsigned:
                         out << "((RamUnsigned)";
                         visit(args[i], out);
                         out << ")";
                         break;
-                    case RamTypeAttribute::Float:
+                    case TypeAttribute::Float:
                         out << "((RamFloat)";
                         visit(args[i], out);
                         out << ")";
                         break;
-                    case RamTypeAttribute::Symbol:
+                    case TypeAttribute::Symbol:
                         out << "symTable.resolve((RamDomain)";
                         visit(args[i], out);
                         out << ").c_str()";
                         break;
-                    case RamTypeAttribute::Record:
+                    case TypeAttribute::Record:
                         assert(false);
                 }
             }
             out << ")";
-            if (op.getReturnType() == RamTypeAttribute::Symbol) {
+            if (op.getReturnType() == TypeAttribute::Symbol) {
                 out << ")";
             }
         }
@@ -1719,7 +1719,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
     os << "\n";
     // produce external definitions for user-defined functors
-    std::map<std::string, std::pair<RamTypeAttribute, std::vector<RamTypeAttribute>>> functors;
+    std::map<std::string, std::pair<TypeAttribute, std::vector<TypeAttribute>>> functors;
     visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
         if (functors.find(op.getName()) == functors.end()) {
             functors[op.getName()] = std::make_pair(op.getReturnType(), op.getArgsTypes());
@@ -1736,39 +1736,39 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         const auto& argsTypes = functorTypes.second;
 
         switch (returnType) {
-            case RamTypeAttribute::Signed:
+            case TypeAttribute::Signed:
                 os << "souffle::RamSigned ";
                 break;
-            case RamTypeAttribute::Unsigned:
+            case TypeAttribute::Unsigned:
                 os << "souffle::RamUnsigned ";
                 break;
-            case RamTypeAttribute::Float:
+            case TypeAttribute::Float:
                 os << "souffle::RamFloat ";
                 break;
-            case RamTypeAttribute::Symbol:
+            case TypeAttribute::Symbol:
                 os << "const char * ";
                 break;
-            case RamTypeAttribute::Record:
+            case TypeAttribute::Record:
                 abort();
         }
 
         os << name << "(";
         std::vector<std::string> args;
-        for (const RamTypeAttribute typeAttribute : argsTypes) {
+        for (const TypeAttribute typeAttribute : argsTypes) {
             switch (typeAttribute) {
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     args.push_back("souffle::RamDomain");
                     break;
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     args.push_back("souffle::RamUnsigned");
                     break;
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     args.push_back("souffle::RamFloat");
                     break;
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     args.push_back("const char *");
                     break;
-                case RamTypeAttribute::Record:
+                case TypeAttribute::Record:
                     abort();
             }
         }

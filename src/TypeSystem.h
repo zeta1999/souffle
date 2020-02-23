@@ -407,41 +407,41 @@ private:
 std::string getTypeQualifier(const Type& type);
 
 /**
- * Determine if a type analysis' result is equivalent to the given RamTypeAttribute.
+ * Determine if a type analysis' result is equivalent to the given TypeAttribute.
  */
 template <typename T>  // T = Type or T = Typeset
-bool eqTypeRamTypeAttribute(const RamTypeAttribute ramType, const T& type) {
+bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
     switch (ramType) {
-        case RamTypeAttribute::Signed:
+        case TypeAttribute::Signed:
             return isNumberType(type);
-        case RamTypeAttribute::Unsigned:
+        case TypeAttribute::Unsigned:
             return isUnsignedType(type);
-        case RamTypeAttribute::Float:
+        case TypeAttribute::Float:
             return isFloatType(type);
-        case RamTypeAttribute::Symbol:
+        case TypeAttribute::Symbol:
             return isSymbolType(type);
-        case RamTypeAttribute::Record:
+        case TypeAttribute::Record:
             return isRecordType(type);
     }
     return false;
 }
 
 /**
- * Convert a type analysis' type/set of type to the the RamTypeAttribute
+ * Convert a type analysis' type/set of type to the the TypeAttribute
  */
 template <typename T>  // T = Type or T = Typeset
-RamTypeAttribute getTypeAttribute(const T& type) {
-    RamTypeAttribute primitiveType;
+TypeAttribute getTypeAttribute(const T& type) {
+    TypeAttribute primitiveType;
     if (isNumberType(type)) {
-        primitiveType = RamTypeAttribute::Signed;
+        primitiveType = TypeAttribute::Signed;
     } else if (isUnsignedType(type)) {
-        primitiveType = RamTypeAttribute::Unsigned;
+        primitiveType = TypeAttribute::Unsigned;
     } else if (isFloatType(type)) {
-        primitiveType = RamTypeAttribute::Float;
+        primitiveType = TypeAttribute::Float;
     } else if (isRecordType(type)) {
-        primitiveType = RamTypeAttribute::Record;
+        primitiveType = TypeAttribute::Record;
     } else if (isSymbolType(type)) {
-        primitiveType = RamTypeAttribute::Symbol;
+        primitiveType = TypeAttribute::Symbol;
     } else {
         std::cerr << "Unknown type class" << std::endl;
         std::exit(EXIT_FAILURE);

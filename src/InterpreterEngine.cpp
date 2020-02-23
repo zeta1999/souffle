@@ -530,7 +530,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(UserDefinedOperator)
             // get name and type
             const std::string& name = cur.getName();
-            const std::vector<RamTypeAttribute>& type = cur.getArgsTypes();
+            const std::vector<TypeAttribute>& type = cur.getArgsTypes();
 
             auto fn = reinterpret_cast<void (*)()>(getMethodHandle(name));
             if (fn == nullptr) {
@@ -552,27 +552,27 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; i++) {
                 RamDomain arg = execute(node->getChild(i), ctxt);
                 switch (type[i]) {
-                    case RamTypeAttribute::Symbol:
+                    case TypeAttribute::Symbol:
                         args[i] = &FFI_Symbol;
                         strVal[i] = getSymbolTable().resolve(arg).c_str();
                         values[i] = &strVal[i];
                         break;
-                    case RamTypeAttribute::Signed:
+                    case TypeAttribute::Signed:
                         args[i] = &FFI_RamSigned;
                         intVal[i] = arg;
                         values[i] = &intVal[i];
                         break;
-                    case RamTypeAttribute::Unsigned:
+                    case TypeAttribute::Unsigned:
                         args[i] = &FFI_RamUnsigned;
                         uintVal[i] = ramBitCast<RamUnsigned>(arg);
                         values[i] = &uintVal[i];
                         break;
-                    case RamTypeAttribute::Float:
+                    case TypeAttribute::Float:
                         args[i] = &FFI_RamFloat;
                         floatVal[i] = ramBitCast<RamFloat>(arg);
                         values[i] = &floatVal[i];
                         break;
-                    case RamTypeAttribute::Record:
+                    case TypeAttribute::Record:
                         assert(false && "Record support is not implemented");
                 }
             }
@@ -581,16 +581,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto codomain = &FFI_RamSigned;
             switch (cur.getReturnType()) {
                 // initialize for string value.
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     codomain = &FFI_Symbol;
                     break;
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     codomain = &FFI_RamSigned;
                     break;
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     codomain = &FFI_RamUnsigned;
                     break;
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     codomain = &FFI_RamFloat;
                     break;
                 default:
@@ -607,16 +607,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             RamDomain result;
             switch (cur.getReturnType()) {
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     result = static_cast<RamDomain>(rc);
                     break;
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     result = getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
                     break;
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     result = ramBitCast(static_cast<RamUnsigned>(rc));
                     break;
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     result = ramBitCast(static_cast<RamFloat>(rc));
                     break;
                 default:

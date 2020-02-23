@@ -1249,13 +1249,13 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
                     // All args must be of the same type.
                     if (all_of(functor->getArguments(), isFloat)) {
                         FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), RamTypeAttribute::Float);
+                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Float);
                         functor->setFunction(convertedFunctor);
                         changed = true;
 
                     } else if (all_of(functor->getArguments(), isUnsigned)) {
                         FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), RamTypeAttribute::Unsigned);
+                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Unsigned);
                         functor->setFunction(convertedFunctor);
                         changed = true;
                     }
@@ -1272,13 +1272,13 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
                     // Both args must be of the same type
                     if (isFloat(leftArg) && isFloat(rightArg)) {
                         BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), RamTypeAttribute::Float);
+                                binaryConstraint->getOperator(), TypeAttribute::Float);
                         binaryConstraint->setOperator(convertedConstraint);
                         changed = true;
 
                     } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
                         BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), RamTypeAttribute::Unsigned);
+                                binaryConstraint->getOperator(), TypeAttribute::Unsigned);
                         binaryConstraint->setOperator(convertedConstraint);
                         changed = true;
                     }

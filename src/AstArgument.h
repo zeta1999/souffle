@@ -259,9 +259,6 @@ protected:
 
 class AstFunctor : public AstTerm {
 public:
-    virtual bool isOverloaded() const {
-        return false;
-    }
     virtual RamTypeAttribute getReturnType() const = 0;
     virtual RamTypeAttribute getArgType(const size_t arg) const = 0;
 
@@ -310,10 +307,6 @@ public:
     /** set function */
     void setFunction(const FunctorOp functor) {
         function = functor;
-    }
-
-    bool isOverloaded() const override {
-        return isOverloadedFunctor(function);
     }
 
     /** get the return type of the functor. */

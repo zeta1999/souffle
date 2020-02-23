@@ -439,13 +439,15 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
             // Currently we take a very simple approach toward polymorphic function.
             // We require argument and return type to be of the same type.
-            if (fun.isOverloaded()) {
-                for (auto* argument : fun.getArguments()) {
-                    auto argumentVar = getVar(argument);
-                    addConstraint(isSubtypeOf(functorVar, argumentVar));
-                    addConstraint(isSubtypeOf(argumentVar, functorVar));
+            if (auto intrinsicFunctor = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+                if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
+                    for (auto* argument : intrinsicFunctor->getArguments()) {
+                        auto argumentVar = getVar(argument);
+                        addConstraint(isSubtypeOf(functorVar, argumentVar));
+                        addConstraint(isSubtypeOf(argumentVar, functorVar));
+                    }
+                    return;
                 }
-                return;
             }
 
             // add a constraint for the return type of the functor

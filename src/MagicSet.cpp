@@ -26,7 +26,6 @@
 #include "AstUtils.h"
 #include "BinaryConstraintOps.h"
 #include "Global.h"
-#include "IODirectives.h"
 #include "RelationRepresentation.h"
 #include "SrcLocation.h"
 #include "Util.h"
@@ -43,12 +42,6 @@ class SymbolTable;
 bool isEqualAdornment(const AstRelationIdentifier& pred1, const std::string& adorn1,
         const AstRelationIdentifier& pred2, const std::string& adorn2) {
     return ((pred1 == pred2) && (adorn1 == adorn2));
-}
-
-// checks whether an element is contained within a set
-template <class T>
-bool contains(std::set<T> set, T element) {
-    return (set.find(element) != set.end());
 }
 
 // checks whether a given adorned predicate is contained within a set
@@ -1081,10 +1074,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
     // output handling
     std::vector<AstRelationIdentifier> outputQueries = adornment->getRelations();
-    std::set<AstRelationIdentifier> addAsOutput;
-    std::set<AstRelationIdentifier> addAsPrintSize;
-    std::map<AstRelationIdentifier, std::vector<std::unique_ptr<AstStore>>> outputDirectives;
-    std::map<AstRelationIdentifier, std::vector<std::unique_ptr<AstPrintSize>>> printSizeDirectives;
 
     // ignore negated atoms
     for (AstRelationIdentifier relation : negatedAtoms) {
@@ -1138,34 +1127,26 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 AstRelation* originalRelation = program->getRelation(originalName);
                 AstRelation* newRelation = createNewRelation(originalRelation, newRelName);
 
+                // add the created adorned relation to the program
+                program->appendRelation(std::unique_ptr<AstRelation>(newRelation));
+
                 // copy over input directives to new adorned relation
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
-                    IODirectives inputDirectives;  // to more easily work with the directive
-                    auto* newDirective = new AstLoad();
-                    inputDirectives.setRelationName(newRelName.getNames()[0]);
-                    newDirective->setName(newRelName);
-                    visitDepthFirst(*program, [&](const AstLoad& current) {
-                        if (current.getName() == originalName) {
-                            for (const auto& currentPair : current.getIODirectiveMap()) {
-                                newDirective->addKVP(currentPair.first, currentPair.second);
-                                inputDirectives.set(currentPair.first, currentPair.second);
-                            }
+                    visitDepthFirst(*program, [&](AstLoad& current) {
+                        if (current.getName() != originalName) {
+                            return;
+                        }
+                        current.setName(newRelName);
+                        auto directives = current.getIODirectiveMap();
+                        if (directives.find("IO") == directives.end()) {
+                            current.addKVP("IO", "file");
+                        }
+                        if (directives["IO"] == "file" && directives.find("filename") == directives.end()) {
+                            current.addKVP("filename", originalName.getNames()[0] + ".facts");
                         }
                     });
-                    if (!inputDirectives.has("IO")) {
-                        inputDirectives.setIOType("file");
-                        newDirective->addKVP("IO", "file");
-                    }
-                    if (inputDirectives.getIOType() == "file" && !inputDirectives.has("filename")) {
-                        newDirective->addKVP("filename", originalName.getNames()[0] + ".facts");
-                    }
-
-                    program->addLoad(std::unique_ptr<AstLoad>(newDirective));
                 }
-
-                // add the created adorned relation to the program
-                program->appendRelation(std::unique_ptr<AstRelation>(newRelation));
                 adornedRelation = newRelation;
             }
 
@@ -1173,7 +1154,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             AstClause* newClause = clause->clone();
             newClause->getHead()->setName(newRelName);
             // reorder atoms based on SIPS ordering
-            newClause->reorderAtoms(reorderOrdering(adornedClause.getOrdering()));
+            AstClause* tmp = reorderAtoms(newClause, reorderOrdering(adornedClause.getOrdering()));
+            delete newClause;
+            newClause = tmp;
 
             // get corresponding adornments for each body atom
             std::vector<std::string> bodyAdornment =
@@ -1382,7 +1365,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 newClauseOrder[k] = k + 1;
             }
             newClauseOrder[originalNumAtoms] = 0;
-            newClause->reorderAtoms(reorderOrdering(newClauseOrder));
+            tmp = reorderAtoms(newClause, reorderOrdering(newClauseOrder));
+            delete newClause;
+            newClause = tmp;
 
             // add the clause to the program and the set of new clauses
             newClause->setSrcLoc(nextSrcLoc(newClause->getSrcLoc()));
@@ -1391,23 +1376,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         }
     }
 
-    // remove all transformed old IDB relations, making sure to preserve input/output directives
     for (AstRelationIdentifier relationName : oldIdb) {
-        AstRelation* relation = program->getRelation(relationName);
-
-        // before deleting, store the directives of computed relations
-        // for restoration later on
-        if (ioTypes->isOutput(relation)) {
-            addAsOutput.insert(relationName);
-            std::vector<std::unique_ptr<AstStore>> clonedDirectives;
-            visitDepthFirst(*program, [&](const AstStore current) {
-                if (current.getName() == relationName) {
-                    clonedDirectives.emplace_back(current.clone());
-                }
-            });
-            outputDirectives[relationName] = std::move(clonedDirectives);
-        }
-
         // do not delete negated atoms, ignored atoms, or atoms added by aggregate relations
         if (!(contains(ignoredAtoms, relationName) || contains(negatedAtoms, relationName) ||
                     isAggRel(relationName))) {
@@ -1447,15 +1416,6 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
 
             // rename it back to its original name
             outputRelation->setName(oldName);
-            /*
-             * Should this actually happen? If so, where do the attributes come from?
-                        // set as output relation
-                        if (addAsOutput.find(oldName) != addAsOutput.end()) {
-                            outputRelation->addStore(std::make_unique<AstStore>());
-                        } else {
-                            outputRelation->setPrintSize(std::make_unique<AstPrintSize>());
-                        }
-            */
             // add the new output to the program
             program->appendRelation(std::unique_ptr<AstRelation>(outputRelation));
         }

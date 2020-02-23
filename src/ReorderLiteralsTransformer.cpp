@@ -330,28 +330,25 @@ std::vector<unsigned int> applySips(sips_t sipsFunction, std::vector<AstAtom*> a
     return newOrder;
 }
 
-bool reorderClauseWithSips(sips_t sipsFunction, AstClause* clause) {
+AstClause* reorderClauseWithSips(sips_t sipsFunction, AstClause* clause) {
     // ignore clauses with fixed execution plans
     if (clause->getExecutionPlan() != nullptr) {
-        return false;
+        return nullptr;
     }
 
     // get the ordering corresponding to the SIPS
     std::vector<unsigned int> newOrdering = applySips(sipsFunction, getBodyLiterals<AstAtom>(*clause));
 
-    // reorder the clause accordingly
-    clause->reorderAtoms(newOrdering);
-
-    // check if we have a change
+    // check if we need a change
+    bool changeNeeded = false;
     for (unsigned int i = 0; i < newOrdering.size(); i++) {
         if (newOrdering[i] != i) {
-            // changed
-            return true;
+            changeNeeded = true;
         }
     }
 
-    // unchanged
-    return false;
+    // reorder if needed
+    return changeNeeded ? reorderAtoms(clause, newOrdering) : nullptr;
 }
 
 bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) {
@@ -369,10 +366,22 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     auto sipsFunction = getSipsFunction(sipsChosen);
 
     // literal reordering is a rule-local transformation
+    std::vector<AstClause*> clausesToRemove;
+
     for (const AstRelation* rel : program.getRelations()) {
         for (AstClause* clause : rel->getClauses()) {
-            changed |= reorderClauseWithSips(sipsFunction, clause);
+            AstClause* newClause = reorderClauseWithSips(sipsFunction, clause);
+            if (newClause != nullptr) {
+                // reordering needed - swap around
+                clausesToRemove.push_back(clause);
+                program.appendClause(std::unique_ptr<AstClause>(newClause));
+            }
         }
+    }
+
+    changed |= !clausesToRemove.empty();
+    for (auto* clause : clausesToRemove) {
+        program.removeClause(clause);
     }
 
     // --- profile-guided reordering ---
@@ -419,10 +428,23 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             return currOptimalIdx;
         };
 
+        // change the ordering of literals within clauses
+        std::vector<AstClause*> clausesToRemove;
+
         for (const AstRelation* rel : program.getRelations()) {
             for (AstClause* clause : rel->getClauses()) {
-                changed |= reorderClauseWithSips(profilerSips, clause);
+                AstClause* newClause = reorderClauseWithSips(profilerSips, clause);
+                if (newClause != nullptr) {
+                    // reordering needed - swap around
+                    clausesToRemove.push_back(clause);
+                    program.appendClause(std::unique_ptr<AstClause>(newClause));
+                }
             }
+        }
+
+        changed |= !clausesToRemove.empty();
+        for (auto* clause : clausesToRemove) {
+            program.removeClause(clause);
         }
     }
 

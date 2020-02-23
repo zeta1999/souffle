@@ -103,7 +103,6 @@
 %token SUM                       "sum aggregator"
 %token TRUE                      "true literal constraint"
 %token FALSE                     "false literal constraint"
-%token STRICT                    "strict marker"
 %token PLAN                      "plan keyword"
 %token IF                        ":-"
 %token DECL                      "relation declaration"
@@ -511,19 +510,19 @@ non_empty_attributes
 /* Relation qualifiers */
 qualifiers
   : qualifiers OUTPUT_QUALIFIER {
-        driver.warning(@2, "Deprecated io qualifier was used");
+        driver.warning(@2, "Deprecated output qualifier used");
         if($1 & OUTPUT_RELATION)
             driver.error(@2, "output qualifier already set");
         $$ = $1 | OUTPUT_RELATION;
     }
   | qualifiers INPUT_QUALIFIER {
-        driver.warning(@2, "Deprecated io qualifier was used");
+        driver.warning(@2, "Deprecated input qualifier was used");
         if($1 & INPUT_RELATION)
             driver.error(@2, "input qualifier already set");
         $$ = $1 | INPUT_RELATION;
     }
   | qualifiers PRINTSIZE_QUALIFIER {
-        driver.warning(@2, "Deprecated io qualifier was used");
+        driver.warning(@2, "Deprecated printsize qualifier was used");
         if($1 & PRINTSIZE_RELATION)
             driver.error(@2, "printsize qualifier already set");
         $$ = $1 | PRINTSIZE_RELATION;
@@ -580,14 +579,6 @@ rule
 
         $rule_def.clear();
     }
-  | rule[nested_rule] STRICT {
-        $$ = $nested_rule;
-        for (auto* rule : $$) {
-            rule->setFixedExecutionPlan();
-        }
-
-        $nested_rule.clear();
-    }
   | rule[nested_rule] exec_plan {
         $$ = $nested_rule;
         for (auto* rule : $$) {
@@ -604,14 +595,11 @@ rule_def
         auto heads = $head;
         auto bodies = $body->toClauseBodies();
 
-        bool generated = heads.size() != 1 || bodies.size() != 1;
-
         for (const auto* head : heads) {
             for (const auto* body : bodies) {
                 AstClause* cur = body->clone();
                 cur->setHead(std::unique_ptr<AstAtom>(head->clone()));
                 cur->setSrcLoc(@$);
-                cur->setGenerated(generated);
                 $$.push_back(cur);
             }
         }

@@ -478,10 +478,10 @@ bool equal_targets(const std::set<std::unique_ptr<T>>& a, const std::set<std::un
  */
 template <typename T>
 bool equal_ptr(const T* a, const T* b) {
-    if (!a && !b) {
+    if (a == nullptr && b == nullptr) {
         return true;
     }
-    if (a && b) {
+    if (a != nullptr && b != nullptr) {
         return *a == *b;
     }
     return false;

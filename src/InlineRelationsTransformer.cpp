@@ -748,7 +748,7 @@ NullableVector<AstAtom*> getInlinedAtom(AstProgram& program, AstAtom& atom) {
                         newArgs.emplace_back(args[j]->clone());
                     }
                 }
-                AstAtom* newAtom = new AstAtom(atom.getName(), std::move(newArgs), atom.getSrcLoc());
+                auto* newAtom = new AstAtom(atom.getName(), std::move(newArgs), atom.getSrcLoc());
                 versions.push_back(newAtom);
             }
         }

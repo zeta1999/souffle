@@ -346,18 +346,18 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                     visitDepthFirst(arg, [&](const AstVariable& var) { varCtr[var.getName()]++; });
                 }
             });
-            std::vector<AstArgument*> args;
+            std::vector<std::unique_ptr<AstArgument>> args;
             for (auto arg : head->getArguments()) {
                 if (auto* var = dynamic_cast<AstVariable*>(arg)) {
                     // replace local variable by underscore if local
                     if (varCtr[var->getName()] == 0) {
-                        args.push_back(new AstUnnamedVariable());
+                        args.emplace_back(new AstUnnamedVariable());
                         continue;
                     }
                 }
-                args.push_back(arg);
+                args.emplace_back(arg->clone());
             }
-            AstAtom* aggAtom = new AstAtom(*head, args);
+            AstAtom* aggAtom = new AstAtom(head->getName(), std::move(args), head->getSrcLoc());
             const_cast<AstAggregator&>(agg).clearBodyLiterals();
             const_cast<AstAggregator&>(agg).addBodyLiteral(std::unique_ptr<AstLiteral>(aggAtom));
         });

@@ -49,14 +49,6 @@ class AstAtom : public AstAtomLiteral {
 public:
     AstAtom(AstRelationIdentifier name = AstRelationIdentifier()) : name(std::move(name)) {}
 
-    // construct AstAtom with given atom and replace the arguments with args
-    AstAtom(const AstAtom& atom, std::vector<AstArgument*> args) : name(atom.getName()) {
-        setSrcLoc(atom.getSrcLoc());
-        for (const auto& arg : args) {
-            arguments.emplace_back(arg);
-        }
-    }
-
     AstAtom(AstRelationIdentifier name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
             : name(std::move(name)), arguments(std::move(args)) {
         setSrcLoc(srcLoc);

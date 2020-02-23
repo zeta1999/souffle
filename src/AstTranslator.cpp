@@ -1400,7 +1400,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             size_t auxiliaryArity = auxArityAnalysis->getArity(atom);
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
-            // auto atomArgs = atom->getArguments();
             // construct a query
             std::vector<std::unique_ptr<RamExpression>> query;
 

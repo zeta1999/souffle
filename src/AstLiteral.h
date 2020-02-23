@@ -49,6 +49,11 @@ class AstAtom : public AstAtomLiteral {
 public:
     AstAtom(AstQualifiedName name = AstQualifiedName()) : name(std::move(name)) {}
 
+    AstAtom(AstRelationIdentifier name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
+            : name(std::move(name)), arguments(std::move(args)) {
+        setSrcLoc(srcLoc);
+    }
+
     /** Return the name of this atom */
     const AstQualifiedName& getQualifiedName() const {
         return name;
@@ -74,24 +79,9 @@ public:
         arguments.push_back(std::move(arg));
     }
 
-    /** Return the i-th argument of the atom */
-    AstArgument* getArgument(size_t idx) const {
-        return arguments[idx].get();
-    }
-
-    /** Replace the argument at the given index with the given argument */
-    void setArgument(size_t idx, std::unique_ptr<AstArgument> newArg) {
-        arguments[idx].swap(newArg);
-    }
-
     /** Provides access to the list of arguments of this atom */
     std::vector<AstArgument*> getArguments() const {
         return toPtrVector(arguments);
-    }
-
-    /** Return the number of arguments */
-    size_t argSize() const {
-        return arguments.size();
     }
 
     void print(std::ostream& os) const override {

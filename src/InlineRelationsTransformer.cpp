@@ -739,8 +739,16 @@ NullableVector<AstAtom*> getInlinedAtom(AstProgram& program, AstAtom& atom) {
 
             // Create a new atom per new version of the argument
             for (AstArgument* newArgument : argumentVersions.getVector()) {
-                AstAtom* newAtom = atom.clone();
-                newAtom->setArgument(i, std::unique_ptr<AstArgument>(newArgument));
+                auto args = atom.getArguments();
+                std::vector<std::unique_ptr<AstArgument>> newArgs;
+                for (size_t j = 0; j < args.size(); j++) {
+                    if (j == i) {
+                        newArgs.emplace_back(newArgument);
+                    } else {
+                        newArgs.emplace_back(args[j]->clone());
+                    }
+                }
+                auto* newAtom = new AstAtom(atom.getName(), std::move(newArgs), atom.getSrcLoc());
                 versions.push_back(newAtom);
             }
         }

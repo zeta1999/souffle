@@ -203,6 +203,7 @@ m4_define([NEGATIVE_TEST],[
   ])
 ])
 
+
 dnl Defines most relevant Souffle flag configurations for testing.
 dnl NOTE: This is the default configuration that can be overridden
 dnl using SOUFFLE_CONFS environment variable.

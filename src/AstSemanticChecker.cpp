@@ -217,93 +217,57 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // TODO (darth_tytus): Add support for float/unsigned to User functors. Preferably by unifying the
-    // analysis of intr/extr functor's types.
-    // - intrinsic functors -
-    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
+    // - functors -
+    visitDepthFirst(nodes, [&](const AstFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
-        if (!eqTypeRamTypeAttribute(fun.getReturnType(), resultType)) {
+        if (!eqTypeTypeAttribute(fun.getReturnType(), resultType)) {
             switch (fun.getReturnType()) {
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
                     break;
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     report.addError("Non-unsigned use for unsigned functor", fun.getSrcLoc());
                     break;
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     report.addError("Non-float use for float functor", fun.getSrcLoc());
                     break;
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
-                case RamTypeAttribute::Record:
+                case TypeAttribute::Record:
                     assert(false && "Invalid return type");
             }
         }
 
-        // check types of arguments
-        if (fun.getFunction() == FunctorOp::ORD) {
-            return;
+        // Special case
+        if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+            if (intrFun->getFunction() == FunctorOp::ORD) {
+                return;
+            }
         }
 
         size_t i = 0;
         for (auto arg : fun.getArguments()) {
-            if (!eqTypeRamTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
+            if (!eqTypeTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
                 switch (fun.getArgType(i)) {
-                    case RamTypeAttribute::Signed:
+                    case TypeAttribute::Signed:
                         report.addError("Non-numeric argument for functor", arg->getSrcLoc());
                         break;
-                    case RamTypeAttribute::Symbol:
+                    case TypeAttribute::Symbol:
                         report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
                         break;
-                    case RamTypeAttribute::Unsigned:
+                    case TypeAttribute::Unsigned:
                         report.addError("Non-unsigned argument for functor", arg->getSrcLoc());
                         break;
-                    case RamTypeAttribute::Float:
+                    case TypeAttribute::Float:
                         report.addError("Non-float argument for functor", arg->getSrcLoc());
                         break;
-                    case RamTypeAttribute::Record:
+                    case TypeAttribute::Record:
                         assert(false && "Invalid argument type");
                 }
             }
             ++i;
-        }
-    });
-
-    // - user-defined functors -
-    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
-        const AstFunctorDeclaration* funDecl = program.getFunctorDeclaration(fun.getName());
-
-        // handle degenerate case first.
-        if (funDecl == nullptr) {
-            report.addError("User-defined functor hasn't been declared", fun.getSrcLoc());
-            return;
-        }
-
-        // Check arity.
-        if (funDecl->getArity() != fun.getArguments().size()) {
-            report.addError("Mismatching number of arguments of functor", fun.getSrcLoc());
-        }
-
-        // check return values of user-defined functor
-        if (funDecl->isNumerical() && !isNumberType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
-        } else if (funDecl->isSymbolic() && !isSymbolType(typeAnalysis.getTypes(&fun))) {
-            report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
-        }
-
-        // Check argument types.
-        size_t i = 0;
-        for (const auto arg : fun.getArguments()) {
-            if (i < funDecl->getArity()) {
-                if (funDecl->acceptsNumbers(i) && !isNumberType(typeAnalysis.getTypes(arg))) {
-                    report.addError("Non-numeric argument for functor", arg->getSrcLoc());
-                } else if (funDecl->acceptsSymbols(i) && !isSymbolType(typeAnalysis.getTypes(arg))) {
-                    report.addError("Non-symbolic argument for functor", arg->getSrcLoc());
-                }
-            }
-            i++;
         }
     });
 
@@ -408,14 +372,8 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
         return hasUnnamedVariable(cast->getValue());
     }
-    if (const auto* inf = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
-        return any_of(inf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
-    }
-    if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-        return any_of(udf->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
-    }
-    if (const auto* ri = dynamic_cast<const AstRecordInit*>(arg)) {
-        return any_of(ri->getArguments(), (bool (*)(const AstArgument*))hasUnnamedVariable);
+    if (const auto* term = dynamic_cast<const AstTerm*>(arg)) {
+        return any_of(term->getArguments(), hasUnnamedVariable);
     }
     if (dynamic_cast<const AstAggregator*>(arg) != nullptr) {
         return false;
@@ -551,12 +509,8 @@ void AstSemanticChecker::checkArgument(
         ErrorReport& report, const AstProgram& program, const AstArgument& arg) {
     if (const auto* agg = dynamic_cast<const AstAggregator*>(&arg)) {
         checkAggregator(report, program, *agg);
-    } else if (const auto* intrFunc = dynamic_cast<const AstIntrinsicFunctor*>(&arg)) {
-        for (auto arg : intrFunc->getArguments()) {
-            checkArgument(report, program, *arg);
-        }
-    } else if (const auto* userDefFunc = dynamic_cast<const AstUserDefinedFunctor*>(&arg)) {
-        for (auto arg : userDefFunc->getArguments()) {
+    } else if (const auto* func = dynamic_cast<const AstFunctor*>(&arg)) {
+        for (auto arg : func->getArguments()) {
             checkArgument(report, program, *arg);
         }
     }
@@ -572,7 +526,6 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     if (dynamic_cast<const AstUnsignedConstant*>(&argument) != nullptr) {
         return true;
     }
-    // TODO (darth_tytus): Can/should user-defined functors be added here?
     if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         // Check return type.
         if (!isNumericType(functor->getReturnType())) {

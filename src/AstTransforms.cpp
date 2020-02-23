@@ -508,7 +508,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
     // If any boolean constraints exist, they will be removed
     bool changed = false;
-    visitDepthFirst(program, [&](const AstBooleanConstraint& bc) { changed = true; });
+    visitDepthFirst(program, [&](const AstBooleanConstraint&) { changed = true; });
 
     // Remove true and false constant literals from all aggregators
     struct removeBools : public AstNodeMapper {
@@ -1249,13 +1249,13 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
                     // All args must be of the same type.
                     if (all_of(functor->getArguments(), isFloat)) {
                         FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), RamTypeAttribute::Float);
+                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Float);
                         functor->setFunction(convertedFunctor);
                         changed = true;
 
                     } else if (all_of(functor->getArguments(), isUnsigned)) {
                         FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), RamTypeAttribute::Unsigned);
+                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Unsigned);
                         functor->setFunction(convertedFunctor);
                         changed = true;
                     }
@@ -1272,13 +1272,13 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
                     // Both args must be of the same type
                     if (isFloat(leftArg) && isFloat(rightArg)) {
                         BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), RamTypeAttribute::Float);
+                                binaryConstraint->getOperator(), TypeAttribute::Float);
                         binaryConstraint->setOperator(convertedConstraint);
                         changed = true;
 
                     } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
                         BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), RamTypeAttribute::Unsigned);
+                                binaryConstraint->getOperator(), TypeAttribute::Unsigned);
                         binaryConstraint->setOperator(convertedConstraint);
                         changed = true;
                     }
@@ -1290,6 +1290,48 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
     };
     const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
     TypeRewriter update(typeAnalysis, translationUnit.getErrorReport());
+    translationUnit.getProgram()->apply(update);
+    return update.changed;
+}
+
+bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translationUnit) {
+    struct UserFunctorRewriter : public AstNodeMapper {
+        mutable bool changed{false};
+        const AstProgram& program;
+        ErrorReport& report;
+
+        UserFunctorRewriter(const AstProgram& program, ErrorReport& report)
+                : program(program), report(report){};
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            node->apply(*this);
+
+            if (auto* userFunctor = dynamic_cast<AstUserDefinedFunctor*>(node.get())) {
+                AstFunctorDeclaration* functorDeclaration =
+                        program.getFunctorDeclaration(userFunctor->getName());
+
+                // Check if the functor has been declared
+                if (functorDeclaration == nullptr) {
+                    report.addError("User-defined functor hasn't been declared", userFunctor->getSrcLoc());
+                    return node;
+                }
+
+                // Check arity correctness.
+                if (functorDeclaration->getArity() != userFunctor->getArguments().size()) {
+                    report.addError("Mismatching number of arguments of functor", userFunctor->getSrcLoc());
+                    return node;
+                }
+
+                // Set types of functor instance based on its declaration.
+                userFunctor->setArgsTypes(functorDeclaration->getArgsTypes());
+                userFunctor->setReturnType(functorDeclaration->getReturnType());
+
+                changed = true;
+            }
+            return node;
+        }
+    };
+    UserFunctorRewriter update(*translationUnit.getProgram(), translationUnit.getErrorReport());
     translationUnit.getProgram()->apply(update);
     return update.changed;
 }

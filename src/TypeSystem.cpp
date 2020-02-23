@@ -295,19 +295,19 @@ std::string getTypeQualifier(const Type& type) {
             std::string str;
 
             switch (getTypeAttribute(type)) {
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     str.append("i");
                     break;
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     str.append("u");
                     break;
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     str.append("f");
                     break;
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     str.append("s");
                     break;
-                case RamTypeAttribute::Record:
+                case TypeAttribute::Record:
                     str.append("r");
                     break;
             }

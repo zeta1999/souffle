@@ -176,7 +176,7 @@
 %type <AstExecutionPlan *>                  exec_plan_list
 %type <AstClause *>                         fact
 %type <AstFunctorDeclaration *>             functor_decl
-%type <std::string>                         functor_type
+%type <TypeAttribute>                       functor_type
 %type <std::vector<AstAtom *>>              head
 %type <std::vector<std::string>>            identifier
 %type <std::vector<AstIO *>>                io_directive_list
@@ -186,7 +186,7 @@
 %type <std::vector<AstArgument *>>          non_empty_arg_list
 %type <std::vector<AstAttribute *>>         non_empty_attributes
 %type <AstExecutionOrder *>                 non_empty_exec_order_list
-%type <std::string>                         non_empty_functor_arg_type_list
+%type <std::vector<TypeAttribute>>          non_empty_functor_arg_type_list
 %type <std::vector<std::pair
             <std::string, std::string>>>    non_empty_key_value_pairs
 %type <AstRecordType *>                     non_empty_record_type_list
@@ -370,15 +370,15 @@ identifier
 /* Type declarations */
 type
   : NUMBER_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Signed);
+        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Signed);
         $$->setSrcLoc(@$);
     }
   | SYMBOL_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Symbol);
+        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Symbol);
+        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS union_type_list {
@@ -923,14 +923,12 @@ arg
 
     /* user-defined functor */
   | AT IDENT LPAREN RPAREN {
-        auto functor = new AstUserDefinedFunctor();
-        functor->setName($IDENT);
+        auto functor = new AstUserDefinedFunctor($IDENT);
         $$ = functor;
         $$->setSrcLoc(@$);
     }
   | AT IDENT LPAREN non_empty_arg_list RPAREN {
-        auto functor = new AstUserDefinedFunctor();
-        functor->setName($IDENT);
+        auto functor = new AstUserDefinedFunctor($IDENT);
 
         for (auto* arg : $non_empty_arg_list) {
             functor->addArgument(std::unique_ptr<AstArgument>(arg));
@@ -1522,24 +1520,25 @@ comp_init
 /* Functor declaration */
 functor_decl
   : FUNCTOR IDENT LPAREN RPAREN COLON functor_type {
-        auto typesig = $functor_type;
-        $$ = new AstFunctorDeclaration($IDENT, typesig);
+        $$ = new AstFunctorDeclaration($IDENT, {}, $functor_type);
         $$->setSrcLoc(@$);
     }
   | FUNCTOR IDENT LPAREN non_empty_functor_arg_type_list RPAREN COLON functor_type {
-        auto typesig = $non_empty_functor_arg_type_list + $functor_type;
-        $$ = new AstFunctorDeclaration($IDENT, typesig);
+        auto typesig = $non_empty_functor_arg_type_list;
+        $$ = new AstFunctorDeclaration($IDENT, typesig, $functor_type);
         $$->setSrcLoc(@$);
     }
   ;
 
-/* Functor argument list types */
+/* Functor argument list type */
 non_empty_functor_arg_type_list
   : functor_type {
-        $$ = $functor_type;
+        $$.push_back($functor_type);
     }
   | non_empty_functor_arg_type_list[curr_list] COMMA functor_type {
-        $$ = $curr_list + $functor_type;
+        $$ = $curr_list;
+        $$.push_back($functor_type);
+        $curr_list.clear();
     }
   ;
 
@@ -1547,13 +1546,13 @@ non_empty_functor_arg_type_list
 functor_type
   : IDENT {
         if ($IDENT == "number") {
-            $$ = "N";
+            $$ = TypeAttribute::Signed;
         } else if ($IDENT == "symbol") {
-            $$ = "S";
+            $$ = TypeAttribute::Symbol;
         } else if ($IDENT == "float") {
-            $$ = "F";
+            $$ = TypeAttribute::Float;
         } else if ($IDENT == "unsigned") {
-            $$ = "U";
+            $$ = TypeAttribute::Unsigned;
         } else {
             driver.error(@IDENT, "number or symbol identifier expected");
         }

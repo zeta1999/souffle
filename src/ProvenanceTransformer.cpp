@@ -64,7 +64,7 @@ inline AstQualifiedName makeRelationName(
 
 std::unique_ptr<AstRelation> makeInfoRelation(
         AstClause& originalClause, size_t originalClauseNum, AstTranslationUnit& translationUnit) {
-    AstRelationIdentifier name =
+    AstQualifiedName name =
             makeRelationName(originalClause.getHead()->getQualifiedName(), "@info", originalClauseNum);
 
     // initialise info relation

@@ -62,7 +62,7 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
 size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
     // TODO (azreika): This number might change between the provenance transformer and the AST->RAM
     // translation. Might need a better way to assign IDs to clauses... (see PR #1288).
-    const AstRelation* rel = program->getRelation(clause->getHead()->getName());
+    const AstRelation* rel = program->getRelation(clause->getHead()->getQualifiedName());
     assert(rel != nullptr && "clause relation does not exist");
 
     size_t clauseNum = 1;

@@ -361,13 +361,7 @@ bool equal(const std::vector<T>& a, const std::vector<T>& b, const Comp& comp = 
     }
 
     // check content
-    for (std::size_t i = 0; i < a.size(); ++i) {
-        // if there is a difference
-        if (!comp(a[i], b[i])) {
-            return false;
-        }
-    }
-    return true;
+    return std::equal(a.begin(), a.end(), b.begin(), comp);
 }
 
 /**

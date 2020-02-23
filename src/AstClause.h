@@ -140,11 +140,7 @@ private:
  *      - a fact  - a clause with no body (e.g., X(a,b))
  *      - a rule  - a clause with a head and a body (e.g., Y(a,b) -: X(a,b))
  *
- * TODO: Currently Clause object is used to represent 2 different types of datalog
- *       clauses, such as rules, queries and facts. This solution was to quickly
- *       overcome issues related to bottom-up construction of IR. In future,
- *       Clause should be  made abstract and have 2 subclasses: Rule and Fact.
- *       Tidy-up interface/classes: this is a mess...
+ * TODO (azreika): make clause abstract and split into two subclasses: Rule and Fact
  */
 class AstClause : public AstNode {
 public:
@@ -152,7 +148,7 @@ public:
         if (head != nullptr) {
             head->print(os);
         }
-        if (bodyLiterals.size() > 0) {
+        if (!bodyLiterals.empty()) {
             os << " :- \n   ";
             os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
         }
@@ -163,8 +159,8 @@ public:
     }
 
     /** Add a Literal to the body of the clause */
-    void addToBody(std::unique_ptr<AstLiteral> l) {
-        bodyLiterals.emplace_back(l.release());
+    void addToBody(std::unique_ptr<AstLiteral> literal) {
+        bodyLiterals.push_back(std::move(literal));
     }
 
     /** Set the head of clause to @p h */
@@ -183,45 +179,6 @@ public:
         return toPtrVector(bodyLiterals);
     }
 
-    /**
-     * Re-orders atoms to be in the given order.
-     * Remaining body literals remain in the same order.
-     **/
-    // TODO (b-scholz): remove this method
-    void reorderAtoms(const std::vector<unsigned int>& newOrder) {
-        std::vector<unsigned int> atomPositions;
-        std::vector<std::unique_ptr<AstLiteral>> oldAtoms;
-        for (unsigned int i = 0; i < bodyLiterals.size(); i++) {
-            if (dynamic_cast<AstAtom*>(bodyLiterals[i].get()) != nullptr) {
-                atomPositions.push_back(i);
-                oldAtoms.push_back(std::move(bodyLiterals[i]));
-            }
-        }
-
-        // Validate given order
-        assert(newOrder.size() == oldAtoms.size());
-        std::vector<unsigned int> nopOrder;
-        for (unsigned int i = 0; i < oldAtoms.size(); i++) {
-            nopOrder.push_back(i);
-        }
-        assert(std::is_permutation(nopOrder.begin(), nopOrder.end(), newOrder.begin()));
-
-        // Reorder atoms
-        for (unsigned int i = 0; i < newOrder.size(); i++) {
-            bodyLiterals[atomPositions[i]] = std::move(oldAtoms[newOrder[i]]);
-        }
-    }
-
-    /** Updates the fixed execution order flag */
-    void setFixedExecutionPlan(bool value = true) {
-        fixedPlan = value;
-    }
-
-    /** Determines whether the execution order plan is fixed */
-    bool hasFixedExecutionPlan() const {
-        return fixedPlan;
-    }
-
     /** Obtains the execution plan associated to this clause or null if there is none */
     const AstExecutionPlan* getExecutionPlan() const {
         return plan.get();
@@ -237,26 +194,6 @@ public:
         plan = nullptr;
     }
 
-    /** Determines whether this is a internally generated clause */
-    bool isGenerated() const {
-        return generated;
-    }
-
-    /** Updates the generated flag */
-    void setGenerated(bool value = true) {
-        generated = value;
-    }
-
-    /** Gets the clause number */
-    size_t getClauseNum() const {
-        return clauseNum;
-    }
-
-    /** Sets the clause number */
-    void setClauseNum(size_t num) {
-        clauseNum = num;
-    }
-
     AstClause* clone() const override {
         auto res = new AstClause();
         res->setSrcLoc(getSrcLoc());
@@ -267,8 +204,6 @@ public:
         for (const auto& lit : bodyLiterals) {
             res->bodyLiterals.emplace_back(lit->clone());
         }
-        res->fixedPlan = fixedPlan;
-        res->generated = generated;
         return res;
     }
 
@@ -300,20 +235,8 @@ protected:
     /** The literals in the body of this clause */
     std::vector<std::unique_ptr<AstLiteral>> bodyLiterals;
 
-    /** Determines whether the given execution order should be enforced */
-    // TODO (b-scholz): confused state / double-check
-    bool fixedPlan = false;
-
     /** The user defined execution plan -- if any */
     std::unique_ptr<AstExecutionPlan> plan;
-
-    /** Determines whether this is an internally generated clause resulting from resolving syntactic sugar */
-    bool generated = false;
-
-    /** Stores a unique number for each clause in a relation,
-        used for provenance */
-    // TODO (b-scholz): move to an AST analysis
-    size_t clauseNum = 0;
 };
 
 }  // end of namespace souffle

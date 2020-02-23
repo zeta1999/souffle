@@ -49,7 +49,7 @@ class AstAtom : public AstAtomLiteral {
 public:
     AstAtom(AstQualifiedName name = AstQualifiedName()) : name(std::move(name)) {}
 
-    AstAtom(AstRelationIdentifier name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
+    AstAtom(AstQualifiedName name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
             : name(std::move(name)), arguments(std::move(args)) {
         setSrcLoc(srcLoc);
     }

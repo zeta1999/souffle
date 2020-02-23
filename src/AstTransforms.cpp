@@ -357,7 +357,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                 }
                 args.emplace_back(arg->clone());
             }
-            auto* aggAtom = new AstAtom(head->getName(), std::move(args), head->getSrcLoc());
+            auto* aggAtom = new AstAtom(head->getQualifiedName(), std::move(args), head->getSrcLoc());
             const_cast<AstAggregator&>(agg).clearBodyLiterals();
             const_cast<AstAggregator&>(agg).addBodyLiteral(std::unique_ptr<AstLiteral>(aggAtom));
         });

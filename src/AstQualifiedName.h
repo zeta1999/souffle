@@ -10,8 +10,9 @@
  *
  * @file AstQualifiedName.h
  *
- * Defines a class for qualified names so that components can be accessed.
- * Qualified names are used for types and relations.
+ * Defines qualified names so that objects in components (types,
+ * relations, etc.) can be accessed via either a fully/partially
+ * qualified name.
  *
  ***********************************************************************/
 
@@ -20,14 +21,15 @@
 #include "Util.h"
 
 #include <algorithm>
+#include <sstream>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace souffle {
 
 /**
- * Qualified Name class
+ * Qualified Name class for fully/partially qualified names
+ * to identify objects in components.
  */
 class AstQualifiedName {
 public:

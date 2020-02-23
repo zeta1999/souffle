@@ -493,13 +493,7 @@ bool equal_ptr(const T* a, const T* b) {
  */
 template <typename T>
 bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
-    if (!a && !b) {
-        return true;
-    }
-    if (a && b) {
-        return *a == *b;
-    }
-    return false;
+    return equal_ptr(a.get(), b.get());
 }
 
 // -------------------------------------------------------------------------------

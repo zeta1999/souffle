@@ -64,10 +64,11 @@ TEST(AstUtils, Grounded) {
     // obtain groundness
     auto isGrounded = getGroundedTerms(*clause);
 
+    auto args = head->getArguments();
     // check selected sub-terms
-    EXPECT_TRUE(isGrounded[head->getArgument(0)]);   // X
-    EXPECT_TRUE(isGrounded[head->getArgument(1)]);   // Y
-    EXPECT_FALSE(isGrounded[head->getArgument(2)]);  // Z
+    EXPECT_TRUE(isGrounded[args[0]]);   // X
+    EXPECT_TRUE(isGrounded[args[1]]);   // Y
+    EXPECT_FALSE(isGrounded[args[2]]);  // Z
 
     // done
     delete clause;
@@ -108,8 +109,8 @@ TEST(AstUtils, GroundedRecords) {
     EXPECT_TRUE(r);
 
     // check selected sub-terms
-    EXPECT_TRUE(isGrounded[s->getArgument(0)]);
-    EXPECT_TRUE(isGrounded[r->getArgument(0)]);
+    EXPECT_TRUE(isGrounded[s->getArguments()[0]]);
+    EXPECT_TRUE(isGrounded[r->getArguments()[0]]);
 }
 
 TEST(AstUtils, SimpleTypes) {
@@ -146,7 +147,7 @@ TEST(AstUtils, SimpleTypes) {
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
-    auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
+    auto getX = [](const AstClause* c) { return c->getHead()->getArguments()[0]; };
 
     EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a))));
     EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
@@ -190,7 +191,7 @@ TEST(AstUtils, NumericTypes) {
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
-    auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
+    auto getX = [](const AstClause* c) { return c->getHead()->getArguments()[0]; };
 
     EXPECT_EQ("{}", toString(typeAnalysis->getTypes(getX(a))));
     EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
@@ -222,7 +223,7 @@ TEST(AstUtils, SubtypeChain) {
     // check types in clauses
     AstClause* a = program.getRelation("R4")->getClause(0);
 
-    auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
+    auto getX = [](const AstClause* c) { return c->getHead()->getArguments()[0]; };
 
     // check proper type handling
     auto& env = tu->getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
@@ -274,7 +275,7 @@ TEST(AstUtils, FactTypes) {
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
-    auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
+    auto getX = [](const AstClause* c) { return c->getHead()->getArguments()[0]; };
 
     EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a))));
     EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
@@ -300,7 +301,7 @@ TEST(AstUtils, NestedFunctions) {
     // check types in clauses
     AstClause* a = program.getRelation("r")->getClause(0);
 
-    auto getX = [](const AstClause* c) { return c->getHead()->getArgument(0); };
+    auto getX = [](const AstClause* c) { return c->getHead()->getArguments()[0]; };
 
     // check proper type deduction
     EXPECT_EQ("{D}", toString(tu->getAnalysis<TypeAnalysis>()->getTypes(getX(a))));

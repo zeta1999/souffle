@@ -326,7 +326,6 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             program.appendRelation(std::unique_ptr<AstRelation>(rel));
 
             // -- update aggregate --
-            AstAtom* aggAtom = head->clone();
 
             // count the usage of variables in the clause
             // outside of aggregates. Note that the visitor
@@ -347,14 +346,18 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                     visitDepthFirst(arg, [&](const AstVariable& var) { varCtr[var.getName()]++; });
                 }
             });
-            for (size_t i = 0; i < aggAtom->getArity(); i++) {
-                if (auto* var = dynamic_cast<AstVariable*>(aggAtom->getArgument(i))) {
+            std::vector<std::unique_ptr<AstArgument>> args;
+            for (auto arg : head->getArguments()) {
+                if (auto* var = dynamic_cast<AstVariable*>(arg)) {
                     // replace local variable by underscore if local
                     if (varCtr[var->getName()] == 0) {
-                        aggAtom->setArgument(i, std::make_unique<AstUnnamedVariable>());
+                        args.emplace_back(new AstUnnamedVariable());
+                        continue;
                     }
                 }
+                args.emplace_back(arg->clone());
             }
+            auto* aggAtom = new AstAtom(head->getName(), std::move(args), head->getSrcLoc());
             const_cast<AstAggregator&>(agg).clearBodyLiterals();
             const_cast<AstAggregator&>(agg).addBodyLiteral(std::unique_ptr<AstLiteral>(aggAtom));
         });

@@ -4,8 +4,6 @@
 # - https://opensource.org/licenses/UPL
 # - <souffle root>/licenses/SOUFFLE-UPL.txt
 
-
-
 dnl Positive test cases for evaluating Datalog programs
 
 POSITIVE_TEST([access1],[evaluation])

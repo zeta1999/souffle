@@ -1530,8 +1530,7 @@ functor_decl
     }
   ;
 
-
-// Functor argument list type
+/* Functor argument list type */
 non_empty_functor_arg_type_list
   : functor_type {
         $$.push_back($functor_type);
@@ -1542,8 +1541,6 @@ non_empty_functor_arg_type_list
         $curr_list.clear();
     }
   ;
-
-
 
 /* Functor type */
 functor_type

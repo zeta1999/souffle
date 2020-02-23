@@ -382,7 +382,7 @@ public:
         argTypes = types;
     }
 
-    const std::vector<RamTypeAttribute>& getArgsTypes(void) const {
+    const std::vector<RamTypeAttribute>& getArgsTypes() const {
         return argTypes;
     }
 
@@ -398,7 +398,7 @@ public:
         }
         // Set types
         // Only copy types if they have already been set.
-        if (argTypes.size() > 0) {
+        if (!argTypes.empty()) {
             res->setArgsTypes(argTypes);
         }
         res->setReturnType(returnType);

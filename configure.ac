@@ -272,7 +272,7 @@ AC_CONFIG_FILES([
   src/Makefile
   tests/Makefile
   tests/atlocal
-  tests/evaluation/functors/Makefile
+  tests/interface/functors/Makefile
 ])
 AC_CONFIG_LINKS([include/souffle/BinaryConstraintOps.h:src/BinaryConstraintOps.h])
 AC_CONFIG_LINKS([include/souffle/BTree.h:src/BTree.h])

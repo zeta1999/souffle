@@ -203,36 +203,6 @@ m4_define([NEGATIVE_TEST],[
   ])
 ])
 
-dnl Execute a positive functor test case
-dnl $1 -- test case
-dnl $2 -- category
-m4_define([TEST_EVAL_FUNCTOR],[
-  m4_define([TESTNAME],[$1])
-  m4_define([CATEGORY],[$2])
-  m4_define([TESTDIR],[$TESTS/CATEGORY/TESTNAME])
-  m4_define([PROGRAM],[TESTDIR/TESTNAME.dl])
-  m4_define([FACTS],[TESTDIR/facts])
-  dnl copy libs from where they were built
-  cp ../../evaluation/functors/.libs/libfunctors* .
-  # hack for System Integrity Protection (on Travis)
-  # TODO (darth_tytus): Investigate a better solution.
-  cp ../../evaluation/functors/.libs/libfunctors.dylib /usr/local/lib/
-  # invoke souffle
-  AT_CHECK([LD_LIBRARY_PATH=. "$SOUFFLE" FLAGS -L. -D. -F FACTS PROGRAM 1>TESTNAME.out 2>TESTNAME.err], [0])
-  SORTED_SAME_FILES([*.csv],[TESTDIR])
-  SAME_FILE([TESTNAME.out],[TESTDIR/TESTNAME.out])
-  SAME_FILE([TESTNAME.err],[TESTDIR/TESTNAME.err])
-])
-
-dnl Positive user-defined functor testcase for Souffle
-dnl $1 -- test name
-dnl $2 -- category
-m4_define([POSITIVE_FUNCTOR_TEST],[
-  TEST_GROUP([$1],[
-    TEST_EVAL_FUNCTOR([$1],[$2])
-  ])
-])
-
 
 dnl Defines most relevant Souffle flag configurations for testing.
 dnl NOTE: This is the default configuration that can be overridden

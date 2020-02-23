@@ -118,6 +118,3 @@ POSITIVE_TEST([unpacking],[evaluation])
 POSITIVE_TEST([unsigned_operations], [evaluation])
 POSITIVE_TEST([unused_constraints],[evaluation])
 POSITIVE_TEST([x9],[evaluation])
-
-
-POSITIVE_FUNCTOR_TEST([functors],[evaluation])

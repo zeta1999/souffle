@@ -43,11 +43,11 @@ enum class RelationQualifier {
 
 /** Space of internal representations that a relation can have */
 enum class RelationRepresentation {
-    DEFAULT,      // use default data-structure
-    BRIE,         // use brie data-structure
-    BTREE,        // use btree data-structure
-    EQREL,        // use union data-structure
-    INFO,         // info relation for provenance
+    DEFAULT,  // use default data-structure
+    BRIE,     // use brie data-structure
+    BTREE,    // use btree data-structure
+    EQREL,    // use union data-structure
+    INFO,     // info relation for provenance
 };
 
 /**
@@ -168,4 +168,4 @@ inline std::ostream& operator<<(std::ostream& os, RelationRepresentation r) {
     return os;
 }
 
-}
+}  // namespace souffle

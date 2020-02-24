@@ -102,23 +102,22 @@ public:
 
     /** Add qualifier to this relation */
     void addQualifier(AstRelationQualifier q) {
-        // TODO: add a check for contains
-        // TODO: separate out relation representation adds
-        qualifiers.insert(q);
-        if (q == AstRelationQualifier::EQREL) {
-            representation = RelationRepresentation::EQREL;
-        } else if (q == AstRelationQualifier::BRIE) {
-            representation = RelationRepresentation::BRIE;
-        } else if (q == AstRelationQualifier::BTREE) {
-            representation = RelationRepresentation::BTREE;
-        } else if (q == AstRelationQualifier::INFO) {
-            representation = RelationRepresentation::INFO;
+        if (isRelationRepQualifier(q)) {
+            setRepresentation(getRelationRepFromQualifier(q));
+        } else {
+            qualifiers.insert(q);
         }
     }
 
     /** Remove qualifier from this relation */
     void removeQualifier(AstRelationQualifier q) {
-        qualifiers.erase(q);
+        if (isRelationRepQualifier(q)) {
+            if (getRelationRepFromQualifier(q) == getRepresentation()) {
+                setRepresentation(RelationRepresentation::DEFAULT);
+            }
+        } else {
+            qualifiers.erase(q);
+        }
     }
 
     /** Get representation for this relation */

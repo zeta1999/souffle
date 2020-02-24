@@ -207,8 +207,9 @@ std::string getNextEdbName(AstProgram* program) {
 // copies over necessary qualifiers from original into new relation
 // note that input/output directives are handled at the end of the MST
 void updateQualifiers(AstRelation* originalRelation, AstRelation* newRelation) {
+    // TODO: check if necessary
     if (originalRelation->getRepresentation() == RelationRepresentation::EQREL) {
-        newRelation->addQualifier(AstRelationQualifier::EQREL);
+        newRelation->setRepresentation(RelationRepresentation::EQREL);
     }
 }
 

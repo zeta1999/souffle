@@ -895,7 +895,9 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
         newRelation->setSrcLoc(originalRelation->getSrcLoc());
 
         // EqRel relations require two arguments, so remove it from the qualifier
-        newRelation->removeQualifier(AstRelationQualifier::EQREL);
+        if (newRelation->getRepresentation() == RelationRepresentation::EQREL) {
+            newRelation->setRepresentation(RelationRepresentation::DEFAULT);
+        }
 
         // Keep all non-recursive clauses
         for (AstClause* clause : originalRelation->getClauses()) {

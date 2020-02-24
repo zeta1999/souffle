@@ -20,7 +20,7 @@
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "AstVisitor.h"
 #include "Util.h"
 #include <cstddef>
@@ -38,16 +38,16 @@ class AstTranslationUnit;
 
 class AdornedPredicate {
 private:
-    AstRelationIdentifier predicateName;
+    AstQualifiedName predicateName;
     std::string adornment;
 
 public:
-    AdornedPredicate(AstRelationIdentifier name, std::string adornment)
+    AdornedPredicate(AstQualifiedName name, std::string adornment)
             : predicateName(std::move(name)), adornment(std::move(adornment)) {}
 
     ~AdornedPredicate() = default;
 
-    AstRelationIdentifier getName() const {
+    AstQualifiedName getQualifiedName() const {
         return predicateName;
     }
 
@@ -61,8 +61,8 @@ public:
     }
 
     friend bool operator<(const AdornedPredicate& p1, const AdornedPredicate& p2) {
-        if (p1.getName() != p2.getName()) {
-            return p1.getName() < p2.getName();
+        if (p1.getQualifiedName() != p2.getQualifiedName()) {
+            return p1.getQualifiedName() < p2.getQualifiedName();
         } else {
             return p1.getAdornment() < p2.getAdornment();
         }
@@ -101,23 +101,24 @@ public:
     friend std::ostream& operator<<(std::ostream& out, const AdornedClause& arg) {
         size_t currpos = 0;
         bool firstadded = true;
-        out << arg.clause->getHead()->getName() << "{" << arg.headAdornment << "} :- ";
+        out << arg.clause->getHead()->getQualifiedName() << "{" << arg.headAdornment << "} :- ";
 
         std::vector<AstLiteral*> bodyLiterals = arg.clause->getBodyLiterals();
         for (AstLiteral* literal : bodyLiterals) {
             if (auto* corresAtom = dynamic_cast<AstAtom*>(literal)) {
                 if (firstadded) {
                     firstadded = false;
-                    out << corresAtom->getName() << "{_}";
+                    out << corresAtom->getQualifiedName() << "{_}";
                 } else {
-                    out << ", " << corresAtom->getName() << "{_}";
+                    out << ", " << corresAtom->getQualifiedName() << "{_}";
                 }
             } else if (auto* lit = dynamic_cast<AstAtomLiteral*>(literal)) {
                 if (firstadded) {
                     firstadded = false;
-                    out << lit->getAtom()->getName() << "{" << arg.bodyAdornment[currpos] << "}";
+                    out << lit->getAtom()->getQualifiedName() << "{" << arg.bodyAdornment[currpos] << "}";
                 } else {
-                    out << ", " << lit->getAtom()->getName() << "{" << arg.bodyAdornment[currpos] << "}";
+                    out << ", " << lit->getAtom()->getQualifiedName() << "{" << arg.bodyAdornment[currpos]
+                        << "}";
                 }
                 currpos++;
             }
@@ -164,11 +165,11 @@ public:
 class Adornment : public AstAnalysis {
 private:
     std::vector<std::vector<AdornedClause>> adornmentClauses;
-    std::vector<AstRelationIdentifier> adornmentRelations;
-    std::set<AstRelationIdentifier> adornmentEdb;
-    std::set<AstRelationIdentifier> adornmentIdb;
-    std::set<AstRelationIdentifier> negatedAtoms;
-    std::set<AstRelationIdentifier> ignoredAtoms;
+    std::vector<AstQualifiedName> adornmentRelations;
+    std::set<AstQualifiedName> adornmentEdb;
+    std::set<AstQualifiedName> adornmentIdb;
+    std::set<AstQualifiedName> negatedAtoms;
+    std::set<AstQualifiedName> ignoredAtoms;
     BindingStore bindings;
 
 public:
@@ -184,23 +185,23 @@ public:
         return adornmentClauses;
     }
 
-    const std::vector<AstRelationIdentifier>& getRelations() const {
+    const std::vector<AstQualifiedName>& getRelations() const {
         return adornmentRelations;
     }
 
-    const std::set<AstRelationIdentifier>& getEDB() const {
+    const std::set<AstQualifiedName>& getEDB() const {
         return adornmentEdb;
     }
 
-    const std::set<AstRelationIdentifier>& getIDB() const {
+    const std::set<AstQualifiedName>& getIDB() const {
         return adornmentIdb;
     }
 
-    const std::set<AstRelationIdentifier>& getNegatedAtoms() const {
+    const std::set<AstQualifiedName>& getNegatedAtoms() const {
         return negatedAtoms;
     }
 
-    const std::set<AstRelationIdentifier>& getIgnoredAtoms() const {
+    const std::set<AstQualifiedName>& getIgnoredAtoms() const {
         return ignoredAtoms;
     }
 

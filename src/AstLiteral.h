@@ -19,7 +19,7 @@
 
 #include "AstAbstract.h"
 #include "AstNode.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "BinaryConstraintOps.h"
 #include "Util.h"
 
@@ -47,16 +47,15 @@ class AstAtom;
  */
 class AstAtom : public AstAtomLiteral {
 public:
-    AstAtom(AstRelationIdentifier name = AstRelationIdentifier()) : name(std::move(name)) {}
+    AstAtom(AstQualifiedName name = AstQualifiedName()) : name(std::move(name)) {}
 
-    AstAtom(AstRelationIdentifier name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
+    AstAtom(AstQualifiedName name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
             : name(std::move(name)), arguments(std::move(args)) {
         setSrcLoc(srcLoc);
     }
 
     /** Return the name of this atom */
-    // TODO (b-scholz): rename to getIdent
-    const AstRelationIdentifier& getName() const {
+    const AstQualifiedName& getQualifiedName() const {
         return name;
     }
 
@@ -66,7 +65,7 @@ public:
     }
 
     /** Set atom name */
-    void setName(const AstRelationIdentifier& n) {
+    void setQualifiedName(const AstQualifiedName& n) {
         name = n;
     }
 
@@ -86,7 +85,7 @@ public:
     }
 
     void print(std::ostream& os) const override {
-        os << getName() << "(";
+        os << getQualifiedName() << "(";
 
         for (size_t i = 0; i < arguments.size(); ++i) {
             if (i != 0) {
@@ -132,7 +131,7 @@ protected:
     }
 
     /** Name of the atom */
-    AstRelationIdentifier name;
+    AstQualifiedName name;
 
     /** Arguments of the atom */
     std::vector<std::unique_ptr<AstArgument>> arguments;

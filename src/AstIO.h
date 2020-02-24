@@ -17,7 +17,7 @@
 #pragma once
 
 #include "AstNode.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 
 #include <map>
 #include <string>
@@ -43,12 +43,12 @@ public:
     }
 
     /** relation name of I/O-directive */
-    const AstRelationIdentifier& getName() const {
+    const AstQualifiedName& getQualifiedName() const {
         return name;
     }
 
     /** set relation name of I/O-directive */
-    void setName(const AstRelationIdentifier& name) {
+    void setQualifiedName(const AstQualifiedName& name) {
         this->name = name;
     }
 
@@ -78,7 +78,7 @@ protected:
     }
 
     /** relation name of I/O directive */
-    AstRelationIdentifier name;
+    AstQualifiedName name;
 
     /** key-value pair map */
     std::map<std::string, std::string> kvps;

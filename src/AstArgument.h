@@ -438,7 +438,7 @@ public:
  */
 class AstTypeCast : public AstArgument {
 public:
-    AstTypeCast(std::unique_ptr<AstArgument> value, AstTypeIdentifier type)
+    AstTypeCast(std::unique_ptr<AstArgument> value, AstQualifiedName type)
             : value(std::move(value)), type(std::move(type)) {}
 
     void print(std::ostream& os) const override {
@@ -451,12 +451,12 @@ public:
     }
 
     /** Get type */
-    const AstTypeIdentifier& getType() const {
+    const AstQualifiedName& getType() const {
         return type;
     }
 
     /** Set type */
-    void setType(const AstTypeIdentifier& type) {
+    void setType(const AstQualifiedName& type) {
         this->type = type;
     }
 
@@ -487,7 +487,7 @@ protected:
     std::unique_ptr<AstArgument> value;
 
     /** The target type name */
-    AstTypeIdentifier type;
+    AstQualifiedName type;
 };
 
 /**

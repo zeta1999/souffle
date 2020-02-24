@@ -41,7 +41,7 @@ void ComponentLookup::run(const AstTranslationUnit& translationUnit) {
 const AstComponent* ComponentLookup::getComponent(
         const AstComponent* scope, const std::string& name, const TypeBinding& activeBinding) const {
     // forward according to binding (we do not do this recursively on purpose)
-    AstTypeIdentifier boundName = activeBinding.find(name);
+    AstQualifiedName boundName = activeBinding.find(name);
     if (boundName.empty()) {
         // compName is not bound to anything => just just compName
         boundName = name;

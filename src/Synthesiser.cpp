@@ -1676,7 +1676,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- safety net --
 
-        void visitUndefValue(const RamUndefValue& undef, std::ostream& /*out*/) override {
+        void visitUndefValue(const RamUndefValue&, std::ostream& /*out*/) override {
             assert(false && "Compilation error");
         }
 
@@ -1853,7 +1853,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
-        visitDepthFirst(prog.getMain(), [&](const RamStatement& node) { numFreq++; });
+        visitDepthFirst(prog.getMain(), [&](const RamStatement&) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
         for (auto rel : prog.getRelations()) {
@@ -1971,7 +1971,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "SignalHandler::instance()->enableLogging();\n";
     }
     bool hasIncrement = false;
-    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
+    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement&) { hasIncrement = true; });
     // initialize counter
     if (hasIncrement) {
         os << "// -- initialize counter --\n";

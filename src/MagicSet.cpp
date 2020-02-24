@@ -167,7 +167,7 @@ bool containsAggregators(AstClause* clause) {
     bool found = false;
 
     // check for aggregators
-    visitDepthFirst(*clause, [&](const AstAggregator& aggr) { found = true; });
+    visitDepthFirst(*clause, [&](const AstAggregator&) { found = true; });
 
     return found;
 }
@@ -553,7 +553,7 @@ int getNextAtomMaxBoundSIPS(std::vector<AstAtom*>& atoms, const std::set<std::st
 
 // Choose the atom with the maximum ratio of bound arguments to total arguments
 int getNextAtomMaxRatioSIPS(std::vector<AstAtom*>& atoms, const std::set<std::string>& boundArgs,
-        const std::set<AstQualifiedName>& edb, BindingStore& compositeBindings) {
+        const std::set<AstQualifiedName>& /* edb */, BindingStore& compositeBindings) {
     double maxRatio = -1;
     int maxIndex = 0;
 

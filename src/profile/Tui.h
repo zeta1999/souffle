@@ -63,7 +63,7 @@ private:
     };
 
 public:
-    Tui(std::string filename, bool live, bool gui) {
+    Tui(std::string filename, bool live, bool /* gui */) {
         // Set a friendlier output size if we're being interacted with directly.
         if (live) {
             resultLimit = 20;
@@ -809,7 +809,7 @@ public:
 
         // Store the timepoints we need for the graph
         for (uint32_t i = 1; i <= width; ++i) {
-            auto it = allUsages.upper_bound(Usage{startTime + timeStep * i});
+            auto it = allUsages.upper_bound(Usage{startTime + timeStep * i, 0, {}, {}});
             if (it != allUsages.begin()) {
                 --it;
             }
@@ -925,7 +925,7 @@ public:
     }
 
     void memoryUsage(
-            std::chrono::microseconds endTime, std::chrono::microseconds startTime, uint32_t height = 20) {
+            std::chrono::microseconds /* endTime */, std::chrono::microseconds /* startTime */, uint32_t height = 20) {
         uint32_t width = getTermWidth() - 8;
         uint64_t maxMaxRSS = 0;
 

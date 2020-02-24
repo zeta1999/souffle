@@ -118,7 +118,7 @@ struct ComponentContent {
         printSizes.push_back(std::move(directive));
     }
 
-    void add(std::unique_ptr<AstStore>& directive, ErrorReport& report) {
+    void add(std::unique_ptr<AstStore>& directive, ErrorReport&) {
         stores.push_back(std::move(directive));
     }
 };

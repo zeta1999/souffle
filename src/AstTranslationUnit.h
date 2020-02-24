@@ -35,8 +35,7 @@ namespace souffle {
 
 class AstTranslationUnit {
 public:
-    AstTranslationUnit(std::unique_ptr<AstProgram> program, SymbolTable& s, ErrorReport& e, DebugReport& d,
-            bool nowarn = false)
+    AstTranslationUnit(std::unique_ptr<AstProgram> program, SymbolTable& s, ErrorReport& e, DebugReport& d)
             : program(std::move(program)), symbolTable(s), errorReport(e), debugReport(d) {}
 
     virtual ~AstTranslationUnit() = default;

@@ -215,11 +215,6 @@ public:
         return false;
     }
 
-    /** Return the number of clauses associated with this relation */
-    size_t clauseSize() const {
-        return clauses.size();
-    }
-
     AstRelation* clone() const override {
         auto res = new AstRelation();
         res->name = name;

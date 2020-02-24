@@ -280,23 +280,23 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitUnsignedConstant(const AstUnsignedConstant& c) override {
-            return std::make_unique<RamUnsignedConstant>(c.getRamRepresentation());
+            return std::make_unique<RamUnsignedConstant>(c.getValue());
         }
 
         std::unique_ptr<RamExpression> visitFloatConstant(const AstFloatConstant& c) override {
-            return std::make_unique<RamFloatConstant>(c.getRamRepresentation());
+            return std::make_unique<RamFloatConstant>(c.getValue());
         }
 
         std::unique_ptr<RamExpression> visitNumberConstant(const AstNumberConstant& c) override {
-            return std::make_unique<RamSignedConstant>(c.getRamRepresentation());
+            return std::make_unique<RamSignedConstant>(c.getValue());
         }
 
         std::unique_ptr<RamExpression> visitStringConstant(const AstStringConstant& c) override {
-            return std::make_unique<RamSignedConstant>(c.getRamRepresentation());
+            return std::make_unique<RamSignedConstant>(translator.getSymbolTable().lookup(c.getValue()));
         }
 
-        std::unique_ptr<RamExpression> visitNilConstant(const AstNilConstant& c) override {
-            return std::make_unique<RamSignedConstant>(c.getRamRepresentation());
+        std::unique_ptr<RamExpression> visitNilConstant(const AstNilConstant&) override {
+            return std::make_unique<RamSignedConstant>(RecordTable::getNil());
         }
 
         std::unique_ptr<RamExpression> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {
@@ -397,7 +397,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             int arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
             auto args = atom->getArguments();
-            for (size_t i = 0; i < arity; i++) {
+            for (int i = 0; i < arity; i++) {
                 values.push_back(translator.translateValue(args[i], index));
             }
             // we don't care about the provenance columns when doing the existence check
@@ -823,11 +823,12 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // add constraints
             size_t pos = 0;
             for (auto arg : atom->getArguments()) {
-                if (auto* c = dynamic_cast<AstConstant*>(arg)) {
+                if (auto* c = dynamic_cast<const AstConstant*>(arg)) {
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamTupleElement>(level, pos),
-                                    std::make_unique<RamSignedConstant>(c->getRamRepresentation())),
+                                    std::make_unique<RamSignedConstant>(
+                                            translator.getConstantRamRepresentation(*c))),
                             std::move(op));
                 }
                 ++pos;
@@ -877,11 +878,12 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         } else if (const auto* rec = dynamic_cast<const AstRecordInit*>(cur)) {
             // add constant constraints
             for (size_t pos = 0; pos < rec->getArguments().size(); ++pos) {
-                if (AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
+                if (const AstConstant* c = dynamic_cast<AstConstant*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamTupleElement>(level, pos),
-                                    std::make_unique<RamSignedConstant>(c->getRamRepresentation())),
+                                    std::make_unique<RamSignedConstant>(
+                                            translator.getConstantRamRepresentation(*c))),
                             std::move(op));
                 } else if (AstFunctor* func = dynamic_cast<AstFunctor*>(rec->getArguments()[pos])) {
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
@@ -1685,7 +1687,7 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
     auto ram_start = std::chrono::high_resolution_clock::now();
     program = tu.getProgram();
     translateProgram(tu);
-    SymbolTable& symTab = tu.getSymbolTable();
+    SymbolTable& symTab = getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();
     DebugReport& debugReport = tu.getDebugReport();
     std::vector<std::unique_ptr<RamRelation>> rels;
@@ -1707,7 +1709,8 @@ std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationU
             debugReport.addSection("ram-program", "RAM Program " + runtimeStr, ramProgStr.str());
         }
     }
-    return std::make_unique<RamTranslationUnit>(std::move(ramProg), symTab, errReport, debugReport);
+    return std::make_unique<RamTranslationUnit>(
+            std::move(ramProg), std::move(symTab), errReport, debugReport);
 }
 
 }  // end of namespace souffle

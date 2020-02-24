@@ -1127,7 +1127,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                std::string constantValue = stringConstant->getConstant();
+                std::string constantValue = stringConstant->getValue();
                 std::stringstream newVariableName;
                 newVariableName << boundPrefix << changeCount << "_" << constantValue << "_s";
 
@@ -1144,7 +1144,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                RamDomain constantValue = numberConstant->getRamRepresentation();
+                RamDomain constantValue = numberConstant->getValue();
                 std::stringstream newVariableName;
                 newVariableName << boundPrefix << changeCount << "_" << constantValue << "_n";
 

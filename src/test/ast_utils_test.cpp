@@ -75,7 +75,6 @@ TEST(AstUtils, Grounded) {
 }
 
 TEST(AstUtils, GroundedRecords) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
@@ -90,7 +89,7 @@ TEST(AstUtils, GroundedRecords) {
                  s(x) :- r([x,y]).
 
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -114,7 +113,6 @@ TEST(AstUtils, GroundedRecords) {
 }
 
 TEST(AstUtils, SimpleTypes) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -136,7 +134,7 @@ TEST(AstUtils, SimpleTypes) {
                  a(X) :- b(Y).
 
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -161,7 +159,6 @@ TEST(AstUtils, SimpleTypes) {
 }
 
 TEST(AstUtils, NumericTypes) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -180,7 +177,7 @@ TEST(AstUtils, NumericTypes) {
                  u(X) :- X < 10.
 
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -199,7 +196,6 @@ TEST(AstUtils, NumericTypes) {
 }
 
 TEST(AstUtils, SubtypeChain) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -216,7 +212,7 @@ TEST(AstUtils, SubtypeChain) {
 
                 R4(x) :- R2(x,x),R1(x,x).
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -243,7 +239,6 @@ TEST(AstUtils, SubtypeChain) {
 }
 
 TEST(AstUtils, FactTypes) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -264,7 +259,7 @@ TEST(AstUtils, FactTypes) {
                  u("World").
 
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -283,7 +278,6 @@ TEST(AstUtils, FactTypes) {
 }
 
 TEST(AstUtils, NestedFunctions) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -294,7 +288,7 @@ TEST(AstUtils, NestedFunctions) {
 
                 r(x) :- r(y), x=cat(cat(x,x),x).
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -308,7 +302,6 @@ TEST(AstUtils, NestedFunctions) {
 }
 
 TEST(AstUtils, GroundTermPropagation) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -319,7 +312,7 @@ TEST(AstUtils, GroundTermPropagation) {
 
                 p(a,b) :- p(x,y), r = [x,y], s = r, s = [w,v], [w,v] = [a,b].
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -340,7 +333,6 @@ TEST(AstUtils, GroundTermPropagation) {
 }
 
 TEST(AstUtils, GroundTermPropagation2) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -351,7 +343,7 @@ TEST(AstUtils, GroundTermPropagation2) {
 
                p(a,b) :- p(x,y), x = y, x = a, y = b.
            )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -369,7 +361,6 @@ TEST(AstUtils, GroundTermPropagation2) {
 
 TEST(AstUtils, ResolveGroundedAliases) {
     // load some test program
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
@@ -379,7 +370,7 @@ TEST(AstUtils, ResolveGroundedAliases) {
 
                 p(a,b) :- p(x,y), r = [x,y], s = r, s = [w,v], [w,v] = [a,b].
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -393,7 +384,6 @@ TEST(AstUtils, ResolveGroundedAliases) {
 
 TEST(AstUtils, ResolveAliasesWithTermsInAtoms) {
     // load some test program
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
@@ -403,7 +393,7 @@ TEST(AstUtils, ResolveAliasesWithTermsInAtoms) {
 
                 p(x,c) :- p(x,b), p(b,c), c = b+1, x=c+2.
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -417,7 +407,6 @@ TEST(AstUtils, ResolveAliasesWithTermsInAtoms) {
 }
 
 TEST(AstUtils, RemoveRelationCopies) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -436,7 +425,7 @@ TEST(AstUtils, RemoveRelationCopies) {
                 d(x,y) :- b(x,y), c(y,x).
 
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -448,7 +437,6 @@ TEST(AstUtils, RemoveRelationCopies) {
 }
 
 TEST(AstUtils, RemoveRelationCopiesOutput) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // load some test program
@@ -468,7 +456,7 @@ TEST(AstUtils, RemoveRelationCopiesOutput) {
                 d(x,y) :- b(x,y), c(y,x).
 
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
 
@@ -480,7 +468,6 @@ TEST(AstUtils, RemoveRelationCopiesOutput) {
 }
 
 TEST(AstUtils, ReorderClauseAtoms) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
 
@@ -490,7 +477,7 @@ TEST(AstUtils, ReorderClauseAtoms) {
                 a(x) :- b(x), c(x), 1 != 2, d(y), !e(z), c(z), e(x).
                 .output a()
             )",
-            sym, e, d);
+            e, d);
 
     AstProgram& program = *tu->getProgram();
     EXPECT_EQ(5, program.getRelations().size());

@@ -26,6 +26,7 @@
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
+#include "Util.h"
 #include <map>
 #include <memory>
 #include <stack>
@@ -201,13 +202,7 @@ bool isValidPermutation(
     rightAtoms.push_back(right->getHead());
 
     // check if a valid variable mapping exists
-    auto isVariable = [&](const AstArgument* arg) {
-        return dynamic_cast<const AstVariable*>(arg) != nullptr;
-    };
-
-    auto isConstant = [&](const AstArgument* arg) {
-        return dynamic_cast<const AstConstant*>(arg) != nullptr;
-    };
+    auto isVariable = [](const AstArgument* arg) { return dynamic_cast<const AstVariable*>(arg) != nullptr; };
 
     bool validMapping = true;
     for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
@@ -235,16 +230,16 @@ bool isValidPermutation(
                     validMapping = false;
                     break;
                 }
-            } else if (isConstant(leftArg) && isConstant(rightArg)) {
-                // check if its the same constant
-                auto leftCst = dynamic_cast<AstConstant*>(leftArg)->getRamRepresentation();
-                auto rightCst = dynamic_cast<AstConstant*>(rightArg)->getRamRepresentation();
-
-                if (leftCst != rightCst) {
-                    // constants don't match, failed!
-                    validMapping = false;
-                    break;
-                }
+            } else if (castEq<AstStringConstant>(leftArg, rightArg)) {
+                validMapping = true;
+            } else if (castEq<AstFloatConstant>(leftArg, rightArg)) {
+                validMapping = true;
+            } else if (castEq<AstUnsignedConstant>(leftArg, rightArg)) {
+                validMapping = true;
+            } else if (castEq<AstNumberConstant>(leftArg, rightArg)) {
+                validMapping = true;
+            } else if (dynamic_cast<AstNilConstant*>(leftArg) != nullptr) {
+                validMapping = dynamic_cast<AstNilConstant*>(rightArg) != nullptr;
             } else {
                 // not the same type, failed!
                 validMapping = false;

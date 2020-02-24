@@ -21,8 +21,8 @@
 #include "AstIO.h"
 #include "AstPragma.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
 #include "DebugReport.h"
@@ -112,7 +112,7 @@ void ParserDriver::addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> 
 }
 
 void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
-    const auto& name = r->getName();
+    const auto& name = r->getQualifiedName();
     if (AstRelation* prev = translationUnit->getProgram()->getRelation(name)) {
         Diagnostic err(Diagnostic::ERROR,
                 DiagnosticMessage("Redefinition of relation " + toString(name), r->getSrcLoc()),
@@ -126,10 +126,11 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
 void ParserDriver::addStore(std::unique_ptr<AstStore> d) {
     if (dynamic_cast<AstPrintSize*>(d.get()) != nullptr) {
         for (const auto& cur : translationUnit->getProgram()->getStores()) {
-            if (cur->getName() == d->getName() && dynamic_cast<AstPrintSize*>(cur.get()) != nullptr) {
+            if (cur->getQualifiedName() == d->getQualifiedName() &&
+                    dynamic_cast<AstPrintSize*>(cur.get()) != nullptr) {
                 Diagnostic err(Diagnostic::ERROR,
-                        DiagnosticMessage(
-                                "Redefinition of printsize directives for relation " + toString(d->getName()),
+                        DiagnosticMessage("Redefinition of printsize directives for relation " +
+                                                  toString(d->getQualifiedName()),
                                 d->getSrcLoc()),
                         {DiagnosticMessage("Previous definition", cur->getSrcLoc())});
                 translationUnit->getErrorReport().addDiagnostic(err);
@@ -145,7 +146,7 @@ void ParserDriver::addLoad(std::unique_ptr<AstLoad> d) {
 }
 
 void ParserDriver::addType(std::unique_ptr<AstType> type) {
-    const auto& name = type->getName();
+    const auto& name = type->getQualifiedName();
     if (const AstType* prev = translationUnit->getProgram()->getType(name)) {
         Diagnostic err(Diagnostic::ERROR,
                 DiagnosticMessage("Redefinition of type " + toString(name), type->getSrcLoc()),

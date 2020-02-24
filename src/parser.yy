@@ -199,8 +199,8 @@
 %type <std::vector<AstStore *>>             store_head
 %type <RuleBody *>                          term
 %type <AstType *>                           type
-%type <std::vector<AstTypeIdentifier>>      type_params
-%type <std::vector<AstTypeIdentifier>>      type_param_list
+%type <std::vector<AstQualifiedName>>      type_params
+%type <std::vector<AstQualifiedName>>      type_param_list
 %type <AstUnionType *>                      union_type_list
 
 /* -- Destructors -- */
@@ -280,19 +280,19 @@ unit
         for (auto* cur : $relation_decl) {
             if ((cur->getQualifier() & INPUT_RELATION) != 0) {
                 auto load = std::make_unique<AstLoad>();
-                load->setName(cur->getName());
+                load->setQualifiedName(cur->getQualifiedName());
                 load->setSrcLoc(cur->getSrcLoc());
                 driver.addLoad(std::move(load));
             }
             if ((cur->getQualifier() & OUTPUT_RELATION) != 0) {
                 auto store = std::make_unique<AstStore>();
-                store->setName(cur->getName());
+                store->setQualifiedName(cur->getQualifiedName());
                 store->setSrcLoc(cur->getSrcLoc());
                 driver.addStore(std::move(store));
             }
             if ((cur->getQualifier() & PRINTSIZE_RELATION) != 0) {
                 auto printSize = std::make_unique<AstPrintSize>();
-                printSize->setName(cur->getName());
+                printSize->setQualifiedName(cur->getQualifiedName());
                 printSize->setSrcLoc(cur->getSrcLoc());
                 driver.addStore(std::move(printSize));
             }
@@ -383,19 +383,19 @@ type
     }
   | TYPE IDENT EQUALS union_type_list {
         $$ = $union_type_list;
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
 
         $union_type_list = nullptr;
     }
   | TYPE IDENT EQUALS LBRACKET RBRACKET {
         $$ = new AstRecordType();
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS LBRACKET non_empty_record_type_list RBRACKET {
         $$ = $non_empty_record_type_list;
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
 
         $non_empty_record_type_list = nullptr;
@@ -468,14 +468,14 @@ relation_decl
 relation_list
   : IDENT {
         auto* rel = new AstRelation();
-        rel->setName($IDENT);
+        rel->setQualifiedName($IDENT);
         rel->setSrcLoc(@$);
 
         $$.push_back(rel);
     }
   | relation_list[curr_list] COMMA IDENT {
         auto* rel = new AstRelation();
-        rel->setName($IDENT);
+        rel->setQualifiedName($IDENT);
         rel->setSrcLoc(@IDENT);
 
         $$ = $curr_list;
@@ -755,7 +755,7 @@ atom
             $$->addArgument(std::unique_ptr<AstArgument>(arg));
         }
 
-        $$->setName($identifier);
+        $$->setQualifiedName($identifier);
         $$->setSrcLoc(@$);
 
         $identifier.clear();
@@ -763,7 +763,7 @@ atom
     }
   | identifier LPAREN RPAREN {
         $$ = new AstAtom();
-        $$->setName($identifier);
+        $$->setQualifiedName($identifier);
         $$->setSrcLoc(@$);
 
         $identifier.clear();
@@ -1389,7 +1389,7 @@ type_params
         $type_param_list.clear();
     }
   | %empty {
-        $$ = std::vector<AstTypeIdentifier>();
+        $$ = std::vector<AstQualifiedName>();
     }
   ;
 
@@ -1420,19 +1420,19 @@ component_body
         for (auto* rel : $relation_decl) {
             if ((rel->getQualifier() & INPUT_RELATION) != 0) {
                 auto load = std::make_unique<AstLoad>();
-                load->setName(rel->getName());
+                load->setQualifiedName(rel->getQualifiedName());
                 load->setSrcLoc(rel->getSrcLoc());
                 driver.addLoad(std::move(load));
             }
             if ((rel->getQualifier() & OUTPUT_RELATION) != 0) {
                 auto store = std::make_unique<AstStore>();
-                store->setName(rel->getName());
+                store->setQualifiedName(rel->getQualifiedName());
                 store->setSrcLoc(rel->getSrcLoc());
                 driver.addStore(std::move(store));
             }
             if ((rel->getQualifier() & PRINTSIZE_RELATION) != 0) {
                 auto printSize = std::make_unique<AstPrintSize>();
-                printSize->setName(rel->getName());
+                printSize->setQualifiedName(rel->getQualifiedName());
                 printSize->setSrcLoc(rel->getSrcLoc());
                 driver.addStore(std::move(printSize));
             }
@@ -1627,7 +1627,7 @@ io_directive_list
 io_relation_list
   : identifier {
         auto* io = new AstIO();
-        io->setName($identifier);
+        io->setQualifiedName($identifier);
         io->setSrcLoc(@identifier);
 
         $$.push_back(io);
@@ -1636,7 +1636,7 @@ io_relation_list
     }
   | io_relation_list[curr_list] COMMA identifier {
         auto* io = new AstIO();
-        io->setName($identifier);
+        io->setQualifiedName($identifier);
         io->setSrcLoc(@identifier);
 
         $$ = $curr_list;

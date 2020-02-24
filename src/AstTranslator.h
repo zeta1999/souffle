@@ -17,7 +17,7 @@
 #pragma once
 
 #include "AstArgument.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "AuxArityAnalysis.h"
 #include "RamRelation.h"
 #include "RecordTable.h"
@@ -297,8 +297,8 @@ private:
     void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
 
     /** converts the given relation identifier into a relation name */
-    std::string getRelationName(const AstRelationIdentifier& id) {
-        return toString(join(id.getNames(), "."));
+    std::string getRelationName(const AstQualifiedName& id) {
+        return toString(join(id.getQualifiers(), "."));
     }
 
     void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,

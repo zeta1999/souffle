@@ -17,8 +17,8 @@
 #include "AstComponentChecker.h"
 #include "AstComponent.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
 #include "ComponentLookupAnalysis.h"
@@ -45,7 +45,7 @@ bool AstComponentChecker::transform(AstTranslationUnit& translationUnit) {
 const AstComponent* AstComponentChecker::checkComponentNameReference(ErrorReport& report,
         const AstComponent* enclosingComponent, const ComponentLookup& componentLookup,
         const std::string& name, const SrcLocation& loc, const TypeBinding& binding) {
-    const AstTypeIdentifier& forwarded = binding.find(name);
+    const AstQualifiedName& forwarded = binding.find(name);
     if (!forwarded.empty()) {
         // for forwarded types we do not check anything, because we do not know
         // what the actual type will be
@@ -104,7 +104,7 @@ void AstComponentChecker::checkComponent(ErrorReport& report, const AstComponent
     // Type parameter for us here is unknown type that will be bound at the template
     // instantiation time.
     auto parentTypeParameters = component.getComponentType()->getTypeParameters();
-    std::vector<AstTypeIdentifier> actualParams(parentTypeParameters.size(), "<type parameter>");
+    std::vector<AstQualifiedName> actualParams(parentTypeParameters.size(), "<type parameter>");
     TypeBinding activeBinding = binding.extend(parentTypeParameters, actualParams);
 
     // check parents of component
@@ -139,18 +139,20 @@ void AstComponentChecker::checkComponent(ErrorReport& report, const AstComponent
 
     // check overrides
     for (const AstRelation* relation : component.getRelations()) {
-        if (component.getOverridden().count(relation->getName().getNames()[0]) != 0u) {
-            report.addError("Override of non-inherited relation " + relation->getName().getNames()[0] +
-                                    " in component " + component.getComponentType()->getName(),
+        if (component.getOverridden().count(relation->getQualifiedName().getQualifiers()[0]) != 0u) {
+            report.addError("Override of non-inherited relation " +
+                                    relation->getQualifiedName().getQualifiers()[0] + " in component " +
+                                    component.getComponentType()->getName(),
                     component.getSrcLoc());
         }
     }
     for (const AstComponent* parent : parents) {
         for (const AstRelation* relation : parent->getRelations()) {
-            if ((component.getOverridden().count(relation->getName().getNames()[0]) != 0u) &&
+            if ((component.getOverridden().count(relation->getQualifiedName().getQualifiers()[0]) != 0u) &&
                     !relation->isOverridable()) {
-                report.addError("Override of non-overridable relation " + relation->getName().getNames()[0] +
-                                        " in component " + component.getComponentType()->getName(),
+                report.addError("Override of non-overridable relation " +
+                                        relation->getQualifiedName().getQualifiers()[0] + " in component " +
+                                        component.getComponentType()->getName(),
                         component.getSrcLoc());
             }
         }
@@ -195,14 +197,14 @@ void AstComponentChecker::checkComponentNamespaces(ErrorReport& report, const As
 
     // Find all names and report redeclarations as we go.
     for (const auto& type : program.getTypes()) {
-        const std::string name = toString(type->getName());
+        const std::string name = toString(type->getQualifiedName());
         if (names.count(name) == 0u) {
             names[name] = type->getSrcLoc();
         }
     }
 
     for (const auto& rel : program.getRelations()) {
-        const std::string name = toString(rel->getName());
+        const std::string name = toString(rel->getQualifiedName());
         if (names.count(name) == 0u) {
             names[name] = rel->getSrcLoc();
         }

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "AstNode.h"
+#include "AstQualifiedName.h"
 #include "RamTypes.h"
 
 #include <iostream>
@@ -28,110 +29,20 @@
 namespace souffle {
 
 /**
- * The type of identifier utilized for referencing types. Type
- * name identifiers are hierarchically qualified names, e.g.
- *
- *          problem.graph.edge
- *
- * TODO (b-scholz): merge with AstNameIdentifier??
- *                  put it into own header file
- *
- */
-class AstTypeIdentifier {
-public:
-    // -- constructors --
-
-    AstTypeIdentifier() : names() {}
-
-    AstTypeIdentifier(const std::string& name) : names({name}) {}
-
-    AstTypeIdentifier(const char* name) : AstTypeIdentifier(std::string(name)) {}
-
-    AstTypeIdentifier(const std::vector<std::string> names) : names(names) {}
-
-    AstTypeIdentifier(const AstTypeIdentifier&) = default;
-    AstTypeIdentifier(AstTypeIdentifier&&) = default;
-
-    // -- assignment operators --
-
-    AstTypeIdentifier& operator=(const AstTypeIdentifier&) = default;
-    AstTypeIdentifier& operator=(AstTypeIdentifier&&) = default;
-
-    // -- mutators --
-
-    void append(const std::string& name) {
-        names.push_back(name);
-    }
-
-    void prepend(const std::string& name) {
-        names.insert(names.begin(), name);
-    }
-
-    // -- getters and setters --
-
-    bool empty() const {
-        return names.empty();
-    }
-
-    const std::vector<std::string>& getNames() const {
-        return names;
-    }
-
-    // -- comparison operators --
-
-    bool operator==(const AstTypeIdentifier& other) const {
-        return names == other.names;
-    }
-
-    bool operator!=(const AstTypeIdentifier& other) const {
-        return !(*this == other);
-    }
-
-    bool operator<(const AstTypeIdentifier& other) const {
-        return std::lexicographical_compare(
-                names.begin(), names.end(), other.names.begin(), other.names.end());
-    }
-
-    void print(std::ostream& out) const {
-        out << join(names, ".");
-    }
-
-    friend std::ostream& operator<<(std::ostream& out, const AstTypeIdentifier& id) {
-        id.print(out);
-        return out;
-    }
-
-private:
-    /** The list of names forming this identifier. */
-    std::vector<std::string> names;
-};
-
-/**
- * A overloaded operator to add a new prefix to a given relation identifier.
- */
-inline AstTypeIdentifier operator+(const std::string& name, const AstTypeIdentifier& id) {
-    AstTypeIdentifier res = id;
-    res.prepend(name);
-    return res;
-}
-
-/**
  *  @class Type
  *  @brief An abstract base class for types within the AST.
- *
- *  TODO (b-scholz): Move to AstAbstract.h
  */
 class AstType : public AstNode {
 public:
-    AstType(AstTypeIdentifier name = {""}) : name(std::move(name)) {}
+    AstType(AstQualifiedName name = {""}) : name(std::move(name)) {}
 
     /** get type name */
-    const AstTypeIdentifier& getName() const {
+    const AstQualifiedName& getQualifiedName() const {
         return name;
     }
 
     /** set type name */
-    void setName(const AstTypeIdentifier& name) {
+    void setQualifiedName(const AstQualifiedName& name) {
         this->name = name;
     }
 
@@ -139,7 +50,7 @@ public:
 
 private:
     /** type name */
-    AstTypeIdentifier name;
+    AstQualifiedName name;
 };
 
 /**
@@ -150,11 +61,11 @@ private:
 class AstPrimitiveType : public AstType {
 public:
     /** Creates a new primitive type */
-    AstPrimitiveType(const AstTypeIdentifier& name, TypeAttribute type) : AstType(name), type(type) {}
+    AstPrimitiveType(const AstQualifiedName& name, TypeAttribute type) : AstType(name), type(type) {}
 
     /** Prints a summary of this type to the given stream */
     void print(std::ostream& os) const override {
-        os << ".type " << getName() << (type == TypeAttribute::Signed ? "= number" : "");
+        os << ".type " << getQualifiedName() << (type == TypeAttribute::Signed ? "= number" : "");
     }
 
     /** Tests whether this type is a numeric type */
@@ -168,7 +79,7 @@ public:
     }
 
     AstPrimitiveType* clone() const override {
-        auto res = new AstPrimitiveType(getName(), type);
+        auto res = new AstPrimitiveType(getQualifiedName(), type);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -177,7 +88,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstPrimitiveType*>(&node));
         const auto& other = static_cast<const AstPrimitiveType&>(node);
-        return getName() == other.getName() && type == other.type;
+        return getQualifiedName() == other.getQualifiedName() && type == other.type;
     }
 
 private:
@@ -193,21 +104,21 @@ private:
 class AstUnionType : public AstType {
 public:
     void print(std::ostream& os) const override {
-        os << ".type " << getName() << " = " << join(types, " | ");
+        os << ".type " << getQualifiedName() << " = " << join(types, " | ");
     }
 
     /** Obtains a reference to the list element types */
-    const std::vector<AstTypeIdentifier>& getTypes() const {
+    const std::vector<AstQualifiedName>& getTypes() const {
         return types;
     }
 
     /** Adds another element type */
-    void add(const AstTypeIdentifier& type) {
+    void add(const AstQualifiedName& type) {
         types.push_back(type);
     }
 
     /** Set variant type */
-    void setVariantType(size_t idx, const AstTypeIdentifier& type) {
+    void setVariantType(size_t idx, const AstQualifiedName& type) {
         assert(idx < types.size() && "union variant index out of bounds");
         types[idx] = type;
     }
@@ -215,7 +126,7 @@ public:
     AstUnionType* clone() const override {
         auto res = new AstUnionType();
         res->setSrcLoc(getSrcLoc());
-        res->setName(getName());
+        res->setQualifiedName(getQualifiedName());
         res->types = types;
         return res;
     }
@@ -224,12 +135,12 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstUnionType*>(&node));
         const auto& other = static_cast<const AstUnionType&>(node);
-        return getName() == other.getName() && types == other.types;
+        return getQualifiedName() == other.getQualifiedName() && types == other.types;
     }
 
 private:
     /** The list of types aggregated by this union type */
-    std::vector<AstTypeIdentifier> types;
+    std::vector<AstQualifiedName> types;
 };
 
 /**
@@ -242,8 +153,8 @@ class AstRecordType : public AstType {
 public:
     /** record field */
     struct Field {
-        std::string name;        // < the field name
-        AstTypeIdentifier type;  // < the field type
+        std::string name;       // < the field name
+        AstQualifiedName type;  // < the field type
 
         bool operator==(const Field& other) const {
             return this == &other || (name == other.name && type == other.type);
@@ -251,7 +162,7 @@ public:
     };
 
     void print(std::ostream& os) const override {
-        os << ".type " << getName() << " = "
+        os << ".type " << getQualifiedName() << " = "
            << "[";
         for (unsigned i = 0; i < fields.size(); i++) {
             if (i != 0) {
@@ -265,7 +176,7 @@ public:
     }
 
     /** add field to record type */
-    void add(const std::string& name, const AstTypeIdentifier& type) {
+    void add(const std::string& name, const AstQualifiedName& type) {
         fields.push_back(Field({name, type}));
     }
 
@@ -275,7 +186,7 @@ public:
     }
 
     /** set field type */
-    void setFieldType(size_t idx, const AstTypeIdentifier& type) {
+    void setFieldType(size_t idx, const AstQualifiedName& type) {
         assert(idx < fields.size() && "record field index out of bounds");
         fields[idx].type = type;
     }
@@ -283,7 +194,7 @@ public:
     AstRecordType* clone() const override {
         auto res = new AstRecordType();
         res->setSrcLoc(getSrcLoc());
-        res->setName(getName());
+        res->setQualifiedName(getQualifiedName());
         res->fields = fields;
         return res;
     }
@@ -292,7 +203,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstRecordType*>(&node));
         const auto& other = static_cast<const AstRecordType&>(node);
-        return getName() == other.getName() && fields == other.fields;
+        return getQualifiedName() == other.getQualifiedName() && fields == other.fields;
     }
 
 private:

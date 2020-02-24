@@ -120,9 +120,22 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
                             }
                         }
                     }
+
                     if (onlyVars) {
-                        // all arguments are either variables or records containing variables
-                        isDirectAliasOf[cl->getHead()->getName()] = atom->getName();
+                        bool distinctHeadVars = true;
+                        std::set<std::string> headVars;
+                        for (auto&& arg : cl->getHead()->getArguments()) {
+                            if (auto p = dynamic_cast<const AstVariable*>(arg))
+                                distinctHeadVars &= headVars.insert(p->getName()).second;
+
+                            if (!distinctHeadVars) break;
+                        }
+
+                        // all of the head variables are distinct, no unification in the head
+                        if (distinctHeadVars) {
+                            // all arguments are either variables or records containing variables
+                            isDirectAliasOf[cl->getHead()->getName()] = atom->getName();
+                        }
                     }
                 }
             }

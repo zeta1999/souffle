@@ -1,0 +1,13 @@
+// verify the relation copy eraser doesn't inline relations with unifications in their head.
+
+.decl A(x: number, y: number)
+A(0, 0).
+A(1, 0).
+
+.decl B(x: number, y: number)
+B(z, z) :- A(z, z).
+
+.decl C(a: number, b: number)
+.output C
+C(a, b) :- B(a, b).
+

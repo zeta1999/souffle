@@ -81,7 +81,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                 suppressedRelations.end()) {
             // mute all relations
             for (AstRelation* rel : program.getRelations()) {
-                rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);
+                rel->addQualifier(AstRelationQualifier::SUPPRESSED);
             }
         } else {
             // mute only the given relations (if they exist)
@@ -96,7 +96,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
                     // update suppressed qualifier if the relation is found
                     if (AstRelation* rel = program.getRelation(relid)) {
-                        rel->setQualifier(rel->getQualifier() | SUPPRESSED_RELATION);
+                        rel->addQualifier(AstRelationQualifier::SUPPRESSED);
                     }
                 }
             }

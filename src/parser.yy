@@ -17,7 +17,7 @@
 %require "3.0.2"
 
 %defines
-%define parser_class_name {parser}
+%define api.parser.class {parser}
 %define api.token.constructor
 %define api.value.type variant
 %define parse.assert
@@ -191,7 +191,7 @@
             <std::string, std::string>>>    non_empty_key_value_pairs
 %type <AstRecordType *>                     non_empty_record_type_list
 %type <AstPragma *>                         pragma
-%type <uint32_t>                            qualifiers
+%type <std::set<AstRelationQualifier>>      qualifiers
 %type <std::vector<AstRelation *>>          relation_decl
 %type <std::vector<AstRelation *>>          relation_list
 %type <std::vector<AstClause *>>            rule
@@ -278,19 +278,19 @@ unit
     }
   | unit relation_decl {
         for (auto* cur : $relation_decl) {
-            if ((cur->getQualifier() & INPUT_RELATION) != 0) {
+            if (cur->hasQualifier(AstRelationQualifier::INPUT)) {
                 auto load = std::make_unique<AstLoad>();
                 load->setName(cur->getName());
                 load->setSrcLoc(cur->getSrcLoc());
                 driver.addLoad(std::move(load));
             }
-            if ((cur->getQualifier() & OUTPUT_RELATION) != 0) {
+            if (cur->hasQualifier(AstRelationQualifier::OUTPUT)) {
                 auto store = std::make_unique<AstStore>();
                 store->setName(cur->getName());
                 store->setSrcLoc(cur->getSrcLoc());
                 driver.addStore(std::move(store));
             }
-            if ((cur->getQualifier() & PRINTSIZE_RELATION) != 0) {
+            if (cur->hasQualifier(AstRelationQualifier::PRINTSIZE)) {
                 auto printSize = std::make_unique<AstPrintSize>();
                 printSize->setName(cur->getName());
                 printSize->setSrcLoc(cur->getSrcLoc());
@@ -445,7 +445,9 @@ union_type_list
 relation_decl
   : DECL relation_list LPAREN RPAREN qualifiers {
         for (auto* rel : $relation_list) {
-            rel->setQualifier($qualifiers);
+            for (auto q : $qualifiers) {
+                rel->addQualifier(q);
+            }
         }
         $$ = $relation_list;
 
@@ -453,7 +455,9 @@ relation_decl
     }
   | DECL relation_list LPAREN non_empty_attributes RPAREN qualifiers {
         for (auto* rel : $relation_list) {
-            rel->setQualifier($qualifiers);
+            for (auto q : $qualifiers) {
+                rel->addQualifier(q);
+            }
             for (auto* attr : $non_empty_attributes) {
                 rel->addAttribute(std::unique_ptr<AstAttribute>(attr->clone()));
             }
@@ -511,49 +515,63 @@ non_empty_attributes
 qualifiers
   : qualifiers OUTPUT_QUALIFIER {
         driver.warning(@2, "Deprecated output qualifier used");
-        if($1 & OUTPUT_RELATION)
+        if ($1.find(AstRelationQualifier::OUTPUT) != $1.end())
             driver.error(@2, "output qualifier already set");
-        $$ = $1 | OUTPUT_RELATION;
+        $1.insert(AstRelationQualifier::OUTPUT);
+        $$ = $1;
     }
   | qualifiers INPUT_QUALIFIER {
         driver.warning(@2, "Deprecated input qualifier was used");
-        if($1 & INPUT_RELATION)
+        if ($1.find(AstRelationQualifier::INPUT) != $1.end())
             driver.error(@2, "input qualifier already set");
-        $$ = $1 | INPUT_RELATION;
+        $1.insert(AstRelationQualifier::INPUT);
+        $$ = $1;
     }
   | qualifiers PRINTSIZE_QUALIFIER {
         driver.warning(@2, "Deprecated printsize qualifier was used");
-        if($1 & PRINTSIZE_RELATION)
+        if ($1.find(AstRelationQualifier::PRINTSIZE) != $1.end())
             driver.error(@2, "printsize qualifier already set");
-        $$ = $1 | PRINTSIZE_RELATION;
+        $1.insert(AstRelationQualifier::PRINTSIZE);
+        $$ = $1;
     }
   | qualifiers OVERRIDABLE_QUALIFIER {
-        if($1 & OVERRIDABLE_RELATION)
+        if ($1.find(AstRelationQualifier::OVERRIDABLE) != $1.end())
             driver.error(@2, "overridable qualifier already set");
-        $$ = $1 | OVERRIDABLE_RELATION;
+        $1.insert(AstRelationQualifier::OVERRIDABLE);
+        $$ = $1;
     }
   | qualifiers INLINE_QUALIFIER {
-        if($1 & INLINE_RELATION)
+        if ($1.find(AstRelationQualifier::INLINE) != $1.end())
             driver.error(@2, "inline qualifier already set");
-        $$ = $1 | INLINE_RELATION;
+        $1.insert(AstRelationQualifier::INLINE);
+        $$ = $1;
     }
   | qualifiers BRIE_QUALIFIER {
-        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
-            driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $$ = $1 | BRIE_RELATION;
+        if ($1.find(AstRelationQualifier::BRIE) != $1.end() ||
+            $1.find(AstRelationQualifier::BTREE) != $1.end() ||
+            $1.find(AstRelationQualifier::EQREL) != $1.end())
+                driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $1.insert(AstRelationQualifier::BRIE);
+        $$ = $1;
     }
   | qualifiers BTREE_QUALIFIER {
-        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
-            driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $$ = $1 | BTREE_RELATION;
+        if ($1.find(AstRelationQualifier::BRIE) != $1.end() ||
+            $1.find(AstRelationQualifier::BTREE) != $1.end() ||
+            $1.find(AstRelationQualifier::EQREL) != $1.end())
+                driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $1.insert(AstRelationQualifier::BTREE);
+        $$ = $1;
     }
   | qualifiers EQREL_QUALIFIER {
-        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
-            driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $$ = $1 | EQREL_RELATION;
+        if ($1.find(AstRelationQualifier::BRIE) != $1.end() ||
+            $1.find(AstRelationQualifier::BTREE) != $1.end() ||
+            $1.find(AstRelationQualifier::EQREL) != $1.end())
+                driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $1.insert(AstRelationQualifier::EQREL);
+        $$ = $1;
     }
   | %empty {
-        $$ = 0;
+        $$ = std::set<AstRelationQualifier>();
     }
   ;
 
@@ -1418,19 +1436,19 @@ component_body
   | component_body[comp] relation_decl {
         $$ = $comp;
         for (auto* rel : $relation_decl) {
-            if ((rel->getQualifier() & INPUT_RELATION) != 0) {
+            if (rel->hasQualifier(AstRelationQualifier::INPUT)) {
                 auto load = std::make_unique<AstLoad>();
                 load->setName(rel->getName());
                 load->setSrcLoc(rel->getSrcLoc());
                 driver.addLoad(std::move(load));
             }
-            if ((rel->getQualifier() & OUTPUT_RELATION) != 0) {
+            if (rel->hasQualifier(AstRelationQualifier::OUTPUT)) {
                 auto store = std::make_unique<AstStore>();
                 store->setName(rel->getName());
                 store->setSrcLoc(rel->getSrcLoc());
                 driver.addStore(std::move(store));
             }
-            if ((rel->getQualifier() & PRINTSIZE_RELATION) != 0) {
+            if (rel->hasQualifier(AstRelationQualifier::PRINTSIZE)) {
                 auto printSize = std::make_unique<AstPrintSize>();
                 printSize->setName(rel->getName());
                 printSize->setSrcLoc(rel->getSrcLoc());

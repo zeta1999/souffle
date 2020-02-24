@@ -924,8 +924,8 @@ public:
         memoryUsage({}, {}, height);
     }
 
-    void memoryUsage(
-            std::chrono::microseconds /* endTime */, std::chrono::microseconds /* startTime */, uint32_t height = 20) {
+    void memoryUsage(std::chrono::microseconds /* endTime */, std::chrono::microseconds /* startTime */,
+            uint32_t height = 20) {
         uint32_t width = getTermWidth() - 8;
         uint64_t maxMaxRSS = 0;
 

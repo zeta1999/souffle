@@ -611,65 +611,42 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                 }
             }
         }
-    } else if (dynamic_cast<const AstFunctor*>(arg) != nullptr) {
-        if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
-            size_t i = 0;
-            for (auto funArg : functor->getArguments()) {
-                // TODO (azreika): use unique pointers
-                // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, funArg);
-                if (argumentVersions.isValid()) {
-                    changed = true;
-                    for (AstArgument* newArgVersion : argumentVersions.getVector()) {
-                        // same functor but with new argument version
-                        std::vector<std::unique_ptr<AstArgument>> argsCopy;
-                        size_t j = 0;
-                        for (auto& functorArg : functor->getArguments()) {
-                            if (j == i) {
-                                argsCopy.emplace_back(newArgVersion);
-                            } else {
-                                argsCopy.emplace_back(functorArg->clone());
-                            }
-                            ++j;
+    } else if (const auto* functor = dynamic_cast<const AstFunctor*>(arg)) {
+        size_t i = 0;
+        for (auto funArg : functor->getArguments()) {
+            // TODO (azreika): use unique pointers
+            // try inlining each argument from left to right
+            NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, funArg);
+            if (argumentVersions.isValid()) {
+                changed = true;
+                for (AstArgument* newArgVersion : argumentVersions.getVector()) {
+                    // same functor but with new argument version
+                    std::vector<std::unique_ptr<AstArgument>> argsCopy;
+                    size_t j = 0;
+                    for (auto& functorArg : functor->getArguments()) {
+                        if (j == i) {
+                            argsCopy.emplace_back(newArgVersion);
+                        } else {
+                            argsCopy.emplace_back(functorArg->clone());
                         }
+                        ++j;
+                    }
+                    if (const auto* intrFunc = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
                         auto* newFunctor =
-                                new AstIntrinsicFunctor(functor->getFunction(), std::move(argsCopy));
+                                new AstIntrinsicFunctor(intrFunc->getFunction(), std::move(argsCopy));
                         newFunctor->setSrcLoc(functor->getSrcLoc());
                         versions.push_back(newFunctor);
-                    }
-                    // only one step at a time
-                    break;
-                }
-                ++i;
-            }
-        } else if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-            size_t i = 0;
-            for (auto udfArg : udf->getArguments()) {
-                // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, udfArg);
-                if (argumentVersions.isValid()) {
-                    changed = true;
-                    for (AstArgument* newArgVersion : argumentVersions.getVector()) {
-                        // same functor but with new argument version
-                        std::vector<std::unique_ptr<AstArgument>> argsCopy;
-                        size_t j = 0;
-                        for (auto& udfArg : udf->getArguments()) {
-                            if (j == i) {
-                                argsCopy.emplace_back(newArgVersion);
-                            } else {
-                                argsCopy.emplace_back(udfArg->clone());
-                            }
-                            ++j;
-                        }
-                        auto* newFunctor = new AstUserDefinedFunctor(udf->getName(), std::move(argsCopy));
-                        newFunctor->setSrcLoc(udf->getSrcLoc());
+                    } else if (const auto* userFunc = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+                        auto* newFunctor =
+                                new AstUserDefinedFunctor(userFunc->getName(), std::move(argsCopy));
+                        newFunctor->setSrcLoc(userFunc->getSrcLoc());
                         versions.push_back(newFunctor);
                     }
-                    // only one step at a time
-                    break;
                 }
-                ++i;
+                // only one step at a time
+                break;
             }
+            ++i;
         }
     } else if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
         NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, cast->getValue());
@@ -739,8 +716,16 @@ NullableVector<AstAtom*> getInlinedAtom(AstProgram& program, AstAtom& atom) {
 
             // Create a new atom per new version of the argument
             for (AstArgument* newArgument : argumentVersions.getVector()) {
-                AstAtom* newAtom = atom.clone();
-                newAtom->setArgument(i, std::unique_ptr<AstArgument>(newArgument));
+                auto args = atom.getArguments();
+                std::vector<std::unique_ptr<AstArgument>> newArgs;
+                for (size_t j = 0; j < args.size(); j++) {
+                    if (j == i) {
+                        newArgs.emplace_back(newArgument);
+                    } else {
+                        newArgs.emplace_back(args[j]->clone());
+                    }
+                }
+                auto* newAtom = new AstAtom(atom.getName(), std::move(newArgs), atom.getSrcLoc());
                 versions.push_back(newAtom);
             }
         }

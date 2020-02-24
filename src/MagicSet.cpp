@@ -44,12 +44,6 @@ bool isEqualAdornment(const AstRelationIdentifier& pred1, const std::string& ado
     return ((pred1 == pred2) && (adorn1 == adorn2));
 }
 
-// checks whether an element is contained within a set
-template <class T>
-bool contains(std::set<T> set, T element) {
-    return (set.find(element) != set.end());
-}
-
 // checks whether a given adorned predicate is contained within a set
 bool contains(std::set<AdornedPredicate> adornedPredicates, const AstRelationIdentifier& atomName,
         const std::string& atomAdornment) {
@@ -1160,7 +1154,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             AstClause* newClause = clause->clone();
             newClause->getHead()->setName(newRelName);
             // reorder atoms based on SIPS ordering
-            newClause->reorderAtoms(reorderOrdering(adornedClause.getOrdering()));
+            AstClause* tmp = reorderAtoms(newClause, reorderOrdering(adornedClause.getOrdering()));
+            delete newClause;
+            newClause = tmp;
 
             // get corresponding adornments for each body atom
             std::vector<std::string> bodyAdornment =
@@ -1369,7 +1365,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 newClauseOrder[k] = k + 1;
             }
             newClauseOrder[originalNumAtoms] = 0;
-            newClause->reorderAtoms(reorderOrdering(newClauseOrder));
+            tmp = reorderAtoms(newClause, reorderOrdering(newClauseOrder));
+            delete newClause;
+            newClause = tmp;
 
             // add the clause to the program and the set of new clauses
             newClause->setSrcLoc(nextSrcLoc(newClause->getSrcLoc()));

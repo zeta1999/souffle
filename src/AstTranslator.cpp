@@ -308,13 +308,16 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {
+            // Sanity check.
+            assert(udf.getArguments().size() == udf.getArgsTypes().size());
+
             std::vector<std::unique_ptr<RamExpression>> values;
             for (const auto& cur : udf.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
-            const AstFunctorDeclaration* decl = translator.program->getFunctorDeclaration(udf.getName());
-            std::string type = decl->getType();
-            return std::make_unique<RamUserDefinedOperator>(udf.getName(), type, std::move(values));
+
+            return std::make_unique<RamUserDefinedOperator>(
+                    udf.getName(), udf.getArgsTypes(), udf.getReturnType(), std::move(values));
         }
 
         std::unique_ptr<RamExpression> visitCounter(const AstCounter&) override {
@@ -371,8 +374,10 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             size_t auxiliaryArity = translator.getEvaluationArity(atom);
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
+
+            auto args = atom->getArguments();
             for (size_t i = 0; i < arity; i++) {
-                values.push_back(translator.translateValue(atom->getArgument(i), index));
+                values.push_back(translator.translateValue(args[i], index));
             }
             for (size_t i = 0; i < auxiliaryArity; i++) {
                 values.push_back(std::make_unique<RamUndefValue>());
@@ -391,8 +396,9 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             int auxiliaryArity = translator.getEvaluationArity(atom);
             int arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
-            for (int i = 0; i < arity; i++) {
-                values.push_back(translator.translateValue(atom->getArgument(i), index));
+            auto args = atom->getArguments();
+            for (size_t i = 0; i < arity; i++) {
+                values.push_back(translator.translateValue(args[i], index));
             }
             // we don't care about the provenance columns when doing the existence check
             if (Global::config().has("provenance")) {
@@ -400,7 +406,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                 values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
                 for (int h = 0; h < auxiliaryArity - 1; h++) {
-                    values.push_back(translator.translateValue(atom->getArgument(arity + h + 1), index));
+                    values.push_back(translator.translateValue(args[arity + h + 1], index));
                 }
             }
             return std::make_unique<RamNegation>(std::make_unique<RamProvenanceExistenceCheck>(
@@ -435,11 +441,10 @@ std::unique_ptr<AstClause> AstTranslator::ClauseTranslator::getReorderedClause(
             [](unsigned int i) -> unsigned int { return i - 1; });
 
     // re-order atoms
-    reorderedClause->reorderAtoms(newOrder);
+    reorderedClause.reset(reorderAtoms(reorderedClause.get(), newOrder));
 
     // clear other order and fix plan
     reorderedClause->clearExecutionPlan();
-    reorderedClause->setFixedExecutionPlan();
 
     return reorderedClause;
 }
@@ -520,10 +525,12 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
         // bind aggregator variables to locations
         assert(nullptr != dynamic_cast<const AstAtom*>(cur.getBodyLiterals()[0]));
         const AstAtom& atom = static_cast<const AstAtom&>(*cur.getBodyLiterals()[0]);
-        for (size_t pos = 0; pos < atom.getArguments().size(); ++pos) {
-            if (const auto* var = dynamic_cast<const AstVariable*>(atom.getArgument(pos))) {
+        size_t pos = 0;
+        for (auto arg : atom.getArguments()) {
+            if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
                 valueIndex.addVarReference(*var, aggLoc, (int)pos, translator.translateRelation(&atom));
             }
+            ++pos;
         };
 
         // and remember aggregator
@@ -556,10 +563,11 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
         auto arity = head->getArity() - auxiliaryArity;
         std::vector<std::unique_ptr<RamExpression>> values;
         bool isVolatile = true;
+        auto args = head->getArguments();
 
         // add args for original tuple
         for (size_t i = 0; i < arity; i++) {
-            auto arg = head->getArgument(i);
+            auto arg = args[i];
             // don't add counters
             visitDepthFirst(*arg, [&](const AstCounter&) { isVolatile = false; });
             values.push_back(translator.translateValue(arg, valueIndex));
@@ -690,14 +698,16 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // add constraints
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
-                if (auto* agg = dynamic_cast<AstAggregator*>(atom->getArgument(pos))) {
+            size_t pos = 0;
+            for (auto arg : atom->getArguments()) {
+                if (auto* agg = dynamic_cast<AstAggregator*>(arg)) {
                     auto loc = valueIndex.getAggregatorLocation(*agg);
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                                              std::make_unique<RamTupleElement>(curLevel, pos),
                                                              makeRamTupleElement(loc)),
                             std::move(op));
                 }
+                ++pos;
             }
         }
     }
@@ -755,10 +765,11 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         // translate arguments's of atom (if exists) to conditions
         if (atom != nullptr) {
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
+            size_t pos = 0;
+            for (auto arg : atom->getArguments()) {
                 // variable bindings are issued differently since we don't want self
                 // referential variable bindings
-                if (const auto* var = dynamic_cast<const AstVariable*>(atom->getArgument(pos))) {
+                if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
                     for (const Location& loc :
                             valueIndex.getVariableReferences().find(var->getName())->second) {
                         if (level != loc.identifier || (int)pos != loc.element) {
@@ -769,9 +780,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                             break;
                         }
                     }
-                } else if (atom->getArgument(pos) != nullptr) {
-                    std::unique_ptr<RamExpression> value =
-                            translator.translateValue(atom->getArgument(pos), valueIndex);
+                } else if (arg != nullptr) {
+                    std::unique_ptr<RamExpression> value = translator.translateValue(arg, valueIndex);
                     if (value != nullptr && !isRamUndefValue(value.get())) {
                         std::unique_ptr<RamCondition> newCondition =
                                 std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
@@ -779,6 +789,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                         addAggCondition(newCondition);
                     }
                 }
+                ++pos;
             }
         }
 
@@ -810,14 +821,16 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
         if (const auto* atom = dynamic_cast<const AstAtom*>(cur)) {
             // add constraints
-            for (size_t pos = 0; pos < atom->argSize(); ++pos) {
-                if (auto* c = dynamic_cast<AstConstant*>(atom->getArgument(pos))) {
+            size_t pos = 0;
+            for (auto arg : atom->getArguments()) {
+                if (auto* c = dynamic_cast<AstConstant*>(arg)) {
                     op = std::make_unique<RamFilter>(
                             std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<RamTupleElement>(level, pos),
                                     std::make_unique<RamSignedConstant>(c->getRamRepresentation())),
                             std::move(op));
                 }
+                ++pos;
             }
 
             // check whether all arguments are unnamed variables
@@ -1171,7 +1184,15 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                 // increment version counter
                 version++;
             }
-            assert(cl->getExecutionPlan() == nullptr);
+
+            if (cl->getExecutionPlan() != nullptr) {
+                // ensure that all required versions have been created, as expected
+                int maxVersion = -1;
+                for (auto const& cur : cl->getExecutionPlan()->getOrders()) {
+                    maxVersion = std::max(cur.first, maxVersion);
+                }
+                assert(version > maxVersion && "missing clause versions");
+            }
         }
 
         // if there was no rule, continue
@@ -1235,8 +1256,9 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
     // add constraint for each argument in head of atom
     AstAtom* head = intermediateClause->getHead();
     size_t auxiliaryArity = auxArityAnalysis->getArity(head);
-    for (size_t i = 0; i < head->getArguments().size() - auxiliaryArity; i++) {
-        auto arg = head->getArgument(i);
+    auto args = head->getArguments();
+    for (size_t i = 0; i < head->getArity() - auxiliaryArity; i++) {
+        auto arg = args[i];
 
         if (auto var = dynamic_cast<AstVariable*>(arg)) {
             intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
@@ -1263,9 +1285,9 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
                 auto arity = atom->getArity();
                 auto auxiliaryArity = auxArityAnalysis->getArity(atom);
                 auto literalLevelIndex = arity - auxiliaryArity + 1;
-
+                auto atomArgs = atom->getArguments();
                 intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
-                        std::unique_ptr<AstArgument>(atom->getArgument(literalLevelIndex)->clone()),
+                        std::unique_ptr<AstArgument>(atomArgs[literalLevelIndex]->clone()),
                         std::make_unique<AstSubroutineArgument>(levelIndex)));
             }
             levelIndex++;
@@ -1279,10 +1301,10 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
         for (auto lit : bodyLiterals) {
             if (auto atom = dynamic_cast<AstAtom*>(lit)) {
                 auto arity = atom->getArity();
-
+                auto atomArgs = atom->getArguments();
                 // arity - 1 is the level number in body atoms
                 intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::LT,
-                        std::unique_ptr<AstArgument>(atom->getArgument(arity - 1)->clone()),
+                        std::unique_ptr<AstArgument>(atomArgs[arity - 1]->clone()),
                         std::make_unique<AstSubroutineArgument>(levelIndex)));
             }
         }
@@ -1381,7 +1403,6 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             size_t auxiliaryArity = auxArityAnalysis->getArity(atom);
             // get a RamRelationReference
             auto relRef = translateRelation(atom);
-
             // construct a query
             std::vector<std::unique_ptr<RamExpression>> query;
 
@@ -1389,9 +1410,10 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             VariablesToArguments varsToArgs(uniqueVariables);
             atom->apply(varsToArgs);
 
+            auto atomArgs = atom->getArguments();
             // add each value (subroutine argument) to the search query
             for (size_t i = 0; i < atom->getArity() - auxiliaryArity; i++) {
-                auto arg = atom->getArgument(i);
+                auto arg = atomArgs[i];
                 query.push_back(translateValue(arg, ValueIndex()));
             }
 
@@ -1616,11 +1638,12 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             }
 
             std::string subroutineLabel =
-                    relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_subproof";
+                    relName.str() + "_" + std::to_string(getClauseNum(program, &clause)) + "_subproof";
             ramSubs[subroutineLabel] = makeSubproofSubroutine(clause);
 
-            std::string negationSubroutineLabel =
-                    relName.str() + "_" + std::to_string(clause.getClauseNum()) + "_negation_subproof";
+            std::string negationSubroutineLabel = relName.str() + "_" +
+                                                  std::to_string(getClauseNum(program, &clause)) +
+                                                  "_negation_subproof";
             ramSubs[negationSubroutineLabel] = makeNegationSubproofSubroutine(clause);
         });
     }

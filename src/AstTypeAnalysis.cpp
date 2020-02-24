@@ -434,57 +434,60 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         }
 
         // intrinsic functor
-        void visitIntrinsicFunctor(const AstIntrinsicFunctor& fun) override {
+        void visitFunctor(const AstFunctor& fun) override {
             auto functorVar = getVar(fun);
 
             // Currently we take a very simple approach toward polymorphic function.
             // We require argument and return type to be of the same type.
-            if (isOverloadedFunctor(fun.getFunction())) {
-                for (auto* argument : fun.getArguments()) {
-                    auto argumentVar = getVar(argument);
-                    addConstraint(isSubtypeOf(functorVar, argumentVar));
-                    addConstraint(isSubtypeOf(argumentVar, functorVar));
+            if (auto intrinsicFunctor = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+                if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
+                    for (auto* argument : intrinsicFunctor->getArguments()) {
+                        auto argumentVar = getVar(argument);
+                        addConstraint(isSubtypeOf(functorVar, argumentVar));
+                        addConstraint(isSubtypeOf(argumentVar, functorVar));
+                    }
+                    return;
                 }
-                return;
             }
 
             // add a constraint for the return type of the functor
             switch (fun.getReturnType()) {
-                case RamTypeAttribute::Signed:
+                case TypeAttribute::Signed:
                     addConstraint(isSubtypeOf(functorVar, env.getNumberType()));
                     break;
-                case RamTypeAttribute::Float:
+                case TypeAttribute::Float:
                     addConstraint(isSubtypeOf(functorVar, env.getFloatType()));
                     break;
-                case RamTypeAttribute::Unsigned:
+                case TypeAttribute::Unsigned:
                     addConstraint(isSubtypeOf(functorVar, env.getUnsignedType()));
                     break;
-                case RamTypeAttribute::Symbol:
+                case TypeAttribute::Symbol:
                     addConstraint(isSubtypeOf(functorVar, env.getSymbolType()));
                     break;
                 default:
                     assert(false && "Invalid return type");
             }
 
-            // add a constraint for each argument of the functor
-            if (fun.getFunction() == FunctorOp::ORD) {
-                return;
+            // Special case
+            if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+                if (intrFun->getFunction() == FunctorOp::ORD) {
+                    return;
+                }
             }
-
             size_t i = 0;
             for (auto arg : fun.getArguments()) {
                 auto argumentVar = getVar(arg);
                 switch (fun.getArgType(i)) {
-                    case RamTypeAttribute::Signed:
+                    case TypeAttribute::Signed:
                         addConstraint(isSubtypeOf(argumentVar, env.getNumberType()));
                         break;
-                    case RamTypeAttribute::Float:
+                    case TypeAttribute::Float:
                         addConstraint(isSubtypeOf(argumentVar, env.getFloatType()));
                         break;
-                    case RamTypeAttribute::Unsigned:
+                    case TypeAttribute::Unsigned:
                         addConstraint(isSubtypeOf(argumentVar, env.getUnsignedType()));
                         break;
-                    case RamTypeAttribute::Symbol:
+                    case TypeAttribute::Symbol:
                         addConstraint(isSubtypeOf(argumentVar, env.getSymbolType()));
                         break;
                     default:
@@ -493,42 +496,6 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 ++i;
             }
         }
-
-        // user-defined functors
-        void visitUserDefinedFunctor(const AstUserDefinedFunctor& fun) override {
-            auto cur = getVar(fun);
-
-            // get functor declaration
-            const AstFunctorDeclaration* funDecl = program->getFunctorDeclaration(fun.getName());
-            // check whether functor declaration exists
-            if (funDecl != nullptr) {
-                // add a constraint for the return type
-                if (funDecl->isNumerical()) {
-                    addConstraint(isSubtypeOf(cur, env.getNumberType()));
-                }
-                if (funDecl->isSymbolic()) {
-                    addConstraint(isSubtypeOf(cur, env.getSymbolType()));
-                }
-
-                // add constraints for arguments
-                size_t i = 0;
-                for (auto arg : fun.getArguments()) {
-                    // check that usage does not exceed
-                    // number of arguments in declaration
-                    if (i < funDecl->getArity()) {
-                        // add constraints for the i-th argument
-                        if (funDecl->acceptsNumbers(i)) {
-                            addConstraint(isSubtypeOf(getVar(arg), env.getNumberType()));
-                        }
-                        if (funDecl->acceptsSymbols(i)) {
-                            addConstraint(isSubtypeOf(getVar(arg), env.getSymbolType()));
-                        }
-                    }
-                    ++i;
-                }
-            }
-        }
-
         // counter
         void visitCounter(const AstCounter& counter) override {
             // this value must be a number value

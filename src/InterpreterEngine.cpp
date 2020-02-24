@@ -246,6 +246,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(IntrinsicOperator)
 #define BINARY_OP(op) return execute(node->getChild(0), ctxt) op execute(node->getChild(1), ctxt)
+// clang-format off
 #define BINARY_OP_CAST(ty, op) return ramBitCast(       \
     ramBitCast<ty>(execute(node->getChild(0), ctxt)) op \
     ramBitCast<ty>(execute(node->getChild(1), ctxt)) )
@@ -261,6 +262,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 #define BINARY_OP_INTEGRAL_SHIFT(opcode, op)                                   \
     case FunctorOp::   opcode: { BINARY_OP_CAST_SHIFT_MASK(RamSigned  , op); } \
     case FunctorOp::U##opcode: { BINARY_OP_CAST_SHIFT_MASK(RamUnsigned, op); }
+            // clang-format on
 
             const auto& args = cur.getArguments();
             switch (cur.getOperator()) {
@@ -329,11 +331,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                     return ramBitCast(static_cast<RamUnsigned>(result));
                 }
-                /** Binary Functor Operators */
+
+                    /** Binary Functor Operators */
+                    // clang-format off
                 BINARY_OP_NUMERIC(ADD, +)
                 BINARY_OP_NUMERIC(SUB, -)
                 BINARY_OP_NUMERIC(MUL, *)
                 BINARY_OP_NUMERIC(DIV, /)
+                    // clang-format on
 
                 case FunctorOp::EXP: {
                     return std::pow(execute(node->getChild(0), ctxt), execute(node->getChild(1), ctxt));
@@ -352,12 +357,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     return ramBitCast(static_cast<RamFloat>(std::pow(first, second)));
                 }
 
+                    // clang-format off
                 BINARY_OP_INTEGRAL(MOD, %)
                 BINARY_OP_INTEGRAL(BAND, &)
                 BINARY_OP_INTEGRAL(BOR, |)
                 BINARY_OP_INTEGRAL(BXOR, ^)
                 BINARY_OP_INTEGRAL_SHIFT(BSHIFT_L, <<)
                 BINARY_OP_INTEGRAL_SHIFT(BSHIFT_R, >>)
+                    // clang-format on
 
                 case FunctorOp::BSHIFT_R_UNSIGNED:
                 case FunctorOp::UBSHIFT_R_UNSIGNED: {

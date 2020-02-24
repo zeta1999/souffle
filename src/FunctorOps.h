@@ -44,45 +44,45 @@ enum class FunctorOp {
     FTOU,      // convert float to unsigned number.
 
     /** Binary Functor Operators */
-    ADD,    // addition
-    SUB,    // subtraction
-    MUL,    // multiplication
-    DIV,    // division
-    EXP,    // exponent
-    MAX,    // max of two numbers
-    MIN,    // min of two numbers
-    MOD,    // modulus
-    BAND,   // bitwise and
-    BOR,    // bitwise or
-    BXOR,   // bitwise exclusive or
-    BSHIFT_L, // bitwise shift left
-    BSHIFT_R, // bitwise shift right
-    BSHIFT_R_UNSIGNED, // bitwise shift right (unsigned)
-    LAND,   // logical and
-    LOR,    // logical or
-    UADD,   // addition
-    USUB,   // subtraction
-    UMUL,   // multiplication
-    UDIV,   // division
-    UEXP,   // exponent
-    UMAX,   // max of two numbers
-    UMIN,   // min of two numbers
-    UMOD,   // modulus
-    UBAND,  // bitwise and
-    UBOR,   // bitwise or
-    UBXOR,  // bitwise exclusive or
-    UBSHIFT_L, // bitwise shift right
-    UBSHIFT_R, // bitwise shift right
-    UBSHIFT_R_UNSIGNED, // bitwise shift right (unsigned)
-    ULAND,  // logical and
-    ULOR,   // logical or
-    FADD,   // addition
-    FSUB,   // subtraction
-    FMUL,   // multiplication
-    FDIV,   // division
-    FEXP,   // exponent
-    FMAX,   // max of two floats
-    FMIN,   // min of two floats
+    ADD,                 // addition
+    SUB,                 // subtraction
+    MUL,                 // multiplication
+    DIV,                 // division
+    EXP,                 // exponent
+    MAX,                 // max of two numbers
+    MIN,                 // min of two numbers
+    MOD,                 // modulus
+    BAND,                // bitwise and
+    BOR,                 // bitwise or
+    BXOR,                // bitwise exclusive or
+    BSHIFT_L,            // bitwise shift left
+    BSHIFT_R,            // bitwise shift right
+    BSHIFT_R_UNSIGNED,   // bitwise shift right (unsigned)
+    LAND,                // logical and
+    LOR,                 // logical or
+    UADD,                // addition
+    USUB,                // subtraction
+    UMUL,                // multiplication
+    UDIV,                // division
+    UEXP,                // exponent
+    UMAX,                // max of two numbers
+    UMIN,                // min of two numbers
+    UMOD,                // modulus
+    UBAND,               // bitwise and
+    UBOR,                // bitwise or
+    UBXOR,               // bitwise exclusive or
+    UBSHIFT_L,           // bitwise shift right
+    UBSHIFT_R,           // bitwise shift right
+    UBSHIFT_R_UNSIGNED,  // bitwise shift right (unsigned)
+    ULAND,               // logical and
+    ULOR,                // logical or
+    FADD,                // addition
+    FSUB,                // subtraction
+    FMUL,                // multiplication
+    FDIV,                // division
+    FEXP,                // exponent
+    FMAX,                // max of two floats
+    FMIN,                // min of two floats
 
     CAT,  // string concatenation
 

@@ -365,7 +365,7 @@ bool equal(const std::map<T1, T2>& a, const std::map<T1, T2>& b, const Comp& com
     }
 
     // check size
-    if (a.size() != a.size()) {
+    if (a.size() != b.size()) {
         return false;
     }
 

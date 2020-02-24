@@ -194,7 +194,7 @@ using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
  */
 class AstNilConstant : public AstConstant {
 public:
-    AstNilConstant() {}
+    AstNilConstant() = default;
 
     void print(std::ostream& os) const override {
         os << "nil";

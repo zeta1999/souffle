@@ -59,14 +59,9 @@ public:
             }
         }
         os << ") ";
-        // TODO: why not just print out the list of qualifiers
-        if (hasQualifier(AstRelationQualifier::OVERRIDABLE)) {
-            os << "overridable ";
-        }
-        if (hasQualifier(AstRelationQualifier::INLINE)) {
-            os << "inline ";
-        }
-        os << representation << " ";
+
+        os << join(qualifiers, " ") << " ";
+        os << representation;
     }
 
     /** Return the name of the relation */

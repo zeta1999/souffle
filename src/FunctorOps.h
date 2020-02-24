@@ -572,10 +572,10 @@ inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const TypeAtt
             assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");
             return FunctorOp::UBXOR;
         case FunctorOp::BSHIFT_L:
-            assert(toType == RamTypeAttribute::Unsigned && "Invalid functor conversion");
+            assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");
             return FunctorOp::UBSHIFT_L;
         case FunctorOp::BSHIFT_R:
-            assert(toType == RamTypeAttribute::Unsigned && "Invalid functor conversion");
+            assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");
             return FunctorOp::UBSHIFT_R;
         case FunctorOp::LAND:
             assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");

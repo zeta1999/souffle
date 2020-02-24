@@ -168,11 +168,6 @@ public:
         return (qualifier & INLINE_RELATION) != 0;
     }
 
-    /** Return i-th clause associated with this relation */
-    AstClause* getClause(size_t idx) const {
-        return clauses[idx].get();
-    }
-
     /** Obtains a list of the associated clauses */
     std::vector<AstClause*> getClauses() const {
         return toPtrVector(clauses);

@@ -93,9 +93,10 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
 
     // search for relations only defined by a single rule ..
     for (AstRelation* rel : program.getRelations()) {
-        if (!ioType->isIO(rel) && rel->getClauses().size() == 1u) {
+        const auto& clauses = rel->getClauses();
+        if (!ioType->isIO(rel) && clauses.size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
-            AstClause* cl = rel->getClause(0);
+            AstClause* cl = clauses[0];
             std::vector<AstAtom*> bodyAtoms = getBodyLiterals<AstAtom>(*cl);
             if (!isFact(*cl) && cl->getBodyLiterals().size() == 1u && bodyAtoms.size() == 1u) {
                 AstAtom* atom = bodyAtoms[0];
@@ -169,7 +170,9 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
     // break remaining cycles
     for (const auto& rep : cycle_reps) {
         auto rel = program.getRelation(rep);
-        rel->removeClause(rel->getClause(0));
+        const auto& clauses = rel->getClauses();
+        assert(clauses.size() == 1u && "unexpected number of clauses in relation");
+        rel->removeClause(clauses[0]);
     }
 
     // remove unused relations

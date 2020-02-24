@@ -112,8 +112,8 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     std::string name = getRelationName(rel->getName());
     std::vector<std::string> attributesTypes;
 
-    for (size_t i = 0; i < rel->getArity(); ++i) {
-        auto type = getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName()));
+    for (const auto* attribute : rel->getAttributes()) {
+        auto type = getTypeQualifier(typeEnv->getType(attribute->getTypeName()));
         attributesTypes.push_back(type);
     }
 
@@ -214,8 +214,8 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
                 delimiter = ioDirective.get("delimiter");
             }
             std::vector<std::string> attributeNames;
-            for (unsigned int i = 0; i < rel->getArity(); i++) {
-                attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
+            for (const auto* attribute : rel->getAttributes()) {
+                attributeNames.push_back(attribute->getAttributeName());
             }
 
             if (Global::config().has("provenance")) {
@@ -1552,13 +1552,14 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             auto arity = rel->getArity();
             auto auxiliaryArity = auxArityAnalysis->getArity(rel);
             auto representation = rel->getRepresentation();
+            const auto& attributes = rel->getAttributes();
             std::vector<std::string> attributeNames;
             std::vector<std::string> attributeTypeQualifiers;
             for (size_t i = 0; i < rel->getArity(); ++i) {
-                attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
+                attributeNames.push_back(attributes[i]->getAttributeName());
                 if (typeEnv != nullptr) {
                     attributeTypeQualifiers.push_back(
-                            getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
+                            getTypeQualifier(typeEnv->getType(attributes[i]->getTypeName())));
                 }
             }
             ramRels[name] = std::make_unique<RamRelation>(

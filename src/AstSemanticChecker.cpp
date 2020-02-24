@@ -656,8 +656,10 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
 
 void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const TypeEnvironment& typeEnv,
         const AstProgram& program, const AstRelation& relation, const IOType& ioTypes) {
+    const auto& attributes = relation.getAttributes();
+    assert(attributes.size() == relation.getArity() && "mismatching attribute size and arity");
     for (size_t i = 0; i < relation.getArity(); i++) {
-        AstAttribute* attr = relation.getAttribute(i);
+        AstAttribute* attr = attributes[i];
         AstTypeIdentifier typeName = attr->getTypeName();
 
         /* check whether type exists */
@@ -670,7 +672,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
 
         /* check whether name occurs more than once */
         for (size_t j = 0; j < i; j++) {
-            if (attr->getAttributeName() == relation.getAttribute(j)->getAttributeName()) {
+            if (attr->getAttributeName() == attributes[j]->getAttributeName()) {
                 report.addError("Doubly defined attribute name " + attr->getAttributeName() + ":" +
                                         toString(attr->getTypeName()),
                         attr->getSrcLoc());
@@ -684,7 +686,9 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
         const IOType& ioTypes) {
     if (relation.getRepresentation() == RelationRepresentation::EQREL) {
         if (relation.getArity() == 2) {
-            if (relation.getAttribute(0)->getTypeName() != relation.getAttribute(1)->getTypeName()) {
+            const auto& attributes = relation.getAttributes();
+            assert(attributes.size() == 2 && "mismatching attribute size and arity");
+            if (attributes[0]->getTypeName() != attributes[1]->getTypeName()) {
                 report.addError(
                         "Domains of equivalence relation " + toString(relation.getName()) + " are different",
                         relation.getSrcLoc());

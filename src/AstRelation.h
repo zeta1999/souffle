@@ -120,11 +120,6 @@ public:
         return attributes.size();
     }
 
-    /** Return the declared type at position @p idx */
-    AstAttribute* getAttribute(size_t idx) const {
-        return attributes[idx].get();
-    }
-
     /** Obtains a list of the contained attributes */
     std::vector<AstAttribute*> getAttributes() const {
         return toPtrVector(attributes);
@@ -171,18 +166,6 @@ public:
     /** Check whether relation is an inlined relation */
     bool isInline() const {
         return (qualifier & INLINE_RELATION) != 0;
-    }
-
-    /** Check whether relation has a record in its head */
-    bool hasRecordInHead() const {
-        for (auto& cur : clauses) {
-            for (auto* arg : cur->getHead()->getArguments()) {
-                if (dynamic_cast<AstRecordInit*>(arg) != nullptr) {
-                    return true;
-                }
-            };
-        }
-        return false;
     }
 
     /** Return i-th clause associated with this relation */

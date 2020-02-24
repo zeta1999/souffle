@@ -22,10 +22,9 @@
 #include "AstIO.h"
 #include "AstNode.h"
 #include "AstRelationIdentifier.h"
-#include "AstRelationQualifier.h"
 #include "AstType.h"
 #include "Global.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 
 #include <iostream>
 #include <memory>
@@ -91,28 +90,18 @@ public:
     }
 
     /** Return qualifiers associated with this relation */
-    std::set<AstRelationQualifier> getQualifiers() const {
+    std::set<RelationQualifier> getQualifiers() const {
         return qualifiers;
     }
 
     /** Add qualifier to this relation */
-    void addQualifier(AstRelationQualifier q) {
-        if (isRelationRepQualifier(q)) {
-            setRepresentation(getRelationRepFromQualifier(q));
-        } else {
-            qualifiers.insert(q);
-        }
+    void addQualifier(RelationQualifier q) {
+        qualifiers.insert(q);
     }
 
     /** Remove qualifier from this relation */
-    void removeQualifier(AstRelationQualifier q) {
-        if (isRelationRepQualifier(q)) {
-            if (getRelationRepFromQualifier(q) == getRepresentation()) {
-                setRepresentation(RelationRepresentation::DEFAULT);
-            }
-        } else {
-            qualifiers.erase(q);
-        }
+    void removeQualifier(RelationQualifier q) {
+        qualifiers.erase(q);
     }
 
     /** Get representation for this relation */
@@ -124,10 +113,7 @@ public:
         this->representation = representation;
     }
 
-    bool hasQualifier(AstRelationQualifier q) const {
-        if (isRelationRepQualifier(q)) {
-            return getRelationRepFromQualifier(q) == getRepresentation();
-        }
+    bool hasQualifier(RelationQualifier q) const {
         return qualifiers.find(q) != qualifiers.end();
     }
 
@@ -211,7 +197,7 @@ protected:
     std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** Qualifiers of relation */
-    std::set<AstRelationQualifier> qualifiers;
+    std::set<RelationQualifier> qualifiers;
 
     /** Datastructure to use for this relation */
     RelationRepresentation representation{RelationRepresentation::DEFAULT};

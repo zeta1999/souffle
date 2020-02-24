@@ -81,7 +81,6 @@ souffle_sources = \
         AstProfileUse.cpp     AstProfileUse.h     \
         AstRelation.h                             \
         AstRelationIdentifier.h                   \
-        AstRelationQualifier.h                    \
         AstSemanticChecker.cpp                    \
         AstSemanticChecker.h                      \
         AstTransformer.cpp    AstTransformer.h    \
@@ -145,7 +144,7 @@ souffle_sources = \
         RamVisitor.h                              \
         ReadStream.h                              \
         ReadStreamCSV.h                           \
-        RelationRepresentation.h                  \
+        RelationTag.h                             \
         ReorderLiteralsTransformer.cpp            \
         ResolveAliasesTransformer.cpp             \
         SignalHandler.h                           \

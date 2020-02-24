@@ -26,7 +26,7 @@
 #include "AstUtils.h"
 #include "BinaryConstraintOps.h"
 #include "Global.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "SrcLocation.h"
 #include "Util.h"
 #include <cassert>

@@ -20,7 +20,7 @@
 #include "AstRelationIdentifier.h"
 #include "AuxArityAnalysis.h"
 #include "RamRelation.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "Util.h"
 #include "json11.h"
 #include <cassert>

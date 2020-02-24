@@ -31,7 +31,7 @@
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -71,7 +71,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     auto infoRelation = new AstRelation();
     infoRelation->setName(name);
     // set qualifier to INFO_RELATION
-    infoRelation->addQualifier(AstRelationQualifier::INFO);
+    infoRelation->setRepresentation(RelationRepresentation::INFO);
 
     // create new clause containing a single fact
     auto infoClause = new AstClause();

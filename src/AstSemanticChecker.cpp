@@ -39,7 +39,7 @@
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
 #include "RamTypes.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
 #include "Util.h"
@@ -81,7 +81,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                 suppressedRelations.end()) {
             // mute all relations
             for (AstRelation* rel : program.getRelations()) {
-                rel->addQualifier(AstRelationQualifier::SUPPRESSED);
+                rel->addQualifier(RelationQualifier::SUPPRESSED);
             }
         } else {
             // mute only the given relations (if they exist)
@@ -96,7 +96,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
                     // update suppressed qualifier if the relation is found
                     if (AstRelation* rel = program.getRelation(relid)) {
-                        rel->addQualifier(AstRelationQualifier::SUPPRESSED);
+                        rel->addQualifier(RelationQualifier::SUPPRESSED);
                     }
                 }
             }
@@ -709,7 +709,7 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
 
     // check whether this relation is empty
     if (relation.getClauses().empty() && !ioTypes.isInput(&relation) &&
-            !relation.hasQualifier(AstRelationQualifier::SUPPRESSED)) {
+            !relation.hasQualifier(RelationQualifier::SUPPRESSED)) {
         report.addWarning(
                 "No rules/facts defined for relation " + toString(relation.getName()), relation.getSrcLoc());
     }
@@ -1170,7 +1170,7 @@ std::vector<AstRelationIdentifier> findInlineCycle(const PrecedenceGraph& preced
     const AstRelationSet& successors = precedenceGraph.graph().successors(current);
     for (const AstRelation* successor : successors) {
         // Only care about inlined neighbours in the graph
-        if (successor->hasQualifier(AstRelationQualifier::INLINE)) {
+        if (successor->hasQualifier(RelationQualifier::INLINE)) {
             if (visited.find(successor) != visited.end()) {
                 // The neighbour has already been visited, so move on
                 continue;
@@ -1212,7 +1212,7 @@ std::vector<AstRelationIdentifier> findInlineCycle(const PrecedenceGraph& preced
 
 void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& program,
         const PrecedenceGraph& precedenceGraph, const IOType& ioTypes) {
-    auto isInline = [&](const AstRelation* rel) { return rel->hasQualifier(AstRelationQualifier::INLINE); };
+    auto isInline = [&](const AstRelation* rel) { return rel->hasQualifier(RelationQualifier::INLINE); };
 
     // Find all inlined relations
     AstRelationSet inlinedRelations;

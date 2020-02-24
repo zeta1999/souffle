@@ -28,13 +28,52 @@ inline RelationRepresentation getRelationRepFromQualifier(const AstRelationQuali
             return RelationRepresentation::BRIE;
         case AstRelationQualifier::BTREE:
             return RelationRepresentation::BTREE;
-        case AstRelationQUalifier::EQREL:
+        case AstRelationQualifier::EQREL:
             return RelationRepresentation::EQREL;
         case AstRelationQualifier::INFO:
             return RelationRepresentation::INFO;
         default:
             assert(false && "qualifier is not a relation representation");
     }
+}
+
+inline std::ostream& operator<<(std::ostream& os, AstRelationQualifier q) {
+    switch (q) {
+        case AstRelationQualifier::INPUT:
+            os << "input";
+            break;
+        case AstRelationQualifier::OUTPUT:
+            os << "output";
+            break;
+        case AstRelationQualifier::PRINTSIZE:
+            os << "printsize";
+            break;
+        case AstRelationQualifier::OVERRIDABLE:
+            os << "overridable";
+            break;
+        case AstRelationQualifier::INLINE:
+            os << "inline";
+            break;
+        case AstRelationQualifier::SUPPRESSED:
+            os << "suppressed";
+            break;
+        case AstRelationQualifier::BRIE:
+            os << "brie";
+            break;
+        case AstRelationQualifier::BTREE:
+            os << "btree";
+            break;
+        case AstRelationQualifier::EQREL:
+            os << "eqrel";
+            break;
+        case AstRelationQualifier::INFO:
+            os << "info";
+            break;
+        default:
+            assert(false && "unhandled relation qualifier");
+    }
+
+    return os;
 }
 
 }  // namespace souffle

@@ -59,10 +59,11 @@ public:
             }
         }
         os << ") ";
-        if (isOverridable()) {
+        // TODO: why not just print out the list of qualifiers
+        if (hasQualifier(AstRelationQualifier::OVERRIDABLE)) {
             os << "overridable ";
         }
-        if (isInline()) {
+        if (hasQualifier(AstRelationQualifier::INLINE)) {
             os << "inline ";
         }
         os << representation << " ";
@@ -131,21 +132,6 @@ public:
 
     bool hasQualifier(AstRelationQualifier q) const {
         return qualifiers.find(q) != qualifiers.end();
-    }
-
-    /** Check whether relation is an overridable relation */
-    bool isOverridable() const {
-        return hasQualifier(AstRelationQualifier::OVERRIDABLE);
-    }
-
-    /** Check whether relation warnings are suppressed */
-    bool isSuppressed() const {
-        return hasQualifier(AstRelationQualifier::SUPPRESSED);
-    }
-
-    /** Check whether relation is an inlined relation */
-    bool isInline() const {
-        return hasQualifier(AstRelationQualifier::INLINE);
     }
 
     /** Obtains a list of the associated clauses */

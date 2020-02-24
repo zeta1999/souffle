@@ -148,7 +148,7 @@ void AstComponentChecker::checkComponent(ErrorReport& report, const AstComponent
     for (const AstComponent* parent : parents) {
         for (const AstRelation* relation : parent->getRelations()) {
             if ((component.getOverridden().count(relation->getName().getNames()[0]) != 0u) &&
-                    !relation->isOverridable()) {
+                    !relation->hasQualifier(AstRelationQualifier::OVERRIDABLE)) {
                 report.addError("Override of non-overridable relation " + relation->getName().getNames()[0] +
                                         " in component " + component.getComponentType()->getName(),
                         component.getSrcLoc());

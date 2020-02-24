@@ -708,7 +708,8 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     }
 
     // check whether this relation is empty
-    if (relation.getClauses().empty() && !ioTypes.isInput(&relation) && !relation.isSuppressed()) {
+    if (relation.getClauses().empty() && !ioTypes.isInput(&relation) &&
+            !relation.hasQualifier(AstRelationQualifier::SUPPRESSED)) {
         report.addWarning(
                 "No rules/facts defined for relation " + toString(relation.getName()), relation.getSrcLoc());
     }
@@ -1169,7 +1170,7 @@ std::vector<AstRelationIdentifier> findInlineCycle(const PrecedenceGraph& preced
     const AstRelationSet& successors = precedenceGraph.graph().successors(current);
     for (const AstRelation* successor : successors) {
         // Only care about inlined neighbours in the graph
-        if (successor->isInline()) {
+        if (successor->hasQualifier(AstRelationQualifier::INLINE)) {
             if (visited.find(successor) != visited.end()) {
                 // The neighbour has already been visited, so move on
                 continue;
@@ -1211,10 +1212,12 @@ std::vector<AstRelationIdentifier> findInlineCycle(const PrecedenceGraph& preced
 
 void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& program,
         const PrecedenceGraph& precedenceGraph, const IOType& ioTypes) {
+    auto isInline = [&](const AstRelation* rel) { return rel->hasQualifier(AstRelationQualifier::INLINE); };
+
     // Find all inlined relations
     AstRelationSet inlinedRelations;
     for (const auto& relation : program.getRelations()) {
-        if (relation->isInline()) {
+        if (isInline(relation)) {
             inlinedRelations.insert(relation);
             if (ioTypes.isIO(relation)) {
                 report.addError("IO relation " + toString(relation->getName()) + " cannot be inlined",
@@ -1268,7 +1271,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     // Check if an inlined literal ever takes in a $
     visitDepthFirst(program, [&](const AstAtom& atom) {
         AstRelation* associatedRelation = program.getRelation(atom.getName());
-        if (associatedRelation != nullptr && associatedRelation->isInline()) {
+        if (associatedRelation != nullptr && isInline(associatedRelation)) {
             visitDepthFirst(atom, [&](const AstArgument& arg) {
                 if (dynamic_cast<const AstCounter*>(&arg) != nullptr) {
                     report.addError(
@@ -1351,7 +1354,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     visitDepthFirst(program, [&](const AstAggregator& aggr) {
         visitDepthFirst(aggr, [&](const AstAtom& subatom) {
             const AstRelation* rel = program.getRelation(subatom.getName());
-            if (rel != nullptr && rel->isInline()) {
+            if (rel != nullptr && isInline(rel)) {
                 report.addError("Cannot inline relations that appear in aggregator", subatom.getSrcLoc());
             }
         });
@@ -1399,7 +1402,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     visitDepthFirst(program, [&](const AstNegation& negation) {
         const AstAtom* associatedAtom = negation.getAtom();
         const AstRelation* associatedRelation = program.getRelation(associatedAtom->getName());
-        if (associatedRelation != nullptr && associatedRelation->isInline()) {
+        if (associatedRelation != nullptr && isInline(associatedRelation)) {
             std::pair<bool, SrcLocation> atomStatus = checkInvalidUnderscore(associatedAtom);
             if (atomStatus.first) {
                 report.addError(

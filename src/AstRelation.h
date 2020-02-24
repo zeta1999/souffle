@@ -125,6 +125,9 @@ public:
     }
 
     bool hasQualifier(AstRelationQualifier q) const {
+        if (isRelationRepQualifier(q)) {
+            return getRelationRepFromQualifier(q) == getRepresentation();
+        }
         return qualifiers.find(q) != qualifiers.end();
     }
 

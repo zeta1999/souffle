@@ -94,9 +94,7 @@ TEST(AstUtils, GroundedRecords) {
 
     AstProgram& program = *tu->getProgram();
 
-    const auto& sClauses = program.getRelation("s")->getClauses();
-    EXPECT_EQ(1, sClauses.size());
-    const auto* clause = sClauses[0];
+    AstClause* clause = program.getRelation("s")->getClauses()[0];
 
     // check construction
     EXPECT_EQ("s(x) :- \n   r([x,y]).", toString(*clause));
@@ -143,17 +141,9 @@ TEST(AstUtils, SimpleTypes) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    const auto& aClauses = program.getRelation("a")->getClauses();
-    const auto& bClauses = program.getRelation("b")->getClauses();
-    const auto& uClauses = program.getRelation("u")->getClauses();
-
-    EXPECT_EQ(3, aClauses.size());
-    EXPECT_EQ(1, bClauses.size());
-    EXPECT_EQ(1, uClauses.size());
-
-    AstClause* a = aClauses[0];
-    AstClause* b = bClauses[0];
-    AstClause* u = uClauses[0];
+    AstClause* a = program.getRelation("a")->getClauses()[0];
+    AstClause* b = program.getRelation("b")->getClauses()[0];
+    AstClause* u = program.getRelation("u")->getClauses()[0];
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
@@ -163,10 +153,10 @@ TEST(AstUtils, SimpleTypes) {
     EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
     EXPECT_EQ("{U}", toString(typeAnalysis->getTypes(getX(u))));
 
-    AstClause* a1 = aClauses[1];
+    AstClause* a1 = program.getRelation("a")->getClauses()[1];
     EXPECT_EQ("{}", toString(typeAnalysis->getTypes(getX(a1))));
 
-    AstClause* a2 = aClauses[2];
+    AstClause* a2 = program.getRelation("a")->getClauses()[2];
     EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a2))));
 }
 
@@ -195,17 +185,9 @@ TEST(AstUtils, NumericTypes) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    const auto& aClauses = program.getRelation("a")->getClauses();
-    const auto& bClauses = program.getRelation("b")->getClauses();
-    const auto& uClauses = program.getRelation("u")->getClauses();
-
-    EXPECT_EQ(1, aClauses.size());
-    EXPECT_EQ(1, bClauses.size());
-    EXPECT_EQ(1, uClauses.size());
-
-    AstClause* a = aClauses[0];
-    AstClause* b = bClauses[0];
-    AstClause* u = uClauses[0];
+    AstClause* a = program.getRelation("a")->getClauses()[0];
+    AstClause* b = program.getRelation("b")->getClauses()[0];
+    AstClause* u = program.getRelation("u")->getClauses()[0];
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 

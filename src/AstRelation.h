@@ -21,7 +21,7 @@
 #include "AstClause.h"
 #include "AstIO.h"
 #include "AstNode.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "AstType.h"
 #include "Global.h"
 #include "RelationTag.h"
@@ -49,7 +49,7 @@ public:
     AstRelation() = default;
 
     void print(std::ostream& os) const override {
-        os << ".decl " << this->getName() << "(";
+        os << ".decl " << this->getQualifiedName() << "(";
         if (!attributes.empty()) {
             os << attributes[0]->getAttributeName() << ":" << attributes[0]->getTypeName();
 
@@ -64,12 +64,12 @@ public:
     }
 
     /** Return the name of the relation */
-    const AstRelationIdentifier& getName() const {
+    const AstQualifiedName& getQualifiedName() const {
         return name;
     }
 
     /** Set name for this relation */
-    void setName(const AstRelationIdentifier& n) {
+    void setQualifiedName(const AstQualifiedName& n) {
         name = n;
     }
 
@@ -126,7 +126,7 @@ public:
     void addClause(std::unique_ptr<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");
         assert(clause->getHead() != nullptr && "Undefined head of the clause");
-        assert(clause->getHead()->getName() == name &&
+        assert(clause->getHead()->getQualifiedName() == name &&
                 "Name of the atom in the head of the clause and the relation do not match");
         clauses.push_back(std::move(clause));
     }
@@ -188,7 +188,7 @@ protected:
     }
 
     /** Name of relation */
-    AstRelationIdentifier name;
+    AstQualifiedName name;
 
     /** Attributes of the relation */
     std::vector<std::unique_ptr<AstAttribute>> attributes;
@@ -206,7 +206,7 @@ protected:
 struct AstNameComparison {
     bool operator()(const AstRelation* x, const AstRelation* y) const {
         if (x != nullptr && y != nullptr) {
-            return x->getName() < y->getName();
+            return x->getQualifiedName() < y->getQualifiedName();
         }
         return y != nullptr;
     }

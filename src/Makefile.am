@@ -80,7 +80,7 @@ souffle_sources = \
         AstProgram.h                              \
         AstProfileUse.cpp     AstProfileUse.h     \
         AstRelation.h                             \
-        AstRelationIdentifier.h                   \
+        AstQualifiedName.h                        \
         AstSemanticChecker.cpp                    \
         AstSemanticChecker.h                      \
         AstTransformer.cpp    AstTransformer.h    \

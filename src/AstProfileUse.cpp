@@ -16,7 +16,7 @@
  ***********************************************************************/
 
 #include "AstProfileUse.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "Global.h"
 #include "profile/ProgramRun.h"
 #include "profile/Reader.h"
@@ -46,15 +46,15 @@ void AstProfileUse::print(std::ostream& os) const {}
 /**
  * Check whether relation size is defined in profile
  */
-bool AstProfileUse::hasRelationSize(const AstRelationIdentifier& rel) {
-    return programRun->getRelation(rel.getName()) != nullptr;
+bool AstProfileUse::hasRelationSize(const AstQualifiedName& rel) {
+    return programRun->getRelation(rel.toString()) != nullptr;
 }
 
 /**
  * Get relation size from profile
  */
-size_t AstProfileUse::getRelationSize(const AstRelationIdentifier& rel) {
-    if (const auto* profRel = programRun->getRelation(rel.getName())) {
+size_t AstProfileUse::getRelationSize(const AstQualifiedName& rel) {
+    if (const auto* profRel = programRun->getRelation(rel.toString())) {
         return profRel->size();
     } else {
         return std::numeric_limits<size_t>::max();

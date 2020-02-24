@@ -17,8 +17,8 @@
 #include "AuxArityAnalysis.h"
 #include "AstClause.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstUtils.h"
 #include "Global.h"
 #include <string>

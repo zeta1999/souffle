@@ -40,7 +40,7 @@ namespace souffle {
 class AstComponentType : public AstNode {
 public:
     AstComponentType(
-            std::string name = "", std::vector<AstTypeIdentifier> params = std::vector<AstTypeIdentifier>())
+            std::string name = "", std::vector<AstQualifiedName> params = std::vector<AstQualifiedName>())
             : name(std::move(name)), typeParams(std::move(params)) {}
 
     void print(std::ostream& os) const override {
@@ -61,12 +61,12 @@ public:
     }
 
     /** get component type parameters */
-    const std::vector<AstTypeIdentifier>& getTypeParameters() const {
+    const std::vector<AstQualifiedName>& getTypeParameters() const {
         return typeParams;
     }
 
     /** set component type parameters */
-    void setTypeParameters(const std::vector<AstTypeIdentifier>& params) {
+    void setTypeParameters(const std::vector<AstQualifiedName>& params) {
         typeParams = params;
     }
 
@@ -88,7 +88,7 @@ private:
     std::string name;
 
     /** component type parameters */
-    std::vector<AstTypeIdentifier> typeParams;
+    std::vector<AstQualifiedName> typeParams;
 };
 
 /**

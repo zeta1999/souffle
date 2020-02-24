@@ -22,8 +22,8 @@
 #include "AstIO.h"
 #include "AstNode.h"
 #include "AstPragma.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstType.h"
 #include "Util.h"
 #include <cassert>
@@ -87,7 +87,7 @@ public:
         os << "\n// ----- Relations -----\n";
         for (const auto& cur : relations) {
             const std::unique_ptr<AstRelation>& rel = cur.second;
-            os << "\n\n// -- " << rel->getName() << " --\n";
+            os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
             os << *rel << "\n\n";
             for (const auto clause : rel->getClauses()) {
                 os << *clause << "\n\n";
@@ -118,7 +118,7 @@ public:
 
     /** get type */
     // TODO (b-scholz): remove this method
-    const AstType* getType(const AstTypeIdentifier& name) const {
+    const AstType* getType(const AstQualifiedName& name) const {
         auto pos = types.find(name);
         return (pos == types.end()) ? nullptr : pos->second.get();
     }
@@ -143,7 +143,7 @@ public:
 
     /** get relation */
     // TODO (b-scholz): remove this method
-    AstRelation* getRelation(const AstRelationIdentifier& name) const {
+    AstRelation* getRelation(const AstQualifiedName& name) const {
         auto pos = relations.find(name);
         return (pos == relations.end()) ? nullptr : pos->second.get();
     }
@@ -187,7 +187,7 @@ public:
     /** append new relation */
     void appendRelation(std::unique_ptr<AstRelation> r) {
         // get relation
-        std::unique_ptr<AstRelation>& rel = relations[r->getName()];
+        std::unique_ptr<AstRelation>& rel = relations[r->getQualifiedName()];
         assert(!rel && "Adding pre-existing relation!");
 
         // add relation
@@ -195,7 +195,7 @@ public:
     }
 
     /** remove relation */
-    void removeRelation(const AstRelationIdentifier& name) {
+    void removeRelation(const AstQualifiedName& name) {
         /* Remove relation from map */
         relations.erase(relations.find(name));
     }
@@ -203,7 +203,7 @@ public:
     /** append clause */
     void appendClause(std::unique_ptr<AstClause> clause) {
         // get relation
-        std::unique_ptr<AstRelation>& r = relations[clause->getHead()->getName()];
+        std::unique_ptr<AstRelation>& r = relations[clause->getHead()->getQualifiedName()];
         assert(r && "Trying to append to unknown relation!");
 
         // delegate call
@@ -213,7 +213,7 @@ public:
     /** remove clause */
     void removeClause(const AstClause* clause) {
         // get relation
-        auto pos = relations.find(clause->getHead()->getName());
+        auto pos = relations.find(clause->getHead()->getQualifiedName());
         if (pos == relations.end()) {
             return;
         }
@@ -394,14 +394,14 @@ protected:
 
     /* add type */
     void addType(std::unique_ptr<AstType> type) {
-        auto& cur = types[type->getName()];
+        auto& cur = types[type->getQualifiedName()];
         assert(!cur && "Redefinition of type!");
         cur = std::move(type);
     }
 
     /* add relation */
     void addRelation(std::unique_ptr<AstRelation> r) {
-        const auto& name = r->getName();
+        const auto& name = r->getQualifiedName();
         assert(relations.find(name) == relations.end() && "Redefinition of relation!");
         relations[name] = std::move(r);
     }
@@ -460,7 +460,7 @@ protected:
 
         // add clauses
         for (auto& cur : clauses) {
-            auto pos = relations.find(cur->getHead()->getName());
+            auto pos = relations.find(cur->getHead()->getQualifiedName());
             if (pos != relations.end()) {
                 pos->second->addClause(std::move(cur));
             } else {
@@ -478,11 +478,11 @@ protected:
 
     /** Program types  */
     // TODO(b-scholz): change to vector
-    std::map<AstTypeIdentifier, std::unique_ptr<AstType>> types;
+    std::map<AstQualifiedName, std::unique_ptr<AstType>> types;
 
     /** Program relations */
     // TODO(b-scholz): change to vector
-    std::map<AstRelationIdentifier, std::unique_ptr<AstRelation>> relations;
+    std::map<AstQualifiedName, std::unique_ptr<AstRelation>> relations;
 
     /** External Functors */
     // TODO(b-scholz): change to vector

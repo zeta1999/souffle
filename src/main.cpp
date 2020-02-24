@@ -70,19 +70,16 @@ void executeBinary(const std::string& binaryFilename) {
     }
 
     // run the executable
-    int exitCode;
-    {
-        if (Global::config().has("library-dir")) {
-            std::string ldPath;
-            for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
-                ldPath += library + ':';
-            }
-            ldPath.back() = ' ';
-            setenv("LD_LIBRARY_PATH", ldPath.c_str(), 1);
+    if (Global::config().has("library-dir")) {
+        std::string ldPath;
+        for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
+            ldPath += library + ':';
         }
-
-        exitCode = system(binaryFilename.c_str());
+        ldPath.back() = ' ';
+        setenv("LD_LIBRARY_PATH", ldPath.c_str(), 1);
     }
+
+    int exitCode = system(binaryFilename.c_str());
 
     if (Global::config().get("dl-program").empty()) {
         remove(binaryFilename.c_str());
@@ -90,7 +87,7 @@ void executeBinary(const std::string& binaryFilename) {
     }
 
     // exit with same code as executable
-    if (exitCode != 0) {
+    if (exitCode != EXIT_SUCCESS) {
         exit(exitCode);
     }
 }
@@ -424,6 +421,7 @@ int main(int argc, char** argv) {
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(),
+            std::make_unique<AstUserDefinedFunctorsTransformer>(),
             std::make_unique<PolymorphicOperatorsTransformer>(), std::make_unique<AstSemanticChecker>(),
             std::make_unique<RemoveTypecastsTransformer>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
@@ -573,7 +571,6 @@ int main(int argc, char** argv) {
             }
         } else {
             // ------- compiler -------------
-
             std::string compileCmd = ::findTool("souffle-compile", souffleExecutable, ".");
             /* Fail if a souffle-compile executable is not found */
             if (!isExecutable(compileCmd)) {

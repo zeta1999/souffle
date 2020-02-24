@@ -201,7 +201,7 @@ TEST(AstProgram, AppendAstRelation) {
     auto tu1 = makeATU(".decl A,B,C(x:number)");
     auto* prog1 = tu1->getProgram();
     auto rel = std::make_unique<AstRelation>();
-    rel->setName("D");
+    rel->setQualifiedName("D");
     rel->addAttribute(std::make_unique<AstAttribute>("x", "number"));
     prog1->appendRelation(std::move(rel));
     auto tu2 = makeATU(".decl A,B,C,D(x:number)");

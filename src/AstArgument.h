@@ -258,9 +258,13 @@ protected:
  */
 
 class AstFunctor : public AstTerm {
+public:
+    virtual TypeAttribute getReturnType() const = 0;
+    virtual TypeAttribute getArgType(const size_t arg) const = 0;
+
 protected:
     AstFunctor() = default;
-    AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
+    explicit AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
 };
 
 /**
@@ -306,12 +310,12 @@ public:
     }
 
     /** get the return type of the functor. */
-    RamTypeAttribute getReturnType() const {
+    TypeAttribute getReturnType() const override {
         return functorReturnType(function);
     }
 
     /** get type of the functor argument*/
-    RamTypeAttribute getArgType(const size_t arg) const {
+    TypeAttribute getArgType(const size_t arg) const override {
         return functorOpArgType(arg, function);
     }
 
@@ -342,7 +346,7 @@ protected:
  */
 class AstUserDefinedFunctor : public AstFunctor {
 public:
-    AstUserDefinedFunctor() = default;
+    explicit AstUserDefinedFunctor(std::string name) : AstFunctor(), name(std::move(name)){};
     AstUserDefinedFunctor(std::string name, std::vector<std::unique_ptr<AstArgument>> args)
             : AstFunctor(std::move(args)), name(std::move(name)){};
 
@@ -356,18 +360,43 @@ public:
         return name;
     }
 
-    /** set name */
-    void setName(const std::string& name) {
-        this->name = name;
+    /** get type of the functor argument*/
+    TypeAttribute getArgType(const size_t arg) const override {
+        return argTypes.at(arg);
+    }
+
+    /** get type of the functor argument*/
+    TypeAttribute getReturnType() const override {
+        return returnType;
+    }
+
+    void setArgsTypes(std::vector<TypeAttribute> types) {
+        assert(types.size() == args.size() && "Size of types must match size of arguments");
+        argTypes = types;
+    }
+
+    const std::vector<TypeAttribute>& getArgsTypes() const {
+        return argTypes;
+    }
+
+    void setReturnType(TypeAttribute type) {
+        returnType = type;
     }
 
     AstUserDefinedFunctor* clone() const override {
-        auto res = new AstUserDefinedFunctor();
-        for (auto& cur : args) {
-            res->args.emplace_back(cur->clone());
+        auto res = new AstUserDefinedFunctor(name);
+        // Set args
+        for (auto& arg : args) {
+            res->args.emplace_back(arg->clone());
         }
+        // Set types
+        // Only copy types if they have already been set.
+        if (!argTypes.empty()) {
+            res->setArgsTypes(argTypes);
+        }
+        res->setReturnType(returnType);
+
         res->setSrcLoc(getSrcLoc());
-        res->setName(getName());
         return res;
     }
 
@@ -378,8 +407,11 @@ protected:
         return name == other.name && AstFunctor::equal(node);
     }
 
+    std::vector<TypeAttribute> argTypes;
+    TypeAttribute returnType;
+
     /** name of user-defined functor */
-    std::string name;
+    const std::string name;
 };
 
 /**
@@ -406,7 +438,7 @@ public:
  */
 class AstTypeCast : public AstArgument {
 public:
-    AstTypeCast(std::unique_ptr<AstArgument> value, AstTypeIdentifier type)
+    AstTypeCast(std::unique_ptr<AstArgument> value, AstQualifiedName type)
             : value(std::move(value)), type(std::move(type)) {}
 
     void print(std::ostream& os) const override {
@@ -419,12 +451,12 @@ public:
     }
 
     /** Get type */
-    const AstTypeIdentifier& getType() const {
+    const AstQualifiedName& getType() const {
         return type;
     }
 
     /** Set type */
-    void setType(const AstTypeIdentifier& type) {
+    void setType(const AstQualifiedName& type) {
         this->type = type;
     }
 
@@ -455,7 +487,7 @@ protected:
     std::unique_ptr<AstArgument> value;
 
     /** The target type name */
-    AstTypeIdentifier type;
+    AstQualifiedName type;
 };
 
 /**

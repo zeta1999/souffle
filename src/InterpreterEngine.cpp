@@ -27,6 +27,26 @@
 
 namespace souffle {
 
+// Handle difference in dynamic libraries suffixes.
+#ifdef __APPLE__
+#define dynamicLibSuffix ".dylib";
+#else
+#define dynamicLibSuffix ".so";
+#endif
+
+// Aliases for foreign function interface.
+#if RAM_DOMAIN_SIZE == 64
+#define FFI_RamSigned ffi_type_sint64
+#define FFI_RamUnsigned ffi_type_uint64
+#define FFI_RamFloat ffi_type_double
+#else
+#define FFI_RamSigned ffi_type_sint32
+#define FFI_RamUnsigned ffi_type_uint32
+#define FFI_RamFloat ffi_type_float
+#endif
+
+#define FFI_Symbol ffi_type_pointer
+
 InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const size_t idx) {
     return generator.getRelationHandle(idx);
 }
@@ -79,6 +99,7 @@ const std::vector<void*>& InterpreterEngine::loadDLL() {
     if (!Global::config().has("library-dir")) {
         Global::config().set("library-dir", ".");
     }
+
     for (const std::string& library : splitString(Global::config().get("libraries"), ' ')) {
         // The library may be blank
         if (library.empty()) {
@@ -100,7 +121,7 @@ const std::vector<void*>& InterpreterEngine::loadDLL() {
 
         void* tmp = nullptr;
         for (const std::string& path : paths) {
-            std::string fullpath = path + "lib" + library + ".so";
+            std::string fullpath = path + "lib" + library + dynamicLibSuffix;
             tmp = dlopen(fullpath.c_str(), RTLD_LAZY);
             if (tmp != nullptr) {
                 dll.push_back(tmp);
@@ -509,7 +530,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(UserDefinedOperator)
             // get name and type
             const std::string& name = cur.getName();
-            const std::string& type = cur.getType();
+            const std::vector<TypeAttribute>& type = cur.getArgsTypes();
 
             auto fn = reinterpret_cast<void (*)()>(getMethodHandle(name));
             if (fn == nullptr) {
@@ -522,46 +543,86 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             ffi_type* args[arity];
             void* values[arity];
             RamDomain intVal[arity];
+            RamUnsigned uintVal[arity];
+            RamFloat floatVal[arity];
             const char* strVal[arity];
             ffi_arg rc;
 
             /* Initialize arguments for ffi-call */
             for (size_t i = 0; i < arity; i++) {
                 RamDomain arg = execute(node->getChild(i), ctxt);
-                if (type[i] == 'S') {
-                    args[i] = &ffi_type_pointer;
-                    strVal[i] = getSymbolTable().resolve(arg).c_str();
-                    values[i] = &strVal[i];
-                } else {
-                    args[i] = &ffi_type_uint32;
-                    intVal[i] = arg;
-                    values[i] = &intVal[i];
+                switch (type[i]) {
+                    case TypeAttribute::Symbol:
+                        args[i] = &FFI_Symbol;
+                        strVal[i] = getSymbolTable().resolve(arg).c_str();
+                        values[i] = &strVal[i];
+                        break;
+                    case TypeAttribute::Signed:
+                        args[i] = &FFI_RamSigned;
+                        intVal[i] = arg;
+                        values[i] = &intVal[i];
+                        break;
+                    case TypeAttribute::Unsigned:
+                        args[i] = &FFI_RamUnsigned;
+                        uintVal[i] = ramBitCast<RamUnsigned>(arg);
+                        values[i] = &uintVal[i];
+                        break;
+                    case TypeAttribute::Float:
+                        args[i] = &FFI_RamFloat;
+                        floatVal[i] = ramBitCast<RamFloat>(arg);
+                        values[i] = &floatVal[i];
+                        break;
+                    case TypeAttribute::Record:
+                        assert(false && "Record support is not implemented");
                 }
             }
 
-            // call external function
-            if (type[arity] == 'N') {
-                // Initialize for numerical return value
-                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_uint32, args) != FFI_OK) {
-                    std::cerr << "Failed to prepare CIF for user-defined operator ";
-                    std::cerr << name << std::endl;
-                    exit(1);
-                }
-            } else {
-                // Initialize for string return value
-                if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, &ffi_type_pointer, args) != FFI_OK) {
-                    std::cerr << "Failed to prepare CIF for user-defined operator ";
-                    std::cerr << name << std::endl;
-                    exit(1);
-                }
+            // Get codomain.
+            auto codomain = &FFI_RamSigned;
+            switch (cur.getReturnType()) {
+                // initialize for string value.
+                case TypeAttribute::Symbol:
+                    codomain = &FFI_Symbol;
+                    break;
+                case TypeAttribute::Signed:
+                    codomain = &FFI_RamSigned;
+                    break;
+                case TypeAttribute::Unsigned:
+                    codomain = &FFI_RamUnsigned;
+                    break;
+                case TypeAttribute::Float:
+                    codomain = &FFI_RamFloat;
+                    break;
+                default:
+                    assert(false && "Not implemented");
+            }
+
+            // Call the external function.
+            if (ffi_prep_cif(&cif, FFI_DEFAULT_ABI, arity, codomain, args) != FFI_OK) {
+                std::cerr << "Failed to prepare CIF for user-defined operator ";
+                std::cerr << name << std::endl;
+                exit(1);
             }
             ffi_call(&cif, fn, &rc, values);
+
             RamDomain result;
-            if (type[arity] == 'N') {
-                result = ((RamDomain)rc);
-            } else {
-                result = getSymbolTable().lookup(((const char*)rc));
+            switch (cur.getReturnType()) {
+                case TypeAttribute::Signed:
+                    result = static_cast<RamDomain>(rc);
+                    break;
+                case TypeAttribute::Symbol:
+                    result = getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
+                    break;
+                case TypeAttribute::Unsigned:
+                    result = ramBitCast(static_cast<RamUnsigned>(rc));
+                    break;
+                case TypeAttribute::Float:
+                    result = ramBitCast(static_cast<RamFloat>(rc));
+                    break;
+                default:
+                    assert(false && "Not implemented");
             }
+
             return result;
         ESAC(UserDefinedOperator)
 

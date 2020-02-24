@@ -24,21 +24,21 @@ namespace souffle {
 
 void IOType::run(const AstTranslationUnit& translationUnit) {
     visitDepthFirst(*translationUnit.getProgram(), [&](const AstLoad& directive) {
-        auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
+        auto* relation = translationUnit.getProgram()->getRelation(directive.getQualifiedName());
         if (relation == nullptr) {
             return;
         }
         inputRelations.insert(relation);
     });
     visitDepthFirst(*translationUnit.getProgram(), [&](const AstStore& directive) {
-        auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
+        auto* relation = translationUnit.getProgram()->getRelation(directive.getQualifiedName());
         if (relation == nullptr) {
             return;
         }
         outputRelations.insert(relation);
     });
     visitDepthFirst(*translationUnit.getProgram(), [&](const AstPrintSize& directive) {
-        auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
+        auto* relation = translationUnit.getProgram()->getRelation(directive.getQualifiedName());
         if (relation == nullptr) {
             return;
         }

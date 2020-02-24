@@ -41,7 +41,7 @@ public:
      * @return number of auxiliary attributes
      */
     const size_t getArity(const AstAtom* atom) const {
-        return computeArity(program->getRelation(atom->getName()));
+        return computeArity(program->getRelation(atom->getQualifiedName()));
     }
 
     /**

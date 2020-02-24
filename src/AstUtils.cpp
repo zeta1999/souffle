@@ -31,10 +31,6 @@ std::vector<const AstVariable*> getVariables(const AstNode& root) {
     return vars;
 }
 
-std::vector<const AstVariable*> getVariables(const AstNode* root) {
-    return getVariables(*root);
-}
-
 std::vector<const AstRecordInit*> getRecords(const AstNode& root) {
     // simply collect the list of all records by visiting all records
     std::vector<const AstRecordInit*> recs;
@@ -42,12 +38,8 @@ std::vector<const AstRecordInit*> getRecords(const AstNode& root) {
     return recs;
 }
 
-std::vector<const AstRecordInit*> getRecords(const AstNode* root) {
-    return getRecords(*root);
-}
-
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
-    return program->getRelation(atom->getName());
+    return program->getRelation(atom->getQualifiedName());
 }
 
 const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* program) {
@@ -65,6 +57,26 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
                 *arg, [&](const AstAtom& atom) { bodyRelations.insert(getAtomRelation(&atom, program)); });
     }
     return bodyRelations;
+}
+
+size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
+    // TODO (azreika): This number might change between the provenance transformer and the AST->RAM
+    // translation. Might need a better way to assign IDs to clauses... (see PR #1288).
+    const AstRelation* rel = program->getRelation(clause->getHead()->getQualifiedName());
+    assert(rel != nullptr && "clause relation does not exist");
+
+    size_t clauseNum = 1;
+    for (const auto* cur : rel->getClauses()) {
+        bool isFact = cur->getBodyLiterals().empty();
+        if (cur == clause) {
+            return isFact ? 0 : clauseNum;
+        }
+
+        if (!isFact) {
+            clauseNum++;
+        }
+    }
+    assert(false && "clause does not exist");
 }
 
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,
@@ -100,10 +112,10 @@ bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelat
 }
 
 bool isRecursiveClause(const AstClause& clause) {
-    AstRelationIdentifier relationName = clause.getHead()->getName();
+    AstQualifiedName relationName = clause.getHead()->getQualifiedName();
     bool recursive = false;
     visitDepthFirst(clause.getBodyLiterals(), [&](const AstAtom& atom) {
-        if (atom.getName() == relationName) {
+        if (atom.getQualifiedName() == relationName) {
             recursive = true;
         }
     });
@@ -116,7 +128,7 @@ bool isFact(const AstClause& clause) {
         return false;
     }
     // there must not be any body clauses
-    if (clause.getBodyLiterals().size() != 0) {
+    if (!clause.getBodyLiterals().empty()) {
         return false;
     }
 
@@ -137,7 +149,39 @@ AstClause* cloneHead(const AstClause* clause) {
     if (clause->getExecutionPlan() != nullptr) {
         clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(clause->getExecutionPlan()->clone()));
     }
-    clone->setFixedExecutionPlan(clause->hasFixedExecutionPlan());
     return clone;
+}
+
+AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>& newOrder) {
+    // Find all atom positions
+    std::vector<unsigned int> atomPositions;
+    std::vector<AstLiteral*> bodyLiterals = clause->getBodyLiterals();
+    for (unsigned int i = 0; i < bodyLiterals.size(); i++) {
+        if (dynamic_cast<AstAtom*>(bodyLiterals[i]) != nullptr) {
+            atomPositions.push_back(i);
+        }
+    }
+
+    // Validate given order
+    assert(newOrder.size() == atomPositions.size());
+    std::vector<unsigned int> nopOrder;
+    for (unsigned int i = 0; i < atomPositions.size(); i++) {
+        nopOrder.push_back(i);
+    }
+    assert(std::is_permutation(nopOrder.begin(), nopOrder.end(), newOrder.begin()));
+
+    // Create a new clause with the given atom order, leaving the rest unchanged
+    AstClause* newClause = cloneHead(clause);
+    unsigned int currentAtom = 0;
+    for (unsigned int currentLiteral = 0; currentLiteral < bodyLiterals.size(); currentLiteral++) {
+        AstLiteral* literalToAdd = bodyLiterals[currentLiteral];
+        if (dynamic_cast<AstAtom*>(literalToAdd) != nullptr) {
+            // Atoms should be reordered
+            literalToAdd = bodyLiterals[atomPositions[newOrder[currentAtom++]]];
+        }
+        newClause->addToBody(std::unique_ptr<AstLiteral>(literalToAdd->clone()));
+    }
+
+    return newClause;
 }
 }  // end of namespace souffle

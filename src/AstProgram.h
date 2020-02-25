@@ -154,6 +154,11 @@ public:
         return relations.size();
     }
 
+    /** get clauses */
+    std::vector<AstClause*> getClauses() const {
+        return toPtrVector(clauses);
+    }
+
     /** get functor declaration */
     // TODO (b-scholz): replace by list of functors
     AstFunctorDeclaration* getFunctorDeclaration(const std::string& name) const {
@@ -470,10 +475,6 @@ protected:
         // remember the remaining orphan clauses
         clauses.clear();
         clauses.swap(unbound);
-
-        // unbound directives with no relation defined
-        std::vector<std::unique_ptr<AstLoad>> unboundLoads;
-        std::vector<std::unique_ptr<AstStore>> unboundStores;
     }
 
     /** Program types  */

@@ -193,7 +193,7 @@ protected:
     /** Attributes of the relation */
     std::vector<std::unique_ptr<AstAttribute>> attributes;
 
-    /** Clauses associated with this relation. Clauses could be either facts or rules. */
+    /** Clauses associated with this relation */
     std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** Qualifiers of relation */

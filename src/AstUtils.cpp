@@ -38,6 +38,16 @@ std::vector<const AstRecordInit*> getRecords(const AstNode& root) {
     return recs;
 }
 
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualifiedName& relationName) {
+    std::vector<AstClause*> result;
+    for (AstClause* clause : program.getClauses()) {
+        if (clause->getHead()->getQualifiedName() == relationName) {
+            result.push_back(clause);
+        }
+    }
+    return result;
+}
+
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
     return program->getRelation(atom->getQualifiedName());
 }

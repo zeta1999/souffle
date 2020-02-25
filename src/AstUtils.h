@@ -28,6 +28,7 @@ class AstClause;
 class AstLiteral;
 class AstNode;
 class AstProgram;
+class AstQualifiedName;
 class AstRelation;
 class AstVariable;
 class AstRecordInit;
@@ -60,7 +61,6 @@ std::vector<const AstRecordInit*> getRecords(const AstNode& root);
  * @param the clause
  * @return vector of body literals of the specified type
  */
-// TODO (azreika): add caching
 template <typename T, typename C>
 std::vector<T*> getBodyLiterals(const C& clause) {
     std::vector<T*> res;
@@ -71,6 +71,15 @@ std::vector<T*> getBodyLiterals(const C& clause) {
     }
     return res;
 }
+
+/**
+ * Returns a vector of clauses in the program that describe a given relation.
+ *
+ * @param program the program
+ * @param relationName the name of the relation to get the clauses of
+ * @return vector of clauses belonging to the given relation
+ */
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualifiedName& relationName);
 
 /**
  * Returns the relation referenced by the given atom.

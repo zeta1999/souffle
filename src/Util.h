@@ -314,6 +314,22 @@ range<Iter> make_range(const Iter& a, const Iter& b) {
 // -------------------------------------------------------------------------------
 
 /**
+ * Cast the values, from baseType to toType and compare using ==. (if casting fails -> return false.)
+ *
+ * @tparam baseType, initial Type of values
+ * @tparam toType, type where equality comparison takes place.
+ */
+template <typename toType, typename baseType>
+bool castEq(const baseType* left, const baseType* right) {
+    if (auto castedLeft = dynamic_cast<const toType*>(left)) {
+        if (auto castedRight = dynamic_cast<const toType*>(right)) {
+            return castedLeft == castedRight;
+        }
+    }
+    return false;
+}
+
+/**
  * A functor class supporting the values pointers are pointing to.
  */
 template <typename T>
@@ -729,7 +745,7 @@ typename std::enable_if<detail::is_printable<T>::value, std::string>::type toStr
  * to be printed.
  */
 template <typename T>
-typename std::enable_if<!detail::is_printable<T>::value, std::string>::type toString(const T& value) {
+typename std::enable_if<!detail::is_printable<T>::value, std::string>::type toString(const T&) {
     std::stringstream ss;
     ss << "(print for type ";
     ss << typeid(T).name();
@@ -1413,7 +1429,7 @@ public:
 
     // --- print support ---
 
-    friend std::ostream& operator<<(std::ostream& out, const LRUCache& cache) {
+    friend std::ostream& operator<<(std::ostream& out, const LRUCache& /* cache */) {
         return out << "-empty-";
     }
 };

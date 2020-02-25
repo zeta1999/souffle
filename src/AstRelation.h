@@ -130,9 +130,6 @@ public:
         for (const auto& cur : attributes) {
             res->attributes.emplace_back(cur->clone());
         }
-        for (const auto& cur : clauses) {
-            res->clauses.emplace_back(cur->clone());
-        }
         for (auto cur : qualifiers) {
             res->qualifiers.insert(cur);
         }
@@ -143,17 +140,11 @@ public:
         for (auto& cur : attributes) {
             cur = map(std::move(cur));
         }
-        for (auto& cur : clauses) {
-            cur = map(std::move(cur));
-        }
     }
 
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res;
         for (const auto& cur : attributes) {
-            res.push_back(cur.get());
-        }
-        for (const auto& cur : clauses) {
             res.push_back(cur.get());
         }
         return res;
@@ -164,8 +155,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstRelation*>(&node));
         const auto& other = static_cast<const AstRelation&>(node);
-        return name == other.name && equal_targets(attributes, other.attributes) &&
-               equal_targets(clauses, other.clauses);
+        return name == other.name && equal_targets(attributes, other.attributes);
     }
 
     /** Name of relation */
@@ -173,9 +163,6 @@ protected:
 
     /** Attributes of the relation */
     std::vector<std::unique_ptr<AstAttribute>> attributes;
-
-    /** Clauses associated with this relation */
-    std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** Qualifiers of relation */
     std::set<RelationQualifier> qualifiers;

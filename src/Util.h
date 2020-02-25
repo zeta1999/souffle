@@ -314,6 +314,22 @@ range<Iter> make_range(const Iter& a, const Iter& b) {
 // -------------------------------------------------------------------------------
 
 /**
+ * Cast the values, from baseType to toType and compare using ==. (if casting fails -> return false.)
+ *
+ * @tparam baseType, initial Type of values
+ * @tparam toType, type where equality comparison takes place.
+ */
+template <typename toType, typename baseType>
+bool castEq(const baseType* left, const baseType* right) {
+    if (auto castedLeft = dynamic_cast<const toType*>(left)) {
+        if (auto castedRight = dynamic_cast<const toType*>(right)) {
+            return castedLeft == castedRight;
+        }
+    }
+    return false;
+}
+
+/**
  * A functor class supporting the values pointers are pointing to.
  */
 template <typename T>
@@ -365,7 +381,7 @@ bool equal(const std::map<T1, T2>& a, const std::map<T1, T2>& b, const Comp& com
     }
 
     // check size
-    if (a.size() != a.size()) {
+    if (a.size() != b.size()) {
         return false;
     }
 

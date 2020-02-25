@@ -48,6 +48,20 @@ std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstQualif
     return result;
 }
 
+std::vector<AstClause*> tmpGetOrphanClauses(const AstProgram& program) {
+    std::vector<AstClause*> unboundClauses;
+    std::set<AstQualifiedName> existingRelations;
+    for (const auto& relation : program.getRelations()) {
+        existingRelations.insert(relation->getQualifiedName());
+    }
+    for (auto& cur : program.tmpGetClauses()) {
+        if (!contains(existingRelations, cur->getHead()->getQualifiedName())) {
+            unboundClauses.push_back(cur);
+        }
+    }
+    return unboundClauses;
+}
+
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
     return program->getRelation(atom->getQualifiedName());
 }

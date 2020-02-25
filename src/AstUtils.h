@@ -82,6 +82,14 @@ std::vector<T*> getBodyLiterals(const C& clause) {
 std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstQualifiedName& relationName);
 
 /**
+ * Returns a vector of orphan clauses in the program.
+ *
+ * @param program the program
+ * @return vector of clauses without relation declarations
+ */
+std::vector<AstClause*> tmpGetOrphanClauses(const AstProgram& program);
+
+/**
  * Returns the relation referenced by the given atom.
  * @param atom the atom
  * @param program the program containing the relations

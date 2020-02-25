@@ -25,6 +25,7 @@
 #include "AstQualifiedName.h"
 #include "AstRelation.h"
 #include "AstType.h"
+#include "AstUtils.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -94,9 +95,10 @@ public:
             }
         }
 
-        if (!clauses.empty()) {
+        const auto& orphanClauses = getOrphanClauses();
+        if (!orphanClauses.empty()) {
             os << "\n// ----- Orphan Clauses -----\n";
-            os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
+            os << join(orphanClauses, "\n\n", print_deref<AstClause*>()) << "\n";
         }
 
         if (!loads.empty()) {
@@ -152,11 +154,6 @@ public:
     // TODO (b-scholz): remove this method
     size_t relationSize() const {
         return relations.size();
-    }
-
-    /** get clauses */
-    std::vector<AstClause*> getClauses() const {
-        return toPtrVector(clauses);
     }
 
     /** get clauses */
@@ -250,7 +247,7 @@ public:
 
     /** get orphan clauses (clauses without relation declarations) */
     std::vector<AstClause*> getOrphanClauses() const {
-        return toPtrVector(clauses);
+        return tmpGetOrphanClauses(*this);
     }
 
     /** get components */
@@ -286,8 +283,8 @@ public:
             res->relations.insert(
                     std::make_pair(cur.first, std::unique_ptr<AstRelation>(cur.second->clone())));
         }
-        for (const auto& cur : clauses) {
-            res->clauses.emplace_back(cur->clone());
+        for (const auto& cur : tmpClauses) {
+            res->tmpClauses.emplace_back(cur->clone());
         }
         for (const auto& cur : loads) {
             res->loads.emplace_back(cur->clone());
@@ -298,9 +295,6 @@ public:
         for (const auto& cur : stores) {
             res->stores.emplace_back(cur->clone());
         }
-
-        // TODO (b-scholz): that is odd - revisit!
-        res->finishParsing();
 
         // done
         return res;
@@ -325,7 +319,7 @@ public:
         for (auto& cur : relations) {
             cur.second = map(std::move(cur.second));
         }
-        for (auto& cur : clauses) {
+        for (auto& cur : tmpClauses) {
             cur = map(std::move(cur));
         }
         for (auto& cur : loads) {
@@ -359,7 +353,7 @@ public:
         for (const auto& cur : relations) {
             res.push_back(cur.second.get());
         }
-        for (const auto& cur : clauses) {
+        for (const auto& cur : tmpClauses) {
             res.push_back(cur.get());
         }
         for (const auto& cur : loads) {
@@ -397,7 +391,7 @@ protected:
         if (!equal_targets(relations, other.relations)) {
             return false;
         }
-        if (!equal_targets(clauses, other.clauses)) {
+        if (!equal_targets(tmpClauses, other.tmpClauses)) {
             return false;
         }
         if (!equal_targets(loads, other.loads)) {
@@ -434,8 +428,7 @@ protected:
 
     /** add a clause */
     void addClause(std::unique_ptr<AstClause> clause) {
-        assert(clause && "NULL clause");
-        clauses.push_back(std::move(clause));
+        tmpClauses.push_back(std::move(clause));
     }
 
     /** add load directive */
@@ -479,25 +472,6 @@ protected:
         instantiations.push_back(std::move(i));
     }
 
-    /** finishing parsing */
-    void finishParsing() {
-        // unbound clauses with no relation defined
-        std::vector<std::unique_ptr<AstClause>> unbound;
-
-        // add clauses
-        for (auto& cur : clauses) {
-            auto pos = relations.find(cur->getHead()->getQualifiedName());
-            if (pos != relations.end()) {
-                pos->second->addClause(*this, std::move(cur));
-            } else {
-                unbound.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan clauses
-        clauses.clear();
-        clauses.swap(unbound);
-    }
-
     /** Program types  */
     // TODO(b-scholz): change to vector
     std::map<AstQualifiedName, std::unique_ptr<AstType>> types;
@@ -509,9 +483,6 @@ protected:
     /** External Functors */
     // TODO(b-scholz): change to vector
     std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
-
-    /** The list of clauses provided by the user */
-    std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** Program clauses */
     std::vector<std::unique_ptr<AstClause>> tmpClauses;

@@ -462,9 +462,6 @@ ComponentContent getInstantiatedContent(AstProgram& program, const AstComponentI
 bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translationUnit) {
     // TODO: Do this without being a friend class of AstProgram
 
-    // unbound clauses with no relation defined
-    std::vector<std::unique_ptr<AstClause>> unbound;
-
     AstProgram& program = *translationUnit.getProgram();
 
     auto* componentLookup = translationUnit.getAnalysis<ComponentLookup>();
@@ -489,28 +486,8 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         for (auto& io : content.stores) {
             program.stores.push_back(std::move(io));
         }
-        for (auto& cur : orphans) {
-            auto pos = program.relations.find(cur->getHead()->getQualifiedName());
-            if (pos != program.relations.end()) {
-                pos->second->addClause(program, std::move(cur));
-            } else {
-                unbound.push_back(std::move(cur));
-            }
-        }
     }
 
-    // add clauses
-    for (auto& cur : program.clauses) {
-        auto pos = program.relations.find(cur->getHead()->getQualifiedName());
-        if (pos != program.relations.end()) {
-            pos->second->addClause(program, std::move(cur));
-        } else {
-            unbound.push_back(std::move(cur));
-        }
-    }
-    // remember the remaining orphan clauses
-    program.clauses.clear();
-    program.clauses.swap(unbound);
     /*
         // unbound directives with no relation defined
         std::vector<std::unique_ptr<AstLoad>> unboundLoads;

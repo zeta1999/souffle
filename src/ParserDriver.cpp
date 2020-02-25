@@ -58,8 +58,6 @@ std::unique_ptr<AstTranslationUnit> ParserDriver::parse(
 
     yylex_destroy(scanner);
 
-    translationUnit->getProgram()->finishParsing();
-
     return std::move(translationUnit);
 }
 
@@ -77,8 +75,6 @@ std::unique_ptr<AstTranslationUnit> ParserDriver::parse(
     parser.parse();
 
     yylex_destroy(scanner);
-
-    translationUnit->getProgram()->finishParsing();
 
     return std::move(translationUnit);
 }

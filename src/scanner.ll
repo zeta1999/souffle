@@ -82,10 +82,10 @@
 "band"                                { return yy::parser::make_BW_AND(yylloc); }
 "bor"                                 { return yy::parser::make_BW_OR(yylloc); }
 "bxor"                                { return yy::parser::make_BW_XOR(yylloc); }
-"<<"                                  { return yy::parser::make_BW_SHIFT_L(yylloc); }
-">>"                                  { return yy::parser::make_BW_SHIFT_R(yylloc); }
-">>>"                                 { return yy::parser::make_BW_SHIFT_R_UNSIGNED(yylloc); }
 "bnot"                                { return yy::parser::make_BW_NOT(yylloc); }
+"bshl"                                { return yy::parser::make_BW_SHIFT_L(yylloc); }
+"bshr"                                { return yy::parser::make_BW_SHIFT_R(yylloc); }
+"bshru"                               { return yy::parser::make_BW_SHIFT_R_UNSIGNED(yylloc); }
 "land"                                { return yy::parser::make_L_AND(yylloc); }
 "lor"                                 { return yy::parser::make_L_OR(yylloc); }
 "lnot"                                { return yy::parser::make_L_NOT(yylloc); }

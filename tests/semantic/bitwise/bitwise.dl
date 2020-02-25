@@ -24,13 +24,13 @@ r_bnot(bnot x, x) :- A(x).
 
 .decl r_shift_L(x:number, y:number, z:number)
 .output r_shift_L()
-r_shift_L(x << y, x, y) :- A(x), A(y).
+r_shift_L(x bshl y, x, y) :- A(x), A(y).
 
 .decl r_shift_R(x:number, y:number, z:number)
 .output r_shift_R()
-r_shift_R(x >> y, x, y) :- A(x), A(y).
+r_shift_R(x bshr y, x, y) :- A(x), A(y).
 
 .decl r_shift_R_unsigned(x:number, y:number, z:number)
 .output r_shift_R_unsigned()
-r_shift_R_unsigned(x >>> y, x, y) :- A(x), A(y).
+r_shift_R_unsigned(x bshru y, x, y) :- A(x), A(y).
 

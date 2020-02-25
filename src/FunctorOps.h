@@ -247,13 +247,13 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
             return "bxor";
         case FunctorOp::BSHIFT_L:
         case FunctorOp::UBSHIFT_L:
-            return "<<";
+            return "bshl";
         case FunctorOp::BSHIFT_R:
         case FunctorOp::UBSHIFT_R:
-            return ">>";
+            return "bshr";
         case FunctorOp::BSHIFT_R_UNSIGNED:
         case FunctorOp::UBSHIFT_R_UNSIGNED:
-            return ">>>";
+            return "bshru";
         case FunctorOp::LAND:
         case FunctorOp::ULAND:
             return "land";

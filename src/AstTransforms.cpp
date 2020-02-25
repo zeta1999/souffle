@@ -1323,8 +1323,8 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
                 }
 
                 // Set types of functor instance based on its declaration.
-                userFunctor->setArgsTypes(functorDeclaration->getArgsTypes());
-                userFunctor->setReturnType(functorDeclaration->getReturnType());
+                userFunctor->setTypes(
+                        functorDeclaration->getArgsTypes(), functorDeclaration->getReturnType());
 
                 changed = true;
             }

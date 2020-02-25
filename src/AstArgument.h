@@ -107,7 +107,10 @@ public:
 /**
  * Abstract Constant
  */
-class AstConstant : public AstArgument {};
+class AstConstant : public AstArgument {
+public:
+    AstConstant* clone() const override = 0;
+};
 
 /**
  * String Constant
@@ -149,39 +152,39 @@ private:
 /**
  * Numeric Constant
  */
-template <typename numericType>  // numericType ⲉ {RamSigned, RamUnsigned, RamFloat}
+template <typename NumericType>  // NumericType ⲉ {RamSigned, RamUnsigned, RamFloat}
 class AstNumericConstant : public AstConstant {
 public:
-    explicit AstNumericConstant(numericType value) : value(value) {}
+    explicit AstNumericConstant(NumericType value) : value(value) {}
 
     void print(std::ostream& os) const override {
         os << value;
     }
 
     /** Get the value of the constant. */
-    numericType getValue() const {
+    NumericType getValue() const {
         return value;
     }
 
-    AstNumericConstant<numericType>* clone() const override {
-        auto* copy = new AstNumericConstant<numericType>(value);
+    AstNumericConstant<NumericType>* clone() const override {
+        auto* copy = new AstNumericConstant<NumericType>(value);
         copy->setSrcLoc(getSrcLoc());
         return copy;
     }
 
-    bool operator==(const AstNumericConstant<numericType>& other) const {
+    bool operator==(const AstNumericConstant<NumericType>& other) const {
         return getValue() == other.getValue();
     }
 
 protected:
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstNumericConstant<numericType>*>(&node));
-        const auto& other = static_cast<const AstNumericConstant<numericType>&>(node);
+        assert(nullptr != dynamic_cast<const AstNumericConstant<NumericType>*>(&node));
+        const auto& other = static_cast<const AstNumericConstant<NumericType>&>(node);
         return value == other.value;
     }
 
 private:
-    const numericType value;
+    const NumericType value;
 };
 
 // This definitions are used by AstVisitor.

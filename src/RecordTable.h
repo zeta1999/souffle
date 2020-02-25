@@ -172,7 +172,7 @@ public:
         return ref == getNil();
     }
 
-    static RamDomain getNil() {
+    static constexpr RamDomain getNil() {
         return 0;
     }
 

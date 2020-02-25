@@ -393,11 +393,11 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         /** for provenance negation */
         std::unique_ptr<RamCondition> visitProvenanceNegation(const AstProvenanceNegation& neg) override {
             const auto* atom = neg.getAtom();
-            int auxiliaryArity = translator.getEvaluationArity(atom);
-            int arity = atom->getArity() - auxiliaryArity;
+            size_t auxiliaryArity = translator.getEvaluationArity(atom);
+            size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
             auto args = atom->getArguments();
-            for (int i = 0; i < arity; i++) {
+            for (size_t i = 0; i < arity; i++) {
                 values.push_back(translator.translateValue(args[i], index));
             }
             // we don't care about the provenance columns when doing the existence check
@@ -405,7 +405,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                 // undefined value for rule number
                 values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
-                for (int h = 0; h < auxiliaryArity - 1; h++) {
+                for (size_t h = 0; h + 1 < auxiliaryArity; h++) {
                     values.push_back(translator.translateValue(args[arity + h + 1], index));
                 }
             }

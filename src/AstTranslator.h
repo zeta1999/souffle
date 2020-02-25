@@ -21,7 +21,7 @@
 #include "AuxArityAnalysis.h"
 #include "RamRelation.h"
 #include "RecordTable.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "SymbolTable.h"
 #include "Util.h"
 #include "json11.h"

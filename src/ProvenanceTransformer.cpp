@@ -129,10 +129,14 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     // visit all body literals and add to info clause head
     for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
         auto lit = originalClause.getBodyLiterals()[i];
-        const AstAtomLiteral* atomLit = dynamic_cast<AstAtomLiteral*>(lit);
+
         const AstAtom* atom = nullptr;
-        if (atomLit != nullptr) {
-            atom = atomLit->getAtom();
+        if (dynamic_cast<AstAtom*>(lit) != nullptr) {
+            atom = static_cast<AstAtom*>(lit);
+        } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
+            atom = static_cast<AstNegation*>(lit)->getAtom();
+        } else if (dynamic_cast<AstProvenanceNegation*>(lit) != nullptr) {
+            atom = static_cast<AstProvenanceNegation*>(lit)->getAtom();
         }
 
         // add an attribute for atoms and binary constraints

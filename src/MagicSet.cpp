@@ -1338,7 +1338,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             size_t originalNumAtoms = getBodyLiterals<AstAtom>(*newClause).size();
 
             // create the first argument of this new clause
-            const AstAtom* newClauseHead = newClause->getHead()->getAtom();
+            const AstAtom* newClauseHead = newClause->getHead();
             AstQualifiedName newMag = createMagicIdentifier(newClauseHead->getQualifiedName(), querynum);
             auto* newMagAtom = new AstAtom(newMag);
 

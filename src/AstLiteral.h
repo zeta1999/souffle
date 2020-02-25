@@ -141,7 +141,8 @@ public:
     AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     /** Returns the nested atom as the referenced atom */
-    const AstAtom* getAtom() const {
+    // TODO (azreika): change to const AstAtom*
+    AstAtom* getAtom() const {
         return atom.get();
     }
 

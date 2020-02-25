@@ -141,8 +141,8 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
 
     // handle the case where one of the indices refers to the head
     if (leftIdx == 0 && rightIdx == 0) {
-        const AstAtom* leftHead = left->getHead()->getAtom();
-        const AstAtom* rightHead = right->getHead()->getAtom();
+        const AstAtom* leftHead = left->getHead();
+        const AstAtom* rightHead = right->getHead();
         return leftHead->getQualifiedName() == rightHead->getQualifiedName();
     } else if (leftIdx == 0 || rightIdx == 0) {
         return false;
@@ -150,12 +150,12 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
 
     // both must hence be body atoms
     int leftBodyAtomIdx = leftIdx - 1;
-    const AstAtom* leftAtom =
-            dynamic_cast<AstAtomLiteral*>(left->getBodyLiterals()[leftBodyAtomIdx])->getAtom();
+    const AstAtom* leftAtom = dynamic_cast<AstAtom*>(left->getBodyLiterals()[leftBodyAtomIdx]);
+    assert(leftAtom != nullptr && "expected atom");
 
     int rightBodyAtomIdx = rightIdx - 1;
-    const AstAtom* rightAtom =
-            dynamic_cast<AstAtomLiteral*>(right->getBodyLiterals()[rightBodyAtomIdx])->getAtom();
+    const AstAtom* rightAtom = dynamic_cast<AstAtom*>(right->getBodyLiterals()[rightBodyAtomIdx]);
+    assert(rightAtom != nullptr && "expected atom");
 
     return leftAtom->getQualifiedName() == rightAtom->getQualifiedName();
 }
@@ -207,10 +207,10 @@ bool isValidPermutation(
     bool validMapping = true;
     for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
         // match arguments
-        std::vector<AstArgument*> leftArgs =
-                dynamic_cast<AstAtomLiteral*>(leftAtoms[i])->getAtom()->getArguments();
-        std::vector<AstArgument*> rightArgs =
-                dynamic_cast<AstAtomLiteral*>(rightAtoms[i])->getAtom()->getArguments();
+        assert(dynamic_cast<AstAtom*>(leftAtoms[i]) != nullptr && "expected atom");
+        assert(dynamic_cast<AstAtom*>(rightAtoms[i]) != nullptr && "expected atom");
+        std::vector<AstArgument*> leftArgs = dynamic_cast<AstAtom*>(leftAtoms[i])->getArguments();
+        std::vector<AstArgument*> rightArgs = dynamic_cast<AstAtom*>(rightAtoms[i])->getArguments();
 
         for (size_t j = 0; j < leftArgs.size(); j++) {
             AstArgument* leftArg = leftArgs[j];

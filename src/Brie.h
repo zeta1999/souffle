@@ -2042,8 +2042,8 @@ struct fix_binding {
 template <unsigned Pos, unsigned Dim>
 struct fix_binding<0, Pos, Dim> {
     template <unsigned bits, typename iterator, typename entry_type>
-    bool operator()(
-            const SparseBitMap<bits>& store, iterator& begin, iterator& /* end */, const entry_type& /* entry */) const {
+    bool operator()(const SparseBitMap<bits>& store, iterator& begin, iterator& /* end */,
+            const entry_type& /* entry */) const {
         // move begin to begin of store
         auto a = store.begin();
         get_nested_iter_core<Pos>()(begin.iter_core).setIterator(a);
@@ -2068,7 +2068,8 @@ struct fix_binding<0, Pos, Dim> {
 template <unsigned Dim>
 struct fix_binding<0, Dim, Dim> {
     template <typename Store, typename iterator, typename entry_type>
-    bool operator()(const Store& /* store */, iterator& /* begin */, iterator& /* end */, const entry_type& /* entry */) const {
+    bool operator()(const Store& /* store */, iterator& /* begin */, iterator& /* end */,
+            const entry_type& /* entry */) const {
         // nothing more to do
         return true;
     }

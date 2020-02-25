@@ -2043,7 +2043,7 @@ template <unsigned Pos, unsigned Dim>
 struct fix_binding<0, Pos, Dim> {
     template <unsigned bits, typename iterator, typename entry_type>
     bool operator()(
-            const SparseBitMap<bits>& store, iterator& begin, iterator& /* end */, const entry_type&) const {
+            const SparseBitMap<bits>& store, iterator& begin, iterator& /* end */, const entry_type& /* entry */) const {
         // move begin to begin of store
         auto a = store.begin();
         get_nested_iter_core<Pos>()(begin.iter_core).setIterator(a);

@@ -406,8 +406,12 @@ static bool hasUnnamedVariable(const AstLiteral* lit) {
 void AstSemanticChecker::checkLiteral(
         ErrorReport& report, const AstProgram& program, const AstLiteral& literal) {
     // check potential nested atom
-    if (const auto* atomLiteral = dynamic_cast<const AstAtomLiteral*>(&literal)) {
-        checkAtom(report, program, *atomLiteral->getAtom());
+    if (const auto* atom = dynamic_cast<const AstAtom*>(&literal)) {
+        checkAtom(report, program, *atom);
+    }
+
+    if (const auto* neg = dynamic_cast<const AstNegation*>(&literal)) {
+        checkAtom(report, program, *neg->getAtom());
     }
 
     if (const auto* constraint = dynamic_cast<const AstBinaryConstraint*>(&literal)) {

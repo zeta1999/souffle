@@ -381,7 +381,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
 
     changed |= !clausesToRemove.empty();
     for (auto* clause : clausesToRemove) {
-        program.removeClause(clause);
+        program.tmpRemoveClause(clause);
     }
 
     // --- profile-guided reordering ---
@@ -444,7 +444,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
 
         changed |= !clausesToRemove.empty();
         for (auto* clause : clausesToRemove) {
-            program.removeClause(clause);
+            program.tmpRemoveClause(clause);
         }
     }
 

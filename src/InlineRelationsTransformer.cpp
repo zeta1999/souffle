@@ -106,7 +106,7 @@ void normaliseInlinedHeads(AstProgram& program) {
 
             // Replace the old clause with this one
             rel->addClause(program, std::move(newClause));
-            program.removeClause(clause);
+            program.tmpRemoveClause(clause);
         }
     }
 }
@@ -1023,7 +1023,7 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
 
         // Delete all clauses that were replaced
         for (const AstClause* clause : clausesToDelete) {
-            program.removeClause(clause);
+            program.tmpRemoveClause(clause);
         }
     }
 

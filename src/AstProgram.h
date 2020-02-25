@@ -223,18 +223,6 @@ public:
     }
 
     /** remove clause */
-    void removeClause(const AstClause* clause) {
-        // get relation
-        auto pos = relations.find(clause->getHead()->getQualifiedName());
-        if (pos == relations.end()) {
-            return;
-        }
-
-        // delegate call
-        pos->second->removeClause(*this, clause);
-    }
-
-    /** remove clause */
     bool tmpRemoveClause(const AstClause* clause) {
         for (auto it = tmpClauses.begin(); it != tmpClauses.end(); it++) {
             if (**it == *clause) {

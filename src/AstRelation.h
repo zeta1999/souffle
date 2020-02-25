@@ -133,19 +133,6 @@ public:
         program.tmpAddClause(std::move(clause));
     }
 
-    /** Removes the given clause from this relation */
-    template <typename T>
-    bool removeClause(T& program, const AstClause* clause) {
-        program.tmpRemoveClause(clause);
-        for (auto it = clauses.begin(); it != clauses.end(); ++it) {
-            if (**it == *clause) {
-                clauses.erase(it);
-                return true;
-            }
-        }
-        return false;
-    }
-
     AstRelation* clone() const override {
         auto res = new AstRelation();
         res->name = name;

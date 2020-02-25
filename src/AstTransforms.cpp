@@ -172,7 +172,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
         auto rel = program.getRelation(rep);
         const auto& clauses = rel->getClauses(program);
         assert(clauses.size() == 1u && "unexpected number of clauses in relation");
-        rel->removeClause(program, clauses[0]);
+        program.tmpRemoveClause(clauses[0]);
     }
 
     // remove unused relations
@@ -446,7 +446,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
         for (AstLiteral* lit : cl->getBodyLiterals()) {
             if (auto* arg = dynamic_cast<AstAtom*>(lit)) {
                 if (getAtomRelation(arg, &program) == emptyRelation) {
-                    program.removeClause(cl);
+                    program.tmpRemoveClause(cl);
                     removed = true;
                     changed = true;
                     break;
@@ -482,7 +482,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
                     }
                 }
 
-                program.removeClause(cl);
+                program.tmpRemoveClause(cl);
                 program.appendClause(std::move(res));
                 changed = true;
             }
@@ -587,7 +587,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
             if (containsFalse) {
                 // Clause will always fail
-                rel->removeClause(program, clause);
+                program.tmpRemoveClause(clause);
             } else if (containsTrue) {
                 auto replacementClause = std::unique_ptr<AstClause>(cloneHead(clause));
 
@@ -598,7 +598,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                     }
                 }
 
-                rel->removeClause(program, clause);
+                program.tmpRemoveClause(clause);
                 rel->addClause(program, std::move(replacementClause));
             }
         }
@@ -796,7 +796,7 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
     }
 
     for (const AstClause* oldClause : clausesToRemove) {
-        program.removeClause(oldClause);
+        program.tmpRemoveClause(oldClause);
     }
 
     return changed;

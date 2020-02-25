@@ -152,8 +152,8 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
 
             for (const auto& cur : comp->getInstantiations()) {
                 // instantiate sub-component
-                ComponentContent content = getInstantiatedContent(program, *cur, enclosingComponent, componentLookup,
-                        orphans, report, activeBinding, maxInstantiationDepth - 1);
+                ComponentContent content = getInstantiatedContent(program, *cur, enclosingComponent,
+                        componentLookup, orphans, report, activeBinding, maxInstantiationDepth - 1);
 
                 // process types
                 for (auto& type : content.types) {
@@ -181,8 +181,8 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
             std::set<std::string> superOverridden;
             superOverridden.insert(overridden.begin(), overridden.end());
             superOverridden.insert(component.getOverridden().begin(), component.getOverridden().end());
-            collectContent(program, *comp, activeBinding, comp, componentLookup, res, orphans, superOverridden, report,
-                    maxInstantiationDepth);
+            collectContent(program, *comp, activeBinding, comp, componentLookup, res, orphans,
+                    superOverridden, report, maxInstantiationDepth);
         }
     }
 
@@ -339,8 +339,8 @@ ComponentContent getInstantiatedContent(AstProgram& program, const AstComponentI
 
     // collect all content in this component
     std::set<std::string> overridden;
-    collectContent(program, *component, activeBinding, enclosingComponent, componentLookup, res, orphans, overridden,
-            report, maxDepth);
+    collectContent(program, *component, activeBinding, enclosingComponent, componentLookup, res, orphans,
+            overridden, report, maxDepth);
 
     // update type names
     std::map<AstQualifiedName, AstQualifiedName> typeNameMapping;

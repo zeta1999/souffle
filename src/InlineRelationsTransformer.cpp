@@ -105,7 +105,7 @@ void normaliseInlinedHeads(AstProgram& program) {
             newClause->setHead(std::move(clauseHead));
 
             // Replace the old clause with this one
-            rel->addClause(std::move(newClause));
+            rel->addClause(program, std::move(newClause));
             program.removeClause(clause);
         }
     }

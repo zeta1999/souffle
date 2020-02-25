@@ -1355,7 +1355,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // add the clause to the program and the set of new clauses
             newClause->setSrcLoc(nextSrcLoc(newClause->getSrcLoc()));
             newClauses.push_back(newClause);
-            adornedRelation->addClause(std::unique_ptr<AstClause>(newClause));
+            adornedRelation->addClause(*program, std::unique_ptr<AstClause>(newClause));
         }
     }
 

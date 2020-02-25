@@ -123,7 +123,7 @@ public:
     }
 
     /** Add a clause to the relation */
-    void addClause(std::unique_ptr<AstClause> clause) {
+    void addClause(AstProgram& program, std::unique_ptr<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");
         assert(clause->getHead() != nullptr && "Undefined head of the clause");
         assert(clause->getHead()->getQualifiedName() == name &&
@@ -132,7 +132,7 @@ public:
     }
 
     /** Removes the given clause from this relation */
-    bool removeClause(const AstClause* clause) {
+    bool removeClause(AstProgram& program, const AstClause* clause) {
         for (auto it = clauses.begin(); it != clauses.end(); ++it) {
             if (**it == *clause) {
                 clauses.erase(it);

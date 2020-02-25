@@ -127,7 +127,7 @@ struct ComponentContent {
  * Recursively computes the set of relations (and included clauses) introduced
  * by this init statement enclosed within the given scope.
  */
-ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
+ComponentContent getInstantiatedContent(AstProgram& program, const AstComponentInit& componentInit,
         const AstComponent* enclosingComponent, const ComponentLookup& componentLookup,
         std::vector<std::unique_ptr<AstClause>>& orphans, ErrorReport& report,
         const TypeBinding& binding = TypeBinding(), unsigned int maxDepth = MAX_INSTANTIATION_DEPTH);
@@ -135,7 +135,7 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
 /**
  * Collects clones of all the content in the given component and its base components.
  */
-void collectContent(const AstComponent& component, const TypeBinding& binding,
+void collectContent(AstProgram& program, const AstComponent& component, const TypeBinding& binding,
         const AstComponent* enclosingComponent, const ComponentLookup& componentLookup, ComponentContent& res,
         std::vector<std::unique_ptr<AstClause>>& orphans, const std::set<std::string>& overridden,
         ErrorReport& report, unsigned int maxInstantiationDepth) {
@@ -152,7 +152,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
 
             for (const auto& cur : comp->getInstantiations()) {
                 // instantiate sub-component
-                ComponentContent content = getInstantiatedContent(*cur, enclosingComponent, componentLookup,
+                ComponentContent content = getInstantiatedContent(program, *cur, enclosingComponent, componentLookup,
                         orphans, report, activeBinding, maxInstantiationDepth - 1);
 
                 // process types
@@ -181,7 +181,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
             std::set<std::string> superOverridden;
             superOverridden.insert(overridden.begin(), overridden.end());
             superOverridden.insert(component.getOverridden().begin(), component.getOverridden().end());
-            collectContent(*comp, activeBinding, comp, componentLookup, res, orphans, superOverridden, report,
+            collectContent(program, *comp, activeBinding, comp, componentLookup, res, orphans, superOverridden, report,
                     maxInstantiationDepth);
         }
     }
@@ -263,7 +263,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
         if (overridden.count(cur->getHead()->getQualifiedName().getQualifiers()[0]) == 0) {
             AstRelation* rel = index[cur->getHead()->getQualifiedName()];
             if (rel != nullptr) {
-                rel->addClause(std::unique_ptr<AstClause>(cur->clone()));
+                rel->addClause(program, std::unique_ptr<AstClause>(cur->clone()));
             } else {
                 orphans.emplace_back(cur->clone());
             }
@@ -276,7 +276,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
         AstRelation* rel = index[cur->getHead()->getQualifiedName()];
         if (rel != nullptr) {
             // add orphan to current instance and delete from orphan list
-            rel->addClause(std::unique_ptr<AstClause>(cur->clone()));
+            rel->addClause(program, std::unique_ptr<AstClause>(cur->clone()));
             iter = orphans.erase(iter);
         } else {
             ++iter;
@@ -284,7 +284,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
     }
 }
 
-ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
+ComponentContent getInstantiatedContent(AstProgram& program, const AstComponentInit& componentInit,
         const AstComponent* enclosingComponent, const ComponentLookup& componentLookup,
         std::vector<std::unique_ptr<AstClause>>& orphans, ErrorReport& report, const TypeBinding& binding,
         unsigned int maxDepth) {
@@ -313,7 +313,7 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
     for (const auto& cur : component->getInstantiations()) {
         // get nested content
         ComponentContent nestedContent = getInstantiatedContent(
-                *cur, component, componentLookup, orphans, report, activeBinding, maxDepth - 1);
+                program, *cur, component, componentLookup, orphans, report, activeBinding, maxDepth - 1);
 
         // add types
         for (auto& type : nestedContent.types) {
@@ -339,7 +339,7 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
 
     // collect all content in this component
     std::set<std::string> overridden;
-    collectContent(*component, activeBinding, enclosingComponent, componentLookup, res, orphans, overridden,
+    collectContent(program, *component, activeBinding, enclosingComponent, componentLookup, res, orphans, overridden,
             report, maxDepth);
 
     // update type names
@@ -473,7 +473,7 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         std::vector<std::unique_ptr<AstClause>> orphans;
 
         ComponentContent content = getInstantiatedContent(
-                *cur, nullptr, *componentLookup, orphans, translationUnit.getErrorReport());
+                program, *cur, nullptr, *componentLookup, orphans, translationUnit.getErrorReport());
         for (auto& type : content.types) {
             program.types.insert(std::make_pair(type->getQualifiedName(), std::move(type)));
         }
@@ -492,7 +492,7 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         for (auto& cur : orphans) {
             auto pos = program.relations.find(cur->getHead()->getQualifiedName());
             if (pos != program.relations.end()) {
-                pos->second->addClause(std::move(cur));
+                pos->second->addClause(program, std::move(cur));
             } else {
                 unbound.push_back(std::move(cur));
             }
@@ -503,7 +503,7 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
     for (auto& cur : program.clauses) {
         auto pos = program.relations.find(cur->getHead()->getQualifiedName());
         if (pos != program.relations.end()) {
-            pos->second->addClause(std::move(cur));
+            pos->second->addClause(program, std::move(cur));
         } else {
             unbound.push_back(std::move(cur));
         }

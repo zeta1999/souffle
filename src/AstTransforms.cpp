@@ -172,7 +172,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
         auto rel = program.getRelation(rep);
         const auto& clauses = rel->getClauses();
         assert(clauses.size() == 1u && "unexpected number of clauses in relation");
-        rel->removeClause(clauses[0]);
+        rel->removeClause(program, clauses[0]);
     }
 
     // remove unused relations
@@ -325,7 +325,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                         toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
             }
 
-            rel->addClause(std::unique_ptr<AstClause>(aggClause));
+            rel->addClause(program, std::unique_ptr<AstClause>(aggClause));
             program.appendRelation(std::unique_ptr<AstRelation>(rel));
 
             // -- update aggregate --
@@ -587,7 +587,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
             if (containsFalse) {
                 // Clause will always fail
-                rel->removeClause(clause);
+                rel->removeClause(program, clause);
             } else if (containsTrue) {
                 auto replacementClause = std::unique_ptr<AstClause>(cloneHead(clause));
 
@@ -598,8 +598,8 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                     }
                 }
 
-                rel->removeClause(clause);
-                rel->addClause(std::move(replacementClause));
+                rel->removeClause(program, clause);
+                rel->addClause(program, std::move(replacementClause));
             }
         }
     }
@@ -913,7 +913,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
                     newClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
                 }
 
-                newRelation->addClause(std::move(newClause));
+                newRelation->addClause(program, std::move(newClause));
             }
         }
 

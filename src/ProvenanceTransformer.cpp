@@ -63,7 +63,7 @@ inline AstQualifiedName makeRelationName(
 }
 
 std::unique_ptr<AstRelation> makeInfoRelation(
-        AstClause& originalClause, size_t originalClauseNum, AstTranslationUnit& translationUnit) {
+        AstProgram& program, AstClause& originalClause, size_t originalClauseNum, AstTranslationUnit& translationUnit) {
     AstQualifiedName name =
             makeRelationName(originalClause.getHead()->getQualifiedName(), "@info", originalClauseNum);
 
@@ -177,13 +177,13 @@ std::unique_ptr<AstRelation> makeInfoRelation(
 
     // set clause head and add clause to info relation
     infoClause->setHead(std::unique_ptr<AstAtom>(infoClauseHead));
-    infoRelation->addClause(std::unique_ptr<AstClause>(infoClause));
+    infoRelation->addClause(program, std::unique_ptr<AstClause>(infoClause));
 
     return std::unique_ptr<AstRelation>(infoRelation);
 }
 
 /** Transform eqrel relations to explicitly define equivalence relations */
-void transformEqrelRelation(AstRelation& rel) {
+void transformEqrelRelation(AstProgram& program, AstRelation& rel) {
     assert(rel.getRepresentation() == RelationRepresentation::EQREL &&
             "attempting to transform non-eqrel relation");
     assert(rel.getArity() == 2 && "eqrel relation not binary");
@@ -208,7 +208,7 @@ void transformEqrelRelation(AstRelation& rel) {
     transitiveClause->setHead(std::unique_ptr<AstAtom>(transitiveClauseHead));
     transitiveClause->addToBody(std::unique_ptr<AstLiteral>(transitiveClauseBody));
     transitiveClause->addToBody(std::unique_ptr<AstLiteral>(transitiveClauseBody2));
-    rel.addClause(std::unique_ptr<AstClause>(transitiveClause));
+    rel.addClause(program, std::unique_ptr<AstClause>(transitiveClause));
 
     // symmetric
     // symmetric clause: A(x, y) :- A(y, x).
@@ -223,7 +223,7 @@ void transformEqrelRelation(AstRelation& rel) {
 
     symClause->setHead(std::unique_ptr<AstAtom>(symClauseHead));
     symClause->addToBody(std::unique_ptr<AstLiteral>(symClauseBody));
-    rel.addClause(std::unique_ptr<AstClause>(symClause));
+    rel.addClause(program, std::unique_ptr<AstClause>(symClause));
 
     // reflexivity
     // reflexive clause: A(x, x) :- A(x, _).
@@ -238,7 +238,7 @@ void transformEqrelRelation(AstRelation& rel) {
 
     reflexiveClause->setHead(std::unique_ptr<AstAtom>(reflexiveClauseHead));
     reflexiveClause->addToBody(std::unique_ptr<AstLiteral>(reflexiveClauseBody));
-    rel.addClause(std::unique_ptr<AstClause>(reflexiveClause));
+    rel.addClause(program, std::unique_ptr<AstClause>(reflexiveClause));
 }
 
 bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translationUnit) {
@@ -271,7 +271,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
     for (auto relation : program->getRelations()) {
         if (relation->getRepresentation() == RelationRepresentation::EQREL) {
             // Explicitly expand eqrel relation
-            transformEqrelRelation(*relation);
+            transformEqrelRelation(*program, *relation);
         }
     }
 
@@ -283,7 +283,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
             if (!isFact(*clause)) {
                 // add info relation
                 program->addRelation(
-                        makeInfoRelation(*clause, getClauseNum(program, clause), translationUnit));
+                        makeInfoRelation(*program, *clause, getClauseNum(program, clause), translationUnit));
             }
         }
 
@@ -408,7 +408,7 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
     for (auto relation : program->getRelations()) {
         if (relation->getRepresentation() == RelationRepresentation::EQREL) {
             // Explicitly expand eqrel relation
-            transformEqrelRelation(*relation);
+            transformEqrelRelation(*program, *relation);
         }
     }
 
@@ -420,7 +420,7 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
             if (!isFact(*clause)) {
                 // add info relation
                 program->addRelation(
-                        makeInfoRelation(*clause, getClauseNum(program, clause), translationUnit));
+                        makeInfoRelation(*program, *clause, getClauseNum(program, clause), translationUnit));
             }
         }
 

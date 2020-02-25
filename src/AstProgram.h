@@ -212,7 +212,7 @@ public:
         assert(r && "Trying to append to unknown relation!");
 
         // delegate call
-        r->addClause(std::move(clause));
+        r->addClause(*this, std::move(clause));
     }
 
     /** remove clause */
@@ -224,7 +224,7 @@ public:
         }
 
         // delegate call
-        pos->second->removeClause(clause);
+        pos->second->removeClause(*this, clause);
     }
 
     /** get orphan clauses (clauses without relation declarations) */
@@ -467,7 +467,7 @@ protected:
         for (auto& cur : clauses) {
             auto pos = relations.find(cur->getHead()->getQualifiedName());
             if (pos != relations.end()) {
-                pos->second->addClause(std::move(cur));
+                pos->second->addClause(*this, std::move(cur));
             } else {
                 unbound.push_back(std::move(cur));
             }

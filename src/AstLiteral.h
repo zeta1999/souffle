@@ -45,7 +45,7 @@ class AstAtom;
  * either in the head or in the body of a Clause, e.g., parent(x,y).
  * The arguments of the atom can be variables or constants.
  */
-class AstAtom : public AstAtomLiteral {
+class AstAtom : public AstLiteral {
 public:
     AstAtom(AstQualifiedName name = AstQualifiedName()) : name(std::move(name)) {}
 
@@ -141,7 +141,7 @@ protected:
  * Subclass of Literal that represents a negated atom, * e.g., !parent(x,y).
  * A Negated atom occurs in a body of clause and cannot occur in a head of a clause.
  */
-class AstNegation : public AstAtomLiteral {
+class AstNegation : public AstLiteral {
 public:
     AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
@@ -191,7 +191,7 @@ protected:
  *
  * Specialised for provenance: used for existence check that tuple doesn't already exist
  */
-class AstProvenanceNegation : public AstAtomLiteral {
+class AstProvenanceNegation : public AstLiteral {
 public:
     AstProvenanceNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 

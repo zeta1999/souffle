@@ -20,7 +20,9 @@
 #include "AstQualifiedName.h"
 #include "AuxArityAnalysis.h"
 #include "RamRelation.h"
-#include "RelationRepresentation.h"
+#include "RecordTable.h"
+#include "RelationTag.h"
+#include "SymbolTable.h"
 #include "Util.h"
 #include "json11.h"
 #include <cassert>
@@ -81,6 +83,9 @@ private:
 
     /** Record types information - used in Ram for I/O. */
     Json RamRecordTypes;
+
+    /** Symbol Table **/
+    SymbolTable symbolTable;
 
     /** Auxiliary Arity Analysis */
     const AuxiliaryArity* auxArityAnalysis = nullptr;
@@ -383,7 +388,31 @@ private:
      * Get ram records types.
      * If they don't exists - create them.
      */
-    const Json getRecordsTypes(void);
+    const Json getRecordsTypes();
+
+    /** Return a symbol table **/
+    SymbolTable& getSymbolTable() {
+        return symbolTable;
+    }
+
+    /**
+     *  Get ram representation of constant.
+     */
+    RamDomain getConstantRamRepresentation(const AstConstant& constant) {
+        if (auto strConstant = dynamic_cast<const AstStringConstant*>(&constant)) {
+            return getSymbolTable().lookup(strConstant->getValue());
+        } else if (dynamic_cast<const AstNilConstant*>(&constant) != nullptr) {
+            return RecordTable::getNil();
+        } else if (auto numConstant = dynamic_cast<const AstNumberConstant*>(&constant)) {
+            return numConstant->getValue();
+        } else if (auto floatConstant = dynamic_cast<const AstFloatConstant*>(&constant)) {
+            return floatConstant->getValue();
+        } else if (auto unsignedConstant = dynamic_cast<const AstUnsignedConstant*>(&constant)) {
+            return unsignedConstant->getValue();
+        } else {
+            assert(false && "Unaccounted-for constant");
+        }
+    }
 
     /**
      * translate RAM code for the non-recursive clauses of the given relation.

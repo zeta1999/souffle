@@ -69,11 +69,6 @@ public:
         name = n;
     }
 
-    /** Returns this class as the referenced atom */
-    const AstAtom* getAtom() const override {
-        return this;
-    }
-
     /** Add argument to the atom */
     void addArgument(std::unique_ptr<AstArgument> arg) {
         arguments.push_back(std::move(arg));
@@ -146,12 +141,7 @@ public:
     AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     /** Returns the nested atom as the referenced atom */
-    const AstAtom* getAtom() const override {
-        return atom.get();
-    }
-
-    /** Returns the nested atom as the referenced atom */
-    AstAtom* getAtom() {
+    const AstAtom* getAtom() const {
         return atom.get();
     }
 
@@ -196,7 +186,7 @@ public:
     AstProvenanceNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     /** Returns the nested atom as the referenced atom */
-    const AstAtom* getAtom() const override {
+    const AstAtom* getAtom() const {
         return atom.get();
     }
 

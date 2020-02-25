@@ -330,9 +330,10 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     if (Global::config().has("debug-report") || Global::config().get("show") == "type-analysis") {
         debugStream = &analysisLogs;
     }
+    const auto& program = *translationUnit.getProgram();
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
     for (const AstRelation* rel : translationUnit.getProgram()->getRelations()) {
-        for (const AstClause* clause : rel->getClauses()) {
+        for (const AstClause* clause : rel->getClauses(program)) {
             // Perform the type analysis
             std::map<const AstArgument*, TypeSet> clauseArgumentTypes =
                     analyseTypes(typeEnvAnalysis->getTypeEnvironment(), *clause, translationUnit.getProgram(),

@@ -76,7 +76,7 @@ size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
     assert(rel != nullptr && "clause relation does not exist");
 
     size_t clauseNum = 1;
-    for (const auto* cur : rel->getClauses()) {
+    for (const auto* cur : rel->getClauses(*program)) {
         bool isFact = cur->getBodyLiterals().empty();
         if (cur == clause) {
             return isFact ? 0 : clauseNum;
@@ -91,7 +91,7 @@ size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
 
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
-    for (const AstClause* cl : relation->getClauses()) {
+    for (const AstClause* cl : relation->getClauses(*program)) {
         for (const auto* neg : getBodyLiterals<AstNegation>(*cl)) {
             if (negRelation == getAtomRelation(neg->getAtom(), program)) {
                 foundLiteral = neg;
@@ -104,7 +104,7 @@ bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation
 
 bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelation* aggRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
-    for (const AstClause* cl : relation->getClauses()) {
+    for (const AstClause* cl : relation->getClauses(*program)) {
         bool hasAgg = false;
         visitDepthFirst(*cl, [&](const AstAggregator& cur) {
             visitDepthFirst(cur, [&](const AstAtom& atom) {

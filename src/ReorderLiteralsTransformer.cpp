@@ -369,7 +369,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     std::vector<AstClause*> clausesToRemove;
 
     for (const AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : rel->getClauses(program)) {
             AstClause* newClause = reorderClauseWithSips(sipsFunction, clause);
             if (newClause != nullptr) {
                 // reordering needed - swap around
@@ -432,7 +432,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
         std::vector<AstClause*> clausesToRemove;
 
         for (const AstRelation* rel : program.getRelations()) {
-            for (AstClause* clause : rel->getClauses()) {
+            for (AstClause* clause : rel->getClauses(program)) {
                 AstClause* newClause = reorderClauseWithSips(profilerSips, clause);
                 if (newClause != nullptr) {
                     // reordering needed - swap around

@@ -115,7 +115,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // get the list of components to be checked
     std::vector<const AstNode*> nodes;
     for (const auto& rel : program.getRelations()) {
-        for (const auto& cls : rel->getClauses()) {
+        for (const auto& cls : rel->getClauses(program)) {
             nodes.push_back(cls);
         }
     }
@@ -705,12 +705,12 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     checkRelationDeclaration(report, typeEnv, program, relation, ioTypes);
 
     // check clauses
-    for (AstClause* c : relation.getClauses()) {
+    for (AstClause* c : relation.getClauses(program)) {
         checkClause(report, program, *c, recursiveClauses);
     }
 
     // check whether this relation is empty
-    if (relation.getClauses().empty() && !ioTypes.isInput(&relation) &&
+    if (relation.getClauses(program).empty() && !ioTypes.isInput(&relation) &&
             !relation.hasQualifier(RelationQualifier::SUPPRESSED)) {
         report.addWarning("No rules/facts defined for relation " + toString(relation.getQualifiedName()),
                 relation.getSrcLoc());
@@ -1287,7 +1287,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // Check if an inlined clause ever contains a $
     for (const AstRelation* rel : inlinedRelations) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : rel->getClauses(program)) {
             visitDepthFirst(*clause, [&](const AstArgument& arg) {
                 if (dynamic_cast<const AstCounter*>(&arg) != nullptr) {
                     report.addError(
@@ -1306,7 +1306,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     AstRelationSet nonNegatableRelations;
     for (const AstRelation* rel : inlinedRelations) {
         bool foundNonNegatable = false;
-        for (const AstClause* clause : rel->getClauses()) {
+        for (const AstClause* clause : rel->getClauses(program)) {
             // Get the variables in the head
             std::set<std::string> headVariables;
             visitDepthFirst(
@@ -1443,13 +1443,14 @@ void AstSemanticChecker::checkNamespaces(ErrorReport& report, const AstProgram& 
 }
 
 bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
+    const auto& program = *translationUnit.getProgram();
     auto* relationSchedule = translationUnit.getAnalysis<RelationSchedule>();
     auto* recursiveClauses = translationUnit.getAnalysis<RecursiveClauses>();
 
     for (const RelationScheduleStep& step : relationSchedule->schedule()) {
         const std::set<const AstRelation*>& scc = step.computed();
         for (const AstRelation* rel : scc) {
-            for (const AstClause* clause : rel->getClauses()) {
+            for (const AstClause* clause : rel->getClauses(program)) {
                 if (!recursiveClauses->recursive(clause)) {
                     continue;
                 }

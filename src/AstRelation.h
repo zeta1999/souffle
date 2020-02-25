@@ -118,7 +118,7 @@ public:
     }
 
     /** Obtains a list of the associated clauses */
-    std::vector<AstClause*> getClauses() const {
+    std::vector<AstClause*> getClauses(const AstProgram& program) const {
         return toPtrVector(clauses);
     }
 

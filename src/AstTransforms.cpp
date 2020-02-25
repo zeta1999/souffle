@@ -325,7 +325,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                         toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
             }
 
-            rel->addClause(program, std::unique_ptr<AstClause>(aggClause));
+            program.tmpAddClause(std::unique_ptr<AstClause>(aggClause));
             program.appendRelation(std::unique_ptr<AstRelation>(rel));
 
             // -- update aggregate --
@@ -599,7 +599,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                 }
 
                 program.tmpRemoveClause(clause);
-                rel->addClause(program, std::move(replacementClause));
+                program.tmpAddClause(std::move(replacementClause));
             }
         }
     }
@@ -913,7 +913,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
                     newClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
                 }
 
-                newRelation->addClause(program, std::move(newClause));
+                program.tmpAddClause(std::move(newClause));
             }
         }
 

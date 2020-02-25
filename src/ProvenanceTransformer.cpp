@@ -177,7 +177,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(AstProgram& program, AstClause& or
 
     // set clause head and add clause to info relation
     infoClause->setHead(std::unique_ptr<AstAtom>(infoClauseHead));
-    infoRelation->addClause(program, std::unique_ptr<AstClause>(infoClause));
+    program.tmpAddClause(std::unique_ptr<AstClause>(infoClause));
 
     return std::unique_ptr<AstRelation>(infoRelation);
 }
@@ -208,7 +208,7 @@ void transformEqrelRelation(AstProgram& program, AstRelation& rel) {
     transitiveClause->setHead(std::unique_ptr<AstAtom>(transitiveClauseHead));
     transitiveClause->addToBody(std::unique_ptr<AstLiteral>(transitiveClauseBody));
     transitiveClause->addToBody(std::unique_ptr<AstLiteral>(transitiveClauseBody2));
-    rel.addClause(program, std::unique_ptr<AstClause>(transitiveClause));
+    program.tmpAddClause(std::unique_ptr<AstClause>(transitiveClause));
 
     // symmetric
     // symmetric clause: A(x, y) :- A(y, x).
@@ -223,7 +223,7 @@ void transformEqrelRelation(AstProgram& program, AstRelation& rel) {
 
     symClause->setHead(std::unique_ptr<AstAtom>(symClauseHead));
     symClause->addToBody(std::unique_ptr<AstLiteral>(symClauseBody));
-    rel.addClause(program, std::unique_ptr<AstClause>(symClause));
+    program.tmpAddClause(std::unique_ptr<AstClause>(symClause));
 
     // reflexivity
     // reflexive clause: A(x, x) :- A(x, _).
@@ -238,7 +238,7 @@ void transformEqrelRelation(AstProgram& program, AstRelation& rel) {
 
     reflexiveClause->setHead(std::unique_ptr<AstAtom>(reflexiveClauseHead));
     reflexiveClause->addToBody(std::unique_ptr<AstLiteral>(reflexiveClauseBody));
-    rel.addClause(program, std::unique_ptr<AstClause>(reflexiveClause));
+    program.tmpAddClause(std::unique_ptr<AstClause>(reflexiveClause));
 }
 
 bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translationUnit) {

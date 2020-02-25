@@ -123,16 +123,6 @@ public:
         return tmpGetClauses(program, getQualifiedName());
     }
 
-    /** Add a clause to the relation */
-    template <typename T>
-    void addClause(T& program, std::unique_ptr<AstClause> clause) {
-        assert(clause != nullptr && "Undefined clause");
-        assert(clause->getHead() != nullptr && "Undefined head of the clause");
-        assert(clause->getHead()->getQualifiedName() == name &&
-                "Name of the atom in the head of the clause and the relation do not match");
-        program.tmpAddClause(std::move(clause));
-    }
-
     AstRelation* clone() const override {
         auto res = new AstRelation();
         res->name = name;

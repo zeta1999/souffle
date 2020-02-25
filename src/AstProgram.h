@@ -214,11 +214,13 @@ public:
         assert(r && "Trying to append to unknown relation!");
 
         // delegate call
-        r->addClause(*this, std::move(clause));
+        tmpAddClause(std::move(clause));
     }
 
     /** add clause */
     void tmpAddClause(std::unique_ptr<AstClause> clause) {
+        assert(clause != nullptr && "Undefined clause");
+        assert(clause->getHead() != nullptr && "Undefined head of the clause");
         tmpClauses.push_back(std::move(clause));
     }
 

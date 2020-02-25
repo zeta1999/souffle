@@ -154,7 +154,7 @@ void ParserDriver::addType(std::unique_ptr<AstType> type) {
 }
 
 void ParserDriver::addClause(std::unique_ptr<AstClause> c) {
-    translationUnit->getProgram()->addClause(std::move(c));
+    translationUnit->getProgram()->tmpAddClause(std::move(c));
 }
 void ParserDriver::addComponent(std::unique_ptr<AstComponent> c) {
     translationUnit->getProgram()->addComponent(std::move(c));

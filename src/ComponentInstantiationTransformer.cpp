@@ -259,11 +259,12 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
     }
 
     // add the local clauses
+    // TODO: check orphans
     for (const auto& cur : component.getClauses()) {
         if (overridden.count(cur->getHead()->getQualifiedName().getQualifiers()[0]) == 0) {
             AstRelation* rel = index[cur->getHead()->getQualifiedName()];
             if (rel != nullptr) {
-                rel->addClause(program, std::unique_ptr<AstClause>(cur->clone()));
+                program.tmpAddClause(std::unique_ptr<AstClause>(cur->clone()));
             } else {
                 orphans.emplace_back(cur->clone());
             }
@@ -276,7 +277,7 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
         AstRelation* rel = index[cur->getHead()->getQualifiedName()];
         if (rel != nullptr) {
             // add orphan to current instance and delete from orphan list
-            rel->addClause(program, std::unique_ptr<AstClause>(cur->clone()));
+            program.tmpAddClause(std::unique_ptr<AstClause>(cur->clone()));
             iter = orphans.erase(iter);
         } else {
             ++iter;

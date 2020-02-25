@@ -372,7 +372,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         std::unique_ptr<RamCondition> visitNegation(const AstNegation& neg) override {
             const auto* atom = neg.getAtom();
             size_t auxiliaryArity = translator.getEvaluationArity(atom);
-            assert(auxiliaryArity < atom->getArity() && "auxiliary arity out of bounds");
+            assert(auxiliaryArity <= atom->getArity() && "auxiliary arity out of bounds");
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
 

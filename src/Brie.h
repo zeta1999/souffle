@@ -2068,7 +2068,7 @@ struct fix_binding<0, Pos, Dim> {
 template <unsigned Dim>
 struct fix_binding<0, Dim, Dim> {
     template <typename Store, typename iterator, typename entry_type>
-    bool operator()(const Store&, iterator& /* begin */, iterator& /* end */, const entry_type&) const {
+    bool operator()(const Store& /* store */, iterator& /* begin */, iterator& /* end */, const entry_type& /* entry */) const {
         // nothing more to do
         return true;
     }

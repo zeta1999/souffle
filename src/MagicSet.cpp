@@ -34,8 +34,6 @@
 
 namespace souffle {
 
-class SymbolTable;
-
 /* general functions */
 
 // checks whether the adorned version of two predicates is equal
@@ -974,7 +972,7 @@ std::string extractAdornment(const AstQualifiedName& magicRelationName) {
 }
 
 // returns the constant represented by a variable of the form "+abdulX_variablevalue_X"
-AstArgument* extractConstant(SymbolTable& symbolTable, const std::string& normalisedConstant) {
+AstArgument* extractConstant(const std::string& normalisedConstant) {
     // strip off the prefix up to (and including) the first underscore
     size_t argStart = normalisedConstant.find('_');
     std::string arg = normalisedConstant.substr(argStart + 1, normalisedConstant.size());
@@ -985,7 +983,7 @@ AstArgument* extractConstant(SymbolTable& symbolTable, const std::string& normal
 
     if (indicatorChar == 's') {
         // string argument
-        return new AstStringConstant(symbolTable, stringRep);
+        return new AstStringConstant(stringRep);
     } else if (indicatorChar == 'n') {
         // numeric argument
         return new AstNumberConstant(static_cast<RamDomain>(stoll(stringRep)));
@@ -1320,8 +1318,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                             // all normalised constants begin with "+abdul" (see AstTransforms.cpp)
                             // +abdulX_variablevalue_Y
                             if (hasPrefix(varName, "+abdul")) {
-                                AstArgument* embeddedConstant =
-                                        extractConstant(translationUnit.getSymbolTable(), varName);
+                                AstArgument* embeddedConstant = extractConstant(varName);
 
                                 // add the constraint to the body of the clause
                                 magicClause->addToBody(std::make_unique<AstBinaryConstraint>(

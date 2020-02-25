@@ -860,7 +860,7 @@ non_empty_arg_list
 /* Atom argument */
 arg
   : STRING {
-        $$ = new AstStringConstant(driver.getSymbolTable(), $STRING);
+        $$ = new AstStringConstant($STRING);
         $$->setSrcLoc(@$);
     }
   | FLOAT {
@@ -944,7 +944,7 @@ arg
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
         if (const AstNumberConstant* original = dynamic_cast<const AstNumberConstant*>($nested_arg)) {
-            $$ = new AstNumberConstant(-1 * original->getRamRepresentation());
+            $$ = new AstNumberConstant(-1 * original->getValue());
             $$->setSrcLoc(@nested_arg);
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,

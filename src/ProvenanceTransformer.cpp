@@ -124,8 +124,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     // add an attribute to infoRelation for the head of clause
     infoRelation->addAttribute(
             std::make_unique<AstAttribute>(std::string("head_vars"), AstQualifiedName("symbol")));
-    infoClauseHead->addArgument(
-            std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), headVariableString.str()));
+    infoClauseHead->addArgument(std::make_unique<AstStringConstant>(headVariableString.str()));
 
     // visit all body literals and add to info clause head
     for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
@@ -153,12 +152,10 @@ std::unique_ptr<AstRelation> makeInfoRelation(
                     atomDescription.append("," + getArgInfo(arg));
                 }
 
-                infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
-                        translationUnit.getSymbolTable(), atomDescription));
+                infoClauseHead->addArgument(std::make_unique<AstStringConstant>(atomDescription));
                 // for a negation, add a marker with the relation name
             } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
-                infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
-                        translationUnit.getSymbolTable(), ("!" + relName)));
+                infoClauseHead->addArgument(std::make_unique<AstStringConstant>("!" + relName));
             }
             // for a constraint, add the constraint symbol and LHS and RHS
         } else if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
@@ -167,8 +164,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             constraintDescription.append("," + getArgInfo(con->getLHS()));
             constraintDescription.append("," + getArgInfo(con->getRHS()));
 
-            infoClauseHead->addArgument(std::make_unique<AstStringConstant>(
-                    translationUnit.getSymbolTable(), constraintDescription));
+            infoClauseHead->addArgument(std::make_unique<AstStringConstant>(constraintDescription));
         }
     }
 
@@ -177,8 +173,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     originalClause.print(ss);
 
     infoRelation->addAttribute(std::make_unique<AstAttribute>("clause_repr", AstQualifiedName("symbol")));
-    infoClauseHead->addArgument(
-            std::make_unique<AstStringConstant>(translationUnit.getSymbolTable(), ss.str()));
+    infoClauseHead->addArgument(std::make_unique<AstStringConstant>(ss.str()));
 
     // set clause head and add clause to info relation
     infoClause->setHead(std::unique_ptr<AstAtom>(infoClauseHead));

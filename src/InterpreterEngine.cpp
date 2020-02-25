@@ -259,9 +259,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 #define BINARY_OP_CAST_SHIFT_MASK(ty, op) return ramBitCast(                \
     ramBitCast<ty>(execute(node->getChild(0), ctxt)) op                     \
     ramBitCast<ty>(execute(node->getChild(1), ctxt) & RAM_BIT_SHIFT_MASK) )
-#define BINARY_OP_INTEGRAL_SHIFT(opcode, op)                                   \
-    case FunctorOp::   opcode: { BINARY_OP_CAST_SHIFT_MASK(RamSigned  , op); } \
-    case FunctorOp::U##opcode: { BINARY_OP_CAST_SHIFT_MASK(RamUnsigned, op); }
+#define BINARY_OP_INTEGRAL_SHIFT(opcode, op, tySigned, tyUnsigned)              \
+    case FunctorOp::   opcode: { BINARY_OP_CAST_SHIFT_MASK(tySigned   , op); }  \
+    case FunctorOp::U##opcode: { BINARY_OP_CAST_SHIFT_MASK(tyUnsigned , op); }
             // clang-format on
 
             const auto& args = cur.getArguments();
@@ -362,14 +362,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 BINARY_OP_INTEGRAL(BAND, &)
                 BINARY_OP_INTEGRAL(BOR, |)
                 BINARY_OP_INTEGRAL(BXOR, ^)
-                BINARY_OP_INTEGRAL_SHIFT(BSHIFT_L, <<)
-                BINARY_OP_INTEGRAL_SHIFT(BSHIFT_R, >>)
+                // Handle left-shift as unsigned to match Java semantics of `<<`, namely:
+                //  "... `n << s` is `n` left-shifted `s` bit positions; ..."
+                // Using `RamSigned` would imply UB due to signed overflow when shifting negatives.
+                BINARY_OP_INTEGRAL_SHIFT(BSHIFT_L         , <<, RamUnsigned, RamUnsigned)
+                // For right-shift, we do need sign extension.
+                BINARY_OP_INTEGRAL_SHIFT(BSHIFT_R         , >>, RamSigned  , RamUnsigned)
+                BINARY_OP_INTEGRAL_SHIFT(BSHIFT_R_UNSIGNED, >>, RamUnsigned, RamUnsigned)
                     // clang-format on
-
-                case FunctorOp::BSHIFT_R_UNSIGNED:
-                case FunctorOp::UBSHIFT_R_UNSIGNED: {
-                    BINARY_OP_CAST_SHIFT_MASK(RamUnsigned, >>);
-                }
 
                 case FunctorOp::LAND: {
                     BINARY_OP(&&);

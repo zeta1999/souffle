@@ -31,7 +31,7 @@
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -71,7 +71,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     auto infoRelation = new AstRelation();
     infoRelation->setQualifiedName(name);
     // set qualifier to INFO_RELATION
-    infoRelation->setQualifier(INFO_RELATION);
+    infoRelation->setRepresentation(RelationRepresentation::INFO);
 
     // create new clause containing a single fact
     auto infoClause = new AstClause();
@@ -188,7 +188,7 @@ void transformEqrelRelation(AstRelation& rel) {
             "attempting to transform non-eqrel relation");
     assert(rel.getArity() == 2 && "eqrel relation not binary");
 
-    rel.setQualifier(rel.getQualifier() - EQREL_RELATION + BTREE_RELATION);
+    rel.setRepresentation(RelationRepresentation::BTREE);
 
     // transitivity
     // transitive clause: A(x, z) :- A(x, y), A(y, z).

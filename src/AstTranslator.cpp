@@ -112,8 +112,8 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     std::string name = getRelationName(rel->getQualifiedName());
     std::vector<std::string> attributesTypes;
 
-    for (size_t i = 0; i < rel->getArity(); ++i) {
-        auto type = getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName()));
+    for (const auto* attribute : rel->getAttributes()) {
+        auto type = getTypeQualifier(typeEnv->getType(attribute->getTypeName()));
         attributesTypes.push_back(type);
     }
 
@@ -214,8 +214,8 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
                 delimiter = ioDirective.get("delimiter");
             }
             std::vector<std::string> attributeNames;
-            for (unsigned int i = 0; i < rel->getArity(); i++) {
-                attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
+            for (const auto* attribute : rel->getAttributes()) {
+                attributeNames.push_back(attribute->getAttributeName());
             }
 
             if (Global::config().has("provenance")) {
@@ -372,6 +372,7 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         std::unique_ptr<RamCondition> visitNegation(const AstNegation& neg) override {
             const auto* atom = neg.getAtom();
             size_t auxiliaryArity = translator.getEvaluationArity(atom);
+            assert(auxiliaryArity <= atom->getArity() && "auxiliary arity out of bounds");
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
 
@@ -394,8 +395,10 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
         std::unique_ptr<RamCondition> visitProvenanceNegation(const AstProvenanceNegation& neg) override {
             const auto* atom = neg.getAtom();
             size_t auxiliaryArity = translator.getEvaluationArity(atom);
+            assert(auxiliaryArity < atom->getArity() && "auxiliary arity out of bounds");
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
+
             auto args = atom->getArguments();
             for (size_t i = 0; i < arity; i++) {
                 values.push_back(translator.translateValue(args[i], index));
@@ -1109,9 +1112,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         std::unique_ptr<RamStatement> loopRelSeq;
 
         /* Find clauses for relation rel */
-        for (size_t i = 0; i < rel->clauseSize(); i++) {
-            AstClause* cl = rel->getClause(i);
-
+        for (const auto& cl : rel->getClauses()) {
             // skip non-recursive clauses
             if (!recursiveClauses->recursive(cl)) {
                 continue;
@@ -1553,13 +1554,14 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             auto arity = rel->getArity();
             auto auxiliaryArity = auxArityAnalysis->getArity(rel);
             auto representation = rel->getRepresentation();
+            const auto& attributes = rel->getAttributes();
             std::vector<std::string> attributeNames;
             std::vector<std::string> attributeTypeQualifiers;
             for (size_t i = 0; i < rel->getArity(); ++i) {
-                attributeNames.push_back(rel->getAttribute(i)->getAttributeName());
+                attributeNames.push_back(attributes[i]->getAttributeName());
                 if (typeEnv != nullptr) {
                     attributeTypeQualifiers.push_back(
-                            getTypeQualifier(typeEnv->getType(rel->getAttribute(i)->getTypeName())));
+                            getTypeQualifier(typeEnv->getType(attributes[i]->getTypeName())));
                 }
             }
             ramRels[name] = std::make_unique<RamRelation>(

@@ -204,14 +204,6 @@ std::string getNextEdbName(AstProgram* program) {
     return newEdbName.str();
 }
 
-// copies over necessary qualifiers from original into new relation
-// note that input/output directives are handled at the end of the MST
-void updateQualifiers(AstRelation* originalRelation, AstRelation* newRelation) {
-    if (originalRelation->getRepresentation() == RelationRepresentation::EQREL) {
-        newRelation->setRepresentation(RelationRepresentation::EQREL);
-    }
-}
-
 // create a new relation with a given name based on a previous relation
 AstRelation* createNewRelation(AstRelation* original, const AstQualifiedName& newName) {
     auto* newRelation = new AstRelation();
@@ -223,8 +215,8 @@ AstRelation* createNewRelation(AstRelation* original, const AstQualifiedName& ne
         newRelation->addAttribute(std::unique_ptr<AstAttribute>(attr->clone()));
     }
 
-    // copy over necessary qualifiers
-    updateQualifiers(original, newRelation);
+    // copy over internal representation
+    newRelation->setRepresentation(original->getRepresentation());
 
     return newRelation;
 }
@@ -1220,8 +1212,8 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                                 argcount++;
                             }
 
-                            // add in relevant qualifiers from original relation
-                            updateQualifiers(originalRelation, magicRelation);
+                            // copy over internal representation
+                            magicRelation->setRepresentation(originalRelation->getRepresentation());
 
                             // add the new magic relation to the program
                             program->appendRelation(std::unique_ptr<AstRelation>(magicRelation));

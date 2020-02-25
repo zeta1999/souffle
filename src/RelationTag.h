@@ -119,8 +119,8 @@ inline RelationRepresentation getRelationRepresentationFromTag(const RelationTag
     }
 }
 
-inline std::ostream& operator<<(std::ostream& os, RelationQualifier q) {
-    switch (q) {
+inline std::ostream& operator<<(std::ostream& os, RelationQualifier qualifier) {
+    switch (qualifier) {
         case RelationQualifier::INPUT:
             os << "input";
             break;
@@ -146,8 +146,8 @@ inline std::ostream& operator<<(std::ostream& os, RelationQualifier q) {
     return os;
 }
 
-inline std::ostream& operator<<(std::ostream& os, RelationRepresentation r) {
-    switch (r) {
+inline std::ostream& operator<<(std::ostream& os, RelationRepresentation representation) {
+    switch (representation) {
         case RelationRepresentation::BTREE:
             os << "btree";
             break;

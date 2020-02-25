@@ -90,7 +90,7 @@ public:
     }
 
     /** Return qualifiers associated with this relation */
-    std::set<RelationQualifier> getQualifiers() const {
+    const std::set<RelationQualifier>& getQualifiers() const {
         return qualifiers;
     }
 

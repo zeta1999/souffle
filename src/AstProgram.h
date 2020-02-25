@@ -159,6 +159,11 @@ public:
         return toPtrVector(clauses);
     }
 
+    /** get clauses */
+    std::vector<AstClause*> tmpGetClauses() const {
+        return toPtrVector(tmpClauses);
+    }
+
     /** get functor declaration */
     // TODO (b-scholz): replace by list of functors
     AstFunctorDeclaration* getFunctorDeclaration(const std::string& name) const {
@@ -215,6 +220,11 @@ public:
         r->addClause(*this, std::move(clause));
     }
 
+    /** add clause */
+    void tmpAddClause(std::unique_ptr<AstClause> clause) {
+        tmpClauses.push_back(std::move(clause));
+    }
+
     /** remove clause */
     void removeClause(const AstClause* clause) {
         // get relation
@@ -225,6 +235,17 @@ public:
 
         // delegate call
         pos->second->removeClause(*this, clause);
+    }
+
+    /** remove clause */
+    bool tmpRemoveClause(const AstClause* clause) {
+        for (auto it = tmpClauses.begin(); it != tmpClauses.end(); it++) {
+            if (**it == *clause) {
+                tmpClauses.erase(it);
+                return true;
+            }
+        }
+        return false;
     }
 
     /** get orphan clauses (clauses without relation declarations) */
@@ -491,6 +512,9 @@ protected:
 
     /** The list of clauses provided by the user */
     std::vector<std::unique_ptr<AstClause>> clauses;
+
+    /** Program clauses */
+    std::vector<std::unique_ptr<AstClause>> tmpClauses;
 
     /** The list of IO directives provided by the user */
     std::vector<std::unique_ptr<AstLoad>> loads;

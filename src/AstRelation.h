@@ -23,6 +23,7 @@
 #include "AstNode.h"
 #include "AstQualifiedName.h"
 #include "AstType.h"
+#include "AstUtils.h"
 #include "Global.h"
 #include "RelationTag.h"
 
@@ -119,20 +120,23 @@ public:
 
     /** Obtains a list of the associated clauses */
     std::vector<AstClause*> getClauses(const AstProgram& program) const {
-        return toPtrVector(clauses);
+        return tmpGetClauses(program, getQualifiedName());
     }
 
     /** Add a clause to the relation */
-    void addClause(AstProgram& program, std::unique_ptr<AstClause> clause) {
+    template <typename T>
+    void addClause(T& program, std::unique_ptr<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");
         assert(clause->getHead() != nullptr && "Undefined head of the clause");
         assert(clause->getHead()->getQualifiedName() == name &&
                 "Name of the atom in the head of the clause and the relation do not match");
-        clauses.push_back(std::move(clause));
+        program.tmpAddClause(std::move(clause));
     }
 
     /** Removes the given clause from this relation */
-    bool removeClause(AstProgram& program, const AstClause* clause) {
+    template <typename T>
+    bool removeClause(T& program, const AstClause* clause) {
+        program.tmpRemoveClause(clause);
         for (auto it = clauses.begin(); it != clauses.end(); ++it) {
             if (**it == *clause) {
                 clauses.erase(it);

@@ -38,9 +38,9 @@ std::vector<const AstRecordInit*> getRecords(const AstNode& root) {
     return recs;
 }
 
-std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualifiedName& relationName) {
+std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstQualifiedName& relationName) {
     std::vector<AstClause*> result;
-    for (AstClause* clause : program.getClauses()) {
+    for (AstClause* clause : program.tmpGetClauses()) {
         if (clause->getHead()->getQualifiedName() == relationName) {
             result.push_back(clause);
         }

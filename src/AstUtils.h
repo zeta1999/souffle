@@ -79,7 +79,7 @@ std::vector<T*> getBodyLiterals(const C& clause) {
  * @param relationName the name of the relation to get the clauses of
  * @return vector of clauses belonging to the given relation
  */
-std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualifiedName& relationName);
+std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstQualifiedName& relationName);
 
 /**
  * Returns the relation referenced by the given atom.

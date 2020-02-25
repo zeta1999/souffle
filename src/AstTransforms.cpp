@@ -105,7 +105,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
                     bool onlyVars = true;
                     auto args = cl->getHead()->getArguments();
                     while (!args.empty()) {
-                        const auto& cur = args.back();
+                        const auto cur = args.back();
                         args.pop_back();
                         if (!isVar(*cur)) {
                             if (isRec(*cur)) {

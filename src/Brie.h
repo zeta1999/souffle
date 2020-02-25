@@ -2841,7 +2841,7 @@ public:
     /**
      * Partitions this trie into a list of disjoint sub-sets.
      */
-    std::vector<range<iterator>> partition(unsigned /* chunks */ = 500) const {
+    std::vector<range<iterator>> partition(unsigned /* chunks */) const {
         // shortcut for empty trie
         if (empty()) return std::vector<range<iterator>>();
         return toVector(make_range(begin(), end()));

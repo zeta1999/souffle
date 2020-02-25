@@ -101,42 +101,37 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
             if (!isFact(*cl) && cl->getBodyLiterals().size() == 1u && bodyAtoms.size() == 1u) {
                 AstAtom* atom = bodyAtoms[0];
                 if (equal_targets(cl->getHead()->getArguments(), atom->getArguments())) {
-                    // we have a match but have to check that all arguments are either
-                    // variables or records containing variables
-                    bool onlyVars = true;
+                    // Requirements:
+                    // 1) (checked) It is a rule with exactly one body.
+                    // 3) (checked) The body consists of an atom.
+                    // 4) (checked) The atom's arguments must be identical to the rule's head.
+                    // 5) (pending) The rules's head must consist only of either:
+                    //  5a) Variables
+                    //  5b) Aggregates unpacked into variables
+                    // 6) (pending) Each variable must have a distinct name.
+                    bool onlyDistinctHeadVars = true;
+                    std::set<std::string> headVars;
+
                     auto args = cl->getHead()->getArguments();
-                    while (!args.empty()) {
+                    while (onlyDistinctHeadVars && !args.empty()) {
                         const auto cur = args.back();
                         args.pop_back();
-                        if (!isVar(*cur)) {
-                            if (isRec(*cur)) {
-                                // records are decomposed and their arguments are checked
-                                const auto& rec_args = static_cast<const AstRecordInit&>(*cur).getArguments();
-                                for (auto rec_arg : rec_args) {
-                                    args.push_back(rec_arg);
-                                }
-                            } else {
-                                onlyVars = false;
-                                break;
+
+                        if (auto var = dynamic_cast<const AstVariable*>(cur)) {
+                            onlyDistinctHeadVars &= headVars.insert(var->getName()).second;
+                        } else if (auto init = dynamic_cast<const AstRecordInit*>(cur)) {
+                            // records are decomposed and their arguments are checked
+                            for (auto rec_arg : init->getArguments()) {
+                                args.push_back(rec_arg);
                             }
-                        }
+                        } else
+                            onlyDistinctHeadVars = false;
                     }
 
-                    if (onlyVars) {
-                        bool distinctHeadVars = true;
-                        std::set<std::string> headVars;
-                        for (auto&& arg : cl->getHead()->getArguments()) {
-                            if (auto p = dynamic_cast<const AstVariable*>(arg))
-                                distinctHeadVars &= headVars.insert(p->getName()).second;
-
-                            if (!distinctHeadVars) break;
-                        }
-
-                        // all of the head variables are distinct, no unification in the head
-                        if (distinctHeadVars) {
-                            // all arguments are either variables or records containing variables
-                            isDirectAliasOf[cl->getHead()->getQualifiedName()] = atom->getQualifiedName();
-                        }
+                    if (onlyDistinctHeadVars) {
+                        // all arguments are either distinct variables or aggregates unpacked into distinct
+                        // variables
+                        isDirectAliasOf[cl->getHead()->getQualifiedName()] = atom->getQualifiedName();
                     }
                 }
             }

@@ -188,7 +188,7 @@ TEST(AstProgram, RemoveClause) {
     auto tu1 = makeATU(".decl A,B(x:number) \n A(sum x : B(x)).");
     auto clause = makeClause("A", std::move(sum));
 
-    tu1->getProgram()->tmpRemoveClause(clause.get());
+    tu1->getProgram()->removeClause(clause.get());
     auto tu2 = makeATU(".decl A,B(x:number)");
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }

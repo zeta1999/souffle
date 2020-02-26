@@ -124,6 +124,20 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
 }
 
 void ParserDriver::addIO(std::unique_ptr<AstIO> d) {
+  if (d->getKVP("operation") == "printsize") {
+        for (const auto& cur : translationUnit->getProgram()->getIOs()) {
+            if (cur->getQualifiedName() == d->getQualifiedName() &&
+                    cur->getKVP("operation") == "printsize") {
+                Diagnostic err(Diagnostic::ERROR,
+                        DiagnosticMessage("Redefinition of printsize directives for relation " +
+                                                  toString(d->getQualifiedName()),
+                                d->getSrcLoc()),
+                        {DiagnosticMessage("Previous definition", cur->getSrcLoc())});
+                translationUnit->getErrorReport().addDiagnostic(err);
+                return;
+            }
+        }
+    }
     translationUnit->getProgram()->addIO(std::move(d));
 }
 

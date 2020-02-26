@@ -34,10 +34,12 @@ public:
     AstIO() = default;
 
     void print(std::ostream& os) const override {
-        // TODO (b-scholz): print operation (input/output/printsize)
+        auto temp = kvps; 
+        temp.erase("operation"); 
+        os << "." << kvps.at("operation") << " "; 
         os << name;
-        if (!kvps.empty()) {
-            os << "(" << join(kvps, ",", [](std::ostream& out, const auto& arg) {
+        if (!temp.empty()) {
+            os << "(" << join(temp, ",", [](std::ostream& out, const auto& arg) {
                 out << arg.first << "=\"" << arg.second << "\"";
             }) << ")";
         }

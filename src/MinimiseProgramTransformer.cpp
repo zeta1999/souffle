@@ -340,7 +340,7 @@ bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
     for (AstRelation* rel : program.getRelations()) {
         std::vector<std::vector<AstClause*>> equivalenceClasses;
 
-        for (AstClause* clause : tmpGetClauses(program, *rel)) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             bool added = false;
 
             for (std::vector<AstClause*>& eqClass : equivalenceClasses) {
@@ -387,8 +387,8 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Find all singleton relations to consider
     std::vector<AstClause*> singletonRelationClauses;
     for (AstRelation* rel : program.getRelations()) {
-        if (!ioTypes->isIO(rel) && tmpGetClauses(program, *rel).size() == 1) {
-            AstClause* clause = tmpGetClauses(program, *rel)[0];
+        if (!ioTypes->isIO(rel) && getClauses(program, *rel).size() == 1) {
+            AstClause* clause = getClauses(program, *rel)[0];
             singletonRelationClauses.push_back(clause);
         }
     }

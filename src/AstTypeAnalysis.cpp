@@ -333,7 +333,7 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     const auto& program = *translationUnit.getProgram();
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
     for (const AstRelation* rel : translationUnit.getProgram()->getRelations()) {
-        for (const AstClause* clause : tmpGetClauses(program, *rel)) {
+        for (const AstClause* clause : getClauses(program, *rel)) {
             // Perform the type analysis
             std::map<const AstArgument*, TypeSet> clauseArgumentTypes =
                     analyseTypes(typeEnvAnalysis->getTypeEnvironment(), *clause, translationUnit.getProgram(),

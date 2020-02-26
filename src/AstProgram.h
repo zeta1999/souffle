@@ -90,7 +90,7 @@ public:
             const std::unique_ptr<AstRelation>& rel = cur.second;
             os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
             os << *rel << "\n\n";
-            for (const auto clause : tmpGetClauses()) {
+            for (const auto& clause : clauses) {
                 if (clause->getHead()->getQualifiedName() == rel->getQualifiedName()) {
                     os << *clause << "\n\n";
                 }
@@ -159,8 +159,8 @@ public:
     }
 
     /** get clauses */
-    std::vector<AstClause*> tmpGetClauses() const {
-        return toPtrVector(tmpClauses);
+    std::vector<AstClause*> getClauses() const {
+        return toPtrVector(clauses);
     }
 
     /** get functor declaration */
@@ -213,14 +213,14 @@ public:
     void addClause(std::unique_ptr<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");
         assert(clause->getHead() != nullptr && "Undefined head of the clause");
-        tmpClauses.push_back(std::move(clause));
+        clauses.push_back(std::move(clause));
     }
 
     /** remove a clause */
     bool removeClause(const AstClause* clause) {
-        for (auto it = tmpClauses.begin(); it != tmpClauses.end(); it++) {
+        for (auto it = clauses.begin(); it != clauses.end(); it++) {
             if (**it == *clause) {
-                tmpClauses.erase(it);
+                clauses.erase(it);
                 return true;
             }
         }
@@ -260,8 +260,8 @@ public:
             res->relations.insert(
                     std::make_pair(cur.first, std::unique_ptr<AstRelation>(cur.second->clone())));
         }
-        for (const auto& cur : tmpClauses) {
-            res->tmpClauses.emplace_back(cur->clone());
+        for (const auto& cur : clauses) {
+            res->clauses.emplace_back(cur->clone());
         }
         for (const auto& cur : loads) {
             res->loads.emplace_back(cur->clone());
@@ -296,7 +296,7 @@ public:
         for (auto& cur : relations) {
             cur.second = map(std::move(cur.second));
         }
-        for (auto& cur : tmpClauses) {
+        for (auto& cur : clauses) {
             cur = map(std::move(cur));
         }
         for (auto& cur : loads) {
@@ -330,7 +330,7 @@ public:
         for (const auto& cur : relations) {
             res.push_back(cur.second.get());
         }
-        for (const auto& cur : tmpClauses) {
+        for (const auto& cur : clauses) {
             res.push_back(cur.get());
         }
         for (const auto& cur : loads) {
@@ -368,7 +368,7 @@ protected:
         if (!equal_targets(relations, other.relations)) {
             return false;
         }
-        if (!equal_targets(tmpClauses, other.tmpClauses)) {
+        if (!equal_targets(clauses, other.clauses)) {
             return false;
         }
         if (!equal_targets(loads, other.loads)) {
@@ -457,7 +457,7 @@ protected:
     std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
 
     /** Program clauses */
-    std::vector<std::unique_ptr<AstClause>> tmpClauses;
+    std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** The list of IO directives provided by the user */
     std::vector<std::unique_ptr<AstLoad>> loads;

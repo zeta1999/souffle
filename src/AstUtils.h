@@ -73,14 +73,22 @@ std::vector<T*> getBodyLiterals(const C& clause) {
 }
 
 /**
- * Returns a vector of clauses in the program that describe a given relation.
+ * Returns a vector of clauses in the program describing the relation with the given name.
  *
  * @param program the program
- * @param relationName the name of the relation to get the clauses of
- * @return vector of clauses belonging to the given relation
+ * @param name the name of the relation to search for
+ * @return vector of clauses describing the relation with the given name
  */
-std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstQualifiedName& relationName);
-std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstRelation& rel);
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualifiedName& relationName);
+
+/**
+ * Returns a vector of clauses in the program describing the given relation.
+ *
+ * @param program the program
+ * @param rel the relation to search for
+ * @return vector of clauses describing the given relation
+ */
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation& rel);
 
 /**
  * Returns a vector of orphan clauses in the program.

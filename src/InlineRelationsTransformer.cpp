@@ -1011,7 +1011,7 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
                     // Replace the clause with these equivalent versions
                     clausesToDelete.insert(clause);
                     for (AstClause* replacementClause : newClauses) {
-                        program.appendClause(std::unique_ptr<AstClause>(replacementClause));
+                        program.tmpAddClause(std::unique_ptr<AstClause>(replacementClause));
                     }
 
                     // We've changed the program this iteration

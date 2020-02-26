@@ -374,7 +374,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             if (newClause != nullptr) {
                 // reordering needed - swap around
                 clausesToRemove.push_back(clause);
-                program.appendClause(std::unique_ptr<AstClause>(newClause));
+                program.tmpAddClause(std::unique_ptr<AstClause>(newClause));
             }
         }
     }
@@ -437,7 +437,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 if (newClause != nullptr) {
                     // reordering needed - swap around
                     clausesToRemove.push_back(clause);
-                    program.appendClause(std::unique_ptr<AstClause>(newClause));
+                    program.tmpAddClause(std::unique_ptr<AstClause>(newClause));
                 }
             }
         }

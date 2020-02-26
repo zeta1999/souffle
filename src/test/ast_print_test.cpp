@@ -47,7 +47,7 @@ TEST(AstPrint, NilConstant) {
     auto testArgument = std::make_unique<AstNilConstant>();
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -56,7 +56,7 @@ TEST(AstPrint, NumberConstant) {
     auto testArgument = std::make_unique<AstNumberConstant>(2);
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -67,7 +67,7 @@ TEST(AstPrint, StringConstant) {
     auto testArgument = std::make_unique<AstStringConstant>("test string");
 
     auto tu1 = ParserDriver::parseTranslationUnit(".decl A,B,C(x:number)", e, d);
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -76,7 +76,7 @@ TEST(AstPrint, Variable) {
     auto testArgument = std::make_unique<AstVariable>("testVar");
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -85,7 +85,7 @@ TEST(AstPrint, UnnamedVariable) {
     auto testArgument = std::make_unique<AstUnnamedVariable>();
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -94,7 +94,7 @@ TEST(AstPrint, Counter) {
     auto testArgument = std::make_unique<AstCounter>();
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -108,7 +108,7 @@ TEST(AstPrint, AggregatorMin) {
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
-    prog1->appendClause(makeClauseA(std::move(min)));
+    prog1->addClause(makeClauseA(std::move(min)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -122,7 +122,7 @@ TEST(AstPrint, AggregatorMax) {
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
-    prog1->appendClause(makeClauseA(std::move(max)));
+    prog1->addClause(makeClauseA(std::move(max)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -135,7 +135,7 @@ TEST(AstPrint, AggregatorCount) {
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
-    prog1->appendClause(makeClauseA(std::move(count)));
+    prog1->addClause(makeClauseA(std::move(count)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -149,7 +149,7 @@ TEST(AstPrint, AggregatorSum) {
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
-    prog1->appendClause(makeClauseA(std::move(sum)));
+    prog1->addClause(makeClauseA(std::move(sum)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }

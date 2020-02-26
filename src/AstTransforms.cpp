@@ -483,7 +483,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
                 }
 
                 program.tmpRemoveClause(cl);
-                program.appendClause(std::move(res));
+                program.tmpAddClause(std::move(res));
                 changed = true;
             }
         }
@@ -792,7 +792,7 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
 
     // Adjust the program
     for (AstClause* newClause : clausesToAdd) {
-        program.appendClause(std::unique_ptr<AstClause>(newClause));
+        program.tmpAddClause(std::unique_ptr<AstClause>(newClause));
     }
 
     for (const AstClause* oldClause : clausesToRemove) {

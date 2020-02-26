@@ -209,16 +209,6 @@ public:
         relations.erase(relations.find(name));
     }
 
-    /** append clause */
-    void appendClause(std::unique_ptr<AstClause> clause) {
-        // get relation
-        std::unique_ptr<AstRelation>& r = relations[clause->getHead()->getQualifiedName()];
-        assert(r && "Trying to append to unknown relation!");
-
-        // delegate call
-        tmpAddClause(std::move(clause));
-    }
-
     /** add clause */
     void tmpAddClause(std::unique_ptr<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");

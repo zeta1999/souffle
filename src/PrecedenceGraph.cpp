@@ -42,7 +42,7 @@ void PrecedenceGraph::run(const AstTranslationUnit& translationUnit) {
 
     for (AstRelation* r : relations) {
         backingGraph.insert(r);
-        for (const auto& c : tmpGetClauses(program, r)) {
+        for (const auto& c : tmpGetClauses(program, *r)) {
             const std::set<const AstRelation*>& dependencies =
                     getBodyRelations(c, translationUnit.getProgram());
             for (auto source : dependencies) {
@@ -168,7 +168,7 @@ bool RecursiveClauses::computeIsRecursive(
         }
 
         // check all atoms in the relations
-        for (const AstClause* cl : tmpGetClauses(program, cur)) {
+        for (const AstClause* cl : tmpGetClauses(program, *cur)) {
             for (const AstAtom* at : getBodyLiterals<AstAtom>(*cl)) {
                 auto rel = program.getRelation(at->getQualifiedName());
                 if (rel == trg) {

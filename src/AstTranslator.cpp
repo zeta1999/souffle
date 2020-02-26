@@ -1112,7 +1112,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         std::unique_ptr<RamStatement> loopRelSeq;
 
         /* Find clauses for relation rel */
-        for (const auto& cl : tmpGetClauses(*program, rel)) {
+        for (const auto& cl : tmpGetClauses(*program, *rel)) {
             // skip non-recursive clauses
             if (!recursiveClauses->recursive(cl)) {
                 continue;

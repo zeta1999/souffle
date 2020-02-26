@@ -93,7 +93,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
 
     // search for relations only defined by a single rule ..
     for (AstRelation* rel : program.getRelations()) {
-        const auto& clauses = tmpGetClauses(program, rel);
+        const auto& clauses = tmpGetClauses(program, *rel);
         if (!ioType->isIO(rel) && clauses.size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
             AstClause* cl = clauses[0];
@@ -170,7 +170,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
     // break remaining cycles
     for (const auto& rep : cycle_reps) {
         auto rel = program.getRelation(rep);
-        const auto& clauses = tmpGetClauses(program, rel);
+        const auto& clauses = tmpGetClauses(program, *rel);
         assert(clauses.size() == 1u && "unexpected number of clauses in relation");
         program.tmpRemoveClause(clauses[0]);
     }
@@ -401,7 +401,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& t
     auto* ioTypes = translationUnit.getAnalysis<IOType>();
     bool changed = false;
     for (auto rel : program.getRelations()) {
-        if (!tmpGetClauses(program, rel).empty() || ioTypes->isInput(rel)) {
+        if (!tmpGetClauses(program, *rel).empty() || ioTypes->isInput(rel)) {
             continue;
         }
         changed |= removeEmptyRelationUses(translationUnit, rel);
@@ -575,7 +575,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
     // Remove true and false constant literals from all clauses
     for (AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : tmpGetClauses(program, rel)) {
+        for (AstClause* clause : tmpGetClauses(program, *rel)) {
             bool containsTrue = false;
             bool containsFalse = false;
 
@@ -900,7 +900,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
         }
 
         // Keep all non-recursive clauses
-        for (AstClause* clause : tmpGetClauses(program, originalRelation)) {
+        for (AstClause* clause : tmpGetClauses(program, *originalRelation)) {
             if (!isRecursiveClause(*clause)) {
                 auto newClause = std::make_unique<AstClause>();
 
@@ -976,7 +976,7 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
     };
 
     for (AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : tmpGetClauses(program, rel)) {
+        for (AstClause* clause : tmpGetClauses(program, *rel)) {
             std::set<std::string> nonsingletons;
             std::set<std::string> vars;
 
@@ -1046,7 +1046,7 @@ bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationU
 
     AstProgram& program = *translationUnit.getProgram();
     for (AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : tmpGetClauses(program, rel)) {
+        for (AstClause* clause : tmpGetClauses(program, *rel)) {
             nameVariables update;
             clause->apply(update);
             changed |= update.changed;
@@ -1181,7 +1181,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
 
     // apply the change to all clauses in the program
     for (AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : tmpGetClauses(program, rel)) {
+        for (AstClause* clause : tmpGetClauses(program, *rel)) {
             if (isFact(*clause)) {
                 continue;  // don't normalise facts
             }

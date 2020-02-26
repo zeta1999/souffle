@@ -115,7 +115,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // get the list of components to be checked
     std::vector<const AstNode*> nodes;
     for (const auto& rel : program.getRelations()) {
-        for (const auto& cls : tmpGetClauses(program, rel)) {
+        for (const auto& cls : tmpGetClauses(program, *rel)) {
             nodes.push_back(cls);
         }
     }
@@ -1287,7 +1287,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // Check if an inlined clause ever contains a $
     for (const AstRelation* rel : inlinedRelations) {
-        for (AstClause* clause : tmpGetClauses(program, rel)) {
+        for (AstClause* clause : tmpGetClauses(program, *rel)) {
             visitDepthFirst(*clause, [&](const AstArgument& arg) {
                 if (dynamic_cast<const AstCounter*>(&arg) != nullptr) {
                     report.addError(
@@ -1306,7 +1306,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     AstRelationSet nonNegatableRelations;
     for (const AstRelation* rel : inlinedRelations) {
         bool foundNonNegatable = false;
-        for (const AstClause* clause : tmpGetClauses(program, rel)) {
+        for (const AstClause* clause : tmpGetClauses(program, *rel)) {
             // Get the variables in the head
             std::set<std::string> headVariables;
             visitDepthFirst(
@@ -1449,7 +1449,7 @@ bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
     for (const RelationScheduleStep& step : relationSchedule->schedule()) {
         const std::set<const AstRelation*>& scc = step.computed();
         for (const AstRelation* rel : scc) {
-            for (const AstClause* clause : tmpGetClauses(*translationUnit.getProgram(), rel)) {
+            for (const AstClause* clause : tmpGetClauses(*translationUnit.getProgram(), *rel)) {
                 if (!recursiveClauses->recursive(clause)) {
                     continue;
                 }

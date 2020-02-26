@@ -73,7 +73,7 @@ void normaliseInlinedHeads(AstProgram& program) {
             continue;
         }
 
-        for (AstClause* clause : tmpGetClauses(program, rel)) {
+        for (AstClause* clause : tmpGetClauses(program, *rel)) {
             // Set up the new clause with an empty body and no arguments in the head
             auto newClause = std::make_unique<AstClause>();
             newClause->setSrcLoc(clause->getSrcLoc());
@@ -418,7 +418,7 @@ std::vector<std::vector<AstLiteral*>> formNegatedLiterals(AstProgram& program, A
     std::vector<std::vector<AstBinaryConstraint*>> addedConstraints;
 
     // Go through every possible clause associated with the given atom
-    for (AstClause* inClause : tmpGetClauses(program, program.getRelation(atom->getQualifiedName()))) {
+    for (AstClause* inClause : tmpGetClauses(program, *program.getRelation(atom->getQualifiedName()))) {
         // Form the replacement clause by inlining based on the current clause
         std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inlineResult =
                 inlineBodyLiterals(atom, inClause);
@@ -773,7 +773,7 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
 
             // N new clauses should be formed, where N is the number of clauses
             // associated with the inlined relation
-            for (AstClause* inClause : tmpGetClauses(program, rel)) {
+            for (AstClause* inClause : tmpGetClauses(program, *rel)) {
                 // Form the replacement clause
                 std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inlineResult =
                         inlineBodyLiterals(atom, inClause);
@@ -1003,7 +1003,7 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
             }
 
             // Go through the relation's clauses and try inlining them
-            for (AstClause* clause : tmpGetClauses(program, rel)) {
+            for (AstClause* clause : tmpGetClauses(program, *rel)) {
                 if (containsInlinedAtom(program, *clause)) {
                     // Generate the inlined versions of this clause - the clause will be replaced by these
                     std::vector<AstClause*> newClauses = getInlinedClause(program, *clause);

@@ -33,7 +33,7 @@ public:
     virtual void run(const AstTranslationUnit& translationUnit) = 0;
 
     /** print the analysis result in HTML format */
-    virtual void print(std::ostream& os) const {}
+    virtual void print(std::ostream&) const {}
 
     /** define output stream operator */
     friend std::ostream& operator<<(std::ostream& out, const AstAnalysis& other) {

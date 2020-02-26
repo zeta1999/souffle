@@ -54,7 +54,7 @@ public:
             base.setNumTuples(size.getSize());
         }
     }
-    void visit(DirectoryEntry& ruleEntry) override {}
+    void visit(DirectoryEntry& /* ruleEntry */) override {}
 
 protected:
     T& base;

@@ -683,7 +683,7 @@ public:
         return {expression.get(), condition.get()};
     }
 
-    void print(std::ostream& os, int tabpos) const {
+    void print(std::ostream& os, int /* tabpos */) const {
         switch (function) {
             case MIN:
                 os << "MIN ";

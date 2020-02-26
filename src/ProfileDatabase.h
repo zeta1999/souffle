@@ -34,10 +34,10 @@ public:
     virtual void visit(DirectoryEntry& e);
 
     // visit entries
-    virtual void visit(DurationEntry& e) {}
-    virtual void visit(SizeEntry& e) {}
-    virtual void visit(TextEntry& e) {}
-    virtual void visit(TimeEntry& e) {}
+    virtual void visit(DurationEntry&) {}
+    virtual void visit(SizeEntry&) {}
+    virtual void visit(TextEntry&) {}
+    virtual void visit(TimeEntry&) {}
 };
 
 /**
@@ -418,7 +418,7 @@ public:
     /**
      * Return the entry at the given path.
      */
-    Entry* const lookupEntry(const std::vector<std::string>& path) const {
+    Entry* lookupEntry(const std::vector<std::string>& path) const {
         DirectoryEntry* dir = root.get();
         auto last = --path.end();
         for (auto it = path.begin(); it != last; ++it) {

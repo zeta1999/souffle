@@ -91,15 +91,6 @@ std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualified
 std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation& rel);
 
 /**
- * Returns a vector of orphan clauses in the program.
- *
- * @param program the program
- * @return vector of clauses without relation declarations
- */
-// TODO: change to analysis
-std::vector<AstClause*> getOrphanClauses(const AstProgram& program);
-
-/**
  * Returns the relation referenced by the given atom.
  * @param atom the atom
  * @param program the program containing the relations

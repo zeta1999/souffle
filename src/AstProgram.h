@@ -97,12 +97,6 @@ public:
             }
         }
 
-        const auto& orphanClauses = getOrphanClauses(*this);
-        if (!orphanClauses.empty()) {
-            os << "\n// ----- Orphan Clauses -----\n";
-            os << join(orphanClauses, "\n\n", print_deref<AstClause*>()) << "\n";
-        }
-
         if (!loads.empty()) {
             os << "\n// ----- Orphan Load directives -----\n";
             os << join(loads, "\n\n", print_deref<std::unique_ptr<AstLoad>>()) << "\n";
@@ -147,15 +141,10 @@ public:
 
     /** get relation */
     // TODO (b-scholz): remove this method
+    // TODO: analysis? or utils?
     AstRelation* getRelation(const AstQualifiedName& name) const {
         auto pos = relations.find(name);
         return (pos == relations.end()) ? nullptr : pos->second.get();
-    }
-
-    /** get number of relations */
-    // TODO (b-scholz): remove this method
-    size_t relationSize() const {
-        return relations.size();
     }
 
     /** get clauses */

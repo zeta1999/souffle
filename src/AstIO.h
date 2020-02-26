@@ -30,7 +30,9 @@ namespace souffle {
  */
 class AstIO : public AstNode {
 public:
-    AstIO(const AstIO& io) : name(io.name), kvps(io.kvps) {}
+    AstIO(const AstIO& io) : name(io.name), kvps(io.kvps) {
+         this->setSrcLoc(io.getSrcLoc());
+    }
     AstIO() = default;
 
     void print(std::ostream& os) const override {

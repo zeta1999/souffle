@@ -1613,7 +1613,7 @@ io_head
   | PRINTSIZE_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
             auto newIO = new AstIO(*io);
-            newIO->addKVP("operation","output");
+            newIO->addKVP("operation","printsize");
             newIO->addKVP("IO", "stdoutprintsize");
             $$.push_back(newIO);
         }

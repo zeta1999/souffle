@@ -593,11 +593,12 @@ int main(int argc, char** argv) {
             std::string sourceFilename = baseFilename + ".cpp";
 
             bool withSharedLibrary;
-            const bool emitToStdOut = Global::config().has("generate") && Global::config().get("generate") == "-";
+            const bool emitToStdOut =
+                    Global::config().has("generate") && Global::config().get("generate") == "-";
             if (emitToStdOut)
                 synthesiser->generateCode(std::cout, baseIdentifier, withSharedLibrary);
             else {
-                std::ofstream os { baseFilename + ".cpp" };
+                std::ofstream os{baseFilename + ".cpp"};
                 synthesiser->generateCode(os, baseIdentifier, withSharedLibrary);
             }
 

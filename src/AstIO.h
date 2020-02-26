@@ -31,14 +31,14 @@ namespace souffle {
 class AstIO : public AstNode {
 public:
     AstIO(const AstIO& io) : name(io.name), kvps(io.kvps) {
-         this->setSrcLoc(io.getSrcLoc());
+        this->setSrcLoc(io.getSrcLoc());
     }
     AstIO() = default;
 
     void print(std::ostream& os) const override {
-        auto temp = kvps; 
-        temp.erase("operation"); 
-        os << "." << kvps.at("operation") << " "; 
+        auto temp = kvps;
+        temp.erase("operation");
+        os << "." << kvps.at("operation") << " ";
         os << name;
         if (!temp.empty()) {
             os << "(" << join(temp, ",", [](std::ostream& out, const auto& arg) {

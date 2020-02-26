@@ -89,8 +89,8 @@ struct ComponentContent {
             const std::string& op = (*foundItem)->getKVP("operation");
             if (op == directive->getKVP("operation")) {
                 Diagnostic err(Diagnostic::ERROR,
-                        DiagnosticMessage(
-                                "Redefinition of " + op + " directive " + toString(directive->getQualifiedName()),
+                        DiagnosticMessage("Redefinition of " + op + " directive " +
+                                                  toString(directive->getQualifiedName()),
                                 directive->getSrcLoc()),
                         {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
                 report.addDiagnostic(err);

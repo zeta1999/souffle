@@ -26,7 +26,7 @@ class AstTranslationUnit;
 
 class IOType : public AstAnalysis {
 public:
-    static constexpr const char* name = "IO=type-analysis";
+    static constexpr const char* name = "IO-type-analysis";
 
     IOType() : AstAnalysis(name) {}
 

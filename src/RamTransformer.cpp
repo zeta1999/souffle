@@ -17,10 +17,12 @@
 #include "RamTransformer.h"
 #include "DebugReport.h"
 #include "DebugReporter.h"
+#include "RamProgram.h"
 #include "RamTranslationUnit.h"
 #include "Util.h"
 
 #include <algorithm>
+#include <sstream>
 
 namespace souffle {
 

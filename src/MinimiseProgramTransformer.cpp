@@ -365,7 +365,7 @@ bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
 
     // remove non-representative clauses
     for (auto clause : clausesToDelete) {
-        program.tmpRemoveClause(clause);
+        program.removeClause(clause);
     }
 
     // changed iff any clauses were deleted
@@ -425,7 +425,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
         auto relName = clause->getHead()->getQualifiedName();
         AstRelation* rel = program.getRelation(relName);
         assert(rel != nullptr && "relation does not exist in program");
-        program.tmpRemoveClause(clause);
+        program.removeClause(clause);
         program.removeRelation(relName);
     }
 

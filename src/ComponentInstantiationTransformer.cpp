@@ -264,7 +264,7 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
         if (overridden.count(cur->getHead()->getQualifiedName().getQualifiers()[0]) == 0) {
             AstRelation* rel = index[cur->getHead()->getQualifiedName()];
             if (rel != nullptr) {
-                program.tmpAddClause(std::unique_ptr<AstClause>(cur->clone()));
+                program.addClause(std::unique_ptr<AstClause>(cur->clone()));
             } else {
                 orphans.emplace_back(cur->clone());
             }
@@ -277,7 +277,7 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
         AstRelation* rel = index[cur->getHead()->getQualifiedName()];
         if (rel != nullptr) {
             // add orphan to current instance and delete from orphan list
-            program.tmpAddClause(std::unique_ptr<AstClause>(cur->clone()));
+            program.addClause(std::unique_ptr<AstClause>(cur->clone()));
             iter = orphans.erase(iter);
         } else {
             ++iter;

@@ -461,8 +461,8 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
         // swap if changed
         if (*normalised != *clause) {
             changed = true;
-            program.tmpRemoveClause(clause);
-            program.tmpAddClause(std::move(normalised));
+            program.removeClause(clause);
+            program.addClause(std::move(normalised));
         }
     }
 

@@ -52,7 +52,7 @@ std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstRelati
     return tmpGetClauses(program, rel.getQualifiedName());
 }
 
-std::vector<AstClause*> tmpGetOrphanClauses(const AstProgram& program) {
+std::vector<AstClause*> getOrphanClauses(const AstProgram& program) {
     std::vector<AstClause*> unboundClauses;
     std::set<AstQualifiedName> existingRelations;
     for (const auto& relation : program.getRelations()) {

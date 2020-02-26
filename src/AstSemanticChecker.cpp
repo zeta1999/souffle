@@ -723,7 +723,7 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
         checkRelation(report, typeEnv, program, *cur, recursiveClauses, ioTypes);
     }
 
-    for (AstClause* cur : program.getOrphanClauses()) {
+    for (AstClause* cur : getOrphanClauses(program)) {
         checkClause(report, program, *cur, recursiveClauses);
     }
 }

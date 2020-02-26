@@ -105,8 +105,8 @@ void normaliseInlinedHeads(AstProgram& program) {
             newClause->setHead(std::move(clauseHead));
 
             // Replace the old clause with this one
-            program.tmpAddClause(std::move(newClause));
-            program.tmpRemoveClause(clause);
+            program.addClause(std::move(newClause));
+            program.removeClause(clause);
         }
     }
 }
@@ -1011,7 +1011,7 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
                     // Replace the clause with these equivalent versions
                     clausesToDelete.insert(clause);
                     for (AstClause* replacementClause : newClauses) {
-                        program.tmpAddClause(std::unique_ptr<AstClause>(replacementClause));
+                        program.addClause(std::unique_ptr<AstClause>(replacementClause));
                     }
 
                     // We've changed the program this iteration
@@ -1023,7 +1023,7 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
 
         // Delete all clauses that were replaced
         for (const AstClause* clause : clausesToDelete) {
-            program.tmpRemoveClause(clause);
+            program.removeClause(clause);
         }
     }
 

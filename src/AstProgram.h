@@ -97,7 +97,7 @@ public:
             }
         }
 
-        const auto& orphanClauses = getOrphanClauses();
+        const auto& orphanClauses = getOrphanClauses(*this);
         if (!orphanClauses.empty()) {
             os << "\n// ----- Orphan Clauses -----\n";
             os << join(orphanClauses, "\n\n", print_deref<AstClause*>()) << "\n";
@@ -209,15 +209,15 @@ public:
         relations.erase(relations.find(name));
     }
 
-    /** add clause */
-    void tmpAddClause(std::unique_ptr<AstClause> clause) {
+    /** add a clause */
+    void addClause(std::unique_ptr<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");
         assert(clause->getHead() != nullptr && "Undefined head of the clause");
         tmpClauses.push_back(std::move(clause));
     }
 
-    /** remove clause */
-    bool tmpRemoveClause(const AstClause* clause) {
+    /** remove a clause */
+    bool removeClause(const AstClause* clause) {
         for (auto it = tmpClauses.begin(); it != tmpClauses.end(); it++) {
             if (**it == *clause) {
                 tmpClauses.erase(it);
@@ -225,11 +225,6 @@ public:
             }
         }
         return false;
-    }
-
-    /** get orphan clauses (clauses without relation declarations) */
-    std::vector<AstClause*> getOrphanClauses() const {
-        return tmpGetOrphanClauses(*this);
     }
 
     /** get components */
@@ -406,11 +401,6 @@ protected:
         const auto& name = r->getQualifiedName();
         assert(relations.find(name) == relations.end() && "Redefinition of relation!");
         relations[name] = std::move(r);
-    }
-
-    /** add a clause */
-    void addClause(std::unique_ptr<AstClause> clause) {
-        tmpClauses.push_back(std::move(clause));
     }
 
     /** add load directive */

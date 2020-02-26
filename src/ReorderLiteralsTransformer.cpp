@@ -374,14 +374,14 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
             if (newClause != nullptr) {
                 // reordering needed - swap around
                 clausesToRemove.push_back(clause);
-                program.tmpAddClause(std::unique_ptr<AstClause>(newClause));
+                program.addClause(std::unique_ptr<AstClause>(newClause));
             }
         }
     }
 
     changed |= !clausesToRemove.empty();
     for (auto* clause : clausesToRemove) {
-        program.tmpRemoveClause(clause);
+        program.removeClause(clause);
     }
 
     // --- profile-guided reordering ---
@@ -437,14 +437,14 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 if (newClause != nullptr) {
                     // reordering needed - swap around
                     clausesToRemove.push_back(clause);
-                    program.tmpAddClause(std::unique_ptr<AstClause>(newClause));
+                    program.addClause(std::unique_ptr<AstClause>(newClause));
                 }
             }
         }
 
         changed |= !clausesToRemove.empty();
         for (auto* clause : clausesToRemove) {
-            program.tmpRemoveClause(clause);
+            program.removeClause(clause);
         }
     }
 

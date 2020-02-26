@@ -922,7 +922,7 @@ void separateDBs(AstProgram* program) {
                     // clause is fact - add it to the new EDB relation
                     AstClause* newEdbClause = clause->clone();
                     newEdbClause->getHead()->setQualifiedName(newEdbName);
-                    program->tmpAddClause(std::unique_ptr<AstClause>(newEdbClause));
+                    program->addClause(std::unique_ptr<AstClause>(newEdbClause));
                 }
             }
 
@@ -946,7 +946,7 @@ void separateDBs(AstProgram* program) {
             newIdbClause->setHead(std::unique_ptr<AstAtom>(headAtom));
             newIdbClause->addToBody(std::unique_ptr<AstAtom>(bodyAtom));
 
-            program->tmpAddClause(std::unique_ptr<AstClause>(newIdbClause));
+            program->addClause(std::unique_ptr<AstClause>(newIdbClause));
         }
     }
 }
@@ -1087,7 +1087,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         auto* outputFact = new AstClause();
         outputFact->setSrcLoc(nextSrcLoc(originalOutputRelation->getSrcLoc()));
         outputFact->setHead(std::make_unique<AstAtom>(magicOutputName));
-        program->tmpAddClause(std::unique_ptr<AstClause>(outputFact));
+        program->addClause(std::unique_ptr<AstClause>(outputFact));
 
         // perform the magic transformation based on the adornment for this output query
         for (AdornedClause adornedClause : adornedClauses) {
@@ -1316,7 +1316,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         }
 
                         // magic rule done! add it to the program
-                        program->tmpAddClause(std::unique_ptr<AstClause>(magicClause));
+                        program->addClause(std::unique_ptr<AstClause>(magicClause));
                     }
                 }
             }
@@ -1355,7 +1355,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // add the clause to the program and the set of new clauses
             newClause->setSrcLoc(nextSrcLoc(newClause->getSrcLoc()));
             newClauses.push_back(newClause);
-            program->tmpAddClause(std::unique_ptr<AstClause>(newClause));
+            program->addClause(std::unique_ptr<AstClause>(newClause));
         }
     }
 
@@ -1423,7 +1423,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         referringClause->setHead(std::unique_ptr<AstAtom>(headatom));
         referringClause->addToBody(std::unique_ptr<AstAtom>(bodyatom));
 
-        program->tmpAddClause(std::unique_ptr<AstClause>(referringClause));
+        program->addClause(std::unique_ptr<AstClause>(referringClause));
     }
 
     // replace all "+underscoreX" variables with actual underscores

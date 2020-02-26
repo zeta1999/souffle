@@ -88,7 +88,8 @@ std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstRelati
  * @param program the program
  * @return vector of clauses without relation declarations
  */
-std::vector<AstClause*> tmpGetOrphanClauses(const AstProgram& program);
+// TODO: change to analysis
+std::vector<AstClause*> getOrphanClauses(const AstProgram& program);
 
 /**
  * Returns the relation referenced by the given atom.

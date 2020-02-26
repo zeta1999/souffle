@@ -172,7 +172,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
         auto rel = program.getRelation(rep);
         const auto& clauses = tmpGetClauses(program, *rel);
         assert(clauses.size() == 1u && "unexpected number of clauses in relation");
-        program.tmpRemoveClause(clauses[0]);
+        program.removeClause(clauses[0]);
     }
 
     // remove unused relations
@@ -325,7 +325,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                         toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
             }
 
-            program.tmpAddClause(std::unique_ptr<AstClause>(aggClause));
+            program.addClause(std::unique_ptr<AstClause>(aggClause));
             program.appendRelation(std::unique_ptr<AstRelation>(rel));
 
             // -- update aggregate --
@@ -446,7 +446,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
         for (AstLiteral* lit : cl->getBodyLiterals()) {
             if (auto* arg = dynamic_cast<AstAtom*>(lit)) {
                 if (getAtomRelation(arg, &program) == emptyRelation) {
-                    program.tmpRemoveClause(cl);
+                    program.removeClause(cl);
                     removed = true;
                     changed = true;
                     break;
@@ -482,8 +482,8 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
                     }
                 }
 
-                program.tmpRemoveClause(cl);
-                program.tmpAddClause(std::move(res));
+                program.removeClause(cl);
+                program.addClause(std::move(res));
                 changed = true;
             }
         }
@@ -587,7 +587,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
             if (containsFalse) {
                 // Clause will always fail
-                program.tmpRemoveClause(clause);
+                program.removeClause(clause);
             } else if (containsTrue) {
                 auto replacementClause = std::unique_ptr<AstClause>(cloneHead(clause));
 
@@ -598,8 +598,8 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                     }
                 }
 
-                program.tmpRemoveClause(clause);
-                program.tmpAddClause(std::move(replacementClause));
+                program.removeClause(clause);
+                program.addClause(std::move(replacementClause));
             }
         }
     }
@@ -792,11 +792,11 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
 
     // Adjust the program
     for (AstClause* newClause : clausesToAdd) {
-        program.tmpAddClause(std::unique_ptr<AstClause>(newClause));
+        program.addClause(std::unique_ptr<AstClause>(newClause));
     }
 
     for (const AstClause* oldClause : clausesToRemove) {
-        program.tmpRemoveClause(oldClause);
+        program.removeClause(oldClause);
     }
 
     return changed;
@@ -913,7 +913,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
                     newClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
                 }
 
-                program.tmpAddClause(std::move(newClause));
+                program.addClause(std::move(newClause));
             }
         }
 

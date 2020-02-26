@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
                 {"fact-dir", 'F', "DIR", ".", false, "Specify directory for fact files."},
                 {"include-dir", 'I', "DIR", ".", true, "Specify directory for include files."},
                 {"output-dir", 'D', "DIR", ".", false,
-                        "Specify directory for output files (if <DIR> is -, stdout is used)."},
+                        "Specify directory for output files. If <DIR> is `-` then stdout is used."},
                 {"jobs", 'j', "N", "1", false,
                         "Run interpreter/compiler in parallel using N threads, N=auto for system "
                         "default."},
@@ -159,7 +159,7 @@ int main(int argc, char** argv) {
                         "executable."},
                 {"generate", 'g', "FILE", "", false,
                         "Generate C++ source code for the given Datalog program and write it to "
-                        "<FILE>."},
+                        "<FILE>. If <FILE> is `-` then stdout is used."},
                 {"swig", 's', "LANG", "", false,
                         "Generate SWIG interface for given language. The values <LANG> accepts is java and "
                         "python. "},
@@ -569,13 +569,6 @@ int main(int argc, char** argv) {
             }
         } else {
             // ------- compiler -------------
-            std::string compileCmd = ::findTool("souffle-compile", souffleExecutable, ".");
-            /* Fail if a souffle-compile executable is not found */
-            if (!isExecutable(compileCmd)) {
-                throw std::runtime_error("failed to locate souffle-compile");
-            }
-            compileCmd += " ";
-
             std::unique_ptr<Synthesiser> synthesiser = std::make_unique<Synthesiser>(*ramTranslationUnit);
 
             // Find the base filename for code generation and execution
@@ -600,9 +593,13 @@ int main(int argc, char** argv) {
             std::string sourceFilename = baseFilename + ".cpp";
 
             bool withSharedLibrary;
-            std::ofstream os(sourceFilename);
-            synthesiser->generateCode(os, baseIdentifier, withSharedLibrary);
-            os.close();
+            const bool emitToStdOut = Global::config().has("generate") && Global::config().get("generate") == "-";
+            if (emitToStdOut)
+                synthesiser->generateCode(std::cout, baseIdentifier, withSharedLibrary);
+            else {
+                std::ofstream os { baseFilename + ".cpp" };
+                synthesiser->generateCode(os, baseIdentifier, withSharedLibrary);
+            }
 
             if (withSharedLibrary) {
                 if (!Global::config().has("libraries")) {
@@ -613,12 +610,21 @@ int main(int argc, char** argv) {
                 }
             }
 
+            auto findCompileCmd = [&] {
+                auto cmd = ::findTool("souffle-compile", souffleExecutable, ".");
+                /* Fail if a souffle-compile executable is not found */
+                if (!isExecutable(cmd)) {
+                    throw std::runtime_error("failed to locate souffle-compile");
+                }
+                return cmd;
+            };
+
             if (Global::config().has("swig")) {
-                compileCmd += "-s " + Global::config().get("swig") + " ";
+                auto compileCmd = findCompileCmd() + " -s " + Global::config().get("swig") + " ";
                 compileToBinary(compileCmd, sourceFilename);
             } else if (Global::config().has("compile")) {
                 auto start = std::chrono::high_resolution_clock::now();
-                compileToBinary(compileCmd, sourceFilename);
+                compileToBinary(findCompileCmd(), sourceFilename);
                 /* Report overall run-time in verbose mode */
                 if (Global::config().has("verbose")) {
                     auto end = std::chrono::high_resolution_clock::now();

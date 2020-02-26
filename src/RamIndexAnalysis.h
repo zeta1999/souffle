@@ -173,13 +173,13 @@ public:
     }
 
     /** @Brief Get index for a search */
-    const LexOrder getLexOrder(SearchSignature cols) const {
+    const LexOrder& getLexOrder(SearchSignature cols) const {
         int idx = map(cols);
         return orders[idx];
     }
 
     /** @Brief Get index for a search */
-    const int getLexOrderNum(SearchSignature cols) const {
+    int getLexOrderNum(SearchSignature cols) const {
         return map(cols);
     }
 

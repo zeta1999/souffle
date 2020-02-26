@@ -134,7 +134,7 @@ bool isFact(const AstClause& clause) {
 
     // and there are no aggregates
     bool hasAggregates = false;
-    visitDepthFirst(*clause.getHead(), [&](const AstAggregator& cur) { hasAggregates = true; });
+    visitDepthFirst(*clause.getHead(), [&](const AstAggregator&) { hasAggregates = true; });
     return !hasAggregates;
 }
 

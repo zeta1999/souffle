@@ -66,9 +66,9 @@ private:
 public:
     void setDebugReport() override {}
 
-    void setVerbosity(bool verbose) override {}
+    void setVerbosity(bool /* verbose */) override {}
 
-    void disableTransformers(const std::set<std::string>& transforms) override {}
+    void disableTransformers(const std::set<std::string>& /* transforms */) override {}
 
     std::string getName() const override {
         return "NullTransformer";

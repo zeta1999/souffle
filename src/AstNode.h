@@ -76,7 +76,7 @@ public:
     virtual AstNode* clone() const = 0;
 
     /** Apply the mapper to all child nodes */
-    virtual void apply(const AstNodeMapper& mapper) {}
+    virtual void apply(const AstNodeMapper& /* mapper */) {}
 
     /** Obtain a list of all embedded AST child nodes */
     virtual std::vector<const AstNode*> getChildNodes() const {
@@ -94,7 +94,7 @@ public:
 
 protected:
     /** Abstract equality check for two AST nodes */
-    virtual bool equal(const AstNode& other) const {
+    virtual bool equal(const AstNode& /* other */) const {
         return true;
     }
 

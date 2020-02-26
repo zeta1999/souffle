@@ -184,7 +184,7 @@ void InterpreterEngine::executeMain() {
 
         // Store count of rules
         size_t ruleCount = 0;
-        visitDepthFirst(program, [&](const RamQuery& rule) { ++ruleCount; });
+        visitDepthFirst(program, [&](const RamQuery&) { ++ruleCount; });
         ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
 
         InterpreterContext ctxt;

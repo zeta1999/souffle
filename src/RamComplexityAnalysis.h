@@ -36,7 +36,7 @@ public:
 
     static constexpr const char* name = "complexity-analysis";
 
-    void run(const RamTranslationUnit& translationUnit) override {}
+    void run(const RamTranslationUnit&) override {}
 
     /**
      * @brief Get complexity of a RAM expression/condition

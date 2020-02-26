@@ -44,7 +44,7 @@ public:
 
     static constexpr const char* name = "level-analysis";
 
-    void run(const RamTranslationUnit& translationUnit) override {}
+    void run(const RamTranslationUnit&) override {}
 
     /**
      * @brief Get level of a RAM expression/condition

@@ -745,7 +745,7 @@ typename std::enable_if<detail::is_printable<T>::value, std::string>::type toStr
  * to be printed.
  */
 template <typename T>
-typename std::enable_if<!detail::is_printable<T>::value, std::string>::type toString(const T& value) {
+typename std::enable_if<!detail::is_printable<T>::value, std::string>::type toString(const T&) {
     std::stringstream ss;
     ss << "(print for type ";
     ss << typeid(T).name();
@@ -1429,7 +1429,7 @@ public:
 
     // --- print support ---
 
-    friend std::ostream& operator<<(std::ostream& out, const LRUCache& cache) {
+    friend std::ostream& operator<<(std::ostream& out, const LRUCache& /* cache */) {
         return out << "-empty-";
     }
 };

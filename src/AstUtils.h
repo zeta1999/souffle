@@ -80,6 +80,8 @@ std::vector<T*> getBodyLiterals(const C& clause) {
  * @return vector of clauses belonging to the given relation
  */
 std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstQualifiedName& relationName);
+std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstRelation& rel);
+std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstRelation* rel);
 
 /**
  * Returns a vector of orphan clauses in the program.

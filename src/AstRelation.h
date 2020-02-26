@@ -118,11 +118,6 @@ public:
         return qualifiers.find(q) != qualifiers.end();
     }
 
-    /** Obtains a list of the associated clauses */
-    std::vector<AstClause*> getClauses(const AstProgram& program) const {
-        return tmpGetClauses(program, getQualifiedName());
-    }
-
     AstRelation* clone() const override {
         auto res = new AstRelation();
         res->name = name;

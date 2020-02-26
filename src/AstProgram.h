@@ -90,8 +90,10 @@ public:
             const std::unique_ptr<AstRelation>& rel = cur.second;
             os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
             os << *rel << "\n\n";
-            for (const auto clause : rel->getClauses(*this)) {
-                os << *clause << "\n\n";
+            for (const auto clause : tmpGetClauses()) {
+                if (clause->getHead()->getQualifiedName() == rel->getQualifiedName()) {
+                    os << *clause << "\n\n";
+                }
             }
         }
 

@@ -301,7 +301,7 @@ std::set<AstQualifiedName> addBackwardDependencies(
 
     // Add in all relations that need to use an ignored relation
     for (AstRelation* rel : program->getRelations()) {
-        for (AstClause* clause : rel->getClauses(*program)) {
+        for (AstClause* clause : tmpGetClauses(*program, rel)) {
             AstQualifiedName clauseHeadName = clause->getHead()->getQualifiedName();
             if (!contains(relations, clauseHeadName)) {
                 // Clause hasn't been added yet, so check if it needs to be added
@@ -340,7 +340,7 @@ std::set<AstQualifiedName> addForwardDependencies(
 
         // Add in all the relations that it needs to use
         AstRelation* associatedRelation = program->getRelation(relName);
-        for (AstClause* clause : associatedRelation->getClauses(*program)) {
+        for (AstClause* clause : tmpGetClauses(*program, associatedRelation)) {
             visitDepthFirst(*clause, [&](const AstAtom& subatom) {
                 AstQualifiedName atomName = subatom.getQualifiedName();
                 result.insert(atomName);
@@ -650,7 +650,7 @@ BindingStore bindComposites(const AstProgram* program) {
 
     // apply the change to all clauses in the program
     for (AstRelation* rel : program->getRelations()) {
-        for (AstClause* clause : rel->getClauses(*program)) {
+        for (AstClause* clause : tmpGetClauses(*program, rel)) {
             std::set<AstBinaryConstraint*> constraints;
             M update(compositeBindings, constraints, changeCount);
             clause->apply(update);
@@ -712,7 +712,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
 
         // check whether edb or idb
         bool is_edb = true;
-        for (AstClause* clause : rel->getClauses(*program)) {
+        for (AstClause* clause : tmpGetClauses(*program, rel)) {
             if (!isFact(*clause)) {
                 is_edb = false;
                 break;
@@ -736,7 +736,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
 
     // find atoms that should be ignored
     for (AstRelation* rel : program->getRelations()) {
-        for (AstClause* clause : rel->getClauses(*program)) {
+        for (AstClause* clause : tmpGetClauses(*program, rel)) {
             // ignore atoms that have rules containing aggregators
             if (containsAggregators(clause)) {
                 ignoredAtoms.insert(clause->getHead()->getQualifiedName());
@@ -783,7 +783,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
 
             // go through and adorn all IDB clauses defining the relation
             AstRelation* rel = program->getRelation(currPredicate.getQualifiedName());
-            for (AstClause* clause : rel->getClauses(*program)) {
+            for (AstClause* clause : tmpGetClauses(*program, rel)) {
                 if (isFact(*clause)) {
                     continue;
                 }
@@ -897,7 +897,7 @@ void separateDBs(AstProgram* program) {
         bool is_edb = false;
         bool is_idb = false;
 
-        for (AstClause* clause : relation->getClauses(*program)) {
+        for (AstClause* clause : tmpGetClauses(*program, relation)) {
             if (isFact(*clause)) {
                 is_edb = true;
             } else {
@@ -917,7 +917,7 @@ void separateDBs(AstProgram* program) {
             program->appendRelation(std::unique_ptr<AstRelation>(newEdbRel));
 
             // find all facts for the relation
-            for (AstClause* clause : relation->getClauses(*program)) {
+            for (AstClause* clause : tmpGetClauses(*program, relation)) {
                 if (isFact(*clause)) {
                     // clause is fact - add it to the new EDB relation
                     AstClause* newEdbClause = clause->clone();
@@ -1018,7 +1018,7 @@ void replaceUnderscores(AstProgram* program) {
 
     M update;
     for (AstRelation* rel : program->getRelations()) {
-        for (AstClause* clause : rel->getClauses(*program)) {
+        for (AstClause* clause : tmpGetClauses(*program, *rel)) {
             clause->apply(update);
         }
     }

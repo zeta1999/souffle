@@ -48,6 +48,14 @@ std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstQualif
     return result;
 }
 
+std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstRelation& rel) {
+    return tmpGetClauses(program, rel.getQualifiedName());
+}
+
+std::vector<AstClause*> tmpGetClauses(const AstProgram& program, const AstRelation* rel) {
+    return tmpGetClauses(program, *rel);
+}
+
 std::vector<AstClause*> tmpGetOrphanClauses(const AstProgram& program) {
     std::vector<AstClause*> unboundClauses;
     std::set<AstQualifiedName> existingRelations;
@@ -90,7 +98,7 @@ size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
     assert(rel != nullptr && "clause relation does not exist");
 
     size_t clauseNum = 1;
-    for (const auto* cur : rel->getClauses(*program)) {
+    for (const auto* cur : tmpGetClauses(*program, rel)) {
         bool isFact = cur->getBodyLiterals().empty();
         if (cur == clause) {
             return isFact ? 0 : clauseNum;
@@ -105,7 +113,7 @@ size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
 
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
-    for (const AstClause* cl : relation->getClauses(*program)) {
+    for (const AstClause* cl : tmpGetClauses(*program, relation)) {
         for (const auto* neg : getBodyLiterals<AstNegation>(*cl)) {
             if (negRelation == getAtomRelation(neg->getAtom(), program)) {
                 foundLiteral = neg;
@@ -118,7 +126,7 @@ bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation
 
 bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelation* aggRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
-    for (const AstClause* cl : relation->getClauses(*program)) {
+    for (const AstClause* cl : tmpGetClauses(*program, relation)) {
         bool hasAgg = false;
         visitDepthFirst(*cl, [&](const AstAggregator& cur) {
             visitDepthFirst(cur, [&](const AstAtom& atom) {

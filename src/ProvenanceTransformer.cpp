@@ -279,7 +279,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
         // generate info relations for each clause
         // do this before all other transformations so that we record
         // the original rule without any instrumentation
-        for (auto clause : relation->getClauses(*program)) {
+        for (auto clause : tmpGetClauses(*program, relation)) {
             if (!isFact(*clause)) {
                 // add info relation
                 program->addRelation(
@@ -295,7 +295,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
             relation->addAttribute(std::make_unique<AstAttribute>(
                     std::string("@sublevel_number_" + std::to_string(i)), AstQualifiedName("number")));
         }
-        for (auto clause : relation->getClauses(*program)) {
+        for (auto clause : tmpGetClauses(*program, relation)) {
             size_t clauseNum = getClauseNum(program, clause);
             std::function<std::unique_ptr<AstNode>(std::unique_ptr<AstNode>)> rewriter =
                     [&](std::unique_ptr<AstNode> node) -> std::unique_ptr<AstNode> {
@@ -416,7 +416,7 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
         // generate info relations for each clause
         // do this before all other transformations so that we record
         // the original rule without any instrumentation
-        for (auto clause : relation->getClauses(*program)) {
+        for (auto clause : tmpGetClauses(*program, relation)) {
             if (!isFact(*clause)) {
                 // add info relation
                 program->addRelation(
@@ -429,7 +429,7 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
         relation->addAttribute(
                 std::make_unique<AstAttribute>(std::string("@level_number"), AstQualifiedName("number")));
 
-        for (auto clause : relation->getClauses(*program)) {
+        for (auto clause : tmpGetClauses(*program, relation)) {
             size_t clauseNum = getClauseNum(program, clause);
 
             // mapper to add two provenance columns to atoms

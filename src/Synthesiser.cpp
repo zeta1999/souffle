@@ -1518,6 +1518,35 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                // TODO: clamp/limit RHS to prevent UB?
+                case FunctorOp::UBSHIFT_L:
+                case FunctorOp::BSHIFT_L: {
+                    out << "(";
+                    visit(args[0], out);
+                    out << ") << (";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK)";
+                    break;
+                }
+                case FunctorOp::UBSHIFT_R:
+                case FunctorOp::BSHIFT_R:
+                case FunctorOp::UBSHIFT_R_UNSIGNED: {
+                    out << "(";
+                    visit(args[0], out);
+                    out << ") >> (";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK)";
+                    break;
+                }
+                case FunctorOp::BSHIFT_R_UNSIGNED: {
+                    static_assert(std::is_signed<RamDomain>::value);
+                    out << "ramBitCast<RamSigned>(ramBitCast<RamUnsigned>(";
+                    visit(args[0], out);
+                    out << ") >> ramBitCast<RamUnsigned>(";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK))";
+                    break;
+                }
                 case FunctorOp::ULAND:
                 case FunctorOp::LAND: {
                     out << "(";
@@ -1779,6 +1808,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "\n";
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
+    os << "static const RamDomain RAM_BIT_SHIFT_MASK = RAM_DOMAIN_SIZE - 1;\n";
 
     // synthesise data-structures for relations
     for (auto rel : prog.getRelations()) {

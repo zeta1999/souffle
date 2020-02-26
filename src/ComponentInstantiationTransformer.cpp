@@ -87,10 +87,10 @@ struct ComponentContent {
         // if yes, add error
         if (foundItem != ios.end()) {
             const std::string& op = (*foundItem)->getKVP("operation");
-            if (op == directive->getKVP("operation") && op != "") {
+            if (op == directive->getKVP("operation")) {
                 Diagnostic err(Diagnostic::ERROR,
                         DiagnosticMessage(
-                                "Redefinition of IO directive " + toString(directive->getQualifiedName()),
+                                "Redefinition of " + op + " directive " + toString(directive->getQualifiedName()),
                                 directive->getSrcLoc()),
                         {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
                 report.addDiagnostic(err);

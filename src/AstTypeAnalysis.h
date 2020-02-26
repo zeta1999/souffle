@@ -36,6 +36,8 @@ class TypeAnalysis : public AstAnalysis {
 public:
     static constexpr const char* name = "type-analysis";
 
+    TypeAnalysis() : AstAnalysis(name) {}
+
     void run(const AstTranslationUnit& translationUnit) override;
 
     void print(std::ostream& os) const override;

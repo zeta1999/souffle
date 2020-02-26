@@ -8,9 +8,9 @@
 
 /************************************************************************
  *
- * @file PrecedenceGraph.cpp
+ * @file PrecedenceGraph.h
  *
- * Defines the class for precedence graph to build the precedence graph,
+ * Defines the class to build the precedence graph,
  * compute strongly connected components of the precedence graph, and
  * build the strongly connected component graph.
  *
@@ -45,6 +45,8 @@ class PrecedenceGraph : public AstAnalysis {
 public:
     static constexpr const char* name = "precedence-graph";
 
+    PrecedenceGraph() : AstAnalysis(name) {}
+
     void run(const AstTranslationUnit& translationUnit) override;
 
     /** Output precedence graph in graphviz format to a given stream */
@@ -67,6 +69,8 @@ class RedundantRelations : public AstAnalysis {
 public:
     static constexpr const char* name = "redundant-relations";
 
+    RedundantRelations() : AstAnalysis(name) {}
+
     void run(const AstTranslationUnit& translationUnit) override;
 
     void print(std::ostream& os) const override;
@@ -88,6 +92,8 @@ class RecursiveClauses : public AstAnalysis {
 public:
     static constexpr const char* name = "recursive-clauses";
 
+    RecursiveClauses() : AstAnalysis(name) {}
+
     void run(const AstTranslationUnit& translationUnit) override;
 
     void print(std::ostream& os) const override;
@@ -107,29 +113,10 @@ private:
  * Analysis pass computing the strongly connected component (SCC) graph for the datalog program.
  */
 class SCCGraph : public AstAnalysis {
-private:
-    PrecedenceGraph* precedenceGraph = nullptr;
-
-    /** Map from node number to SCC number */
-    std::map<const AstRelation*, size_t> relationToScc;
-
-    /** Adjacency lists for the SCC graph */
-    std::vector<std::set<size_t>> successors;
-
-    /** Predecessor set for the SCC graph */
-    std::vector<std::set<size_t>> predecessors;
-
-    /** Relations contained in a SCC */
-    std::vector<std::set<const AstRelation*>> sccToRelation;
-
-    /** Recursive scR method for computing SCC */
-    void scR(const AstRelation* relation, std::map<const AstRelation*, size_t>& preOrder, size_t& counter,
-            std::stack<const AstRelation*>& S, std::stack<const AstRelation*>& P, size_t& numSCCs);
-
-    IOType* ioType = nullptr;
-
 public:
     static constexpr const char* name = "scc-graph";
+
+    SCCGraph() : AstAnalysis(name) {}
 
     void run(const AstTranslationUnit& translationUnit) override;
 
@@ -289,28 +276,37 @@ public:
 
     /** Print the SCC graph. */
     void print(std::ostream& os) const override;
+
+private:
+    PrecedenceGraph* precedenceGraph = nullptr;
+
+    /** Map from node number to SCC number */
+    std::map<const AstRelation*, size_t> relationToScc;
+
+    /** Adjacency lists for the SCC graph */
+    std::vector<std::set<size_t>> successors;
+
+    /** Predecessor set for the SCC graph */
+    std::vector<std::set<size_t>> predecessors;
+
+    /** Relations contained in a SCC */
+    std::vector<std::set<const AstRelation*>> sccToRelation;
+
+    /** Recursive scR method for computing SCC */
+    void scR(const AstRelation* relation, std::map<const AstRelation*, size_t>& preOrder, size_t& counter,
+            std::stack<const AstRelation*>& S, std::stack<const AstRelation*>& P, size_t& numSCCs);
+
+    IOType* ioType = nullptr;
 };
 
 /**
  * Analysis pass computing a topologically sorted strongly connected component (SCC) graph.
  */
 class TopologicallySortedSCCGraph : public AstAnalysis {
-private:
-    /** The strongly connected component (SCC) graph. */
-    SCCGraph* sccGraph = nullptr;
-
-    /** The final topological ordering of the SCCs. */
-    std::vector<size_t> sccOrder;
-
-    /** Calculate the topological ordering cost of a permutation of as of yet unordered SCCs
-    using the ordered SCCs. Returns -1 if the given vector is not a valid topological ordering. */
-    int topologicalOrderingCost(const std::vector<size_t>& permutationOfSCCs) const;
-
-    /** Recursive component for the forwards algorithm computing the topological ordering of the SCCs. */
-    void computeTopologicalOrdering(size_t scc, std::vector<bool>& visited);
-
 public:
     static constexpr const char* name = "topological-scc-graph";
+
+    TopologicallySortedSCCGraph() : AstAnalysis(name) {}
 
     void run(const AstTranslationUnit& translationUnit) override;
 
@@ -338,6 +334,20 @@ public:
 
     /** Output topologically sorted strongly connected component graph in text format */
     void print(std::ostream& os) const override;
+
+private:
+    /** The strongly connected component (SCC) graph. */
+    SCCGraph* sccGraph = nullptr;
+
+    /** The final topological ordering of the SCCs. */
+    std::vector<size_t> sccOrder;
+
+    /** Calculate the topological ordering cost of a permutation of as of yet unordered SCCs
+    using the ordered SCCs. Returns -1 if the given vector is not a valid topological ordering. */
+    int topologicalOrderingCost(const std::vector<size_t>& permutationOfSCCs) const;
+
+    /** Recursive component for the forwards algorithm computing the topological ordering of the SCCs. */
+    void computeTopologicalOrdering(size_t scc, std::vector<bool>& visited);
 };
 
 /**
@@ -345,11 +355,6 @@ public:
  * and the relations that are no longer required at that step.
  */
 class RelationScheduleStep {
-private:
-    std::set<const AstRelation*> computedRelations;
-    std::set<const AstRelation*> expiredRelations;
-    const bool isRecursive;
-
 public:
     RelationScheduleStep(std::set<const AstRelation*> computedRelations,
             std::set<const AstRelation*> expiredRelations, const bool isRecursive)
@@ -375,24 +380,21 @@ public:
         other.print(out);
         return out;
     }
+
+private:
+    std::set<const AstRelation*> computedRelations;
+    std::set<const AstRelation*> expiredRelations;
+    const bool isRecursive;
 };
 
 /**
  * Analysis pass computing a schedule for computing relations.
  */
 class RelationSchedule : public AstAnalysis {
-private:
-    TopologicallySortedSCCGraph* topsortSCCGraph = nullptr;
-    PrecedenceGraph* precedenceGraph = nullptr;
-
-    /** Relations computed and expired relations at each step */
-    std::vector<RelationScheduleStep> relationSchedule;
-
-    std::vector<std::set<const AstRelation*>> computeRelationExpirySchedule(
-            const AstTranslationUnit& translationUnit);
-
 public:
     static constexpr const char* name = "relation-schedule";
+
+    RelationSchedule() : AstAnalysis(name) {}
 
     void run(const AstTranslationUnit& translationUnit) override;
 
@@ -402,6 +404,16 @@ public:
 
     /** Dump this relation schedule to standard error. */
     void print(std::ostream& os) const override;
+
+private:
+    TopologicallySortedSCCGraph* topsortSCCGraph = nullptr;
+    PrecedenceGraph* precedenceGraph = nullptr;
+
+    /** Relations computed and expired relations at each step */
+    std::vector<RelationScheduleStep> relationSchedule;
+
+    std::vector<std::set<const AstRelation*>> computeRelationExpirySchedule(
+            const AstTranslationUnit& translationUnit);
 };
 
 }  // end of namespace souffle

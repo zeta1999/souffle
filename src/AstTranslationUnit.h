@@ -23,7 +23,6 @@
 #include "DebugReport.h"
 #include "ErrorReport.h"
 #include "SymbolTable.h"
-
 #include <map>
 #include <memory>
 

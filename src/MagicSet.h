@@ -159,17 +159,10 @@ public:
 };
 
 class Adornment : public AstAnalysis {
-private:
-    std::vector<std::vector<AdornedClause>> adornmentClauses;
-    std::vector<AstQualifiedName> adornmentRelations;
-    std::set<AstQualifiedName> adornmentEdb;
-    std::set<AstQualifiedName> adornmentIdb;
-    std::set<AstQualifiedName> negatedAtoms;
-    std::set<AstQualifiedName> ignoredAtoms;
-    BindingStore bindings;
-
 public:
     static constexpr const char* name = "adorned-clauses";
+
+    Adornment() : AstAnalysis(name) {}
 
     ~Adornment() override = default;
 
@@ -204,5 +197,14 @@ public:
     const BindingStore& getBindings() const {
         return bindings;
     }
+
+private:
+    std::vector<std::vector<AdornedClause>> adornmentClauses;
+    std::vector<AstQualifiedName> adornmentRelations;
+    std::set<AstQualifiedName> adornmentEdb;
+    std::set<AstQualifiedName> adornmentIdb;
+    std::set<AstQualifiedName> negatedAtoms;
+    std::set<AstQualifiedName> ignoredAtoms;
+    BindingStore bindings;
 };
 }  // namespace souffle

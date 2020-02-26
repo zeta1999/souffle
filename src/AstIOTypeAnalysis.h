@@ -28,6 +28,8 @@ class IOType : public AstAnalysis {
 public:
     static constexpr const char* name = "IO=type-analysis";
 
+    IOType() : AstAnalysis(name) {}
+
     void run(const AstTranslationUnit& translationUnit) override;
 
     void print(std::ostream& os) const override;

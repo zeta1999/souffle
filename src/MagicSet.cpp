@@ -1117,8 +1117,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 // copy over input directives to new adorned relation
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
-                    visitDepthFirst(*program, [&](AstLoad& current) {
-                        if (current.getQualifiedName() != originalName) {
+                    visitDepthFirst(*program, [&](AstIO& current) {
+                        if (current.getQualifiedName() != originalName &&
+                                current.getKVP("operation") != "input") {
                             return;
                         }
                         current.setQualifiedName(newRelName);

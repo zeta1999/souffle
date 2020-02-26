@@ -45,9 +45,7 @@ static const unsigned int MAX_INSTANTIATION_DEPTH = 1000;
 struct ComponentContent {
     std::vector<std::unique_ptr<AstType>> types;
     std::vector<std::unique_ptr<AstRelation>> relations;
-    std::vector<std::unique_ptr<AstLoad>> loads;
-    std::vector<std::unique_ptr<AstPrintSize>> printSizes;
-    std::vector<std::unique_ptr<AstStore>> stores;
+    std::vector<std::unique_ptr<AstIO>> ios;
 
     void add(std::unique_ptr<AstType>& type, ErrorReport& report) {
         // add to result content (check existence first)
@@ -81,45 +79,25 @@ struct ComponentContent {
         relations.push_back(std::move(rel));
     }
 
-    void add(std::unique_ptr<AstLoad>& directive, ErrorReport& report) {
-        // Check if load directive already exists
-        auto foundItem = std::find_if(loads.begin(), loads.end(), [&](const std::unique_ptr<AstLoad>& load) {
-            return load->getQualifiedName() == directive->getQualifiedName();
+    void add(std::unique_ptr<AstIO>& directive, ErrorReport& report) {
+        // Check if i/o directive already exists
+        auto foundItem = std::find_if(ios.begin(), ios.end(), [&](const std::unique_ptr<AstIO>& io) {
+            return io->getQualifiedName() == directive->getQualifiedName();
         });
         // if yes, add error
-        if (foundItem != loads.end()) {
-            Diagnostic err(Diagnostic::ERROR,
-                    DiagnosticMessage(
-                            "Redefinition of IO directive " + toString(directive->getQualifiedName()),
-                            directive->getSrcLoc()),
-                    {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
-            report.addDiagnostic(err);
+        if (foundItem != ios.end()) {
+            const std::string& op = (*foundItem)->getKVP("operation");
+            if (op == directive->getKVP("operation") && op != "") {
+                Diagnostic err(Diagnostic::ERROR,
+                        DiagnosticMessage(
+                                "Redefinition of IO directive " + toString(directive->getQualifiedName()),
+                                directive->getSrcLoc()),
+                        {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
+                report.addDiagnostic(err);
+            }
         }
         // if not, add it
-        loads.push_back(std::move(directive));
-    }
-
-    void add(std::unique_ptr<AstPrintSize>& directive, ErrorReport& report) {
-        // Check if load directive already exists
-        auto foundItem = std::find_if(
-                printSizes.begin(), printSizes.end(), [&](const std::unique_ptr<AstPrintSize>& printSize) {
-                    return printSize->getQualifiedName() == directive->getQualifiedName();
-                });
-        // if yes, add error
-        if (foundItem != printSizes.end()) {
-            Diagnostic err(Diagnostic::ERROR,
-                    DiagnosticMessage(
-                            "Redefinition of IO directive " + toString(directive->getQualifiedName()),
-                            directive->getSrcLoc()),
-                    {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
-            report.addDiagnostic(err);
-        }
-        // if not, add it
-        printSizes.push_back(std::move(directive));
-    }
-
-    void add(std::unique_ptr<AstStore>& directive, ErrorReport& report) {
-        stores.push_back(std::move(directive));
+        ios.push_back(std::move(directive));
     }
 };
 
@@ -166,13 +144,7 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
                 }
 
                 // process io directives
-                for (auto& io : content.loads) {
-                    res.add(io, report);
-                }
-                for (auto& io : content.printSizes) {
-                    res.add(io, report);
-                }
-                for (auto& io : content.stores) {
+                for (auto& io : content.ios) {
                     res.add(io, report);
                 }
             }
@@ -233,23 +205,11 @@ void collectContent(const AstComponent& component, const TypeBinding& binding,
     }
 
     // and the local io directives
-    for (const auto& cur : component.getLoads()) {
+    for (const auto& io : component.getIOs()) {
         // create a clone
-        std::unique_ptr<AstLoad> io(cur->clone());
+        std::unique_ptr<AstIO> instantiatedIO(io->clone());
 
-        res.add(io, report);
-    }
-    for (const auto& cur : component.getPrintSizes()) {
-        // create a clone
-        std::unique_ptr<AstPrintSize> io(cur->clone());
-
-        res.add(io, report);
-    }
-    for (const auto& cur : component.getStores()) {
-        // create a clone
-        std::unique_ptr<AstStore> io(cur->clone());
-
-        res.add(io, report);
+        res.add(instantiatedIO, report);
     }
 
     // index the available relations
@@ -326,13 +286,7 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
         }
 
         // add IO directives
-        for (auto& io : nestedContent.loads) {
-            res.add(io, report);
-        }
-        for (auto& io : nestedContent.printSizes) {
-            res.add(io, report);
-        }
-        for (auto& io : nestedContent.stores) {
+        for (auto& io : nestedContent.ios) {
             res.add(io, report);
         }
     }
@@ -377,22 +331,10 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
         });
 
         // rename IO directives
-        visitDepthFirst(node, [&](const AstLoad& load) {
-            auto pos = relationNameMapping.find(load.getQualifiedName());
+        visitDepthFirst(node, [&](const AstIO& io) {
+            auto pos = relationNameMapping.find(io.getQualifiedName());
             if (pos != relationNameMapping.end()) {
-                const_cast<AstLoad&>(load).setQualifiedName(pos->second);
-            }
-        });
-        visitDepthFirst(node, [&](const AstPrintSize& printSize) {
-            auto pos = relationNameMapping.find(printSize.getQualifiedName());
-            if (pos != relationNameMapping.end()) {
-                const_cast<AstPrintSize&>(printSize).setQualifiedName(pos->second);
-            }
-        });
-        visitDepthFirst(node, [&](const AstStore& store) {
-            auto pos = relationNameMapping.find(store.getQualifiedName());
-            if (pos != relationNameMapping.end()) {
-                const_cast<AstStore&>(store).setQualifiedName(pos->second);
+                const_cast<AstIO&>(io).setQualifiedName(pos->second);
             }
         });
 
@@ -439,13 +381,7 @@ ComponentContent getInstantiatedContent(const AstComponentInit& componentInit,
     }
 
     // rename io directives
-    for (const auto& cur : res.loads) {
-        fixNames(*cur);
-    }
-    for (const auto& cur : res.printSizes) {
-        fixNames(*cur);
-    }
-    for (const auto& cur : res.stores) {
+    for (const auto& cur : res.ios) {
         fixNames(*cur);
     }
 
@@ -480,14 +416,8 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         for (auto& rel : content.relations) {
             program.relations.insert(std::make_pair(rel->getQualifiedName(), std::move(rel)));
         }
-        for (auto& io : content.loads) {
-            program.loads.push_back(std::move(io));
-        }
-        for (auto& io : content.printSizes) {
-            program.printSizes.push_back(std::move(io));
-        }
-        for (auto& io : content.stores) {
-            program.stores.push_back(std::move(io));
+        for (auto& io : content.ios) {
+            program.ios.push_back(std::move(io));
         }
         for (auto& cur : orphans) {
             auto pos = program.relations.find(cur->getHead()->getQualifiedName());
@@ -511,37 +441,7 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
     // remember the remaining orphan clauses
     program.clauses.clear();
     program.clauses.swap(unbound);
-    /*
-        // unbound directives with no relation defined
-        std::vector<std::unique_ptr<AstLoad>> unboundLoads;
-        std::vector<std::unique_ptr<AstPrintSize>> unboundPrintSizes;
-        std::vector<std::unique_ptr<AstStore>> unboundStores;
 
-        // add IO directives
-        for (auto& cur : program.loads) {
-            auto pos = program.relations.find(cur->getName());
-            if (pos != program.relations.end()) {
-                pos->second->addLoad(std::move(cur));
-            } else {
-                unboundLoads.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan directives
-        program.loads.clear();
-        program.loads.swap(unboundLoads);
-
-        for (auto& cur : program.stores) {
-            auto pos = program.relations.find(cur->getName());
-            if (pos != program.relations.end()) {
-                pos->second->addStore(std::move(cur));
-            } else {
-                unboundStores.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan directives
-        program.stores.clear();
-        program.stores.swap(unboundStores);
-    */
     // delete components and instantiations
     program.instantiations.clear();
     program.components.clear();

@@ -123,26 +123,8 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
     }
 }
 
-void ParserDriver::addStore(std::unique_ptr<AstStore> d) {
-    if (dynamic_cast<AstPrintSize*>(d.get()) != nullptr) {
-        for (const auto& cur : translationUnit->getProgram()->getStores()) {
-            if (cur->getQualifiedName() == d->getQualifiedName() &&
-                    dynamic_cast<AstPrintSize*>(cur.get()) != nullptr) {
-                Diagnostic err(Diagnostic::ERROR,
-                        DiagnosticMessage("Redefinition of printsize directives for relation " +
-                                                  toString(d->getQualifiedName()),
-                                d->getSrcLoc()),
-                        {DiagnosticMessage("Previous definition", cur->getSrcLoc())});
-                translationUnit->getErrorReport().addDiagnostic(err);
-                return;
-            }
-        }
-    }
-    translationUnit->getProgram()->addStore(std::move(d));
-}
-
-void ParserDriver::addLoad(std::unique_ptr<AstLoad> d) {
-    translationUnit->getProgram()->addLoad(std::move(d));
+void ParserDriver::addIO(std::unique_ptr<AstIO> d) {
+    translationUnit->getProgram()->addIO(std::move(d));
 }
 
 void ParserDriver::addType(std::unique_ptr<AstType> type) {

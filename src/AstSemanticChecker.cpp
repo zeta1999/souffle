@@ -975,10 +975,7 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
                     "Undefined relation " + toString(directive->getQualifiedName()), directive->getSrcLoc());
         }
     };
-    for (const auto& directive : program.getLoads()) {
-        checkIODirective(directive.get());
-    }
-    for (const auto& directive : program.getStores()) {
+    for (const auto& directive : program.getIOs()) {
         checkIODirective(directive.get());
     }
 }

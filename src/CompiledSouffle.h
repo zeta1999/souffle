@@ -259,7 +259,7 @@ public:
         }
 
         bool operator==(const iterator& other) const {
-            return other.it == it || *other.it == *it;
+            return other.it == it;
         }
 
         bool operator!=(const iterator& other) const {

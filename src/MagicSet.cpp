@@ -969,12 +969,13 @@ AstArgument* extractConstant(const std::string& normalisedConstant) {
     char indicatorChar = arg[arg.size() - 1];  // 'n' or 's'
     std::string stringRep = arg.substr(0, arg.size() - 2);
 
+    // TODO (darth_tytus): add float and unsigned here.
     if (indicatorChar == 's') {
         // string argument
         return new AstStringConstant(stringRep);
     } else if (indicatorChar == 'n') {
         // numeric argument
-        return new AstNumberConstant(static_cast<RamDomain>(stoll(stringRep)));
+        return new AstNumberConstant(RamDomainFromString(stringRep), AstNumberConstant::Type::Int);
     } else {
         // invalid format
         return nullptr;

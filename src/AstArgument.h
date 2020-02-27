@@ -116,6 +116,10 @@ public:
         return constant;
     }
 
+    virtual void print(std::ostream& os) const override {
+        os << getConstant();
+    }
+
 protected:
     AstConstant(std::string value) : constant(std::move(value)){};
 
@@ -158,11 +162,10 @@ protected:
 template <typename NumericType>  // NumericType ⲉ {RamSigned, RamUnsigned, RamFloat}
 class AstNumericConstant : public AstConstant {
 public:
-    explicit AstNumericConstant(NumericType value) : AstConstant(std::to_string(value)), value(value) {}
+    enum class Type { Int, Uint, Float };
 
-    void print(std::ostream& os) const override {
-        os << value;
-    }
+    explicit AstNumericConstant(NumericType value, Type type)
+            : AstConstant(std::to_string(value)), value(value), type(type) {}
 
     /** Get the value of the constant. */
     NumericType getValue() const {
@@ -170,7 +173,7 @@ public:
     }
 
     AstNumericConstant<NumericType>* clone() const override {
-        auto* copy = new AstNumericConstant<NumericType>(value);
+        auto* copy = new AstNumericConstant<NumericType>(value, type);
         copy->setSrcLoc(getSrcLoc());
         return copy;
     }
@@ -188,6 +191,7 @@ protected:
 
 private:
     const NumericType value;
+    const Type type;
 };
 
 // This definitions are used by AstVisitor.
@@ -201,10 +205,6 @@ using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
 class AstNilConstant : public AstConstant {
 public:
     AstNilConstant() : AstConstant("nil"){};
-
-    void print(std::ostream& os) const override {
-        os << "nil";
-    }
 
     AstNilConstant* clone() const override {
         auto* res = new AstNilConstant();

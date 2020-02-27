@@ -898,11 +898,11 @@ arg
         $$->setSrcLoc(@$);
     }
   | FLOAT {
-        $$ = new AstFloatConstant($FLOAT);
+        $$ = new AstFloatConstant($FLOAT, AstFloatConstant::Type::Float);
         $$->setSrcLoc(@$);
     }
   | NUMBER {
-        $$ = new AstNumberConstant($NUMBER);
+        $$ = new AstNumberConstant($NUMBER, AstNumberConstant::Type::Int);
         $$->setSrcLoc(@$);
     }
   | UNDERSCORE {
@@ -978,7 +978,7 @@ arg
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
         if (const AstNumberConstant* original = dynamic_cast<const AstNumberConstant*>($nested_arg)) {
-            $$ = new AstNumberConstant(-1 * original->getValue());
+            $$ = new AstNumberConstant(-1 * original->getValue(), AstNumberConstant::Type::Int);
             $$->setSrcLoc(@nested_arg);
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,

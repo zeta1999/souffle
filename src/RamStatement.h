@@ -85,9 +85,10 @@ protected:
 
 /**
  * @class RamIO
- * @brief Abstract class for load/store for a relation
+ * @brief I/O statement for a relation
  *
- * This class represents read/write actions on IO directives
+ * This class is used for storing I/O directives of a relation.
+ * I/O directives can be input/output/printsize operations.
  */
 class RamIO : public RamRelationStatement {
 public:

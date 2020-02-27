@@ -200,42 +200,45 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- relation statements --
 
-        void visitLoad(const RamIO& io, std::ostream& out) override {
+        void visitIO(const RamIO& io, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            const std::string &op = io.getDirectives().get("operation"); 
+            const std::string& op = io.getIODirectives().get("operation");
             out << "if (performIO) {\n";
 
             // get some table details
             for (IODirectives ioDirectives : io.getIODirectives()) {
-                if (op == "input") { 
-                out << "try {";
-                out << "std::map<std::string, std::string> directiveMap(";
-                out << ioDirectives << ");\n";
-                out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-                out << "directiveMap[\"filename\"].front() != '/') {";
-                out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
-                out << "}\n";
-                out << "IODirectives ioDirectives(directiveMap);\n";
-                out << "IOSystem::getInstance().getReader(";
-                out << "ioDirectives, symTable, recordTable";
-                out << ")->readAll(*" << synthesiser.getRelationName(io.getRelation());
-                out << ");\n";
-                out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
-                       "'\\n';}\n";
-                } else { 
-                out << "try {";
-                out << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
-                out << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-                out << "directiveMap[\"filename\"].front() != '/') {";
-                out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
-                out << "}\n";
-                out << "IODirectives ioDirectives(directiveMap);\n";
-                out << "IOSystem::getInstance().getWriter(";
-                out << "ioDirectives, symTable, recordTable";
-                out << ")->writeAll(*" << synthesiser.getRelationName(io.getRelation()) << ");\n";
-                out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
-                } 
+                if (op == "input") {
+                    out << "try {";
+                    out << "std::map<std::string, std::string> directiveMap(";
+                    out << ioDirectives << ");\n";
+                    out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+                    out << "directiveMap[\"filename\"].front() != '/') {";
+                    out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+                    out << "}\n";
+                    out << "IODirectives ioDirectives(directiveMap);\n";
+                    out << "IOSystem::getInstance().getReader(";
+                    out << "ioDirectives, symTable, recordTable";
+                    out << ")->readAll(*" << synthesiser.getRelationName(io.getRelation());
+                    out << ");\n";
+                    out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() "
+                           "<< "
+                           "'\\n';}\n";
+                } else if (op == "output" || op == "printsize") {
+                    out << "try {";
+                    out << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
+                    out << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+                    out << "directiveMap[\"filename\"].front() != '/') {";
+                    out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
+                    out << "}\n";
+                    out << "IODirectives ioDirectives(directiveMap);\n";
+                    out << "IOSystem::getInstance().getWriter(";
+                    out << "ioDirectives, symTable, recordTable";
+                    out << ")->writeAll(*" << synthesiser.getRelationName(io.getRelation()) << ");\n";
+                    out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+                } else {
+                    assert("Wrong i/o operation");
+                }
             }
             out << "}\n";
             PRINT_END_COMMENT(out);
@@ -1895,10 +1898,16 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     int relCtr = 0;
     std::set<std::string> storeRelations;
     std::set<std::string> loadRelations;
-    visitDepthFirst(prog.getMain(),
-            [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
-    visitDepthFirst(
-            prog.getMain(), [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
+    visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
+        auto op = io.getIODirectives().get("operation");
+        if (op == "input") {
+            loadRelations.insert(io.getRelation().getName());
+        } else if (op == "printsize" || op == "output") {
+            storeRelations.insert(io.getRelation().getName());
+        } else {
+            assert("wrong I/O operation");
+        }
+    });
 
     for (auto rel : prog.getRelations()) {
         // get some table details
@@ -2071,9 +2080,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
 
-    visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
-        if (auto store = dynamic_cast<const RamStore*>(&node)) {
-            for (IODirectives ioDirectives : store->getIODirectives()) {
+    visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
+        const std::string& op = io.getIODirectives().get("operation");
+        if (op == "input") {
+            for (IODirectives ioDirectives : io->getIODirectives()) {
                 os << "try {";
                 os << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
                 os << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
@@ -2109,22 +2119,25 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
 
-    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
-        for (IODirectives ioDirectives : load.getIODirectives()) {
-            os << "try {";
-            os << "std::map<std::string, std::string> directiveMap(";
-            os << ioDirectives << ");\n";
-            os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-            os << "directiveMap[\"filename\"].front() != '/') {";
-            os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
-            os << "}\n";
-            os << "IODirectives ioDirectives(directiveMap);\n";
-            os << "IOSystem::getInstance().getReader(";
-            os << "ioDirectives, symTable, recordTable";
-            os << ")->readAll(*" << getRelationName(load.getRelation());
-            os << ");\n";
-            os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
-                  "'\\n';}\n";
+    visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
+        const std::string& op = io.getIODirectives().get("operation");
+        if (op == "input") {
+            for (IODirectives ioDirectives : io.getIODirectives()) {
+                os << "try {";
+                os << "std::map<std::string, std::string> directiveMap(";
+                os << ioDirectives << ");\n";
+                os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+                os << "directiveMap[\"filename\"].front() != '/') {";
+                os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+                os << "}\n";
+                os << "IODirectives ioDirectives(directiveMap);\n";
+                os << "IOSystem::getInstance().getReader(";
+                os << "ioDirectives, symTable, recordTable";
+                os << ")->readAll(*" << getRelationName(load.getRelation());
+                os << ");\n";
+                os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                      "'\\n';}\n";
+            }
         }
     });
     os << "}\n";  // end of loadAll() method
@@ -2156,13 +2169,23 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // dump inputs
     os << "public:\n";
     os << "void dumpInputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
+    visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
+        const std::string& op = io.getIODirectives().get("operation");
+        if (op == "input") {
+            dumpRelation(io.getRelation());
+        }
+    });
     os << "}\n";  // end of dumpInputs() method
 
     // dump outputs
     os << "public:\n";
     os << "void dumpOutputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(prog.getMain(), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
+    visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
+        const std::string& op = io.getIODirectives().get("operation");
+        if (op == "output") {
+            dumpRelation(io.getRelation());
+        }
+    });
     os << "}\n";  // end of dumpOutputs() method
 
     os << "public:\n";

@@ -209,14 +209,16 @@ public:
             interfaces.push_back(interface);
             bool input;
             bool output;
-            visitDepthFirst(prog, [&](const RamStore& store) {
-                if (store.getRelation() == rel) {
-                    output = true;
-                }
-            });
-            visitDepthFirst(prog, [&](const RamLoad& load) {
-                if (load.getRelation() == rel) {
-                    input = true;
+            visitDepthFirst(prog, [&](const RamIO& io) {
+                if (io.getRelation() == rel) {
+                    const std::string& op = io.getIODirectives().get("operation");
+                    if (op == "input") {
+                        input = true;
+                    } else if (op == "output" || op == "printsize") {
+                        output = true;
+                    } else {
+                        assert("wrong i/o operation");
+                    }
                 }
             });
             addRelation(rel.getName(), interface, input, output);

@@ -397,16 +397,19 @@ public:
         return std::make_unique<InterpreterNode>(I_LogSize, &size, NodePtrVec{}, rel);
     }
 
-    NodePtr visitLoad(const RamLoad& load) override {
-        size_t relId = encodeRelation(load.getRelation());
-        auto rel = relations[relId].get();
-        return std::make_unique<InterpreterNode>(I_Load, &load, NodePtrVec{}, rel);
-    }
-
-    NodePtr visitStore(const RamStore& store) override {
-        size_t relId = encodeRelation(store.getRelation());
-        auto rel = relations[relId].get();
-        return std::make_unique<InterpreterNode>(I_Store, &store, NodePtrVec{}, rel);
+    NodePtr visitIO(const RamIO& io) override {
+        const std::string& op = io.getIODirectives().get("operation");
+        if (op == "input") {
+            size_t relId = encodeRelation(io.getRelation());
+            auto rel = relations[relId].get();
+            return std::make_unique<InterpreterNode>(I_Load, &io, NodePtrVec{}, rel);
+        } else if (op == "output" || op == "printsize") {
+            size_t relId = encodeRelation(io.getRelation());
+            auto rel = relations[relId].get();
+            return std::make_unique<InterpreterNode>(I_Store, &io, NodePtrVec{}, rel);
+        } else {
+            assert("Wrong i/o operation");
+        }
     }
 
     NodePtr visitQuery(const RamQuery& query) override {

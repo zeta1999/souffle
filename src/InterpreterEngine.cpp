@@ -1286,33 +1286,38 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(LogSize)
 
-        CASE(Load)
-            try {
-                for (IODirectives ioDirectives : cur.getIODirectives()) {
-                    InterpreterRelation& relation = *node->getRelation();
-                    IOSystem::getInstance()
-                            .getReader(ioDirectives, getSymbolTable(), getRecordTable())
-                            ->readAll(relation);
-                }
-            } catch (std::exception& e) {
-                std::cerr << "Error loading data: " << e.what() << "\n";
-            }
-            return true;
-        ESAC(Load)
+        CASE(IO)
 
-        CASE(Store)
-            try {
-                for (IODirectives ioDirectives : cur.getIODirectives()) {
-                    IOSystem::getInstance()
-                            .getWriter(ioDirectives, getSymbolTable(), getRecordTable())
-                            ->writeAll(*node->getRelation());
+            const std::string& op = cur.getIODirectives().get("operation");
+
+            if (op == "input") {
+                try {
+                    for (IODirectives ioDirectives : cur.getIODirectives()) {
+                        InterpreterRelation& relation = *node->getRelation();
+                        IOSystem::getInstance()
+                                .getReader(ioDirectives, getSymbolTable(), getRecordTable())
+                                ->readAll(relation);
+                    }
+                } catch (std::exception& e) {
+                    std::cerr << "Error loading data: " << e.what() << "\n";
                 }
-            } catch (std::exception& e) {
-                std::cerr << e.what();
-                exit(1);
+                return true;
+            } else if (op == "output" || op == "printsize") {
+                try {
+                    for (IODirectives ioDirectives : cur.getIODirectives()) {
+                        IOSystem::getInstance()
+                                .getWriter(ioDirectives, getSymbolTable(), getRecordTable())
+                                ->writeAll(*node->getRelation());
+                    }
+                } catch (std::exception& e) {
+                    std::cerr << e.what();
+                    exit(1);
+                }
+                return true;
+            } else {
+                assert("wrong i/o operation");
             }
-            return true;
-        ESAC(Store)
+        ESAC(IO)
 
         CASE_NO_CAST(Query)
             InterpreterPreamble* preamble = node->getPreamble();

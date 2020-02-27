@@ -326,7 +326,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             }
 
             program.addClause(std::unique_ptr<AstClause>(aggClause));
-            program.appendRelation(std::unique_ptr<AstRelation>(rel));
+            program.addRelation(std::unique_ptr<AstRelation>(rel));
 
             // -- update aggregate --
 
@@ -732,7 +732,7 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
             // newrelX() <- disconnectedLiterals(x).
             auto newRelation = std::make_unique<AstRelation>();
             newRelation->setQualifiedName(newRelationName);
-            program.appendRelation(std::move(newRelation));
+            program.addRelation(std::move(newRelation));
 
             auto* disconnectedClause = new AstClause();
             disconnectedClause->setSrcLoc(clause.getSrcLoc());
@@ -917,7 +917,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
             }
         }
 
-        program.appendRelation(std::move(newRelation));
+        program.addRelation(std::move(newRelation));
     }
 
     // Mapper that renames the occurrences of marked relations with their existential

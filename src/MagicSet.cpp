@@ -914,7 +914,7 @@ void separateDBs(AstProgram* program) {
             // move all the relation's facts to a new relation with a unique name
             std::string newEdbName = getNextEdbName(program);
             AstRelation* newEdbRel = createNewRelation(relation, newEdbName);
-            program->appendRelation(std::unique_ptr<AstRelation>(newEdbRel));
+            program->addRelation(std::unique_ptr<AstRelation>(newEdbRel));
 
             // find all facts for the relation
             for (AstClause* clause : getClauses(*program, *relation)) {
@@ -1080,7 +1080,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         newQueryNames.push_back(magicOutputName);
 
         // add the new relation to the program
-        program->appendRelation(std::unique_ptr<AstRelation>(magicOutputRelation));
+        program->addRelation(std::unique_ptr<AstRelation>(magicOutputRelation));
 
         // add an empty fact to the program
         // i.e. mN_outputname_ff...f().
@@ -1112,7 +1112,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 AstRelation* newRelation = createNewRelation(originalRelation, newRelName);
 
                 // add the created adorned relation to the program
-                program->appendRelation(std::unique_ptr<AstRelation>(newRelation));
+                program->addRelation(std::unique_ptr<AstRelation>(newRelation));
 
                 // copy over input directives to new adorned relation
                 // also - update input directives to correctly use default fact file names
@@ -1214,7 +1214,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                             magicRelation->setRepresentation(originalRelation->getRepresentation());
 
                             // add the new magic relation to the program
-                            program->appendRelation(std::unique_ptr<AstRelation>(magicRelation));
+                            program->addRelation(std::unique_ptr<AstRelation>(magicRelation));
                         }
 
                         // start setting up the magic rule
@@ -1250,7 +1250,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                                     createMagicRelation(originalRelation, magPredName);
 
                             // add the new relation to the prgoram
-                            program->appendRelation(std::unique_ptr<AstRelation>(newMagicRelation));
+                            program->addRelation(std::unique_ptr<AstRelation>(newMagicRelation));
                         }
 
                         // add (bound) arguments to the magic predicate from the clause head
@@ -1400,7 +1400,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // rename it back to its original name
             outputRelation->setQualifiedName(oldName);
             // add the new output to the program
-            program->appendRelation(std::unique_ptr<AstRelation>(outputRelation));
+            program->addRelation(std::unique_ptr<AstRelation>(outputRelation));
         }
 
         // rules need to be the same

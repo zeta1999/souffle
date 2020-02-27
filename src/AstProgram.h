@@ -179,16 +179,6 @@ public:
         return pragmaDirectives;
     }
 
-    /** append new relation */
-    void appendRelation(std::unique_ptr<AstRelation> r) {
-        // get relation
-        std::unique_ptr<AstRelation>& rel = relations[r->getQualifiedName()];
-        assert(!rel && "Adding pre-existing relation!");
-
-        // add relation
-        rel = std::move(r);
-    }
-
     /** remove relation */
     void removeRelation(const AstQualifiedName& name) {
         /* Remove relation from map */

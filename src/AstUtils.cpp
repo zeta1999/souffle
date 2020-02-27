@@ -72,6 +72,15 @@ const AstType* getType(const AstProgram& program, const AstQualifiedName& name) 
     return nullptr;
 }
 
+const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, const std::string& name) {
+    for (const AstFunctorDeclaration* f : program.getFunctorDeclarations()) {
+        if (f->getName() == name) {
+            return f;
+        }
+    }
+    return nullptr;
+}
+
 std::vector<AstClause*> getOrphanClauses(const AstProgram& program) {
     // get existing relation names
     std::set<AstQualifiedName> existingRelations;

@@ -75,8 +75,7 @@ public:
 
         /* Print functors */
         os << "\n// ----- Functors -----\n";
-        for (const auto& cur : functors) {
-            const std::unique_ptr<AstFunctorDeclaration>& f = cur.second;
+        for (const auto& f : functors) {
             os << "\n\n// -- " << f->getName() << " --\n";
             f->print(os);
             os << "\n";
@@ -131,11 +130,9 @@ public:
         return toPtrVector(clauses);
     }
 
-    /** get functor declaration */
-    // TODO (b-scholz): replace by list of functors
-    AstFunctorDeclaration* getFunctorDeclaration(const std::string& name) const {
-        auto pos = functors.find(name);
-        return (pos == functors.end()) ? nullptr : pos->second.get();
+    /** get functor declarations */
+    std::vector<AstFunctorDeclaration*> getFunctorDeclarations() const {
+        return toPtrVector(functors);
     }
 
     /** get load directives */
@@ -224,8 +221,7 @@ public:
             res->types.emplace_back(cur->clone());
         }
         for (const auto& cur : functors) {
-            res->functors.insert(
-                    std::make_pair(cur.first, std::unique_ptr<AstFunctorDeclaration>(cur.second->clone())));
+            res->functors.emplace_back(cur->clone());
         }
         for (const auto& cur : relations) {
             res->relations.emplace_back(cur->clone());
@@ -258,7 +254,7 @@ public:
             cur = map(std::move(cur));
         }
         for (auto& cur : functors) {
-            cur.second = map(std::move(cur.second));
+            cur = map(std::move(cur));
         }
         for (auto& cur : types) {
             cur = map(std::move(cur));
@@ -292,7 +288,7 @@ public:
             res.push_back(cur.get());
         }
         for (const auto& cur : functors) {
-            res.push_back(cur.second.get());
+            res.push_back(cur.get());
         }
         for (const auto& cur : types) {
             res.push_back(cur.get());
@@ -391,9 +387,8 @@ protected:
 
     /** add functor */
     void addFunctorDeclaration(std::unique_ptr<souffle::AstFunctorDeclaration> f) {
-        const auto& name = f->getName();
-        assert(functors.find(name) == functors.end() && "Redefinition of relation!");
-        functors[name] = std::move(f);
+        assert(getFunctorDeclaration(*this, f->getName()) == nullptr && "Redefinition of functor!");
+        functors.push_back(std::move(f));
     }
 
     /** add component */
@@ -413,8 +408,7 @@ protected:
     std::vector<std::unique_ptr<AstRelation>> relations;
 
     /** External Functors */
-    // TODO(b-scholz): change to vector
-    std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
+    std::vector<std::unique_ptr<AstFunctorDeclaration>> functors;
 
     /** Program clauses */
     std::vector<std::unique_ptr<AstClause>> clauses;

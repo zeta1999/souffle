@@ -1312,8 +1312,8 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
             node->apply(*this);
 
             if (auto* userFunctor = dynamic_cast<AstUserDefinedFunctor*>(node.get())) {
-                AstFunctorDeclaration* functorDeclaration =
-                        program.getFunctorDeclaration(userFunctor->getName());
+                const AstFunctorDeclaration* functorDeclaration =
+                        getFunctorDeclaration(program, userFunctor->getName());
 
                 // Check if the functor has been declared
                 if (functorDeclaration == nullptr) {

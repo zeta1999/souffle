@@ -25,6 +25,7 @@ namespace souffle {
 // some forward declarations
 class AstAtom;
 class AstClause;
+class AstFunctorDeclaration;
 class AstLiteral;
 class AstNode;
 class AstProgram;
@@ -108,6 +109,15 @@ AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name
  * @return the type if it exists; nullptr otherwise
  */
 const AstType* getType(const AstProgram& program, const AstQualifiedName& name);
+
+/**
+ * Returns the functor declaration with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the functor declaration to search for
+ * @return the functor declaration if it exists; nullptr otherwise
+ */
+const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, const std::string& name);
 
 /**
  * Returns the set of orphan clauses in the program; i.e. clauses without a relation declaration.

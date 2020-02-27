@@ -1511,7 +1511,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     const auto& makeRamLoad = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const std::string& inputDirectory, const std::string& fileExtension) {
         std::unique_ptr<RamStatement> statement =
-                std::make_unique<RamLoad>(std::unique_ptr<RamRelationReference>(translateRelation(relation)),
+                std::make_unique<RamIO>(std::unique_ptr<RamRelationReference>(translateRelation(relation)),
                         getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
         if (Global::config().has("profile")) {
             const std::string logTimerStatement = LogStatement::tRelationLoadTime(
@@ -1525,7 +1525,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // a function to store relations
     const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                        const std::string& outputDirectory, const std::string& fileExtension) {
-        std::unique_ptr<RamStatement> statement = std::make_unique<RamStore>(
+        std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
                 std::unique_ptr<RamRelationReference>(translateRelation(relation)),
                 getOutputIODirectives(relation, Global::config().get(outputDirectory), fileExtension));
         if (Global::config().has("profile")) {

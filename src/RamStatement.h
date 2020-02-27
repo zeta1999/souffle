@@ -84,14 +84,14 @@ protected:
 };
 
 /**
- * @class RamAbstractLoadStore
+ * @class RamIO
  * @brief Abstract class for load/store for a relation
  *
  * This class represents read/write actions on IO directives
  */
-class RamAbstractLoadStore : public RamRelationStatement {
+class RamIO : public RamRelationStatement {
 public:
-    RamAbstractLoadStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
+    RamIO(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
             : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
 
     /** @brief Get load directives */
@@ -99,90 +99,29 @@ public:
         return ioDirectives;
     }
 
-protected:
-    bool equal(const RamNode& node) const override {
-        const auto& other = static_cast<const RamAbstractLoadStore&>(node);
-        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
-    }
-
-protected:
-    /** Load directives of a relation */
-    const std::vector<IODirectives> ioDirectives;
-};
-
-/**
- * @class RamLoad
- * @brief Load data into a relation
- *
- * Reads the contents of a relation and stores in a
- * target relation reference
- *
- * For example, loading with respect to some IO directives
- * into relation A:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * LOAD DATA FOR A FROM {...}
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamLoad : public RamAbstractLoadStore {
-public:
-    RamLoad(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
-            : RamAbstractLoadStore(std::move(relRef), std::move(ioDirectives)) {}
-
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "LOAD DATA FOR " << rel.getName() << " FROM {";
+        os << "IO " << rel.getName() << " FROM {";
         os << join(ioDirectives, "], [",
                 [](std::ostream& out, const IODirectives& directives) { out << directives; });
         os << ioDirectives << "}";
         os << std::endl;
     };
 
-    RamLoad* clone() const override {
-        return new RamLoad(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
+    RamIO* clone() const override {
+        return new RamIO(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
     }
 
 protected:
     bool equal(const RamNode& node) const override {
-        return RamAbstractLoadStore::equal(node);
-    }
-};
-
-/**
- * @class RamStore
- * @brief Store data of a relation
- *
- * Outputs the content of a relation reference
- *
- * For example, storing data from relation B with respect
- * to some IO directives:
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- * STORE DATA FOR B TO {...}
- * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
- */
-class RamStore : public RamAbstractLoadStore {
-public:
-    RamStore(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
-            : RamAbstractLoadStore(std::move(relRef), std::move(ioDirectives)) {}
-
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "STORE DATA FOR " << rel.getName() << " TO {";
-        os << join(ioDirectives, "], [",
-                [](std::ostream& out, const IODirectives& directives) { out << directives; });
-        os << "}";
-        os << std::endl;
-    };
-
-    RamStore* clone() const override {
-        return new RamStore(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
+        const auto& other = static_cast<const RamIO&>(node);
+        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
     }
 
 protected:
-    bool equal(const RamNode& node) const override {
-        return RamAbstractLoadStore::equal(node);
-    }
+    /** Load directives of a relation */
+    const std::vector<IODirectives> ioDirectives;
 };
 
 /**

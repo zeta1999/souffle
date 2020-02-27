@@ -200,12 +200,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- relation statements --
 
-        void visitLoad(const RamLoad& load, std::ostream& out) override {
+        void visitLoad(const RamIO& io, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
+
+            const std::string &op = io.getDirectives().get("operation"); 
             out << "if (performIO) {\n";
 
             // get some table details
-            for (IODirectives ioDirectives : load.getIODirectives()) {
+            for (IODirectives ioDirectives : io.getIODirectives()) {
+                if (op == "input") { 
                 out << "try {";
                 out << "std::map<std::string, std::string> directiveMap(";
                 out << ioDirectives << ");\n";
@@ -216,20 +219,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
                 out << "ioDirectives, symTable, recordTable";
-                out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
+                out << ")->readAll(*" << synthesiser.getRelationName(io.getRelation());
                 out << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
                        "'\\n';}\n";
-            }
-            out << "}\n";
-            PRINT_END_COMMENT(out);
-        }
-
-        void visitStore(const RamStore& store, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            out << "if (performIO) {\n";
-
-            for (IODirectives ioDirectives : store.getIODirectives()) {
+                } else { 
                 out << "try {";
                 out << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
                 out << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
@@ -239,8 +233,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "IODirectives ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
                 out << "ioDirectives, symTable, recordTable";
-                out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
+                out << ")->writeAll(*" << synthesiser.getRelationName(io.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+                } 
             }
             out << "}\n";
             PRINT_END_COMMENT(out);

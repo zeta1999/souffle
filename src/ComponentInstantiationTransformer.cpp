@@ -476,7 +476,7 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
             program.types.insert(std::make_pair(type->getQualifiedName(), std::move(type)));
         }
         for (auto& rel : content.relations) {
-            program.relations.insert(std::make_pair(rel->getQualifiedName(), std::move(rel)));
+            program.relations.push_back(std::move(rel));
         }
         for (auto& io : content.loads) {
             program.loads.push_back(std::move(io));

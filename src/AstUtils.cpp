@@ -79,6 +79,12 @@ std::vector<AstClause*> getOrphanClauses(const AstProgram& program) {
     return orphans;
 }
 
+void removeRelationClauses(AstProgram& program, const AstQualifiedName& name) {
+    for (const auto* clause : getClauses(program, name)) {
+        program.removeClause(clause);
+    }
+}
+
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
     return getRelation(*program, atom->getQualifiedName());
 }

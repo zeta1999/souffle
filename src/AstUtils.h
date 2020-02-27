@@ -108,6 +108,14 @@ AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name
 std::vector<AstClause*> getOrphanClauses(const AstProgram& program);
 
 /**
+ * Removes the set of clauses with the given relation name.
+ *
+ * @param program the program
+ * @param name the name of the relation to search for
+ */
+void removeRelationClauses(AstProgram& program, const AstQualifiedName& name);
+
+/**
  * Returns the relation referenced by the given atom.
  * @param atom the atom
  * @param program the program containing the relations

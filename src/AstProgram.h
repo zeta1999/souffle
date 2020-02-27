@@ -86,8 +86,7 @@ public:
 
         /* Print relations */
         os << "\n// ----- Relations -----\n";
-        for (const auto& cur : relations) {
-            const std::unique_ptr<AstRelation>& rel = cur.second;
+        for (const auto& rel : relations) {
             os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
             os << *rel << "\n\n";
             for (const auto& clause : clauses) {
@@ -137,11 +136,7 @@ public:
 
     /** get relations */
     std::vector<AstRelation*> getRelations() const {
-        std::vector<AstRelation*> res;
-        for (const auto& rel : relations) {
-            res.push_back(rel.second.get());
-        }
-        return res;
+        return toPtrVector(relations);
     }
 
     /** get clauses */
@@ -179,10 +174,23 @@ public:
         return pragmaDirectives;
     }
 
+    /* add relation */
+    void addRelation(std::unique_ptr<AstRelation> r) {
+        assert(getRelation(*this, r->getQualifiedName()) != nullptr && "Redefinition of relation!");
+        relations.push_back(std::move(r));
+    }
+
     /** remove relation */
-    void removeRelation(const AstQualifiedName& name) {
-        /* Remove relation from map */
-        relations.erase(relations.find(name));
+    bool removeRelation(const AstQualifiedName& name) {
+        for (auto it = relations.begin(); it != relations.end(); it++) {
+            const auto& rel = *it;
+            if (rel->getQualifiedName() == name) {
+                removeRelationClauses(*this, name);
+                relations.erase(it);
+                return true;
+            }
+        }
+        return false;
     }
 
     /** add a clause */
@@ -233,8 +241,7 @@ public:
                     std::make_pair(cur.first, std::unique_ptr<AstFunctorDeclaration>(cur.second->clone())));
         }
         for (const auto& cur : relations) {
-            res->relations.insert(
-                    std::make_pair(cur.first, std::unique_ptr<AstRelation>(cur.second->clone())));
+            res->relations.emplace_back(cur->clone());
         }
         for (const auto& cur : clauses) {
             res->clauses.emplace_back(cur->clone());
@@ -270,7 +277,7 @@ public:
             cur.second = map(std::move(cur.second));
         }
         for (auto& cur : relations) {
-            cur.second = map(std::move(cur.second));
+            cur = map(std::move(cur));
         }
         for (auto& cur : clauses) {
             cur = map(std::move(cur));
@@ -304,7 +311,7 @@ public:
             res.push_back(cur.second.get());
         }
         for (const auto& cur : relations) {
-            res.push_back(cur.second.get());
+            res.push_back(cur.get());
         }
         for (const auto& cur : clauses) {
             res.push_back(cur.get());
@@ -372,13 +379,6 @@ protected:
         cur = std::move(type);
     }
 
-    /* add relation */
-    void addRelation(std::unique_ptr<AstRelation> r) {
-        const auto& name = r->getQualifiedName();
-        assert(relations.find(name) == relations.end() && "Redefinition of relation!");
-        relations[name] = std::move(r);
-    }
-
     /** add load directive */
     void addLoad(std::unique_ptr<AstLoad> directive) {
         assert(directive && "NULL IO directive");
@@ -425,8 +425,7 @@ protected:
     std::map<AstQualifiedName, std::unique_ptr<AstType>> types;
 
     /** Program relations */
-    // TODO(b-scholz): change to vector
-    std::map<AstQualifiedName, std::unique_ptr<AstRelation>> relations;
+    std::vector<std::unique_ptr<AstRelation>> relations;
 
     /** External Functors */
     // TODO(b-scholz): change to vector

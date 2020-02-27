@@ -97,6 +97,11 @@ public:
             }
         }
 
+        const auto& orphanClauses = getOrphanClauses(*this);
+        if (!orphanClauses.empty()) {
+            os << "\n// ----- Orphan Clauses -----\n";
+            os << join(orphanClauses, "\n\n", print_deref<AstClause*>()) << "\n";
+        }
         if (!loads.empty()) {
             os << "\n// ----- Orphan Load directives -----\n";
             os << join(loads, "\n\n", print_deref<std::unique_ptr<AstLoad>>()) << "\n";

@@ -35,6 +35,7 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
             outputRelations.insert(relation);
         } else if (op == "printsize") {
             printSizeRelations.insert(relation);
+            outputRelations.insert(relation);
         } else {
             assert("Unrecognized I/O operation");
         }

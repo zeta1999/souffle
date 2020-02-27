@@ -28,7 +28,7 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
         if (relation == nullptr) {
             return;
         }
-        std::string op = directive.getKVP("operation");
+        const std::string &op = directive.getKVP("operation");
         if (op == "input") {
             inputRelations.insert(relation);
         } else if (op == "output") {

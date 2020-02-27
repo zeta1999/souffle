@@ -50,39 +50,26 @@ class AstIO;
 class AstProgram : public AstNode {
 public:
     void print(std::ostream& os) const override {
-        /* Print types */
-        os << "// ----- Types -----\n";
         for (const auto& cur : types) {
             os << *cur.second << "\n";
         }
-
-        /* Print components */
         if (!components.empty()) {
-            os << "\n// ----- Components -----\n";
             for (const auto& cur : components) {
                 os << *cur << "\n";
             }
         }
-
-        /* Print instantiations */
         if (!instantiations.empty()) {
             os << "\n";
             for (const auto& cur : instantiations) {
                 os << *cur << "\n";
             }
         }
-
-        /* Print functors */
-        os << "\n// ----- Functors -----\n";
         for (const auto& cur : functors) {
             const std::unique_ptr<AstFunctorDeclaration>& f = cur.second;
             os << "\n\n// -- " << f->getName() << " --\n";
             f->print(os);
             os << "\n";
         }
-
-        /* Print relations */
-        os << "\n// ----- Relations -----\n";
         for (const auto& cur : relations) {
             const std::unique_ptr<AstRelation>& rel = cur.second;
             os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
@@ -91,18 +78,13 @@ public:
                 os << *clause << "\n\n";
             }
         }
-
         if (!clauses.empty()) {
-            os << "\n// ----- Orphan Clauses -----\n";
             os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
         }
-
         if (!ios.empty()) {
             os << join(ios, "\n\n", print_deref<std::unique_ptr<AstIO>>()) << "\n";
         }
-
         if (!pragmaDirectives.empty()) {
-            os << "\n// ----- Pragma -----\n";
             for (const auto& cur : pragmaDirectives) {
                 os << *cur << "\n";
             }

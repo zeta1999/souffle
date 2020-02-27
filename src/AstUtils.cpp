@@ -20,6 +20,7 @@
 #include "AstLiteral.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
+#include "AstType.h"
 #include "AstVisitor.h"
 
 namespace souffle {
@@ -57,6 +58,15 @@ AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name
     for (AstRelation* rel : program.getRelations()) {
         if (rel->getQualifiedName() == name) {
             return rel;
+        }
+    }
+    return nullptr;
+}
+
+const AstType* getType(const AstProgram& program, const AstQualifiedName& name) {
+    for (const AstType* type : program.getTypes()) {
+        if (type->getQualifiedName() == name) {
+            return type;
         }
     }
     return nullptr;

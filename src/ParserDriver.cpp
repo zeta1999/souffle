@@ -143,7 +143,7 @@ void ParserDriver::addLoad(std::unique_ptr<AstLoad> d) {
 
 void ParserDriver::addType(std::unique_ptr<AstType> type) {
     const auto& name = type->getQualifiedName();
-    if (const AstType* prev = translationUnit->getProgram()->getType(name)) {
+    if (const AstType* prev = getType(*translationUnit->getProgram(), name)) {
         Diagnostic err(Diagnostic::ERROR,
                 DiagnosticMessage("Redefinition of type " + toString(name), type->getSrcLoc()),
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});

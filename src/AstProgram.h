@@ -47,8 +47,6 @@ class AstRelation;
 /**
  *  Intermediate representation of a datalog program
  *          that consists of relations, clauses and types
- *  TODO (b-scholz): there are a lot of dependencies (pareser etc);
- *       we need to simplify the interface / class
  */
 class AstProgram : public AstNode {
 public:
@@ -56,7 +54,7 @@ public:
         /* Print types */
         os << "// ----- Types -----\n";
         for (const auto& cur : types) {
-            os << *cur.second << "\n";
+            os << *cur << "\n";
         }
 
         /* Print components */
@@ -118,20 +116,9 @@ public:
         }
     }
 
-    /** get type */
-    // TODO (b-scholz): remove this method
-    const AstType* getType(const AstQualifiedName& name) const {
-        auto pos = types.find(name);
-        return (pos == types.end()) ? nullptr : pos->second.get();
-    }
-
     /** get types */
-    std::vector<const AstType*> getTypes() const {
-        std::vector<const AstType*> res;
-        for (const auto& cur : types) {
-            res.push_back(cur.second.get());
-        }
-        return res;
+    std::vector<AstType*> getTypes() const {
+        return toPtrVector(types);
     }
 
     /** get relations */
@@ -176,7 +163,7 @@ public:
 
     /* add relation */
     void addRelation(std::unique_ptr<AstRelation> r) {
-        assert(getRelation(*this, r->getQualifiedName()) != nullptr && "Redefinition of relation!");
+        assert(getRelation(*this, r->getQualifiedName()) == nullptr && "Redefinition of relation!");
         relations.push_back(std::move(r));
     }
 
@@ -234,7 +221,7 @@ public:
             res->instantiations.emplace_back(cur->clone());
         }
         for (const auto& cur : types) {
-            res->types.insert(std::make_pair(cur.first, std::unique_ptr<AstType>(cur.second->clone())));
+            res->types.emplace_back(cur->clone());
         }
         for (const auto& cur : functors) {
             res->functors.insert(
@@ -274,7 +261,7 @@ public:
             cur.second = map(std::move(cur.second));
         }
         for (auto& cur : types) {
-            cur.second = map(std::move(cur.second));
+            cur = map(std::move(cur));
         }
         for (auto& cur : relations) {
             cur = map(std::move(cur));
@@ -308,7 +295,7 @@ public:
             res.push_back(cur.second.get());
         }
         for (const auto& cur : types) {
-            res.push_back(cur.second.get());
+            res.push_back(cur.get());
         }
         for (const auto& cur : relations) {
             res.push_back(cur.get());
@@ -374,9 +361,8 @@ protected:
 
     /* add type */
     void addType(std::unique_ptr<AstType> type) {
-        auto& cur = types[type->getQualifiedName()];
-        assert(!cur && "Redefinition of type!");
-        cur = std::move(type);
+        assert(getType(*this, type->getQualifiedName()) == nullptr && "Redefinition of type!");
+        types.push_back(std::move(type));
     }
 
     /** add load directive */
@@ -421,8 +407,7 @@ protected:
     }
 
     /** Program types  */
-    // TODO(b-scholz): change to vector
-    std::map<AstQualifiedName, std::unique_ptr<AstType>> types;
+    std::vector<std::unique_ptr<AstType>> types;
 
     /** Program relations */
     std::vector<std::unique_ptr<AstRelation>> relations;

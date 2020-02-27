@@ -665,7 +665,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
 
         /* check whether type exists */
         if (typeName != "number" && typeName != "symbol" && typeName != "float" && typeName != "unsigned" &&
-                (program.getType(typeName) == nullptr)) {
+                (getType(program, typeName) == nullptr)) {
             report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
                                     toString(attr->getTypeName()),
                     attr->getSrcLoc());
@@ -744,7 +744,7 @@ static bool unionContainsNumber(const AstProgram& program, const AstUnionType& t
         if (elemTypeID == "number") {
             return true;
         }
-        const AstType* elemType = program.getType(elemTypeID);
+        const AstType* elemType = getType(program, elemTypeID);
         if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
             if (unionContainsNumber(program, *unionT)) {
                 return true;
@@ -776,7 +776,7 @@ static bool unionContainsSymbol(const AstProgram& program, const AstUnionType& t
         if (elemTypeID == "symbol") {
             return true;
         }
-        const AstType* elemType = program.getType(elemTypeID);
+        const AstType* elemType = getType(program, elemTypeID);
         if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
             if (unionContainsSymbol(program, *unionT)) {
                 return true;
@@ -799,7 +799,7 @@ void AstSemanticChecker::checkUnionType(
     // check presence of all the element types and that all element types are based off a primitive
     for (const AstQualifiedName& sub : type.getTypes()) {
         if (sub != "number" && sub != "symbol") {
-            const AstType* subt = program.getType(sub);
+            const AstType* subt = getType(program, sub);
             if (subt == nullptr) {
                 report.addError("Undefined type " + toString(sub) + " in definition of union type " +
                                         toString(type.getQualifiedName()),
@@ -825,7 +825,7 @@ void AstSemanticChecker::checkRecordType(
         ErrorReport& report, const AstProgram& program, const AstRecordType& type) {
     // check proper definition of all field types
     for (const auto& field : type.getFields()) {
-        if (field.type != "number" && field.type != "symbol" && (program.getType(field.type) == nullptr)) {
+        if (field.type != "number" && field.type != "symbol" && (getType(program, field.type) == nullptr)) {
             report.addError(
                     "Undefined type " + toString(field.type) + " in definition of field " + field.name,
                     type.getSrcLoc());

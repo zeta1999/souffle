@@ -30,6 +30,7 @@ class AstNode;
 class AstProgram;
 class AstQualifiedName;
 class AstRelation;
+class AstType;
 class AstVariable;
 class AstRecordInit;
 
@@ -98,6 +99,15 @@ std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation&
  * @return the relation if it exists; nullptr otherwise
  */
 AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name);
+
+/**
+ * Returns the type with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the type to search for
+ * @return the type if it exists; nullptr otherwise
+ */
+const AstType* getType(const AstProgram& program, const AstQualifiedName& name);
 
 /**
  * Returns the set of orphan clauses in the program; i.e. clauses without a relation declaration.

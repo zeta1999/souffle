@@ -91,6 +91,23 @@ std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualified
 std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation& rel);
 
 /**
+ * Returns the relation with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the relation to search for
+ * @return the relation if it exists; nullptr otherwise
+ */
+AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name);
+
+/**
+ * Returns the set of orphan clauses in the program; i.e. clauses without a relation declaration.
+ *
+ * @param program the program
+ * @return the set of orphan clauses
+ */
+std::set<AstClause*> getOrphanClauses(const AstProgram& program);
+
+/**
  * Returns the relation referenced by the given atom.
  * @param atom the atom
  * @param program the program containing the relations

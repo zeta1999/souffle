@@ -53,6 +53,32 @@ std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation&
     return getClauses(program, rel.getQualifiedName());
 }
 
+AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name) {
+    for (AstRelation* rel : program.getRelations()) {
+        if (rel->getQualifiedName() == name) {
+            return rel;
+        }
+    }
+    return nullptr;
+}
+
+std::set<AstClause*> getOrphanClauses(const AstProgram& program) {
+    // get existing relation names
+    std::set<AstQualifiedName> existingRelations;
+    for (AstRelation* rel : program.getRelations()) {
+        existingRelations.insert(rel->getQualifiedName());
+    }
+
+    // collect set of clauses not belonging to a relation
+    std::set<AstClause*> orphans;
+    for (AstClause* clause : program.getClauses()) {
+        if (existingRelations.find(clause->getHead()->getQualifiedName()) != existingRelations.end()) {
+            orphans.insert(clause);
+        }
+    }
+    return orphans;
+}
+
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
     return program->getRelation(atom->getQualifiedName());
 }

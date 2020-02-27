@@ -159,54 +159,53 @@ protected:
 /**
  * Numeric Constant
  */
-template <typename NumericType>  // NumericType ⲉ {RamSigned, RamUnsigned, RamFloat}
+// NumericType ⲉ {RamSigned, RamUnsigned, RamFloat}
 class AstNumericConstant : public AstConstant {
 public:
     enum class Type { Int, Uint, Float };
 
-    AstNumericConstant(std::string constant, Type type)
-            : AstConstant(std::move(constant)), value(parseVal(getConstant(), type)), type(type) {}
+    AstNumericConstant(std::string constant, Type type) : AstConstant(std::move(constant)), type(type) {}
 
-    AstNumericConstant(NumericType value, Type type)
-            : AstConstant(std::to_string(value)), value(value), type(type) {}
+    AstNumericConstant(RamDomain value) : AstConstant(std::to_string(value)), type(Type::Int) {}
 
-    AstNumericConstant<NumericType>* clone() const override {
-        auto* copy = new AstNumericConstant<NumericType>(value, type);
+    AstNumericConstant(RamUnsigned value) : AstConstant(std::to_string(value)), type(Type::Uint) {}
+
+    AstNumericConstant(RamFloat value) : AstConstant(std::to_string(value)), type(Type::Float) {}
+
+    AstNumericConstant* clone() const override {
+        auto* copy = new AstNumericConstant(getConstant(), type);
         copy->setSrcLoc(getSrcLoc());
         return copy;
     }
 
-    bool operator==(const AstNumericConstant<NumericType>& other) const {
-        return value == other.value;
+    Type getType() const {
+        return type;
+    }
+
+    bool operator==(const AstNumericConstant& other) const {
+        return type == other.type && getConstant() == other.getConstant();
     }
 
 protected:
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstNumericConstant<NumericType>*>(&node));
-        const auto& other = static_cast<const AstNumericConstant<NumericType>&>(node);
-        return value == other.value;
+        assert(nullptr != dynamic_cast<const AstNumericConstant*>(&node));
+        const auto& other = static_cast<const AstNumericConstant&>(node);
+        return getConstant() == other.getConstant() && type == other.type;
     }
 
 private:
-    NumericType parseVal(const std::string& constant, const Type type) {
-        switch (type) {
-            case Type::Int:
-                return RamDomainFromString(constant);
-            case Type::Uint:
-                return RamUnsignedFromString(constant);
-            case Type::Float:
-                return RamFloatFromString(constant);
-        }
-    }
-
-    const NumericType value;
+    // NumericType parseVal(const std::string& constant, const Type type) {
+    //     switch (type) {
+    //         case Type::Int:
+    //             return RamDomainFromString(constant);
+    //         case Type::Uint:
+    //             return RamUnsignedFromString(constant);
+    //         case Type::Float:
+    //             return RamFloatFromString(constant);
+    //     }
+    // }
     const Type type;
 };
-
-// This definitions are used by AstVisitor.
-using AstNumberConstant = AstNumericConstant<RamSigned>;
-using AstFloatConstant = AstNumericConstant<RamFloat>;
-using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
 
 /**
  * Nil Constant

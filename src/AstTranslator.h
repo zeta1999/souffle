@@ -403,15 +403,18 @@ private:
             return getSymbolTable().lookup(strConstant->getConstant());
         } else if (dynamic_cast<const AstNilConstant*>(&constant) != nullptr) {
             return RecordTable::getNil();
-        } else if (auto numConstant = dynamic_cast<const AstNumberConstant*>(&constant)) {
-            return RamDomainFromString(numConstant->getConstant());
-        } else if (auto floatConstant = dynamic_cast<const AstFloatConstant*>(&constant)) {
-            return RamFloatFromString(floatConstant->getConstant());
-        } else if (auto unsignedConstant = dynamic_cast<const AstUnsignedConstant*>(&constant)) {
-            return RamUnsignedFromString(unsignedConstant->getConstant());
-        } else {
-            assert(false && "Unaccounted-for constant");
+        } else if (auto* numConstant = dynamic_cast<const AstNumericConstant*>(&constant)) {
+            switch (numConstant->getType()) {
+                case AstNumericConstant::Type::Int:
+                    return RamDomainFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Uint:
+                    return RamUnsignedFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Float:
+                    return RamFloatFromString(numConstant->getConstant());
+            }
         }
+
+        assert(false && "Unaccounted-for constant");
     }
 
     /**

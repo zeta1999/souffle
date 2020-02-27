@@ -820,8 +820,9 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
                 std::vector<AstLiteral*> trueBody;
                 // TODO: change this to AstBoolean
                 trueBody.push_back(new AstBinaryConstraint(BinaryConstraintOp::EQ,
-                        std::make_unique<AstNumberConstant>(1, AstNumberConstant::Type::Int),
-                        std::make_unique<AstNumberConstant>(1, AstNumberConstant::Type::Int)));
+                        std::make_unique<AstNumericConstant>(std::string("1"), AstNumericConstant::Type::Int),
+                        std::make_unique<AstNumericConstant>(
+                                std::string("1"), AstNumericConstant::Type::Int)));
                 addedBodyLiterals.push_back(trueBody);
             } else {
                 // Suppose an atom a(x) is inlined and has the following rules:

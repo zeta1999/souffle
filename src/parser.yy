@@ -898,11 +898,11 @@ arg
         $$->setSrcLoc(@$);
     }
   | FLOAT {
-        $$ = new AstFloatConstant($FLOAT, AstFloatConstant::Type::Float);
+        $$ = new AstNumericConstant($FLOAT, AstNumericConstant::Type::Float);
         $$->setSrcLoc(@$);
     }
   | NUMBER {
-        $$ = new AstNumberConstant($NUMBER, AstNumberConstant::Type::Int);
+        $$ = new AstNumericConstant($NUMBER, AstNumericConstant::Type::Int);
         $$->setSrcLoc(@$);
     }
   | UNDERSCORE {
@@ -977,8 +977,18 @@ arg
     /* -- intrinsic functor -- */
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
-        if (const AstNumberConstant* original = dynamic_cast<const AstNumberConstant*>($nested_arg)) {
-            $$ = new AstNumberConstant(-1 * RamDomainFromString(original->getConstant()), AstNumberConstant::Type::Int);
+        if (const auto* original = dynamic_cast<const AstNumericConstant*>($nested_arg)) {
+            switch (original->getType()) {
+                case AstNumericConstant::Type::Int:
+                  $$ = new AstNumericConstant(std::to_string(-1 * RamDomainFromString(original->getConstant())), AstNumericConstant::Type::Int);
+                  break;
+                case AstNumericConstant::Type::Float:
+                  $$ = new AstNumericConstant(std::to_string(-1 * RamFloatFromString(original->getConstant())), AstNumericConstant::Type::Float);
+                  break;
+                case AstNumericConstant::Type::Uint:
+                  // TODO
+                  break;
+            }
             $$->setSrcLoc(@nested_arg);
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,

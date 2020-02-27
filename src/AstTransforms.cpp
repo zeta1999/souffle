@@ -552,16 +552,17 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                         // Empty aggregator body!
                         // Not currently handled, so add in a false literal in the body
                         // E.g. max x : { } =becomes=> max 1 : {0 = 1}
-                        replacementAggregator->setTargetExpression(
-                                std::make_unique<AstNumberConstant>(1, AstNumberConstant::Type::Int));
+                        replacementAggregator->setTargetExpression(std::make_unique<AstNumericConstant>(
+                                std::string("1"), AstNumericConstant::Type::Int));
 
                         // Add '0 = 1' if false was found, '1 = 1' otherwise
                         int lhsConstant = containsFalse ? 0 : 1;
-                        replacementAggregator->addBodyLiteral(std::make_unique<AstBinaryConstraint>(
-                                BinaryConstraintOp::EQ,
-                                std::make_unique<AstNumberConstant>(
-                                        lhsConstant, AstNumberConstant::Type::Int),
-                                std::make_unique<AstNumberConstant>(1, AstNumberConstant::Type::Int)));
+                        replacementAggregator->addBodyLiteral(
+                                std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                                        std::make_unique<AstNumericConstant>(
+                                                std::to_string(lhsConstant), AstNumericConstant::Type::Int),
+                                        std::make_unique<AstNumericConstant>(
+                                                std::string("1"), AstNumericConstant::Type::Int)));
                     }
 
                     return replacementAggregator;
@@ -1069,7 +1070,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
             if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
                 if (agg->getOperator() == AstAggregator::Op::sum) {
                     if (const auto* constant =
-                                    dynamic_cast<const AstNumberConstant*>(agg->getTargetExpression())) {
+                                    dynamic_cast<const AstNumericConstant*>(agg->getTargetExpression())) {
                         changed = true;
                         // Then construct the new thing to replace it with
                         auto count = std::make_unique<AstAggregator>(AstAggregator::Op::count);
@@ -1077,7 +1078,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
                         for (const auto& lit : agg->getBodyLiterals()) {
                             count->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));
                         }
-                        auto number = std::unique_ptr<AstNumberConstant>(constant->clone());
+                        auto number = std::unique_ptr<AstNumericConstant>(constant->clone());
                         // Now it's constant * count : { ... }
                         auto result = std::make_unique<AstIntrinsicFunctor>(
                                 FunctorOp::MUL, std::move(number), std::move(count));
@@ -1147,7 +1148,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
 
                 // update constant to be the variable created
                 return newVariable;
-            } else if (auto* numberConstant = dynamic_cast<AstNumberConstant*>(node.get())) {
+            } else if (auto* numberConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
                 // number constant found
                 changeCount++;
 

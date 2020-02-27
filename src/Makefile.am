@@ -81,7 +81,6 @@ souffle_sources = \
         AstProfileUse.cpp     AstProfileUse.h     \
         AstRelation.h                             \
         AstQualifiedName.h                        \
-        AstRelationOwnershipAnalysis.cpp    AstRelationOwnershipAnalysis.h \
         AstSemanticChecker.cpp                    \
         AstSemanticChecker.h                      \
         AstTransformer.cpp    AstTransformer.h    \

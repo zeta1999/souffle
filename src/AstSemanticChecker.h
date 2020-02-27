@@ -29,7 +29,6 @@ class AstLiteral;
 class AstProgram;
 class AstRecordType;
 class AstRelation;
-class AstRelationOwnershipAnalysis;
 class AstTranslationUnit;
 class AstType;
 class AstUnionType;
@@ -68,7 +67,7 @@ private:
     static void checkRelation(ErrorReport& report, const TypeEnvironment& typeEnv, const AstProgram& program,
             const AstRelation& relation, const RecursiveClauses& recursiveClauses, const IOType& ioTypes);
     static void checkRules(ErrorReport& report, const TypeEnvironment& typeEnv, const AstProgram& program,
-            const AstRelationOwnershipAnalysis& relOwnership, const RecursiveClauses& recursiveClauses, const IOType& ioTypes);
+            const RecursiveClauses& recursiveClauses, const IOType& ioTypes);
 
     static void checkUnionType(ErrorReport& report, const AstProgram& program, const AstUnionType& type);
     static void checkRecordType(ErrorReport& report, const AstProgram& program, const AstRecordType& type);

@@ -26,7 +26,6 @@
 #include "AstProgram.h"
 #include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationOwnershipAnalysis.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
 #include "AstTypeAnalysis.h"
@@ -69,7 +68,6 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     const PrecedenceGraph& precedenceGraph = *translationUnit.getAnalysis<PrecedenceGraph>();
     const RecursiveClauses& recursiveClauses = *translationUnit.getAnalysis<RecursiveClauses>();
     const IOType& ioTypes = *translationUnit.getAnalysis<IOType>();
-    const AstRelationOwnershipAnalysis& relOwnership = *translationUnit.getAnalysis<AstRelationOwnershipAnalysis>();
     const AstProgram& program = *translationUnit.getProgram();
     ErrorReport& report = translationUnit.getErrorReport();
     const SCCGraph& sccGraph = *translationUnit.getAnalysis<SCCGraph>();
@@ -108,7 +106,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // -- conduct checks --
     // TODO: re-write to use visitors
     checkTypes(report, program);
-    checkRules(report, typeEnv, program, relOwnership, recursiveClauses, ioTypes);
+    checkRules(report, typeEnv, program, recursiveClauses, ioTypes);
     checkNamespaces(report, program);
     checkIODirectives(report, program);
     checkWitnessProblem(report, program);
@@ -720,12 +718,12 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
 }
 
 void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const AstRelationOwnershipAnalysis& relOwnership, const RecursiveClauses& recursiveClauses, const IOType& ioTypes) {
+        const AstProgram& program, const RecursiveClauses& recursiveClauses, const IOType& ioTypes) {
     for (AstRelation* cur : program.getRelations()) {
         checkRelation(report, typeEnv, program, *cur, recursiveClauses, ioTypes);
     }
 
-    for (AstClause* cur : relOwnership.getOrphanClauses()) {
+    for (AstClause* cur : getOrphanClauses(program)) {
         checkClause(report, program, *cur, recursiveClauses);
     }
 }

@@ -38,10 +38,8 @@
 namespace souffle {
 
 class AstClause;
-class AstLoad;
-class AstPrintSize;
-class AstStore;
 class AstRelation;
+class AstIO;
 
 /**
  *  Intermediate representation of a datalog program
@@ -52,39 +50,26 @@ class AstRelation;
 class AstProgram : public AstNode {
 public:
     void print(std::ostream& os) const override {
-        /* Print types */
-        os << "// ----- Types -----\n";
         for (const auto& cur : types) {
             os << *cur.second << "\n";
         }
-
-        /* Print components */
         if (!components.empty()) {
-            os << "\n// ----- Components -----\n";
             for (const auto& cur : components) {
                 os << *cur << "\n";
             }
         }
-
-        /* Print instantiations */
         if (!instantiations.empty()) {
             os << "\n";
             for (const auto& cur : instantiations) {
                 os << *cur << "\n";
             }
         }
-
-        /* Print functors */
-        os << "\n// ----- Functors -----\n";
         for (const auto& cur : functors) {
             const std::unique_ptr<AstFunctorDeclaration>& f = cur.second;
             os << "\n\n// -- " << f->getName() << " --\n";
             f->print(os);
             os << "\n";
         }
-
-        /* Print relations */
-        os << "\n// ----- Relations -----\n";
         for (const auto& cur : relations) {
             const std::unique_ptr<AstRelation>& rel = cur.second;
             os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
@@ -93,23 +78,13 @@ public:
                 os << *clause << "\n\n";
             }
         }
-
         if (!clauses.empty()) {
-            os << "\n// ----- Orphan Clauses -----\n";
             os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
         }
-
-        if (!loads.empty()) {
-            os << "\n// ----- Orphan Load directives -----\n";
-            os << join(loads, "\n\n", print_deref<std::unique_ptr<AstLoad>>()) << "\n";
+        if (!ios.empty()) {
+            os << join(ios, "\n\n", print_deref<std::unique_ptr<AstIO>>()) << "\n";
         }
-        if (!stores.empty()) {
-            os << "\n// ----- Orphan Store directives -----\n";
-            os << join(stores, "\n\n", print_deref<std::unique_ptr<AstStore>>()) << "\n";
-        }
-
         if (!pragmaDirectives.empty()) {
-            os << "\n// ----- Pragma -----\n";
             for (const auto& cur : pragmaDirectives) {
                 os << *cur << "\n";
             }
@@ -161,22 +136,9 @@ public:
         return (pos == functors.end()) ? nullptr : pos->second.get();
     }
 
-    /** get load directives */
-    // TODO (b-scholz): unify load/store/printsizes
-    const std::vector<std::unique_ptr<AstLoad>>& getLoads() const {
-        return loads;
-    }
-
-    /** get print-size directives */
-    // TODO (b-scholz): unify load/store/printsizes
-    const std::vector<std::unique_ptr<AstPrintSize>>& getPrintSizes() const {
-        return printSizes;
-    }
-
-    /** get store directives */
-    // TODO (b-scholz): unify load/store/printsizes
-    const std::vector<std::unique_ptr<AstStore>>& getStores() const {
-        return stores;
+    /** get io directives */
+    const std::vector<std::unique_ptr<AstIO>>& getIOs() const {
+        return ios;
     }
 
     /** get pragma directives */
@@ -263,14 +225,8 @@ public:
         for (const auto& cur : clauses) {
             res->clauses.emplace_back(cur->clone());
         }
-        for (const auto& cur : loads) {
-            res->loads.emplace_back(cur->clone());
-        }
-        for (const auto& cur : printSizes) {
-            res->printSizes.emplace_back(cur->clone());
-        }
-        for (const auto& cur : stores) {
-            res->stores.emplace_back(cur->clone());
+        for (const auto& cur : ios) {
+            res->ios.emplace_back(cur->clone());
         }
 
         // TODO (b-scholz): that is odd - revisit!
@@ -302,13 +258,7 @@ public:
         for (auto& cur : clauses) {
             cur = map(std::move(cur));
         }
-        for (auto& cur : loads) {
-            cur = map(std::move(cur));
-        }
-        for (auto& cur : stores) {
-            cur = map(std::move(cur));
-        }
-        for (auto& cur : printSizes) {
+        for (auto& cur : ios) {
             cur = map(std::move(cur));
         }
     }
@@ -336,13 +286,7 @@ public:
         for (const auto& cur : clauses) {
             res.push_back(cur.get());
         }
-        for (const auto& cur : loads) {
-            res.push_back(cur.get());
-        }
-        for (const auto& cur : printSizes) {
-            res.push_back(cur.get());
-        }
-        for (const auto& cur : stores) {
+        for (const auto& cur : ios) {
             res.push_back(cur.get());
         }
         return res;
@@ -374,13 +318,7 @@ protected:
         if (!equal_targets(clauses, other.clauses)) {
             return false;
         }
-        if (!equal_targets(loads, other.loads)) {
-            return false;
-        }
-        if (!equal_targets(printSizes, other.printSizes)) {
-            return false;
-        }
-        if (!equal_targets(stores, other.stores)) {
+        if (!equal_targets(ios, other.ios)) {
             return false;
         }
         return true;
@@ -412,22 +350,10 @@ protected:
         clauses.push_back(std::move(clause));
     }
 
-    /** add load directive */
-    void addLoad(std::unique_ptr<AstLoad> directive) {
+    /** add IO directive */
+    void addIO(std::unique_ptr<AstIO> directive) {
         assert(directive && "NULL IO directive");
-        loads.push_back(std::move(directive));
-    }
-
-    /** add printsize directive */
-    void addPrintSize(std::unique_ptr<AstPrintSize> directive) {
-        assert(directive && "NULL IO directive");
-        printSizes.push_back(std::move(directive));
-    }
-
-    /** add store directive */
-    void addStore(std::unique_ptr<AstStore> directive) {
-        assert(directive && "NULL IO directive");
-        stores.push_back(std::move(directive));
+        ios.push_back(std::move(directive));
     }
 
     /** add a pragma */
@@ -470,10 +396,6 @@ protected:
         // remember the remaining orphan clauses
         clauses.clear();
         clauses.swap(unbound);
-
-        // unbound directives with no relation defined
-        std::vector<std::unique_ptr<AstLoad>> unboundLoads;
-        std::vector<std::unique_ptr<AstStore>> unboundStores;
     }
 
     /** Program types  */
@@ -491,10 +413,8 @@ protected:
     /** The list of clauses provided by the user */
     std::vector<std::unique_ptr<AstClause>> clauses;
 
-    /** The list of IO directives provided by the user */
-    std::vector<std::unique_ptr<AstLoad>> loads;
-    std::vector<std::unique_ptr<AstPrintSize>> printSizes;
-    std::vector<std::unique_ptr<AstStore>> stores;
+    /** IO statements */
+    std::vector<std::unique_ptr<AstIO>> ios;
 
     /** Program components */
     std::vector<std::unique_ptr<AstComponent>> components;

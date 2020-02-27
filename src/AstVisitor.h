@@ -106,8 +106,6 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(Attribute);
         FORWARD(Clause);
         FORWARD(Relation);
-        FORWARD(Load);
-        FORWARD(Store);
         FORWARD(Program);
         FORWARD(Pragma);
 
@@ -177,8 +175,6 @@ protected:
     LINK(Program, Node);
     LINK(Attribute, Node);
     LINK(Clause, Node);
-    LINK(Load, Node);
-    LINK(Store, Node);
     LINK(Relation, Node);
     LINK(Pragma, Node);
 

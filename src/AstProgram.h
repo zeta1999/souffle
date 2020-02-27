@@ -144,14 +144,6 @@ public:
         return res;
     }
 
-    /** get relation */
-    // TODO (b-scholz): remove this method
-    // TODO: analysis? or utils?
-    AstRelation* getRelation(const AstQualifiedName& name) const {
-        auto pos = relations.find(name);
-        return (pos == relations.end()) ? nullptr : pos->second.get();
-    }
-
     /** get clauses */
     std::vector<AstClause*> getClauses() const {
         return toPtrVector(clauses);

@@ -197,7 +197,7 @@ std::string getNextEdbName(AstProgram* program) {
         newEdbName.str("");  // check
         edbNum++;
         newEdbName << "newedb" << edbNum;
-    } while (program->getRelation(newEdbName.str()) != nullptr);
+    } while (getRelation(*program, newEdbName.str()) != nullptr);
 
     return newEdbName.str();
 }
@@ -339,7 +339,7 @@ std::set<AstQualifiedName> addForwardDependencies(
         result.insert(relName);
 
         // Add in all the relations that it needs to use
-        AstRelation* associatedRelation = program->getRelation(relName);
+        AstRelation* associatedRelation = getRelation(*program, relName);
         for (AstClause* clause : getClauses(*program, *associatedRelation)) {
             visitDepthFirst(*clause, [&](const AstAtom& subatom) {
                 AstQualifiedName atomName = subatom.getQualifiedName();
@@ -764,7 +764,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
         std::vector<AdornedClause> adornedClauses;
 
         // create an adorned predicate of the form outputName_ff..f
-        size_t arity = program->getRelation(outputQuery)->getArity();
+        size_t arity = getRelation(*program, outputQuery)->getArity();
         std::string frepeat = std::string(arity, 'f');  // #fs = #args
         AdornedPredicate outputPredicate(outputQuery, frepeat);
         currentPredicates.push_back(outputPredicate);
@@ -782,7 +782,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
             }
 
             // go through and adorn all IDB clauses defining the relation
-            AstRelation* rel = program->getRelation(currPredicate.getQualifiedName());
+            AstRelation* rel = getRelation(*program, currPredicate.getQualifiedName());
             for (AstClause* clause : getClauses(*program, *rel)) {
                 if (isFact(*clause)) {
                     continue;
@@ -1068,7 +1068,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
     for (size_t querynum = 0; querynum < outputQueries.size(); querynum++) {
         AstQualifiedName outputQuery = outputQueries[querynum];
         std::vector<AdornedClause> adornedClauses = allAdornedClauses[querynum];
-        AstRelation* originalOutputRelation = program->getRelation(outputQuery);
+        AstRelation* originalOutputRelation = getRelation(*program, outputQuery);
 
         // add a relation for the output query
         // mN_outputname_ff...f()
@@ -1102,13 +1102,13 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // find the adorned version of this relation
             std::string headAdornment = adornedClause.getHeadAdornment();
             AstQualifiedName newRelName = createAdornedIdentifier(originalName, headAdornment);
-            AstRelation* adornedRelation = program->getRelation(newRelName);
+            AstRelation* adornedRelation = getRelation(*program, newRelName);
 
             // check if adorned relation already created previously
             if (adornedRelation == nullptr) {
                 // adorned relation not created yet, so
                 // create the relation with the new adornment
-                AstRelation* originalRelation = program->getRelation(originalName);
+                AstRelation* originalRelation = getRelation(*program, originalName);
                 AstRelation* newRelation = createNewRelation(originalRelation, newRelName);
 
                 // add the created adorned relation to the program
@@ -1190,7 +1190,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         AstQualifiedName newAtomName = createMagicIdentifier(atomName, querynum);
 
                         // if the magic version does not exist, create it
-                        if (program->getRelation(newAtomName) == nullptr) {
+                        if (getRelation(*program, newAtomName) == nullptr) {
                             auto* magicRelation = new AstRelation();
                             magicRelation->setQualifiedName(newAtomName);
 
@@ -1199,7 +1199,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                             int endpt = getEndpoint(baseAtomName);
                             AstQualifiedName originalRelationName = createSubIdentifier(
                                     atomName, 0, endpt - 1);  // get rid of the extra + at the end
-                            AstRelation* originalRelation = program->getRelation(originalRelationName);
+                            AstRelation* originalRelation = getRelation(*program, originalRelationName);
 
                             // copy over the (bound) attributes from the original relation
                             int argcount = 0;
@@ -1243,9 +1243,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         auto* addedMagicPred = new AstAtom(magPredName);
 
                         // create the relation if it does not exist
-                        if (program->getRelation(magPredName) == nullptr) {
+                        if (getRelation(*program, magPredName) == nullptr) {
                             AstRelation* originalRelation =
-                                    program->getRelation(newClause->getHead()->getQualifiedName());
+                                    getRelation(*program, newClause->getHead()->getQualifiedName());
                             AstRelation* newMagicRelation =
                                     createMagicRelation(originalRelation, magPredName);
 
@@ -1379,13 +1379,13 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         AstQualifiedName newRelationName =
                 createSubIdentifier(newName, prefixpoint + 1, newBaseName.size() - (prefixpoint + 1));
 
-        AstRelation* adornedRelation = program->getRelation(newRelationName);
+        AstRelation* adornedRelation = getRelation(*program, newRelationName);
 
         if (adornedRelation == nullptr) {
             continue;
         }
 
-        AstRelation* outputRelation = program->getRelation(oldName);
+        AstRelation* outputRelation = getRelation(*program, oldName);
 
         // if the corresponding output relation does not exist yet, create it
         if (outputRelation == nullptr) {

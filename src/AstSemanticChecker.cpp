@@ -95,7 +95,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     }
 
                     // update suppressed qualifier if the relation is found
-                    if (AstRelation* rel = program.getRelation(relid)) {
+                    if (AstRelation* rel = getRelation(program, relid)) {
                         rel->addQualifier(RelationQualifier::SUPPRESSED);
                     }
                 }
@@ -338,7 +338,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
 void AstSemanticChecker::checkAtom(ErrorReport& report, const AstProgram& program, const AstAtom& atom) {
     // check existence of relation
-    auto* r = program.getRelation(atom.getQualifiedName());
+    auto* r = getRelation(program, atom.getQualifiedName());
     if (r == nullptr) {
         report.addError("Undefined relation " + toString(atom.getQualifiedName()), atom.getSrcLoc());
     }
@@ -574,7 +574,7 @@ void AstSemanticChecker::checkFact(ErrorReport& report, const AstProgram& progra
         return;  // checked by clause
     }
 
-    AstRelation* rel = program.getRelation(head->getQualifiedName());
+    AstRelation* rel = getRelation(program, head->getQualifiedName());
     if (rel == nullptr) {
         return;  // checked by clause
     }
@@ -965,7 +965,7 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
 
 void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {
     auto checkIODirective = [&](const AstIO* directive) {
-        auto* r = program.getRelation(directive->getQualifiedName());
+        auto* r = getRelation(program, directive->getQualifiedName());
         if (r == nullptr) {
             report.addError(
                     "Undefined relation " + toString(directive->getQualifiedName()), directive->getSrcLoc());
@@ -1252,7 +1252,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // If the result contains anything, then a cycle was found
     if (!result.empty()) {
-        AstRelation* cycleOrigin = program.getRelation(result[result.size() - 1]);
+        AstRelation* cycleOrigin = getRelation(program, result[result.size() - 1]);
 
         // Construct the string representation of the cycle
         std::stringstream cycle;
@@ -1274,7 +1274,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // Check if an inlined literal ever takes in a $
     visitDepthFirst(program, [&](const AstAtom& atom) {
-        AstRelation* associatedRelation = program.getRelation(atom.getQualifiedName());
+        AstRelation* associatedRelation = getRelation(program, atom.getQualifiedName());
         if (associatedRelation != nullptr && isInline(associatedRelation)) {
             visitDepthFirst(atom, [&](const AstArgument& arg) {
                 if (dynamic_cast<const AstCounter*>(&arg) != nullptr) {
@@ -1335,7 +1335,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // Check that these relations never appear negated
     visitDepthFirst(program, [&](const AstNegation& neg) {
-        AstRelation* associatedRelation = program.getRelation(neg.getAtom()->getQualifiedName());
+        AstRelation* associatedRelation = getRelation(program, neg.getAtom()->getQualifiedName());
         if (associatedRelation != nullptr &&
                 nonNegatableRelations.find(associatedRelation) != nonNegatableRelations.end()) {
             report.addError(
@@ -1357,7 +1357,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     visitDepthFirst(program, [&](const AstAggregator& aggr) {
         visitDepthFirst(aggr, [&](const AstAtom& subatom) {
-            const AstRelation* rel = program.getRelation(subatom.getQualifiedName());
+            const AstRelation* rel = getRelation(program, subatom.getQualifiedName());
             if (rel != nullptr && isInline(rel)) {
                 report.addError("Cannot inline relations that appear in aggregator", subatom.getSrcLoc());
             }
@@ -1405,7 +1405,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     // Perform the check
     visitDepthFirst(program, [&](const AstNegation& negation) {
         const AstAtom* associatedAtom = negation.getAtom();
-        const AstRelation* associatedRelation = program.getRelation(associatedAtom->getQualifiedName());
+        const AstRelation* associatedRelation = getRelation(program, associatedAtom->getQualifiedName());
         if (associatedRelation != nullptr && isInline(associatedRelation)) {
             std::pair<bool, SrcLocation> atomStatus = checkInvalidUnderscore(associatedAtom);
             if (atomStatus.first) {

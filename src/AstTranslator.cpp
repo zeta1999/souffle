@@ -76,10 +76,10 @@ std::unique_ptr<RamTupleElement> AstTranslator::makeRamTupleElement(const Locati
 size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     if (atom->getQualifiedName().toString().find("@delta_") == 0) {
         const AstQualifiedName& originalRel = AstQualifiedName(atom->getQualifiedName().toString().substr(7));
-        return auxArityAnalysis->getArity(program->getRelation(originalRel));
+        return auxArityAnalysis->getArity(getRelation(*program, originalRel));
     } else if (atom->getQualifiedName().toString().find("@new_") == 0) {
         const AstQualifiedName& originalRel = AstQualifiedName(atom->getQualifiedName().toString().substr(5));
-        return auxArityAnalysis->getArity(program->getRelation(originalRel));
+        return auxArityAnalysis->getArity(getRelation(*program, originalRel));
     } else if (atom->getQualifiedName().toString().find("@info_") == 0) {
         return 0;
     } else {

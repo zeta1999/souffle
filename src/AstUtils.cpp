@@ -62,7 +62,7 @@ AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name
     return nullptr;
 }
 
-std::set<AstClause*> getOrphanClauses(const AstProgram& program) {
+std::vector<AstClause*> getOrphanClauses(const AstProgram& program) {
     // get existing relation names
     std::set<AstQualifiedName> existingRelations;
     for (AstRelation* rel : program.getRelations()) {
@@ -70,17 +70,17 @@ std::set<AstClause*> getOrphanClauses(const AstProgram& program) {
     }
 
     // collect set of clauses not belonging to a relation
-    std::set<AstClause*> orphans;
+    std::vector<AstClause*> orphans;
     for (AstClause* clause : program.getClauses()) {
-        if (existingRelations.find(clause->getHead()->getQualifiedName()) != existingRelations.end()) {
-            orphans.insert(clause);
+        if (existingRelations.find(clause->getHead()->getQualifiedName()) == existingRelations.end()) {
+            orphans.push_back(clause);
         }
     }
     return orphans;
 }
 
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
-    return program->getRelation(atom->getQualifiedName());
+    return getRelation(*program, atom->getQualifiedName());
 }
 
 const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* program) {
@@ -103,7 +103,7 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
 size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
     // TODO (azreika): This number might change between the provenance transformer and the AST->RAM
     // translation. Might need a better way to assign IDs to clauses... (see PR #1288).
-    const AstRelation* rel = program->getRelation(clause->getHead()->getQualifiedName());
+    const AstRelation* rel = getRelation(*program, clause->getHead()->getQualifiedName());
     assert(rel != nullptr && "clause relation does not exist");
 
     size_t clauseNum = 1;

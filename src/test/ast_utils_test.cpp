@@ -375,7 +375,7 @@ TEST(AstUtils, ResolveGroundedAliases) {
     AstProgram& program = *tu->getProgram();
 
     EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = [x,y],\n   s = r,\n   s = [w,v],\n   [w,v] = [a,b].",
-            toString(getClauses(program, "p")[0]));
+            toString(*getClauses(program, "p")[0]));
 
     std::make_unique<ResolveAliasesTransformer>()->apply(*tu);
 
@@ -482,9 +482,9 @@ TEST(AstUtils, ReorderClauseAtoms) {
     AstProgram& program = *tu->getProgram();
     EXPECT_EQ(5, program.getRelations().size());
 
-    AstRelation* a = program.getRelation("a");
+    AstRelation* a = getRelation(program, "a");
     EXPECT_NE(a, nullptr);
-    const auto& clauses = getClauses(program, a);
+    const auto& clauses = getClauses(program, *a);
     EXPECT_EQ(1, clauses.size());
 
     AstClause* clause = clauses[0];

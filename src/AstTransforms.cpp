@@ -169,7 +169,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
 
     // break remaining cycles
     for (const auto& rep : cycle_reps) {
-        const auto& rel = *program.getRelation(rep);
+        const auto& rel = *getRelation(program, rep);
         const auto& clauses = getClauses(program, rel);
         assert(clauses.size() == 1u && "unexpected number of clauses in relation");
         program.removeClause(clauses[0]);
@@ -178,7 +178,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
     // remove unused relations
     for (const auto& cur : isAliasOf) {
         if (cycle_reps.count(cur.first) == 0u) {
-            program.removeRelation(program.getRelation(cur.first)->getQualifiedName());
+            program.removeRelation(getRelation(program, cur.first)->getQualifiedName());
         }
     }
 
@@ -237,7 +237,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             // -- create a new clause --
 
             auto relName = "__agg_rel_" + toString(counter++);
-            while (program.getRelation(relName) != nullptr) {
+            while (getRelation(program, relName) != nullptr) {
                 relName = "__agg_rel_" + toString(counter++);
             }
             // create the new clause for the materialised thing
@@ -885,7 +885,7 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
 
     // Reduce the existential relations
     for (AstQualifiedName relationName : existentialRelations) {
-        AstRelation* originalRelation = program.getRelation(relationName);
+        AstRelation* originalRelation = getRelation(program, relationName);
 
         std::stringstream newRelationName;
         newRelationName << "+?exists_" << relationName;

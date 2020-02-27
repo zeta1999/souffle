@@ -144,7 +144,7 @@ bool RecursiveClauses::computeIsRecursive(
 
     // set up start list
     for (const auto* cur : getBodyLiterals<AstAtom>(clause)) {
-        auto rel = program.getRelation(cur->getQualifiedName());
+        auto rel = getRelation(program, cur->getQualifiedName());
         if (rel == trg) {
             return true;
         }
@@ -170,7 +170,7 @@ bool RecursiveClauses::computeIsRecursive(
         // check all atoms in the relations
         for (const AstClause* cl : getClauses(program, *cur)) {
             for (const AstAtom* at : getBodyLiterals<AstAtom>(*cl)) {
-                auto rel = program.getRelation(at->getQualifiedName());
+                auto rel = getRelation(program, at->getQualifiedName());
                 if (rel == trg) {
                     return true;
                 }

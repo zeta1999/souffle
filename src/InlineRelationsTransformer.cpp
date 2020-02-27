@@ -170,7 +170,7 @@ bool containsInlinedAtom(const AstProgram& program, const AstClause& clause) {
     bool foundInlinedAtom = false;
 
     visitDepthFirst(clause, [&](const AstAtom& atom) {
-        AstRelation* rel = program.getRelation(atom.getQualifiedName());
+        AstRelation* rel = getRelation(program, atom.getQualifiedName());
         if (rel->hasQualifier(RelationQualifier::INLINE)) {
             foundInlinedAtom = true;
         }
@@ -418,7 +418,7 @@ std::vector<std::vector<AstLiteral*>> formNegatedLiterals(AstProgram& program, A
     std::vector<std::vector<AstBinaryConstraint*>> addedConstraints;
 
     // Go through every possible clause associated with the given atom
-    for (AstClause* inClause : getClauses(program, *program.getRelation(atom->getQualifiedName()))) {
+    for (AstClause* inClause : getClauses(program, *getRelation(program, atom->getQualifiedName()))) {
         // Form the replacement clause by inlining based on the current clause
         std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inlineResult =
                 inlineBodyLiterals(atom, inClause);
@@ -764,7 +764,7 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
 
     if (auto* atom = dynamic_cast<AstAtom*>(lit)) {
         // Check if this atom is meant to be inlined
-        AstRelation* rel = program.getRelation(atom->getQualifiedName());
+        AstRelation* rel = getRelation(program, atom->getQualifiedName());
 
         if (rel->hasQualifier(RelationQualifier::INLINE)) {
             // We found an atom in the clause that needs to be inlined!

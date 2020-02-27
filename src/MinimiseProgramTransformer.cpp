@@ -423,7 +423,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Remove redundant relation definitions
     for (AstClause* clause : redundantClauses) {
         auto relName = clause->getHead()->getQualifiedName();
-        AstRelation* rel = program.getRelation(relName);
+        AstRelation* rel = getRelation(program, relName);
         assert(rel != nullptr && "relation does not exist in program");
         program.removeClause(clause);
         program.removeRelation(relName);

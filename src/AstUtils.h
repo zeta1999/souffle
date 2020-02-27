@@ -105,7 +105,7 @@ AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name
  * @param program the program
  * @return the set of orphan clauses
  */
-std::set<AstClause*> getOrphanClauses(const AstProgram& program);
+std::vector<AstClause*> getOrphanClauses(const AstProgram& program);
 
 /**
  * Returns the relation referenced by the given atom.

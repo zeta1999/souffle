@@ -64,9 +64,9 @@ TEST(AstProgram, Parse) {
     EXPECT_EQ(1, prog->getTypes().size());
     EXPECT_EQ(2, prog->getRelations().size());
 
-    EXPECT_TRUE(prog->getRelation("e"));
-    EXPECT_TRUE(prog->getRelation("r"));
-    EXPECT_FALSE(prog->getRelation("n"));
+    EXPECT_TRUE(getRelation(*prog, "e"));
+    EXPECT_TRUE(getRelation(*prog, "r"));
+    EXPECT_FALSE(getRelation(*prog, "n"));
 }
 
 #define TESTASTCLONEANDEQUAL(SUBTYPE, DL)                                                      \

@@ -109,7 +109,7 @@ void ParserDriver::addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> 
 
 void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
     const auto& name = r->getQualifiedName();
-    if (AstRelation* prev = translationUnit->getProgram()->getRelation(name)) {
+    if (AstRelation* prev = getRelation(*translationUnit->getProgram(), name)) {
         Diagnostic err(Diagnostic::ERROR,
                 DiagnosticMessage("Redefinition of relation " + toString(name), r->getSrcLoc()),
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});

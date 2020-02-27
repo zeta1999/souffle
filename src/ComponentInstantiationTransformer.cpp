@@ -489,37 +489,6 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         }
     }
 
-    /*
-        // unbound directives with no relation defined
-        std::vector<std::unique_ptr<AstLoad>> unboundLoads;
-        std::vector<std::unique_ptr<AstPrintSize>> unboundPrintSizes;
-        std::vector<std::unique_ptr<AstStore>> unboundStores;
-
-        // add IO directives
-        for (auto& cur : program.loads) {
-            auto pos = program.relations.find(cur->getName());
-            if (pos != program.relations.end()) {
-                pos->second->addLoad(std::move(cur));
-            } else {
-                unboundLoads.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan directives
-        program.loads.clear();
-        program.loads.swap(unboundLoads);
-
-        for (auto& cur : program.stores) {
-            auto pos = program.relations.find(cur->getName());
-            if (pos != program.relations.end()) {
-                pos->second->addStore(std::move(cur));
-            } else {
-                unboundStores.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan directives
-        program.stores.clear();
-        program.stores.swap(unboundStores);
-    */
     // delete components and instantiations
     program.instantiations.clear();
     program.components.clear();

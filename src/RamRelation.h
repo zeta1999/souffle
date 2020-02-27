@@ -17,7 +17,7 @@
 
 #include "RamNode.h"
 #include "RamTypes.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 
 #include <string>
 #include <utility>
@@ -61,17 +61,17 @@ public:
     }
 
     /** @brief Is nullary relation */
-    const bool isNullary() const {
+    bool isNullary() const {
         return arity == 0;
     }
 
     /** @brief Relation representation type */
-    const RelationRepresentation getRepresentation() const {
+    RelationRepresentation getRepresentation() const {
         return representation;
     }
 
     /** @brief Is temporary relation (for semi-naive evaluation) */
-    const bool isTemp() const {
+    bool isTemp() const {
         return name.at(0) == '@';
     }
 

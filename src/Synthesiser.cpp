@@ -30,7 +30,7 @@
 #include "RamTypes.h"
 #include "RamUtils.h"
 #include "RamVisitor.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
 #include "Util.h"
@@ -1518,6 +1518,35 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                // TODO: clamp/limit RHS to prevent UB?
+                case FunctorOp::UBSHIFT_L:
+                case FunctorOp::BSHIFT_L: {
+                    out << "(";
+                    visit(args[0], out);
+                    out << ") << (";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK)";
+                    break;
+                }
+                case FunctorOp::UBSHIFT_R:
+                case FunctorOp::BSHIFT_R:
+                case FunctorOp::UBSHIFT_R_UNSIGNED: {
+                    out << "(";
+                    visit(args[0], out);
+                    out << ") >> (";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK)";
+                    break;
+                }
+                case FunctorOp::BSHIFT_R_UNSIGNED: {
+                    static_assert(std::is_signed<RamDomain>::value);
+                    out << "ramBitCast<RamSigned>(ramBitCast<RamUnsigned>(";
+                    visit(args[0], out);
+                    out << ") >> ramBitCast<RamUnsigned>(";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK))";
+                    break;
+                }
                 case FunctorOp::ULAND:
                 case FunctorOp::LAND: {
                     out << "(";
@@ -1676,7 +1705,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- safety net --
 
-        void visitUndefValue(const RamUndefValue& undef, std::ostream& /*out*/) override {
+        void visitUndefValue(const RamUndefValue&, std::ostream& /*out*/) override {
             assert(false && "Compilation error");
         }
 
@@ -1779,6 +1808,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "\n";
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
+    os << "static const RamDomain RAM_BIT_SHIFT_MASK = RAM_DOMAIN_SIZE - 1;\n";
 
     // synthesise data-structures for relations
     for (auto rel : prog.getRelations()) {
@@ -1853,7 +1883,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
-        visitDepthFirst(prog.getMain(), [&](const RamStatement& node) { numFreq++; });
+        visitDepthFirst(prog.getMain(), [&](const RamStatement&) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
         for (auto rel : prog.getRelations()) {
@@ -1971,7 +2001,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "SignalHandler::instance()->enableLogging();\n";
     }
     bool hasIncrement = false;
-    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
+    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement&) { hasIncrement = true; });
     // initialize counter
     if (hasIncrement) {
         os << "// -- initialize counter --\n";

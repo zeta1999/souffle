@@ -17,7 +17,7 @@
 #pragma once
 
 #include "AstNode.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 
 #include <map>
 #include <string>
@@ -30,31 +30,41 @@ namespace souffle {
  */
 class AstIO : public AstNode {
 public:
-    AstIO(const AstIO& io) : name(io.name), kvps(io.kvps) {}
+    AstIO(const AstIO& io) : name(io.name), kvps(io.kvps) {
+        this->setSrcLoc(io.getSrcLoc());
+    }
     AstIO() = default;
 
     void print(std::ostream& os) const override {
+        auto temp = kvps;
+        temp.erase("operation");
+        os << "." << kvps.at("operation") << " ";
         os << name;
-        if (!kvps.empty()) {
-            os << "(" << join(kvps, ",", [](std::ostream& out, const auto& arg) {
+        if (!temp.empty()) {
+            os << "(" << join(temp, ",", [](std::ostream& out, const auto& arg) {
                 out << arg.first << "=\"" << arg.second << "\"";
             }) << ")";
         }
     }
 
     /** relation name of I/O-directive */
-    const AstRelationIdentifier& getName() const {
+    const AstQualifiedName& getQualifiedName() const {
         return name;
     }
 
     /** set relation name of I/O-directive */
-    void setName(const AstRelationIdentifier& name) {
+    void setQualifiedName(const AstQualifiedName& name) {
         this->name = name;
     }
 
     /** add key-value pair */
     void addKVP(const std::string& key, const std::string& value) {
         kvps[key] = unescape(value);
+    }
+
+    /** get value */
+    const std::string& getKVP(const std::string& key) const {
+        return kvps.at(key);
     }
 
     /** get I/O-directive map */
@@ -78,87 +88,10 @@ protected:
     }
 
     /** relation name of I/O directive */
-    AstRelationIdentifier name;
+    AstQualifiedName name;
 
     /** key-value pair map */
     std::map<std::string, std::string> kvps;
-};
-
-/**
- * @class AstStore
- * @brief Intermediate representation of a store operation.
- */
-class AstStore : public AstIO {
-public:
-    AstStore(const AstIO& io) : AstIO(io) {
-        setSrcLoc(io.getSrcLoc());
-    }
-    AstStore() = default;
-
-    void print(std::ostream& os) const override {
-        os << ".output ";
-        AstIO::print(os);
-    }
-
-    AstStore* clone() const override {
-        auto res = new AstStore();
-        res->name = name;
-        res->kvps = kvps;
-        res->setSrcLoc(getSrcLoc());
-        return res;
-    }
-};
-
-/**
- * @class AstLoad
- * @brief Intermediate representation of a store operation.
- */
-class AstLoad : public AstIO {
-public:
-    AstLoad(const AstIO& io) : AstIO(io) {
-        setSrcLoc(io.getSrcLoc());
-    }
-    AstLoad() = default;
-
-    void print(std::ostream& os) const override {
-        os << ".input ";
-        AstIO::print(os);
-    }
-
-    AstLoad* clone() const override {
-        auto res = new AstLoad();
-        res->name = name;
-        res->kvps = kvps;
-        res->setSrcLoc(getSrcLoc());
-        return res;
-    }
-};
-
-/**
- * @class AstPrintSize
- * @brief Intermediate representation of a summary store operation.
- */
-class AstPrintSize : public AstStore {
-public:
-    AstPrintSize(const AstIO& io) : AstStore(io) {
-        addKVP("IO", "stdoutprintsize");
-    }
-    AstPrintSize() {
-        addKVP("IO", "stdoutprintsize");
-    }
-
-    void print(std::ostream& os) const override {
-        os << ".printsize ";
-        AstIO::print(os);
-    }
-
-    AstPrintSize* clone() const override {
-        auto res = new AstPrintSize();
-        res->name = name;
-        res->kvps = kvps;
-        res->setSrcLoc(getSrcLoc());
-        return res;
-    }
 };
 
 }  // end of namespace souffle

@@ -21,8 +21,8 @@
 #include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
@@ -41,8 +41,7 @@ void PrecedenceGraph::run(const AstTranslationUnit& translationUnit) {
 
     for (AstRelation* r : relations) {
         backingGraph.insert(r);
-        for (size_t i = 0; i < r->clauseSize(); i++) {
-            AstClause* c = r->getClause(i);
+        for (const auto& c : r->getClauses()) {
             const std::set<const AstRelation*>& dependencies =
                     getBodyRelations(c, translationUnit.getProgram());
             for (auto source : dependencies) {
@@ -58,14 +57,16 @@ void PrecedenceGraph::print(std::ostream& os) const {
     /* Print node of dependence graph */
     for (const AstRelation* rel : backingGraph.vertices()) {
         if (rel != nullptr) {
-            os << "\t\"" << rel->getName() << "\" [label = \"" << rel->getName() << "\"];\n";
+            os << "\t\"" << rel->getQualifiedName() << "\" [label = \"" << rel->getQualifiedName()
+               << "\"];\n";
         }
     }
     for (const AstRelation* rel : backingGraph.vertices()) {
         if (rel != nullptr) {
             for (const AstRelation* adjRel : backingGraph.successors(rel)) {
                 if (adjRel != nullptr) {
-                    os << "\t\"" << rel->getName() << "\" -> \"" << adjRel->getName() << "\";\n";
+                    os << "\t\"" << rel->getQualifiedName() << "\" -> \"" << adjRel->getQualifiedName()
+                       << "\";\n";
                 }
             }
         }
@@ -142,7 +143,7 @@ bool RecursiveClauses::computeIsRecursive(
 
     // set up start list
     for (const auto* cur : getBodyLiterals<AstAtom>(clause)) {
-        auto rel = program.getRelation(cur->getName());
+        auto rel = program.getRelation(cur->getQualifiedName());
         if (rel == trg) {
             return true;
         }
@@ -168,7 +169,7 @@ bool RecursiveClauses::computeIsRecursive(
         // check all atoms in the relations
         for (const AstClause* cl : cur->getClauses()) {
             for (const AstAtom* at : getBodyLiterals<AstAtom>(*cl)) {
-                auto rel = program.getRelation(at->getName());
+                auto rel = program.getRelation(at->getQualifiedName());
                 if (rel == trg) {
                     return true;
                 }
@@ -268,7 +269,7 @@ void SCCGraph::print(std::ostream& os) const {
     for (size_t scc = 0; scc < getNumberOfSCCs(); scc++) {
         os << "\t" << name << "_" << scc << "[label = \"";
         os << join(getInternalRelations(scc), ",\\n",
-                [](std::ostream& out, const AstRelation* rel) { out << rel->getName(); });
+                [](std::ostream& out, const AstRelation* rel) { out << rel->getQualifiedName(); });
         os << "\" ];" << std::endl;
     }
     for (size_t scc = 0; scc < getNumberOfSCCs(); scc++) {
@@ -416,7 +417,7 @@ void TopologicallySortedSCCGraph::print(std::ostream& os) const {
     for (size_t i = 0; i < sccOrder.size(); i++) {
         os << i << ": [";
         os << join(sccGraph->getInternalRelations(sccOrder[i]), ", ",
-                [](std::ostream& out, const AstRelation* rel) { out << rel->getName(); });
+                [](std::ostream& out, const AstRelation* rel) { out << rel->getQualifiedName(); });
         os << "]" << std::endl;
     }
     os << std::endl;
@@ -427,11 +428,11 @@ void TopologicallySortedSCCGraph::print(std::ostream& os) const {
 void RelationScheduleStep::print(std::ostream& os) const {
     os << "computed: ";
     for (const AstRelation* compRel : computed()) {
-        os << compRel->getName() << ", ";
+        os << compRel->getQualifiedName() << ", ";
     }
     os << "\nexpired: ";
     for (const AstRelation* compRel : expired()) {
-        os << compRel->getName() << ", ";
+        os << compRel->getQualifiedName() << ", ";
     }
     os << "\n";
     if (recursive()) {
@@ -504,11 +505,11 @@ void RelationSchedule::print(std::ostream& os) const {
         os << step;
         os << "computed: ";
         for (const AstRelation* compRel : step.computed()) {
-            os << compRel->getName() << ", ";
+            os << compRel->getQualifiedName() << ", ";
         }
         os << "\nexpired: ";
         for (const AstRelation* compRel : step.expired()) {
-            os << compRel->getName() << ", ";
+            os << compRel->getQualifiedName() << ", ";
         }
         os << "\n";
         if (step.recursive()) {

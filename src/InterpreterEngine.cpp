@@ -47,6 +47,10 @@ namespace souffle {
 
 #define FFI_Symbol ffi_type_pointer
 
+namespace {
+constexpr RamDomain RAM_BIT_SHIFT_MASK = RAM_DOMAIN_SIZE - 1;
+}
+
 InterpreterEngine::RelationHandle& InterpreterEngine::getRelationHandle(const size_t idx) {
     return generator.getRelationHandle(idx);
 }
@@ -184,7 +188,7 @@ void InterpreterEngine::executeMain() {
 
         // Store count of rules
         size_t ruleCount = 0;
-        visitDepthFirst(program, [&](const RamQuery& rule) { ++ruleCount; });
+        visitDepthFirst(program, [&](const RamQuery&) { ++ruleCount; });
         ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
 
         InterpreterContext ctxt;
@@ -242,6 +246,24 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(IntrinsicOperator)
 #define BINARY_OP(op) return execute(node->getChild(0), ctxt) op execute(node->getChild(1), ctxt)
+// clang-format off
+#define BINARY_OP_CAST(ty, op) return ramBitCast(       \
+    ramBitCast<ty>(execute(node->getChild(0), ctxt)) op \
+    ramBitCast<ty>(execute(node->getChild(1), ctxt)) )
+#define BINARY_OP_INTEGRAL(opcode, op)                              \
+    case FunctorOp::   opcode: { BINARY_OP_CAST(RamSigned  , op); } \
+    case FunctorOp::U##opcode: { BINARY_OP_CAST(RamUnsigned, op); }
+#define BINARY_OP_NUMERIC(opcode, op)                         \
+    BINARY_OP_INTEGRAL(opcode, op)                            \
+    case FunctorOp::F##opcode: BINARY_OP_CAST(RamFloat, op);
+#define BINARY_OP_CAST_SHIFT_MASK(ty, op) return ramBitCast(                \
+    ramBitCast<ty>(execute(node->getChild(0), ctxt)) op                     \
+    ramBitCast<ty>(execute(node->getChild(1), ctxt) & RAM_BIT_SHIFT_MASK) )
+#define BINARY_OP_INTEGRAL_SHIFT(opcode, op, tySigned, tyUnsigned)              \
+    case FunctorOp::   opcode: { BINARY_OP_CAST_SHIFT_MASK(tySigned   , op); }  \
+    case FunctorOp::U##opcode: { BINARY_OP_CAST_SHIFT_MASK(tyUnsigned , op); }
+            // clang-format on
+
             const auto& args = cur.getArguments();
             switch (cur.getOperator()) {
                 /** Unary Functor Operators */
@@ -309,63 +331,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
                     return ramBitCast(static_cast<RamUnsigned>(result));
                 }
-                /** Binary Functor Operators */
-                case FunctorOp::ADD: {
-                    BINARY_OP(+);
-                }
-                case FunctorOp::UADD: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first + second);
-                }
-                case FunctorOp::FADD: {
-                    auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first + second);
-                }
-                case FunctorOp::SUB: {
-                    BINARY_OP(-);
-                }
-                case FunctorOp::USUB: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first - second);
-                }
-                case FunctorOp::FSUB: {
-                    auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first - second);
-                }
 
-                case FunctorOp::MUL: {
-                    BINARY_OP(*);
-                }
-                case FunctorOp::UMUL: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first * second);
-                }
-                case FunctorOp::FMUL: {
-                    auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first * second);
-                }
-
-                case FunctorOp::DIV: {
-                    BINARY_OP(/);
-                }
-
-                case FunctorOp::UDIV: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first / second);
-                }
-
-                case FunctorOp::FDIV: {
-                    auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first / second);
-                }
+                    /** Binary Functor Operators */
+                    // clang-format off
+                BINARY_OP_NUMERIC(ADD, +)
+                BINARY_OP_NUMERIC(SUB, -)
+                BINARY_OP_NUMERIC(MUL, *)
+                BINARY_OP_NUMERIC(DIV, /)
+                    // clang-format on
 
                 case FunctorOp::EXP: {
                     return std::pow(execute(node->getChild(0), ctxt), execute(node->getChild(1), ctxt));
@@ -384,44 +357,19 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     return ramBitCast(static_cast<RamFloat>(std::pow(first, second)));
                 }
 
-                case FunctorOp::MOD: {
-                    BINARY_OP(%);
-                }
-
-                case FunctorOp::UMOD: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first % second);
-                }
-                case FunctorOp::BAND: {
-                    BINARY_OP(&);
-                }
-
-                case FunctorOp::UBAND: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first & second);
-                }
-
-                case FunctorOp::BOR: {
-                    BINARY_OP(|);
-                }
-
-                case FunctorOp::UBOR: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first | second);
-                }
-
-                case FunctorOp::BXOR: {
-                    BINARY_OP(^);
-                }
-
-                case FunctorOp::UBXOR: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return ramBitCast(first ^ second);
-                }
+                    // clang-format off
+                BINARY_OP_INTEGRAL(MOD, %)
+                BINARY_OP_INTEGRAL(BAND, &)
+                BINARY_OP_INTEGRAL(BOR, |)
+                BINARY_OP_INTEGRAL(BXOR, ^)
+                // Handle left-shift as unsigned to match Java semantics of `<<`, namely:
+                //  "... `n << s` is `n` left-shifted `s` bit positions; ..."
+                // Using `RamSigned` would imply UB due to signed overflow when shifting negatives.
+                BINARY_OP_INTEGRAL_SHIFT(BSHIFT_L         , <<, RamUnsigned, RamUnsigned)
+                // For right-shift, we do need sign extension.
+                BINARY_OP_INTEGRAL_SHIFT(BSHIFT_R         , >>, RamSigned  , RamUnsigned)
+                BINARY_OP_INTEGRAL_SHIFT(BSHIFT_R_UNSIGNED, >>, RamUnsigned, RamUnsigned)
+                    // clang-format on
 
                 case FunctorOp::LAND: {
                     BINARY_OP(&&);

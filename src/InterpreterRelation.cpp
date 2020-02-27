@@ -142,7 +142,7 @@ bool InterpreterRelation::exists(const TupleRef& tuple) const {
     return main->contains(tuple);
 }
 
-void InterpreterRelation::extend(const InterpreterRelation& rel) {}
+void InterpreterRelation::extend(const InterpreterRelation&) {}
 
 InterpreterEqRelation::InterpreterEqRelation(size_t arity, size_t auxiliaryArity, const std::string& name,
         const std::vector<std::string>& attributeTypes, const MinIndexSelection& orderSet)

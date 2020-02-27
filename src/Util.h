@@ -314,6 +314,22 @@ range<Iter> make_range(const Iter& a, const Iter& b) {
 // -------------------------------------------------------------------------------
 
 /**
+ * Cast the values, from baseType to toType and compare using ==. (if casting fails -> return false.)
+ *
+ * @tparam baseType, initial Type of values
+ * @tparam toType, type where equality comparison takes place.
+ */
+template <typename toType, typename baseType>
+bool castEq(const baseType* left, const baseType* right) {
+    if (auto castedLeft = dynamic_cast<const toType*>(left)) {
+        if (auto castedRight = dynamic_cast<const toType*>(right)) {
+            return castedLeft == castedRight;
+        }
+    }
+    return false;
+}
+
+/**
  * A functor class supporting the values pointers are pointing to.
  */
 template <typename T>
@@ -330,10 +346,10 @@ struct comp_deref {
 };
 
 /**
- * A function testing whether two vectors are equal (same vector of elements).
+ * A function testing whether two containers are equal with the given Comparator.
  */
-template <typename T, typename Comp = std::equal_to<T>>
-bool equal(const std::vector<T>& a, const std::vector<T>& b, const Comp& comp = Comp()) {
+template <typename Container, typename Comparator>
+bool equal_targets(const Container& a, const Container& b, const Comparator& comp) {
     // check reference
     if (&a == &b) {
         return true;
@@ -345,115 +361,37 @@ bool equal(const std::vector<T>& a, const std::vector<T>& b, const Comp& comp = 
     }
 
     // check content
-    for (std::size_t i = 0; i < a.size(); ++i) {
-        // if there is a difference
-        if (!comp(a[i], b[i])) {
-            return false;
-        }
-    }
-    return true;
+    return std::equal(a.begin(), a.end(), b.begin(), comp);
 }
 
 /**
- * A function testing whether two maps are equal.
- */
-template <typename T1, typename T2, typename Comp = std::equal_to<T2>>
-bool equal(const std::map<T1, T2>& a, const std::map<T1, T2>& b, const Comp& comp = Comp()) {
-    // check reference
-    if (&a == &b) {
-        return true;
-    }
-
-    // check size
-    if (a.size() != a.size()) {
-        return false;
-    }
-
-    // check contents
-    auto itB = b.begin();
-    for (auto itA = a.begin(); itA != a.end(); ++itA, ++itB) {
-        if (itA->first != itB->first) {
-            return false;
-        }
-        if (!comp(itA->second, itB->second)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-/**
- * A function testing whether two sets are equal (same set of elements).
- */
-template <typename T, typename Comp = std::equal_to<T>>
-bool equal(const std::set<T>& a, const std::set<T>& b, const Comp& comp = Comp()) {
-    // check reference
-    if (&a == &b) {
-        return true;
-    }
-
-    // check size
-    if (a.size() != b.size()) {
-        return false;
-    }
-
-    // check content
-    for (auto it_i = a.begin(); it_i != a.end(); ++it_i) {
-        for (auto it_j = a.begin(); it_j != a.end(); ++it_j) {
-            // if there is a difference
-            if (!comp(*it_i, *it_j)) {
-                return false;
-            }
-        }
-    }
-
-    // all the same
-    return true;
-}
-
-/**
- * A function testing whether two vector of pointers are referencing to equivalent
+ * A function testing whether two containers of pointers are referencing equivalent
  * targets.
  */
-template <typename T>
-bool equal_targets(const std::vector<T*>& a, const std::vector<T*>& b) {
-    return equal(a, b, comp_deref<T*>());
+template <typename T, template <typename...> class Container>
+bool equal_targets(const Container<T*>& a, const Container<T*>& b) {
+    return equal_targets(a, b, comp_deref<T*>());
 }
 
 /**
- * A function testing whether two vector of unique pointers are referencing to equivalent
+ * A function testing whether two containers of unique pointers are referencing equivalent
  * targets.
  */
-template <typename T>
-bool equal_targets(const std::vector<std::unique_ptr<T>>& a, const std::vector<std::unique_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::unique_ptr<T>>());
+template <typename T, template <typename...> class Container>
+bool equal_targets(const Container<std::unique_ptr<T>>& a, const Container<std::unique_ptr<T>>& b) {
+    return equal_targets(a, b, comp_deref<std::unique_ptr<T>>());
 }
 
 /**
  * A function testing whether two maps of unique pointers are referencing to equivalent
  * targets.
  */
-template <typename T1, typename T2>
-bool equal_targets(const std::map<T1, std::unique_ptr<T2>>& a, const std::map<T1, std::unique_ptr<T2>>& b) {
-    return equal(a, b, comp_deref<std::unique_ptr<T2>>());
-}
-
-/**
- * A function testing whether two set of pointers are referencing to equivalent
- * targets.
- */
-template <typename T>
-bool equal_targets(const std::set<T*>& a, const std::set<T*>& b) {
-    return equal(a, b, comp_deref<T*>());
-}
-
-/**
- * A function testing whether two set of pointers are referencing to equivalent
- * targets.
- */
-template <typename T>
-bool equal_targets(const std::set<std::unique_ptr<T>>& a, const std::set<std::unique_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::unique_ptr<T>>());
+template <typename Key, typename Value>
+bool equal_targets(
+        const std::map<Key, std::unique_ptr<Value>>& a, const std::map<Key, std::unique_ptr<Value>>& b) {
+    auto comp = comp_deref<std::unique_ptr<Value>>();
+    return equal_targets(
+            a, b, [&comp](auto& a, auto& b) { return a.first == b.first && comp(a.second, b.second); });
 }
 
 /**
@@ -462,10 +400,10 @@ bool equal_targets(const std::set<std::unique_ptr<T>>& a, const std::set<std::un
  */
 template <typename T>
 bool equal_ptr(const T* a, const T* b) {
-    if (!a && !b) {
+    if (a == nullptr && b == nullptr) {
         return true;
     }
-    if (a && b) {
+    if (a != nullptr && b != nullptr) {
         return *a == *b;
     }
     return false;
@@ -477,13 +415,7 @@ bool equal_ptr(const T* a, const T* b) {
  */
 template <typename T>
 bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
-    if (!a && !b) {
-        return true;
-    }
-    if (a && b) {
-        return *a == *b;
-    }
-    return false;
+    return equal_ptr(a.get(), b.get());
 }
 
 // -------------------------------------------------------------------------------
@@ -729,7 +661,7 @@ typename std::enable_if<detail::is_printable<T>::value, std::string>::type toStr
  * to be printed.
  */
 template <typename T>
-typename std::enable_if<!detail::is_printable<T>::value, std::string>::type toString(const T& value) {
+typename std::enable_if<!detail::is_printable<T>::value, std::string>::type toString(const T&) {
     std::stringstream ss;
     ss << "(print for type ";
     ss << typeid(T).name();
@@ -1413,7 +1345,7 @@ public:
 
     // --- print support ---
 
-    friend std::ostream& operator<<(std::ostream& out, const LRUCache& cache) {
+    friend std::ostream& operator<<(std::ostream& out, const LRUCache& /* cache */) {
         return out << "-empty-";
     }
 };

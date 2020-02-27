@@ -16,7 +16,7 @@
  ***********************************************************************/
 
 #include "AstProfileUse.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "Global.h"
 #include "profile/ProgramRun.h"
 #include "profile/Reader.h"
@@ -31,7 +31,7 @@ class AstTranslationUnit;
 /**
  * Run analysis, i.e., retrieve profile information
  */
-void AstProfileUse::run(const AstTranslationUnit& translationUnit) {
+void AstProfileUse::run(const AstTranslationUnit&) {
     if (Global::config().has("profile-use")) {
         std::string filename = Global::config().get("profile-use");
         profile::Reader(filename, programRun).processFile();
@@ -41,20 +41,20 @@ void AstProfileUse::run(const AstTranslationUnit& translationUnit) {
 /**
  * Print analysis
  */
-void AstProfileUse::print(std::ostream& os) const {}
+void AstProfileUse::print(std::ostream&) const {}
 
 /**
  * Check whether relation size is defined in profile
  */
-bool AstProfileUse::hasRelationSize(const AstRelationIdentifier& rel) {
-    return programRun->getRelation(rel.getName()) != nullptr;
+bool AstProfileUse::hasRelationSize(const AstQualifiedName& rel) {
+    return programRun->getRelation(rel.toString()) != nullptr;
 }
 
 /**
  * Get relation size from profile
  */
-size_t AstProfileUse::getRelationSize(const AstRelationIdentifier& rel) {
-    if (const auto* profRel = programRun->getRelation(rel.getName())) {
+size_t AstProfileUse::getRelationSize(const AstQualifiedName& rel) {
+    if (const auto* profRel = programRun->getRelation(rel.toString())) {
         return profRel->size();
     } else {
         return std::numeric_limits<size_t>::max();

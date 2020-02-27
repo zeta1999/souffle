@@ -8,7 +8,7 @@
 
 #include "SynthesiserRelation.h"
 #include "Global.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "Util.h"
 #include <algorithm>
 #include <cassert>
@@ -66,7 +66,7 @@ std::string SynthesiserInfoRelation::getTypeName() {
 
 /** Generate type struct of a info relation, which is empty,
  * the actual implementation is in CompiledSouffle.h */
-void SynthesiserInfoRelation::generateTypeStruct(std::ostream& out) {
+void SynthesiserInfoRelation::generateTypeStruct(std::ostream&) {
     return;
 }
 
@@ -84,7 +84,7 @@ std::string SynthesiserNullaryRelation::getTypeName() {
 
 /** Generate type struct of a nullary relation, which is empty,
  * the actual implementation is in CompiledSouffle.h */
-void SynthesiserNullaryRelation::generateTypeStruct(std::ostream& out) {
+void SynthesiserNullaryRelation::generateTypeStruct(std::ostream&) {
     return;
 }
 
@@ -360,7 +360,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
     // equalRange methods for each pattern which is used to search this relation
     for (int64_t search : getMinIndexSelection().getSearches()) {
-        auto lexOrder = getMinIndexSelection().getLexOrder(search);
+        auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
         out << "range<t_ind_" << indNum << "::iterator> equalRange_" << search;
@@ -658,7 +658,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     for (int64_t search : getMinIndexSelection().getSearches()) {
-        auto lexOrder = getMinIndexSelection().getLexOrder(search);
+        auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
         out << "range<iterator_" << indNum << "> equalRange_" << search;
@@ -954,7 +954,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
 
     // equalRange methods
     for (int64_t search : getMinIndexSelection().getSearches()) {
-        auto lexOrder = getMinIndexSelection().getLexOrder(search);
+        auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
         out << "range<iterator_" << indNum << "> equalRange_" << search;

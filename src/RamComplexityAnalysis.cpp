@@ -35,12 +35,12 @@ int RamComplexityAnalysis::getComplexity(const RamNode* node) const {
         }
 
         // existence check
-        int visitExistenceCheck(const RamExistenceCheck& exists) override {
+        int visitExistenceCheck(const RamExistenceCheck&) override {
             return 2;
         }
 
         // provenance existence check
-        int visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
+        int visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck&) override {
             return 2;
         }
 
@@ -51,7 +51,7 @@ int RamComplexityAnalysis::getComplexity(const RamNode* node) const {
         }
 
         // default rule
-        int visitNode(const RamNode& node) override {
+        int visitNode(const RamNode&) override {
             return 0;
         }
     };

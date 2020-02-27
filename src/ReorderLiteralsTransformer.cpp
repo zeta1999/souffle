@@ -283,7 +283,8 @@ sips_t getSipsFunction(const std::string& sipsChosen) {
     } else {
         // chosen SIPS is not implemented, so keep the same order
         // Goal: leftmost atom first
-        getNextAtomSips = [&](std::vector<AstAtom*> atoms, const std::set<std::string>& boundVariables) {
+        getNextAtomSips = [&](std::vector<AstAtom*> atoms,
+                                  const std::set<std::string>& /* boundVariables */) {
             for (unsigned int i = 0; i < atoms.size(); i++) {
                 if (atoms[i] == nullptr) {
                     // already processed - move on
@@ -415,7 +416,7 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
                 int numBound = numBoundArguments(currAtom, boundVariables);
                 int numArgs = currAtom->getArity();
                 int numFree = numArgs - numBound;
-                double value = log(profileUse->getRelationSize(currAtom->getName()));
+                double value = log(profileUse->getRelationSize(currAtom->getQualifiedName()));
                 value *= (numFree * 1.0) / numArgs;
 
                 if (!set || value < currOptimalVal) {

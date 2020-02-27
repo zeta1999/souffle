@@ -39,7 +39,7 @@ std::vector<const AstRecordInit*> getRecords(const AstNode& root) {
 }
 
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
-    return program->getRelation(atom->getName());
+    return program->getRelation(atom->getQualifiedName());
 }
 
 const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* program) {
@@ -62,7 +62,7 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
 size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
     // TODO (azreika): This number might change between the provenance transformer and the AST->RAM
     // translation. Might need a better way to assign IDs to clauses... (see PR #1288).
-    const AstRelation* rel = program->getRelation(clause->getHead()->getName());
+    const AstRelation* rel = program->getRelation(clause->getHead()->getQualifiedName());
     assert(rel != nullptr && "clause relation does not exist");
 
     size_t clauseNum = 1;
@@ -112,10 +112,10 @@ bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelat
 }
 
 bool isRecursiveClause(const AstClause& clause) {
-    AstRelationIdentifier relationName = clause.getHead()->getName();
+    AstQualifiedName relationName = clause.getHead()->getQualifiedName();
     bool recursive = false;
     visitDepthFirst(clause.getBodyLiterals(), [&](const AstAtom& atom) {
-        if (atom.getName() == relationName) {
+        if (atom.getQualifiedName() == relationName) {
             recursive = true;
         }
     });
@@ -134,7 +134,7 @@ bool isFact(const AstClause& clause) {
 
     // and there are no aggregates
     bool hasAggregates = false;
-    visitDepthFirst(*clause.getHead(), [&](const AstAggregator& cur) { hasAggregates = true; });
+    visitDepthFirst(*clause.getHead(), [&](const AstAggregator&) { hasAggregates = true; });
     return !hasAggregates;
 }
 

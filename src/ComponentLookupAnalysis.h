@@ -35,8 +35,8 @@ public:
     /**
      * Returns binding for given name or empty string if such binding does not exist.
      */
-    const AstTypeIdentifier& find(const AstTypeIdentifier& name) const {
-        const static AstTypeIdentifier unknown;
+    const AstQualifiedName& find(const AstQualifiedName& name) const {
+        const static AstQualifiedName unknown;
         auto pos = binding.find(name);
         if (pos == binding.end()) {
             return unknown;
@@ -44,8 +44,8 @@ public:
         return pos->second;
     }
 
-    TypeBinding extend(const std::vector<AstTypeIdentifier>& formalParams,
-            const std::vector<AstTypeIdentifier>& actualParams) const {
+    TypeBinding extend(const std::vector<AstQualifiedName>& formalParams,
+            const std::vector<AstQualifiedName>& actualParams) const {
         TypeBinding result;
         if (formalParams.size() != actualParams.size()) {
             return *this;  // invalid init => will trigger a semantic error
@@ -68,7 +68,7 @@ private:
      * Key value pair. Keys are names that should be forwarded to value,
      * which is the actual name. Example T->MyImplementation.
      */
-    std::map<AstTypeIdentifier, AstTypeIdentifier> binding;
+    std::map<AstQualifiedName, AstQualifiedName> binding;
 };
 
 class ComponentLookup : public AstAnalysis {

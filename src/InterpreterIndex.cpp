@@ -94,7 +94,7 @@ class NullaryIndex : public InterpreterIndex {
 
     public:
         Source(bool present) : present(present) {}
-        int load(TupleRef* buffer, int max) override {
+        int load(TupleRef* buffer, int /* max */) override {
             if (!present) {
                 return 0;
             }
@@ -103,7 +103,7 @@ class NullaryIndex : public InterpreterIndex {
             return 1;
         }
 
-        int reload(TupleRef* buffer, int max) override {
+        int reload(TupleRef* buffer, int /* max */) override {
             if (!present) {
                 return 0;
             }
@@ -187,7 +187,7 @@ public:
         return res;
     }
 
-    Stream range(const TupleRef& low, const TupleRef& high) const override {
+    Stream range(const TupleRef& /* low */, const TupleRef& /* high */) const override {
         return scan();
     }
 
@@ -481,7 +481,7 @@ public:
             return index.set.contains(tuple, hints);
         }
 
-        bool contains(const TupleRef& low, const TupleRef& high) const override {
+        bool contains(const TupleRef& /* low */, const TupleRef& /* high */) const override {
             assert(false && "Not implemented!");
             return false;
         }
@@ -637,7 +637,8 @@ public:
     }
 
 protected:
-    souffle::range<iter> bounds(const TupleRef& low, const TupleRef& high, Hints& hints) const override {
+    souffle::range<iter> bounds(
+            const TupleRef& low, const TupleRef& /* high */, Hints& hints) const override {
         Entry a = order.encode(low.asTuple<Arity>());
         return {data.lower_bound(a, hints), data.end()};
     }

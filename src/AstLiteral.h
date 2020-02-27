@@ -19,7 +19,7 @@
 
 #include "AstAbstract.h"
 #include "AstNode.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "BinaryConstraintOps.h"
 #include "Util.h"
 
@@ -45,18 +45,17 @@ class AstAtom;
  * either in the head or in the body of a Clause, e.g., parent(x,y).
  * The arguments of the atom can be variables or constants.
  */
-class AstAtom : public AstAtomLiteral {
+class AstAtom : public AstLiteral {
 public:
-    AstAtom(AstRelationIdentifier name = AstRelationIdentifier()) : name(std::move(name)) {}
+    AstAtom(AstQualifiedName name = AstQualifiedName()) : name(std::move(name)) {}
 
-    AstAtom(AstRelationIdentifier name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
+    AstAtom(AstQualifiedName name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
             : name(std::move(name)), arguments(std::move(args)) {
         setSrcLoc(srcLoc);
     }
 
     /** Return the name of this atom */
-    // TODO (b-scholz): rename to getIdent
-    const AstRelationIdentifier& getName() const {
+    const AstQualifiedName& getQualifiedName() const {
         return name;
     }
 
@@ -66,13 +65,8 @@ public:
     }
 
     /** Set atom name */
-    void setName(const AstRelationIdentifier& n) {
+    void setQualifiedName(const AstQualifiedName& n) {
         name = n;
-    }
-
-    /** Returns this class as the referenced atom */
-    const AstAtom* getAtom() const override {
-        return this;
     }
 
     /** Add argument to the atom */
@@ -86,7 +80,7 @@ public:
     }
 
     void print(std::ostream& os) const override {
-        os << getName() << "(";
+        os << getQualifiedName() << "(";
 
         for (size_t i = 0; i < arguments.size(); ++i) {
             if (i != 0) {
@@ -132,7 +126,7 @@ protected:
     }
 
     /** Name of the atom */
-    AstRelationIdentifier name;
+    AstQualifiedName name;
 
     /** Arguments of the atom */
     std::vector<std::unique_ptr<AstArgument>> arguments;
@@ -142,17 +136,13 @@ protected:
  * Subclass of Literal that represents a negated atom, * e.g., !parent(x,y).
  * A Negated atom occurs in a body of clause and cannot occur in a head of a clause.
  */
-class AstNegation : public AstAtomLiteral {
+class AstNegation : public AstLiteral {
 public:
     AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     /** Returns the nested atom as the referenced atom */
-    const AstAtom* getAtom() const override {
-        return atom.get();
-    }
-
-    /** Returns the nested atom as the referenced atom */
-    AstAtom* getAtom() {
+    // TODO (azreika): change to const AstAtom*
+    AstAtom* getAtom() const {
         return atom.get();
     }
 
@@ -192,12 +182,12 @@ protected:
  *
  * Specialised for provenance: used for existence check that tuple doesn't already exist
  */
-class AstProvenanceNegation : public AstAtomLiteral {
+class AstProvenanceNegation : public AstLiteral {
 public:
     AstProvenanceNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     /** Returns the nested atom as the referenced atom */
-    const AstAtom* getAtom() const override {
+    const AstAtom* getAtom() const {
         return atom.get();
     }
 

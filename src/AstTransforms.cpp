@@ -78,12 +78,6 @@ bool FixpointTransformer::transform(AstTranslationUnit& translationUnit) {
 bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& translationUnit) {
     using alias_map = std::map<AstQualifiedName, AstQualifiedName>;
 
-    // tests whether something is a variable
-    auto isVar = [&](const AstArgument& arg) { return dynamic_cast<const AstVariable*>(&arg) != nullptr; };
-
-    // tests whether something is a record
-    auto isRec = [&](const AstArgument& arg) { return dynamic_cast<const AstRecordInit*>(&arg) != nullptr; };
-
     // collect aliases
     alias_map isDirectAliasOf;
 
@@ -107,7 +101,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
                     // 4) (checked) The atom's arguments must be identical to the rule's head.
                     // 5) (pending) The rules's head must consist only of either:
                     //  5a) Variables
-                    //  5b) Aggregates unpacked into variables
+                    //  5b) Records unpacked into variables
                     // 6) (pending) Each variable must have a distinct name.
                     bool onlyDistinctHeadVars = true;
                     std::set<std::string> headVars;
@@ -124,12 +118,13 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
                             for (auto rec_arg : init->getArguments()) {
                                 args.push_back(rec_arg);
                             }
-                        } else
+                        } else {
                             onlyDistinctHeadVars = false;
+                        }
                     }
 
                     if (onlyDistinctHeadVars) {
-                        // all arguments are either distinct variables or aggregates unpacked into distinct
+                        // all arguments are either distinct variables or records unpacked into distinct
                         // variables
                         isDirectAliasOf[cl->getHead()->getQualifiedName()] = atom->getQualifiedName();
                     }

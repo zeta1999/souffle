@@ -110,6 +110,17 @@ public:
 class AstConstant : public AstArgument {
 public:
     AstConstant* clone() const override = 0;
+
+    /** @return String representation of Constant */
+    const std::string& getConstant() const {
+        return constant;
+    }
+
+protected:
+    AstConstant(std::string value) : constant(std::move(value)){};
+
+private:
+    const std::string constant;
 };
 
 /**
@@ -117,36 +128,28 @@ public:
  */
 class AstStringConstant : public AstConstant {
 public:
-    explicit AstStringConstant(std::string value) : value(std::move(value)) {}
+    explicit AstStringConstant(std::string value) : AstConstant(std::move(value)) {}
 
     void print(std::ostream& os) const override {
-        os << "\"" << value << "\"";
-    }
-
-    /** @return String representation of this Constant */
-    const std::string& getValue() const {
-        return value;
+        os << "\"" << getConstant() << "\"";
     }
 
     AstStringConstant* clone() const override {
-        auto* res = new AstStringConstant(value);
+        auto* res = new AstStringConstant(getConstant());
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
     bool operator==(const AstStringConstant& other) const {
-        return getValue() == other.getValue();
+        return getConstant() == other.getConstant();
     }
 
 protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstStringConstant*>(&node));
         const auto& other = static_cast<const AstStringConstant&>(node);
-        return getValue() == other.getValue();
+        return getConstant() == other.getConstant();
     }
-
-private:
-    const std::string value;
 };
 
 /**
@@ -155,7 +158,7 @@ private:
 template <typename NumericType>  // NumericType ⲉ {RamSigned, RamUnsigned, RamFloat}
 class AstNumericConstant : public AstConstant {
 public:
-    explicit AstNumericConstant(NumericType value) : value(value) {}
+    explicit AstNumericConstant(NumericType value) : AstConstant(std::to_string(value)), value(value) {}
 
     void print(std::ostream& os) const override {
         os << value;
@@ -197,7 +200,7 @@ using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
  */
 class AstNilConstant : public AstConstant {
 public:
-    AstNilConstant() = default;
+    AstNilConstant() : AstConstant("nil"){};
 
     void print(std::ostream& os) const override {
         os << "nil";

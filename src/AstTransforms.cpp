@@ -1132,7 +1132,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                std::string constantValue = stringConstant->getValue();
+                std::string constantValue = stringConstant->getConstant();
                 std::stringstream newVariableName;
                 newVariableName << boundPrefix << changeCount << "_" << constantValue << "_s";
 

@@ -292,7 +292,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitStringConstant(const AstStringConstant& c) override {
-            return std::make_unique<RamSignedConstant>(translator.getSymbolTable().lookup(c.getValue()));
+            return std::make_unique<RamSignedConstant>(translator.getSymbolTable().lookup(c.getConstant()));
         }
 
         std::unique_ptr<RamExpression> visitNilConstant(const AstNilConstant&) override {

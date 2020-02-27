@@ -44,39 +44,45 @@ enum class FunctorOp {
     FTOU,      // convert float to unsigned number.
 
     /** Binary Functor Operators */
-    ADD,    // addition
-    SUB,    // subtraction
-    MUL,    // multiplication
-    DIV,    // division
-    EXP,    // exponent
-    MAX,    // max of two numbers
-    MIN,    // min of two numbers
-    MOD,    // modulus
-    BAND,   // bitwise and
-    BOR,    // bitwise or
-    BXOR,   // bitwise exclusive or
-    LAND,   // logical and
-    LOR,    // logical or
-    UADD,   // addition
-    USUB,   // subtraction
-    UMUL,   // multiplication
-    UDIV,   // division
-    UEXP,   // exponent
-    UMAX,   // max of two numbers
-    UMIN,   // min of two numbers
-    UMOD,   // modulus
-    UBAND,  // bitwise and
-    UBOR,   // bitwise or
-    UBXOR,  // bitwise exclusive or
-    ULAND,  // logical and
-    ULOR,   // logical or
-    FADD,   // addition
-    FSUB,   // subtraction
-    FMUL,   // multiplication
-    FDIV,   // division
-    FEXP,   // exponent
-    FMAX,   // max of two floats
-    FMIN,   // min of two floats
+    ADD,                 // addition
+    SUB,                 // subtraction
+    MUL,                 // multiplication
+    DIV,                 // division
+    EXP,                 // exponent
+    MAX,                 // max of two numbers
+    MIN,                 // min of two numbers
+    MOD,                 // modulus
+    BAND,                // bitwise and
+    BOR,                 // bitwise or
+    BXOR,                // bitwise exclusive or
+    BSHIFT_L,            // bitwise shift left
+    BSHIFT_R,            // bitwise shift right
+    BSHIFT_R_UNSIGNED,   // bitwise shift right (unsigned)
+    LAND,                // logical and
+    LOR,                 // logical or
+    UADD,                // addition
+    USUB,                // subtraction
+    UMUL,                // multiplication
+    UDIV,                // division
+    UEXP,                // exponent
+    UMAX,                // max of two numbers
+    UMIN,                // min of two numbers
+    UMOD,                // modulus
+    UBAND,               // bitwise and
+    UBOR,                // bitwise or
+    UBXOR,               // bitwise exclusive or
+    UBSHIFT_L,           // bitwise shift right
+    UBSHIFT_R,           // bitwise shift right
+    UBSHIFT_R_UNSIGNED,  // bitwise shift right (unsigned)
+    ULAND,               // logical and
+    ULOR,                // logical or
+    FADD,                // addition
+    FSUB,                // subtraction
+    FMUL,                // multiplication
+    FDIV,                // division
+    FEXP,                // exponent
+    FMAX,                // max of two floats
+    FMIN,                // min of two floats
 
     CAT,  // string concatenation
 
@@ -121,6 +127,9 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
         case FunctorOp::BAND:
         case FunctorOp::BOR:
         case FunctorOp::BXOR:
+        case FunctorOp::BSHIFT_L:
+        case FunctorOp::BSHIFT_R:
+        case FunctorOp::BSHIFT_R_UNSIGNED:
         case FunctorOp::LAND:
         case FunctorOp::LOR:
         case FunctorOp::UADD:
@@ -132,6 +141,9 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
         case FunctorOp::UBAND:
         case FunctorOp::UBOR:
         case FunctorOp::UBXOR:
+        case FunctorOp::UBSHIFT_L:
+        case FunctorOp::UBSHIFT_R:
+        case FunctorOp::UBSHIFT_R_UNSIGNED:
         case FunctorOp::ULAND:
         case FunctorOp::ULOR:
         case FunctorOp::FADD:
@@ -233,6 +245,15 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
         case FunctorOp::BXOR:
         case FunctorOp::UBXOR:
             return "bxor";
+        case FunctorOp::BSHIFT_L:
+        case FunctorOp::UBSHIFT_L:
+            return "bshl";
+        case FunctorOp::BSHIFT_R:
+        case FunctorOp::UBSHIFT_R:
+            return "bshr";
+        case FunctorOp::BSHIFT_R_UNSIGNED:
+        case FunctorOp::UBSHIFT_R_UNSIGNED:
+            return "bshru";
         case FunctorOp::LAND:
         case FunctorOp::ULAND:
             return "land";
@@ -283,6 +304,9 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::BAND:
         case FunctorOp::BOR:
         case FunctorOp::BXOR:
+        case FunctorOp::BSHIFT_L:
+        case FunctorOp::BSHIFT_R:
+        case FunctorOp::BSHIFT_R_UNSIGNED:
         case FunctorOp::LAND:
         case FunctorOp::LOR:
         case FunctorOp::MOD:
@@ -306,6 +330,9 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::UBAND:
         case FunctorOp::UBOR:
         case FunctorOp::UBXOR:
+        case FunctorOp::UBSHIFT_L:
+        case FunctorOp::UBSHIFT_R:
+        case FunctorOp::UBSHIFT_R_UNSIGNED:
         case FunctorOp::ULAND:
         case FunctorOp::ULOR:
             return TypeAttribute::Unsigned;
@@ -372,6 +399,9 @@ inline TypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::BAND:
         case FunctorOp::BOR:
         case FunctorOp::BXOR:
+        case FunctorOp::BSHIFT_L:
+        case FunctorOp::BSHIFT_R:
+        case FunctorOp::BSHIFT_R_UNSIGNED:
         case FunctorOp::LAND:
         case FunctorOp::LOR:
             assert(arg < 2 && "binary functor out of bound");
@@ -385,6 +415,9 @@ inline TypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::UBAND:
         case FunctorOp::UBOR:
         case FunctorOp::UBXOR:
+        case FunctorOp::UBSHIFT_L:
+        case FunctorOp::UBSHIFT_R:
+        case FunctorOp::UBSHIFT_R_UNSIGNED:
         case FunctorOp::ULAND:
         case FunctorOp::ULOR:
             assert(arg < 2 && "binary functor out of bound");
@@ -538,6 +571,12 @@ inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const TypeAtt
         case FunctorOp::BXOR:
             assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");
             return FunctorOp::UBXOR;
+        case FunctorOp::BSHIFT_L:
+            assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");
+            return FunctorOp::UBSHIFT_L;
+        case FunctorOp::BSHIFT_R:
+            assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");
+            return FunctorOp::UBSHIFT_R;
         case FunctorOp::LAND:
             assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");
             return FunctorOp::ULAND;
@@ -582,6 +621,12 @@ inline bool isInfixFunctorOp(const FunctorOp op) {
         case FunctorOp::BOR:
         case FunctorOp::UBOR:
         case FunctorOp::BXOR:
+        case FunctorOp::BSHIFT_L:
+        case FunctorOp::UBSHIFT_L:
+        case FunctorOp::BSHIFT_R:
+        case FunctorOp::UBSHIFT_R:
+        case FunctorOp::BSHIFT_R_UNSIGNED:
+        case FunctorOp::UBSHIFT_R_UNSIGNED:
         case FunctorOp::UBXOR:
         case FunctorOp::LAND:
         case FunctorOp::ULAND:

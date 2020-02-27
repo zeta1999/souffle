@@ -37,8 +37,7 @@ public:
     virtual ~EventProcessor() = default;
 
     /** abstract interface for processing an profile event */
-    virtual void process(
-            ProfileDatabase& db, const std::vector<std::string>& signature, va_list& /* args */) {
+    virtual void process(ProfileDatabase&, const std::vector<std::string>& signature, va_list&) {
         std::cerr << "Unknown profiling processing event: ";
         for (const auto& cur : signature) {
             std::cerr << cur << " ";
@@ -452,7 +451,8 @@ public:
         EventProcessorSingleton::instance().registerEventProcessor("@runtime", this);
     }
     /** process event input */
-    void process(ProfileDatabase& db, const std::vector<std::string>& signature, va_list& args) override {
+    void process(
+            ProfileDatabase& db, const std::vector<std::string>& /* signature */, va_list& args) override {
         microseconds start = va_arg(args, microseconds);
         microseconds end = va_arg(args, microseconds);
         db.addDurationEntry({"program", "runtime"}, start, end);
@@ -468,7 +468,8 @@ public:
         EventProcessorSingleton::instance().registerEventProcessor("@utilisation", this);
     }
     /** process event input */
-    void process(ProfileDatabase& db, const std::vector<std::string>& signature, va_list& args) override {
+    void process(
+            ProfileDatabase& db, const std::vector<std::string>& /* signature */, va_list& args) override {
         microseconds time = va_arg(args, microseconds);
         uint64_t systemTime = va_arg(args, uint64_t);
         uint64_t userTime = va_arg(args, uint64_t);
@@ -544,7 +545,8 @@ public:
     ConfigProcessor() {
         EventProcessorSingleton::instance().registerEventProcessor("@config", this);
     }
-    void process(ProfileDatabase& db, const std::vector<std::string>& signature, va_list& args) override {
+    void process(
+            ProfileDatabase& db, const std::vector<std::string>& /* signature */, va_list& args) override {
         const std::string key = va_arg(args, char*);
         const std::string& value = va_arg(args, char*);
         db.addTextEntry({"program", "configuration", key}, value);

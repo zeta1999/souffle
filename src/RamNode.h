@@ -121,7 +121,7 @@ public:
     /**
      * @brief Apply the mapper to all child nodes
      */
-    virtual void apply(const RamNodeMapper& mapper) {}
+    virtual void apply(const RamNodeMapper&) {}
 
     /**
      * @brief Rewrite a child node
@@ -166,7 +166,7 @@ protected:
      * @brief Equality check for two RAM nodes.
      * Default action is that nothing needs to be checked.
      */
-    virtual bool equal(const RamNode& other) const {
+    virtual bool equal(const RamNode&) const {
         return true;
     }
 };

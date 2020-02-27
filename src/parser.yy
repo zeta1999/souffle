@@ -154,6 +154,9 @@
 %token BW_AND                    "band"
 %token BW_OR                     "bor"
 %token BW_XOR                    "bxor"
+%token BW_SHIFT_L                "bshl"
+%token BW_SHIFT_R                "bshr"
+%token BW_SHIFT_R_UNSIGNED       "bshru"
 %token BW_NOT                    "bnot"
 %token L_AND                     "land"
 %token L_OR                      "lor"
@@ -247,6 +250,7 @@
 %left BW_OR
 %left BW_XOR
 %left BW_AND
+%left BW_SHIFT_L BW_SHIFT_R BW_SHIFT_R_UNSIGNED
 %left PLUS MINUS
 %left STAR SLASH PERCENT
 %precedence NEG BW_NOT L_NOT
@@ -1112,6 +1116,33 @@ arg
     }
   | arg[left] CARET arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::EXP,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] BW_SHIFT_L arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_L,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] BW_SHIFT_R arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_R,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] BW_SHIFT_R_UNSIGNED arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_R_UNSIGNED,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
         $$->setSrcLoc(@$);

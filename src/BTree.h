@@ -1274,7 +1274,7 @@ protected:
      * An internal constructor enabling the specific creation of a tree
      * based on internal parameters.
      */
-    btree(size_type size, node* root, leaf_node* leftmost) : root(root), leftmost(leftmost) {}
+    btree(size_type /* size */, node* root, leaf_node* leftmost) : root(root), leftmost(leftmost) {}
 
 public:
     // the destructor freeing all contained nodes

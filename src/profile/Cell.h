@@ -45,7 +45,7 @@ public:
         std::cerr << "getting string on time cell\n";
         throw this;
     }
-    std::string toString(int precision) const override {
+    std::string toString(int /* precision */) const override {
         return Tools::formatTime(value);
     }
     std::chrono::microseconds getTimeVal() const override {
@@ -74,7 +74,7 @@ public:
         std::cerr << "getting time on double cell\n";
         throw this;
     }
-    std::string toString(int precision) const override {
+    std::string toString(int /* precision */) const override {
         return Tools::formatNum(value);
     }
 };
@@ -100,7 +100,7 @@ public:
         std::cerr << "getting time on double cell\n";
         throw this;
     }
-    std::string toString(int precision) const override {
+    std::string toString(int /* precision */) const override {
         return Tools::cleanString(value);
     }
 };
@@ -151,7 +151,7 @@ public:
         std::cerr << "getting time on void cell\n";
         throw this;
     }
-    std::string toString(int precision) const override {
+    std::string toString(int /* precision */) const override {
         return "-";
     }
 };

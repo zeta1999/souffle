@@ -31,7 +31,7 @@ class AstTranslationUnit;
 /**
  * Run analysis, i.e., retrieve profile information
  */
-void AstProfileUse::run(const AstTranslationUnit& translationUnit) {
+void AstProfileUse::run(const AstTranslationUnit&) {
     if (Global::config().has("profile-use")) {
         std::string filename = Global::config().get("profile-use");
         profile::Reader(filename, programRun).processFile();
@@ -41,7 +41,7 @@ void AstProfileUse::run(const AstTranslationUnit& translationUnit) {
 /**
  * Print analysis
  */
-void AstProfileUse::print(std::ostream& os) const {}
+void AstProfileUse::print(std::ostream&) const {}
 
 /**
  * Check whether relation size is defined in profile

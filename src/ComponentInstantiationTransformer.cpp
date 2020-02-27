@@ -87,7 +87,7 @@ struct ComponentContent {
         // if yes, add error
         if (foundItem != ios.end()) {
             const std::string& op = (*foundItem)->getKVP("operation");
-            if (op == directive->getKVP("operation")) {
+            if (op == directive->getKVP("operation") && op != "output") {
                 Diagnostic err(Diagnostic::ERROR,
                         DiagnosticMessage("Redefinition of " + op + " directive " +
                                                   toString(directive->getQualifiedName()),

@@ -79,8 +79,8 @@
 %token END 0                     "end of file"
 %token <std::string> STRING      "symbol"
 %token <std::string> IDENT       "identifier"
-%token <RamDomain> NUMBER        "number"
-%token <RamFloat> FLOAT          "float"
+%token <std::string> NUMBER      "number"
+%token <std::string> FLOAT       "float"
 %token <std::string> RELOP       "relational operator"
 %token PRAGMA                    "pragma directive"
 %token OUTPUT_QUALIFIER          "relation qualifier output"
@@ -713,14 +713,14 @@ exec_plan_list
   : NUMBER COLON LPAREN exec_order_list RPAREN {
         $exec_order_list->setSrcLoc(@LPAREN);
         $$ = new AstExecutionPlan();
-        $$->setOrderFor($NUMBER, std::unique_ptr<AstExecutionOrder>($exec_order_list));
+        $$->setOrderFor(stord($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
 
         $exec_order_list = nullptr;
     }
   | exec_plan_list[curr_list] COMMA NUMBER COLON LPAREN exec_order_list RPAREN {
         $exec_order_list->setSrcLoc(@LPAREN);
         $$ = $curr_list;
-        $$->setOrderFor($NUMBER, std::unique_ptr<AstExecutionOrder>($exec_order_list));
+        $$->setOrderFor(stord($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
 
         $curr_list = nullptr;
         $exec_order_list = nullptr;
@@ -741,11 +741,11 @@ exec_order_list
 non_empty_exec_order_list
   : NUMBER {
         $$ = new AstExecutionOrder();
-        $$->appendAtomIndex($NUMBER);
+        $$->appendAtomIndex(stord($NUMBER));
     }
   | non_empty_exec_order_list[curr_list] COMMA NUMBER {
         $$ = $curr_list;
-        $$->appendAtomIndex($NUMBER);
+        $$->appendAtomIndex(stord($NUMBER));
 
         $curr_list = nullptr;
     }

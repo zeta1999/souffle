@@ -53,12 +53,14 @@ TEST(AstPrint, NilConstant) {
 }
 
 TEST(AstPrint, NumberConstant) {
+    std::cerr << "miau" << std::endl;
     auto testArgument = std::make_unique<AstNumberConstant>(2, AstNumberConstant::Type::Int);
 
     auto tu1 = makeATU();
     tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
+    std::cerr << "miau" << std::endl;
 }
 
 TEST(AstPrint, StringConstant) {

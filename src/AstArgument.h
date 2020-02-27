@@ -164,7 +164,10 @@ class AstNumericConstant : public AstConstant {
 public:
     enum class Type { Int, Uint, Float };
 
-    explicit AstNumericConstant(NumericType value, Type type)
+    AstNumericConstant(std::string constant, Type type)
+            : AstConstant(std::move(constant)), value(parseVal(getConstant(), type)), type(type) {}
+
+    AstNumericConstant(NumericType value, Type type)
             : AstConstant(std::to_string(value)), value(value), type(type) {}
 
     /** Get the value of the constant. */
@@ -190,6 +193,17 @@ protected:
     }
 
 private:
+    NumericType parseVal(const std::string& constant, const Type type) {
+        switch (type) {
+            case Type::Int:
+                return RamDomainFromString(constant);
+            case Type::Uint:
+                return RamUnsignedFromString(constant);
+            case Type::Float:
+                return RamFloatFromString(constant);
+        }
+    }
+
     const NumericType value;
     const Type type;
 };

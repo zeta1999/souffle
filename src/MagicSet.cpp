@@ -165,7 +165,7 @@ bool containsAggregators(AstClause* clause) {
     bool found = false;
 
     // check for aggregators
-    visitDepthFirst(*clause, [&](const AstAggregator& aggr) { found = true; });
+    visitDepthFirst(*clause, [&](const AstAggregator&) { found = true; });
 
     return found;
 }
@@ -539,7 +539,7 @@ int getNextAtomMaxBoundSIPS(std::vector<AstAtom*>& atoms, const std::set<std::st
 
 // Choose the atom with the maximum ratio of bound arguments to total arguments
 int getNextAtomMaxRatioSIPS(std::vector<AstAtom*>& atoms, const std::set<std::string>& boundArgs,
-        const std::set<AstQualifiedName>& edb, BindingStore& compositeBindings) {
+        const std::set<AstQualifiedName>& /* edb */, BindingStore& compositeBindings) {
     double maxRatio = -1;
     int maxIndex = 0;
 
@@ -1117,8 +1117,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 // copy over input directives to new adorned relation
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
-                    visitDepthFirst(*program, [&](AstLoad& current) {
-                        if (current.getQualifiedName() != originalName) {
+                    visitDepthFirst(*program, [&](AstIO& current) {
+                        if (current.getQualifiedName() != originalName &&
+                                current.getKVP("operation") != "input") {
                             return;
                         }
                         current.setQualifiedName(newRelName);
@@ -1326,7 +1327,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             size_t originalNumAtoms = getBodyLiterals<AstAtom>(*newClause).size();
 
             // create the first argument of this new clause
-            const AstAtom* newClauseHead = newClause->getHead()->getAtom();
+            const AstAtom* newClauseHead = newClause->getHead();
             AstQualifiedName newMag = createMagicIdentifier(newClauseHead->getQualifiedName(), querynum);
             auto* newMagAtom = new AstAtom(newMag);
 

@@ -135,10 +135,10 @@ std::vector<IODirectives> AstTranslator::getInputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> inputDirectives;
 
-    std::vector<AstLoad*> relLoads;
-    for (const auto& load : program->getLoads()) {
-        if (load->getQualifiedName() == rel->getQualifiedName()) {
-            relLoads.push_back(load.get());
+    std::vector<AstIO*> relLoads;
+    for (const auto& io : program->getIOs()) {
+        if (io->getQualifiedName() == rel->getQualifiedName() && io->getKVP("operation") == "input") {
+            relLoads.push_back(io.get());
         }
     }
     for (const auto& current : relLoads) {
@@ -167,9 +167,10 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> outputDirectives;
 
-    std::vector<AstStore*> relStores;
-    for (const auto& store : program->getStores()) {
-        if (store->getQualifiedName() == rel->getQualifiedName()) {
+    std::vector<AstIO*> relStores;
+    for (const auto& store : program->getIOs()) {
+        if (store->getQualifiedName() == rel->getQualifiedName() &&
+                (store->getKVP("operation") == "output" || store->getKVP("operation") == "printsize")) {
             relStores.push_back(store.get());
         }
     }
@@ -178,7 +179,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         bool hasOutput = false;
         for (const auto* current : relStores) {
             IODirectives ioDirectives;
-            if (dynamic_cast<const AstPrintSize*>(current) != nullptr) {
+            if (current->getKVP("operation") == "printsize") {
                 ioDirectives.setIOType("stdoutprintsize");
                 outputDirectives.push_back(ioDirectives);
             } else if (!hasOutput) {

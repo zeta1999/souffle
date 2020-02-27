@@ -119,11 +119,10 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
     }
 }
 
-void ParserDriver::addStore(std::unique_ptr<AstStore> d) {
-    if (dynamic_cast<AstPrintSize*>(d.get()) != nullptr) {
-        for (const auto& cur : translationUnit->getProgram()->getStores()) {
-            if (cur->getQualifiedName() == d->getQualifiedName() &&
-                    dynamic_cast<AstPrintSize*>(cur.get()) != nullptr) {
+void ParserDriver::addIO(std::unique_ptr<AstIO> d) {
+    if (d->getKVP("operation") == "printsize") {
+        for (const auto& cur : translationUnit->getProgram()->getIOs()) {
+            if (cur->getQualifiedName() == d->getQualifiedName() && cur->getKVP("operation") == "printsize") {
                 Diagnostic err(Diagnostic::ERROR,
                         DiagnosticMessage("Redefinition of printsize directives for relation " +
                                                   toString(d->getQualifiedName()),
@@ -134,11 +133,7 @@ void ParserDriver::addStore(std::unique_ptr<AstStore> d) {
             }
         }
     }
-    translationUnit->getProgram()->addStore(std::move(d));
-}
-
-void ParserDriver::addLoad(std::unique_ptr<AstLoad> d) {
-    translationUnit->getProgram()->addLoad(std::move(d));
+    translationUnit->getProgram()->addIO(std::move(d));
 }
 
 void ParserDriver::addType(std::unique_ptr<AstType> type) {

@@ -406,8 +406,12 @@ static bool hasUnnamedVariable(const AstLiteral* lit) {
 void AstSemanticChecker::checkLiteral(
         ErrorReport& report, const AstProgram& program, const AstLiteral& literal) {
     // check potential nested atom
-    if (const auto* atomLiteral = dynamic_cast<const AstAtomLiteral*>(&literal)) {
-        checkAtom(report, program, *atomLiteral->getAtom());
+    if (const auto* atom = dynamic_cast<const AstAtom*>(&literal)) {
+        checkAtom(report, program, *atom);
+    }
+
+    if (const auto* neg = dynamic_cast<const AstNegation*>(&literal)) {
+        checkAtom(report, program, *neg->getAtom());
     }
 
     if (const auto* constraint = dynamic_cast<const AstBinaryConstraint*>(&literal)) {
@@ -488,7 +492,7 @@ void AstSemanticChecker::checkAggregator(
     });
 
     visitDepthFirst(program, [&](const AstLiteral& parentLiteral) {
-        visitDepthFirst(parentLiteral, [&](const AstAggregator& otherAggregate) {
+        visitDepthFirst(parentLiteral, [&](const AstAggregator& /* otherAggregate */) {
             // Create the other aggregate's dummy clause
             AstClause dummyClauseOther;
             dummyClauseOther.addToBody(std::unique_ptr<AstLiteral>(parentLiteral.clone()));
@@ -655,10 +659,11 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
     }
 }
 
-void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const AstRelation& relation, const IOType& ioTypes) {
+void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const TypeEnvironment& /* typeEnv */,
+        const AstProgram& program, const AstRelation& relation, const IOType& /* ioTypes */) {
     const auto& attributes = relation.getAttributes();
     assert(attributes.size() == relation.getArity() && "mismatching attribute size and arity");
+
     for (size_t i = 0; i < relation.getArity(); i++) {
         AstAttribute* attr = attributes[i];
         AstQualifiedName typeName = attr->getTypeName();
@@ -971,10 +976,7 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
                     "Undefined relation " + toString(directive->getQualifiedName()), directive->getSrcLoc());
         }
     };
-    for (const auto& directive : program.getLoads()) {
-        checkIODirective(directive.get());
-    }
-    for (const auto& directive : program.getStores()) {
+    for (const auto& directive : program.getIOs()) {
         checkIODirective(directive.get());
     }
 }

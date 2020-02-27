@@ -154,6 +154,9 @@
 %token BW_AND                    "band"
 %token BW_OR                     "bor"
 %token BW_XOR                    "bxor"
+%token BW_SHIFT_L                "bshl"
+%token BW_SHIFT_R                "bshr"
+%token BW_SHIFT_R_UNSIGNED       "bshru"
 %token BW_NOT                    "bnot"
 %token L_AND                     "land"
 %token L_OR                      "lor"
@@ -182,7 +185,7 @@
 %type <std::vector<AstIO *>>                io_directive_list
 %type <std::vector<AstIO *>>                io_relation_list
 %type <std::string>                         kvp_value
-%type <std::vector<AstLoad *>>              load_head
+%type <std::vector<AstIO *>>                io_head
 %type <std::vector<AstArgument *>>          non_empty_arg_list
 %type <std::vector<AstAttribute *>>         non_empty_attributes
 %type <AstExecutionOrder *>                 non_empty_exec_order_list
@@ -196,7 +199,6 @@
 %type <std::vector<AstRelation *>>          relation_list
 %type <std::vector<AstClause *>>            rule
 %type <std::vector<AstClause *>>            rule_def
-%type <std::vector<AstStore *>>             store_head
 %type <RuleBody *>                          term
 %type <AstType *>                           type
 %type <std::vector<AstQualifiedName>>      type_params
@@ -223,7 +225,6 @@
 %destructor { for (auto* cur : $$) { delete cur; } }        head
 %destructor { for (auto* cur : $$) { delete cur; } }        io_directive_list
 %destructor { for (auto* cur : $$) { delete cur; } }        io_relation_list
-%destructor { for (auto* cur : $$) { delete cur; } }        load_head
 %destructor { for (auto* cur : $$) { delete cur; } }        non_empty_arg_list
 %destructor { for (auto* cur : $$) { delete cur; } }        non_empty_attributes
 %destructor { delete $$; }                                  non_empty_exec_order_list
@@ -236,7 +237,7 @@
 %destructor { for (auto* cur : $$) { delete cur; } }        relation_list
 %destructor { for (auto* cur : $$) { delete cur; } }        rule
 %destructor { for (auto* cur : $$) { delete cur; } }        rule_def
-%destructor { for (auto* cur : $$) { delete cur; } }        store_head
+%destructor { for (auto* cur : $$) { delete cur; } }        io_head
 %destructor { delete $$; }                                  term
 %destructor { delete $$; }                                  type
 %destructor { }                                             type_params
@@ -249,6 +250,7 @@
 %left BW_OR
 %left BW_XOR
 %left BW_AND
+%left BW_SHIFT_L BW_SHIFT_R BW_SHIFT_R_UNSIGNED
 %left PLUS MINUS
 %left STAR SLASH PERCENT
 %precedence NEG BW_NOT L_NOT
@@ -279,41 +281,38 @@ unit
   | unit relation_decl {
         for (auto* cur : $relation_decl) {
             if (cur->hasQualifier(RelationQualifier::INPUT)) {
-                auto load = std::make_unique<AstLoad>();
+                auto load = std::make_unique<AstIO>();
                 load->setQualifiedName(cur->getQualifiedName());
                 load->setSrcLoc(cur->getSrcLoc());
-                driver.addLoad(std::move(load));
+                load->addKVP("operation","input");
+                driver.addIO(std::move(load));
             }
             if (cur->hasQualifier(RelationQualifier::OUTPUT)) {
-                auto store = std::make_unique<AstStore>();
+                auto store = std::make_unique<AstIO>();
                 store->setQualifiedName(cur->getQualifiedName());
                 store->setSrcLoc(cur->getSrcLoc());
-                driver.addStore(std::move(store));
+                store->addKVP("operation","output");
+                driver.addIO(std::move(store));
             }
             if (cur->hasQualifier(RelationQualifier::PRINTSIZE)) {
-                auto printSize = std::make_unique<AstPrintSize>();
+                auto printSize = std::make_unique<AstIO>();
                 printSize->setQualifiedName(cur->getQualifiedName());
                 printSize->setSrcLoc(cur->getSrcLoc());
-                driver.addStore(std::move(printSize));
+                printSize->addKVP("operation","printsize");
+                printSize->addKVP("IO", "stdoutprintsize");
+                driver.addIO(std::move(printSize));
             }
             driver.addRelation(std::unique_ptr<AstRelation>(cur));
         }
 
         $relation_decl.clear();
     }
-  | unit load_head {
-        for (auto* cur : $load_head) {
-            driver.addLoad(std::unique_ptr<AstLoad>(cur));
+  | unit io_head {
+        for (auto* cur : $io_head) {
+            driver.addIO(std::unique_ptr<AstIO>(cur));
         }
 
-        $load_head.clear();
-    }
-  | unit store_head {
-        for (auto* cur : $store_head) {
-            driver.addStore(std::unique_ptr<AstStore>(cur));
-        }
-
-        $store_head.clear();
+        $io_head.clear();
     }
   | unit fact {
         driver.addClause(std::unique_ptr<AstClause>($fact));
@@ -1124,6 +1123,33 @@ arg
         $left = nullptr;
         $right = nullptr;
     }
+  | arg[left] BW_SHIFT_L arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_L,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] BW_SHIFT_R arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_R,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] BW_SHIFT_R_UNSIGNED arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_R_UNSIGNED,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
   | arg[left] BW_OR arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BOR,
                 std::unique_ptr<AstArgument>($left),
@@ -1449,22 +1475,25 @@ component_body
         $$ = $comp;
         for (auto* rel : $relation_decl) {
             if (rel->hasQualifier(RelationQualifier::INPUT)) {
-                auto load = std::make_unique<AstLoad>();
+                auto load = std::make_unique<AstIO>();
                 load->setQualifiedName(rel->getQualifiedName());
                 load->setSrcLoc(rel->getSrcLoc());
-                driver.addLoad(std::move(load));
+                load->addKVP("operation","input");
+                driver.addIO(std::move(load));
             }
             if (rel->hasQualifier(RelationQualifier::OUTPUT)) {
-                auto store = std::make_unique<AstStore>();
+                auto store = std::make_unique<AstIO>();
                 store->setQualifiedName(rel->getQualifiedName());
                 store->setSrcLoc(rel->getSrcLoc());
-                driver.addStore(std::move(store));
+                store->addKVP("operation","output");
+                driver.addIO(std::move(store));
             }
             if (rel->hasQualifier(RelationQualifier::PRINTSIZE)) {
-                auto printSize = std::make_unique<AstPrintSize>();
+                auto printSize = std::make_unique<AstIO>();
                 printSize->setQualifiedName(rel->getQualifiedName());
                 printSize->setSrcLoc(rel->getSrcLoc());
-                driver.addStore(std::move(printSize));
+                printSize->addKVP("operation","printsize");
+                driver.addIO(std::move(printSize));
             }
             $$->addRelation(std::unique_ptr<AstRelation>(rel));
         }
@@ -1472,23 +1501,14 @@ component_body
         $comp = nullptr;
         $relation_decl.clear();
     }
-  | component_body[comp] load_head {
+  | component_body[comp] io_head {
         $$ = $comp;
-        for (auto* io : $load_head) {
-            $$->addLoad(std::unique_ptr<AstLoad>(io));
+        for (auto* io : $io_head) {
+            $$->addIO(std::unique_ptr<AstIO>(io));
         }
 
         $comp = nullptr;
-        $load_head.clear();
-    }
-  | component_body[comp] store_head {
-        $$ = $comp;
-        for (auto* io : $store_head) {
-            $$->addStore(std::unique_ptr<AstStore>(io));
-        }
-
-        $comp = nullptr;
-        $store_head.clear();
+        $io_head.clear();
     }
   | component_body[comp] fact {
         $$ = $comp;
@@ -1605,25 +1625,28 @@ pragma
     }
   ;
 
-/* Load directives */
-load_head
+/* io directives */
+io_head
   : INPUT_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            $$.push_back(new AstLoad(*io));
+            auto newIO = new AstIO(*io); 
+            newIO->addKVP("operation","input");
+            $$.push_back(newIO);
         }
     }
-  ;
-
-/* Store directives */
-store_head
-  : OUTPUT_DECL io_directive_list {
+  | OUTPUT_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            $$.push_back(new AstStore(*io));
+            auto newIO = new AstIO(*io); 
+            newIO->addKVP("operation","output");
+            $$.push_back(newIO);
         }
     }
   | PRINTSIZE_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            $$.push_back(new AstPrintSize(*io));
+            auto newIO = new AstIO(*io);
+            newIO->addKVP("operation","printsize");
+            newIO->addKVP("IO", "stdoutprintsize");
+            $$.push_back(newIO);
         }
     }
   ;

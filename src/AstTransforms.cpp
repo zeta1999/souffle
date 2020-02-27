@@ -43,7 +43,7 @@
 
 namespace souffle {
 
-bool NullTransformer::transform(AstTranslationUnit& translationUnit) {
+bool NullTransformer::transform(AstTranslationUnit&) {
     return false;
 }
 

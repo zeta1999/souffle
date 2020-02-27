@@ -25,7 +25,7 @@
 
 namespace souffle {
 
-const size_t AuxiliaryArity::computeArity(const AstRelation* relation) const {
+size_t AuxiliaryArity::computeArity(const AstRelation* relation) const {
     if (Global::config().has("provenance")) {
         if (Global::config().get("provenance") == "subtreeHeights") {
             size_t maxNrOfPremises = 0;

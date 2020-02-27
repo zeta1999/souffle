@@ -448,7 +448,7 @@ public:
             };
         });
 
-        visitDepthFirst(*next, [&](const RamAbstractParallel& node) { preamble->isParallel = true; });
+        visitDepthFirst(*next, [&](const RamAbstractParallel&) { preamble->isParallel = true; });
 
         NodePtrVec children;
         children.push_back(visit(*next));
@@ -472,7 +472,7 @@ public:
         return std::make_unique<InterpreterNode>(I_Swap, &swap, NodePtrVec{}, nullptr, std::move(data));
     }
 
-    NodePtr visitUndefValue(const RamUndefValue& undef) override {
+    NodePtr visitUndefValue(const RamUndefValue&) override {
         return nullptr;
     }
 

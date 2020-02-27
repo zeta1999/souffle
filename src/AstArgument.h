@@ -379,7 +379,7 @@ public:
     }
 
     const std::vector<TypeAttribute>& getArgsTypes() const {
-        return *argTypes;
+        return argTypes.value();
     }
 
     AstUserDefinedFunctor* clone() const override {

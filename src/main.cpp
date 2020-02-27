@@ -597,7 +597,7 @@ int main(int argc, char** argv) {
             if (emitToStdOut)
                 synthesiser->generateCode(std::cout, baseIdentifier, withSharedLibrary);
             else {
-                std::ofstream os{baseFilename + ".cpp"};
+                std::ofstream os{sourceFilename};
                 synthesiser->generateCode(os, baseIdentifier, withSharedLibrary);
             }
 

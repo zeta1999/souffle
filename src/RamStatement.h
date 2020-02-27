@@ -122,7 +122,7 @@ protected:
 
 protected:
     /** Load directives of a relation */
-    const std::vector<IODirectives> ioDirectives;
+    const IODirectives ioDirectives;
 };
 
 /**

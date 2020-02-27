@@ -978,7 +978,7 @@ arg
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
         if (const AstNumberConstant* original = dynamic_cast<const AstNumberConstant*>($nested_arg)) {
-            $$ = new AstNumberConstant(-1 * original->getValue(), AstNumberConstant::Type::Int);
+            $$ = new AstNumberConstant(-1 * RamDomainFromString(original->getConstant()), AstNumberConstant::Type::Int);
             $$->setSrcLoc(@nested_arg);
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,

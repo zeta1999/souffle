@@ -404,11 +404,11 @@ private:
         } else if (dynamic_cast<const AstNilConstant*>(&constant) != nullptr) {
             return RecordTable::getNil();
         } else if (auto numConstant = dynamic_cast<const AstNumberConstant*>(&constant)) {
-            return numConstant->getValue();
+            return RamDomainFromString(numConstant->getConstant());
         } else if (auto floatConstant = dynamic_cast<const AstFloatConstant*>(&constant)) {
-            return floatConstant->getValue();
+            return RamFloatFromString(floatConstant->getConstant());
         } else if (auto unsignedConstant = dynamic_cast<const AstUnsignedConstant*>(&constant)) {
-            return unsignedConstant->getValue();
+            return RamUnsignedFromString(unsignedConstant->getConstant());
         } else {
             assert(false && "Unaccounted-for constant");
         }

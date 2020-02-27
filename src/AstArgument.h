@@ -170,11 +170,6 @@ public:
     AstNumericConstant(NumericType value, Type type)
             : AstConstant(std::to_string(value)), value(value), type(type) {}
 
-    /** Get the value of the constant. */
-    NumericType getValue() const {
-        return value;
-    }
-
     AstNumericConstant<NumericType>* clone() const override {
         auto* copy = new AstNumericConstant<NumericType>(value, type);
         copy->setSrcLoc(getSrcLoc());
@@ -182,7 +177,7 @@ public:
     }
 
     bool operator==(const AstNumericConstant<NumericType>& other) const {
-        return getValue() == other.getValue();
+        return value == other.value;
     }
 
 protected:

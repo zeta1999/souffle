@@ -398,18 +398,9 @@ public:
     }
 
     NodePtr visitIO(const RamIO& io) override {
-        const std::string& op = io.getIODirectives().get("operation");
-        if (op == "input") {
-            size_t relId = encodeRelation(io.getRelation());
-            auto rel = relations[relId].get();
-            return std::make_unique<InterpreterNode>(I_Load, &io, NodePtrVec{}, rel);
-        } else if (op == "output" || op == "printsize") {
-            size_t relId = encodeRelation(io.getRelation());
-            auto rel = relations[relId].get();
-            return std::make_unique<InterpreterNode>(I_Store, &io, NodePtrVec{}, rel);
-        } else {
-            assert("Wrong i/o operation");
-        }
+        size_t relId = encodeRelation(io.getRelation());
+        auto rel = relations[relId].get();
+        return std::make_unique<InterpreterNode>(I_IO, &io, NodePtrVec{}, rel);
     }
 
     NodePtr visitQuery(const RamQuery& query) override {

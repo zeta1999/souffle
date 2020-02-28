@@ -1511,31 +1511,35 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // a function to load relations
     const auto& makeRamLoad = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const std::string& inputDirectory, const std::string& fileExtension) {
-        std::unique_ptr<RamStatement> statement =
-                std::make_unique<RamIO>(std::unique_ptr<RamRelationReference>(translateRelation(relation)),
-                        getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension));
-        if (Global::config().has("profile")) {
-            const std::string logTimerStatement = LogStatement::tRelationLoadTime(
-                    toString(relation->getQualifiedName()), relation->getSrcLoc());
-            statement = std::make_unique<RamLogRelationTimer>(std::move(statement), logTimerStatement,
-                    std::unique_ptr<RamRelationReference>(translateRelation(relation)));
+        for (auto ioDirective :
+                getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension)) {
+            std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
+                    std::unique_ptr<RamRelationReference>(translateRelation(relation)), ioDirective);
+            if (Global::config().has("profile")) {
+                const std::string logTimerStatement = LogStatement::tRelationLoadTime(
+                        toString(relation->getQualifiedName()), relation->getSrcLoc());
+                statement = std::make_unique<RamLogRelationTimer>(std::move(statement), logTimerStatement,
+                        std::unique_ptr<RamRelationReference>(translateRelation(relation)));
+            }
+            appendStmt(current, std::move(statement));
         }
-        appendStmt(current, std::move(statement));
     };
 
     // a function to store relations
     const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                        const std::string& outputDirectory, const std::string& fileExtension) {
-        std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
-                std::unique_ptr<RamRelationReference>(translateRelation(relation)),
-                getOutputIODirectives(relation, Global::config().get(outputDirectory), fileExtension));
-        if (Global::config().has("profile")) {
-            const std::string logTimerStatement = LogStatement::tRelationSaveTime(
-                    toString(relation->getQualifiedName()), relation->getSrcLoc());
-            statement = std::make_unique<RamLogRelationTimer>(std::move(statement), logTimerStatement,
-                    std::unique_ptr<RamRelationReference>(translateRelation(relation)));
+        for (auto ioDirective :
+                getOutputIODirectives(relation, Global::config().get(outputDirectory), fileExtension)) {
+            std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
+                    std::unique_ptr<RamRelationReference>(translateRelation(relation)), ioDirective);
+            if (Global::config().has("profile")) {
+                const std::string logTimerStatement = LogStatement::tRelationSaveTime(
+                        toString(relation->getQualifiedName()), relation->getSrcLoc());
+                statement = std::make_unique<RamLogRelationTimer>(std::move(statement), logTimerStatement,
+                        std::unique_ptr<RamRelationReference>(translateRelation(relation)));
+            }
+            appendStmt(current, std::move(statement));
         }
-        appendStmt(current, std::move(statement));
     };
 
     // a function to drop relations

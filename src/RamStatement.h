@@ -87,42 +87,38 @@ protected:
  * @class RamIO
  * @brief I/O statement for a relation
  *
- * This class is used for storing I/O directives of a relation.
- * I/O directives can be input/output/printsize operations.
+ * I/O operation for a relation, e.g., input/output/printsize
  */
 class RamIO : public RamRelationStatement {
 public:
-    RamIO(std::unique_ptr<RamRelationReference> relRef, std::vector<IODirectives> ioDirectives)
-            : RamRelationStatement(std::move(relRef)), ioDirectives(std::move(ioDirectives)) {}
+    RamIO(std::unique_ptr<RamRelationReference> relRef, IODirectives directive)
+            : RamRelationStatement(std::move(relRef)), directive(std::move(directive)) {}
 
     /** @brief Get load directives */
-    const std::vector<IODirectives>& getIODirectives() const {
-        return ioDirectives;
+    const IODirectives& getIODirective() const {
+        return directive;
     }
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "IO " << rel.getName() << " FROM {";
-        os << join(ioDirectives, "], [",
-                [](std::ostream& out, const IODirectives& directives) { out << directives; });
-        os << ioDirectives << "}";
+        os << directive.get("operation") << " " << rel.getName() << directive << "\n";
         os << std::endl;
     };
 
     RamIO* clone() const override {
-        return new RamIO(std::unique_ptr<RamRelationReference>(relationRef->clone()), ioDirectives);
+        return new RamIO(std::unique_ptr<RamRelationReference>(relationRef->clone()), directive);
     }
 
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIO&>(node);
-        return RamRelationStatement::equal(other) && getIODirectives() == other.getIODirectives();
+        return RamRelationStatement::equal(other) && directive == other.directive;
     }
 
 protected:
     /** Load directives of a relation */
-    const IODirectives ioDirectives;
+    const IODirectives directive;
 };
 
 /**

@@ -1288,27 +1288,24 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(IO)
 
-            const std::string& op = cur.getIODirectives().get("operation");
+            const auto& directive = cur.getIODirective();
+            const std::string& op = directive.get("operation");
 
             if (op == "input") {
                 try {
-                    for (IODirectives ioDirectives : cur.getIODirectives()) {
-                        InterpreterRelation& relation = *node->getRelation();
-                        IOSystem::getInstance()
-                                .getReader(ioDirectives, getSymbolTable(), getRecordTable())
-                                ->readAll(relation);
-                    }
+                    InterpreterRelation& relation = *node->getRelation();
+                    IOSystem::getInstance()
+                            .getReader(directive, getSymbolTable(), getRecordTable())
+                            ->readAll(relation);
                 } catch (std::exception& e) {
                     std::cerr << "Error loading data: " << e.what() << "\n";
                 }
                 return true;
             } else if (op == "output" || op == "printsize") {
                 try {
-                    for (IODirectives ioDirectives : cur.getIODirectives()) {
-                        IOSystem::getInstance()
-                                .getWriter(ioDirectives, getSymbolTable(), getRecordTable())
-                                ->writeAll(*node->getRelation());
-                    }
+                    IOSystem::getInstance()
+                            .getWriter(directive, getSymbolTable(), getRecordTable())
+                            ->writeAll(*node->getRelation());
                 } catch (std::exception& e) {
                     std::cerr << e.what();
                     exit(1);
@@ -1316,6 +1313,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 return true;
             } else {
                 assert("wrong i/o operation");
+                return true;
             }
         ESAC(IO)
 

@@ -39,8 +39,9 @@ class ReadStreamCSV : public ReadStream {
 public:
     ReadStreamCSV(std::istream& file, const IODirectives& ioDirectives, SymbolTable& symbolTable,
             RecordTable& recordTable)
-            : ReadStream(ioDirectives, symbolTable, recordTable), delimiter(getDelimiter(ioDirectives)),
-              file(file), lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
+            : ReadStream(ioDirectives, symbolTable, recordTable),
+              delimiter(ioDirectives.getOr("delimiter", "\t")), file(file), lineNumber(0),
+              inputMap(getInputColumnMap(ioDirectives, arity)) {
         while (inputMap.size() < arity) {
             int size = static_cast<int>(inputMap.size());
             inputMap[size] = size;
@@ -167,18 +168,8 @@ protected:
         return element;
     }
 
-    std::string getDelimiter(const IODirectives& ioDirectives) const {
-        if (ioDirectives.has("delimiter")) {
-            return ioDirectives.get("delimiter");
-        }
-        return "\t";
-    }
-
     std::map<int, int> getInputColumnMap(const IODirectives& ioDirectives, const unsigned arity_) const {
-        std::string columnString = "";
-        if (ioDirectives.has("columns")) {
-            columnString = ioDirectives.get("columns");
-        }
+        std::string columnString = ioDirectives.getOr("columns", "");
         std::map<int, int> inputColumnMap;
 
         if (!columnString.empty()) {
@@ -245,10 +236,7 @@ public:
 
 protected:
     std::string getFileName(const IODirectives& ioDirectives) const {
-        if (ioDirectives.has("filename")) {
-            return ioDirectives.get("filename");
-        }
-        return ioDirectives.getRelationName() + ".facts";
+        return ioDirectives.getOr("filename", ioDirectives.getRelationName() + ".facts");
     }
     std::string baseName;
 #ifdef USE_LIBZ

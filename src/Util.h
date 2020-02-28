@@ -1168,7 +1168,7 @@ class TempFileStream : public std::fstream {
 public:
     TempFileStream(std::string fileName = tempFile())
             : std::fstream(fileName), fileName(std::move(fileName)) {}
-    ~TempFileStream() {
+    ~TempFileStream() override {
         close();
         remove(fileName.c_str());
     }

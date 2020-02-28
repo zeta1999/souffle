@@ -35,13 +35,13 @@ namespace souffle {
  */
 class DebugReportSection {
 public:
-    DebugReportSection(const std::string& id, std::string title, std::string body)
-            : id(generateUniqueID(id)), title(std::move(title)), body(std::move(body)) {}
+    DebugReportSection(std::string id, std::string title, std::string body)
+            : id(generateUniqueID(std::move(id))), title(std::move(title)), body(std::move(body)) {}
 
-    DebugReportSection(const std::string& id, std::string title, std::vector<DebugReportSection> subsections,
-            std::string body)
-            : id(generateUniqueID(id)), title(std::move(title)), subsections(std::move(subsections)),
-              body(std::move(body)) {}
+    DebugReportSection(
+            std::string id, std::string title, std::vector<DebugReportSection> subsections, std::string body)
+            : id(generateUniqueID(std::move(id))), title(std::move(title)),
+              subsections(std::move(subsections)), body(std::move(body)) {}
 
     /**
      * Outputs the HTML code for the index to the given stream,
@@ -72,9 +72,9 @@ private:
     std::vector<DebugReportSection> subsections;
     std::string body;
 
-    static std::string generateUniqueID(const std::string& id) {
+    static std::string generateUniqueID(std::string id) {
         static int count = 0;
-        return id + std::to_string(count++);
+        return std::move(id) + std::to_string(count++);
     }
 };
 

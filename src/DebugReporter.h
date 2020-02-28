@@ -75,7 +75,8 @@ public:
      */
     template <typename A, typename B>
     static std::string generateDiff(const A& prev, const B& curr) {
-        TempFileStream in_prev, in_curr;
+        TempFileStream in_prev;
+        TempFileStream in_curr;
         in_prev << prev;
         in_curr << curr;
         in_prev.flush();

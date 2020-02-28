@@ -27,6 +27,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -357,25 +358,22 @@ public:
 
     /** get type of the functor argument*/
     TypeAttribute getArgType(const size_t arg) const override {
-        return argTypes.at(arg);
+        return argTypes->at(arg);
     }
 
     /** get type of the functor argument*/
     TypeAttribute getReturnType() const override {
-        return returnType;
+        return returnType.value();
     }
 
-    void setArgsTypes(std::vector<TypeAttribute> types) {
-        assert(types.size() == args.size() && "Size of types must match size of arguments");
-        argTypes = types;
+    void setTypes(std::vector<TypeAttribute> argumentsTypes, TypeAttribute retType) {
+        assert(argumentsTypes.size() == args.size() && "Size of types must match size of arguments");
+        argTypes = argumentsTypes;
+        returnType = retType;
     }
 
     const std::vector<TypeAttribute>& getArgsTypes() const {
-        return argTypes;
-    }
-
-    void setReturnType(TypeAttribute type) {
-        returnType = type;
+        return argTypes.value();
     }
 
     AstUserDefinedFunctor* clone() const override {
@@ -384,13 +382,10 @@ public:
         for (auto& arg : args) {
             res->args.emplace_back(arg->clone());
         }
-        // Set types
         // Only copy types if they have already been set.
-        if (!argTypes.empty()) {
-            res->setArgsTypes(argTypes);
+        if (returnType.has_value()) {
+            res->setTypes(argTypes.value(), returnType.value());
         }
-        res->setReturnType(returnType);
-
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -402,8 +397,8 @@ protected:
         return name == other.name && AstFunctor::equal(node);
     }
 
-    std::vector<TypeAttribute> argTypes;
-    TypeAttribute returnType;
+    std::optional<std::vector<TypeAttribute>> argTypes;
+    std::optional<TypeAttribute> returnType;
 
     /** name of user-defined functor */
     const std::string name;

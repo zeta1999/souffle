@@ -181,11 +181,13 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
             IODirectives ioDirectives;
             if (current->getKVP("operation") == "printsize") {
                 ioDirectives.setIOType("stdoutprintsize");
+                ioDirectives.set("operation", "printsize");
                 outputDirectives.push_back(ioDirectives);
             } else if (!hasOutput) {
                 hasOutput = true;
                 ioDirectives.setIOType("stdout");
                 ioDirectives.set("headers", "true");
+                ioDirectives.set("operation", current->getKVP("operation"));
                 outputDirectives.push_back(ioDirectives);
             }
         }

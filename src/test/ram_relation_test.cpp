@@ -57,8 +57,8 @@ const std::string testInterpreterStore(std::vector<std::string> attribs,
             Json::object{{"arity", static_cast<long long>(arity)}, {"auxArity", static_cast<long long>(0)},
                     {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> dirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> dirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
 
     IODirectives ioDirs = IODirectives(dirs);
 
@@ -245,8 +245,8 @@ TEST(IO_store, SignedChangedDelimiter) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> dirs = {{"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"},
-            {"delimiter", delimiter}, {"types", types.dump()}};
+    std::map<std::string, std::string> dirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"delimiter", delimiter}, {"types", types.dump()}};
 
     IODirectives ioDirs = IODirectives(dirs);
 
@@ -319,8 +319,8 @@ TEST(IO_store, MixedTypes) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> dirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> dirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives ioDirs = IODirectives(dirs);
 
     SymbolTable symbolTable;
@@ -393,12 +393,12 @@ TEST(IO_load, Signed) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> readDirs = {
-            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives readIoDirs = IODirectives(readDirs);
 
-    std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> writeDirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives writeIoDirs = IODirectives(writeDirs);
 
     std::unique_ptr<RamStatement> main =
@@ -459,12 +459,12 @@ TEST(IO_load, Float) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> readDirs = {
-            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives readIoDirs = IODirectives(readDirs);
 
-    std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> writeDirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives writeIoDirs = IODirectives(writeDirs);
 
     std::unique_ptr<RamStatement> main =
@@ -525,12 +525,12 @@ TEST(IO_load, Unsigned) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> readDirs = {
-            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives readIoDirs = IODirectives(readDirs);
 
-    std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> writeDirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives writeIoDirs = IODirectives(writeDirs);
 
     std::unique_ptr<RamStatement> main =
@@ -591,12 +591,12 @@ TEST(IO_load, MixedTypesLoad) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> readDirs = {
-            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives readIoDirs = IODirectives(readDirs);
 
-    std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> writeDirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
     IODirectives writeIoDirs = IODirectives(writeDirs);
 
     std::unique_ptr<RamStatement> main =

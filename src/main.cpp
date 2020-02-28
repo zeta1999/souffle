@@ -456,7 +456,7 @@ int main(int argc, char** argv) {
         auto parser_end = std::chrono::high_resolution_clock::now();
         std::string runtimeStr =
                 "(" + std::to_string(std::chrono::duration<double>(parser_end - parser_start).count()) + "s)";
-        DebugReporter::generateDebugReport(*astTranslationUnit, "", "Parsing", "After Parsing " + runtimeStr);
+        debugReport.addSection("Parsing", "Parsing " + runtimeStr, "");
 
         pipeline->setDebugReport();
     }
@@ -497,10 +497,11 @@ int main(int argc, char** argv) {
     }
 
     // ------- execution -------------
-
     /* translate AST to RAM */
+    debugReport.startSection();
     std::unique_ptr<RamTranslationUnit> ramTranslationUnit =
             AstTranslator().translateUnit(*astTranslationUnit);
+    debugReport.endSection("ast-to-ram", "Translate AST to RAM");
 
     std::unique_ptr<RamTransformer> ramTransform = std::make_unique<RamTransformerSequence>(
             std::make_unique<RamLoopTransformer>(

@@ -35,6 +35,72 @@
 
 namespace souffle {
 
+namespace {
+std::string toBase64(const std::string& data) {
+    static const std::vector<char> table = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', 'a', 'b', 'c', 'd', 'e', 'f',
+            'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y',
+            'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '+', '/'};
+    std::string result;
+    std::string tmp = data;
+    unsigned int padding = 0;
+    if (data.size() % 3 == 2) {
+        padding = 1;
+    } else if (data.size() % 3 == 1) {
+        padding = 2;
+    }
+
+    for (unsigned int i = 0; i < padding; i++) {
+        tmp.push_back(0);
+    }
+    for (unsigned int i = 0; i < tmp.size(); i += 3) {
+        auto c1 = static_cast<unsigned char>(tmp[i]);
+        auto c2 = static_cast<unsigned char>(tmp[i + 1]);
+        auto c3 = static_cast<unsigned char>(tmp[i + 2]);
+        unsigned char index1 = c1 >> 2;
+        unsigned char index2 = ((c1 & 0x03) << 4) | (c2 >> 4);
+        unsigned char index3 = ((c2 & 0x0F) << 2) | (c3 >> 6);
+        unsigned char index4 = c3 & 0x3F;
+
+        result.push_back(table[index1]);
+        result.push_back(table[index2]);
+        result.push_back(table[index3]);
+        result.push_back(table[index4]);
+    }
+    if (padding == 1) {
+        result[result.size() - 1] = '=';
+    } else if (padding == 2) {
+        result[result.size() - 1] = '=';
+        result[result.size() - 2] = '=';
+    }
+    return result;
+}
+
+std::string convertDotToSVG(const std::string& dotSpec) {
+    TempFileStream dotFile;
+    dotFile << dotSpec;
+    dotFile.flush();
+    return execStdOut("dot -Tsvg < " + dotFile.getFileName()).str();
+}
+
+void printHTMLGraph(std::ostream& out, const std::string& dotSpec, const std::string& id) {
+    std::string data = convertDotToSVG(dotSpec);
+
+    if (data.find("<svg") != std::string::npos) {
+        out << "<img alt='graph image' src='data:image/svg+xml;base64," << toBase64(data) << "'><br/>\n";
+    } else {
+        out << "<p>(error: unable to generate dot graph image)</p>";
+    }
+    out << "<a href=\"javascript:toggleVisibility('" << id << "-source"
+        << "')\">(show dot source)</a>\n";
+    out << "<div id='" << id << "-source"
+        << "' style='display:none'>\n";
+    out << "<pre>" << dotSpec << "</pre>\n";
+    out << "</div>\n";
+}
+
+}  // namespace
+
 void PrecedenceGraph::run(const AstTranslationUnit& translationUnit) {
     /* Get relations */
     const AstProgram& program = *translationUnit.getProgram();
@@ -54,11 +120,12 @@ void PrecedenceGraph::run(const AstTranslationUnit& translationUnit) {
 
 void PrecedenceGraph::print(std::ostream& os) const {
     /* Print dependency graph */
-    os << "digraph {\n";
+    std::stringstream ss;
+    ss << "digraph {\n";
     /* Print node of dependence graph */
     for (const AstRelation* rel : backingGraph.vertices()) {
         if (rel != nullptr) {
-            os << "\t\"" << rel->getQualifiedName() << "\" [label = \"" << rel->getQualifiedName()
+            ss << "\t\"" << rel->getQualifiedName() << "\" [label = \"" << rel->getQualifiedName()
                << "\"];\n";
         }
     }
@@ -66,13 +133,14 @@ void PrecedenceGraph::print(std::ostream& os) const {
         if (rel != nullptr) {
             for (const AstRelation* adjRel : backingGraph.successors(rel)) {
                 if (adjRel != nullptr) {
-                    os << "\t\"" << rel->getQualifiedName() << "\" -> \"" << adjRel->getQualifiedName()
+                    ss << "\t\"" << rel->getQualifiedName() << "\" -> \"" << adjRel->getQualifiedName()
                        << "\";\n";
                 }
             }
         }
     }
-    os << "}\n";
+    ss << "}\n";
+    printHTMLGraph(os, ss.str(), name);
 }
 
 void RedundantRelations::run(const AstTranslationUnit& translationUnit) {
@@ -264,21 +332,23 @@ void SCCGraph::scR(const AstRelation* w, std::map<const AstRelation*, size_t>& p
 
 void SCCGraph::print(std::ostream& os) const {
     const std::string& name = Global::config().get("name");
+    std::stringstream ss;
     /* Print SCC graph */
-    os << "digraph {" << std::endl;
+    ss << "digraph {" << std::endl;
     /* Print nodes of SCC graph */
     for (size_t scc = 0; scc < getNumberOfSCCs(); scc++) {
-        os << "\t" << name << "_" << scc << "[label = \"";
-        os << join(getInternalRelations(scc), ",\\n",
+        ss << "\t" << name << "_" << scc << "[label = \"";
+        ss << join(getInternalRelations(scc), ",\\n",
                 [](std::ostream& out, const AstRelation* rel) { out << rel->getQualifiedName(); });
-        os << "\" ];" << std::endl;
+        ss << "\" ];" << std::endl;
     }
     for (size_t scc = 0; scc < getNumberOfSCCs(); scc++) {
         for (auto succ : getSuccessorSCCs(scc)) {
-            os << "\t" << name << "_" << scc << " -> " << name << "_" << succ << ";" << std::endl;
+            ss << "\t" << name << "_" << scc << " -> " << name << "_" << succ << ";" << std::endl;
         }
     }
-    os << "}";
+    ss << "}";
+    printHTMLGraph(os, ss.str(), name);
 }
 
 int TopologicallySortedSCCGraph::topologicalOrderingCost(const std::vector<size_t>& permutationOfSCCs) const {

@@ -27,6 +27,7 @@
 namespace souffle {
 
 bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
+    translationUnit.getDebugReport().startSection();
     // take snapshot of alive analyses before invocation
     std::set<const RamAnalysis*> beforeInvocation = translationUnit.getAliveAnalyses();
 
@@ -59,9 +60,10 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
         translationUnit.getDebugReport().addSection(getName(), "RAM Program after " + getName(),
                 DebugReporter::generateDiff(ramProgStrOld.str(), translationUnit.getProgram()));
 
+        translationUnit.getDebugReport().endSection(getName(), getName());
+
     } else {
-        translationUnit.getDebugReport().addSection(
-                getName(), "After " + getName() + " " + " (unchanged)", "");
+        translationUnit.getDebugReport().endSection(getName(), getName() + " " + " (unchanged)");
     }
 
     /* Abort evaluation of the program if errors were encountered */

@@ -77,6 +77,7 @@ protected:
         size_t end = 0;
         size_t columnsFilled = 0;
         for (uint32_t column = 0; columnsFilled < arity; column++) {
+            size_t charactersRead = 0;
             std::string element = nextElement(line, start, end);
             if (inputMap.count(column) == 0) {
                 continue;
@@ -87,21 +88,28 @@ protected:
                 switch (typeAttributes.at(inputMap[column])[0]) {
                     case 's':
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
+                        charactersRead = element.size();
                         break;
                     case 'r':
-                        tuple[inputMap[column]] = readRecord(element, typeAttributes[inputMap[column]]);
+                        tuple[inputMap[column]] =
+                                readRecord(element, typeAttributes[inputMap[column]], 0, &charactersRead);
                         break;
                     case 'i':
-                        tuple[inputMap[column]] = RamDomainFromString(element);
+                        tuple[inputMap[column]] = readRamSigned(element, &charactersRead);
                         break;
                     case 'u':
-                        tuple[inputMap[column]] = ramBitCast(RamUnsignedFromString(element));
+                        tuple[inputMap[column]] = ramBitCast(readRamUnsigned(element, &charactersRead));
                         break;
                     case 'f':
-                        tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element));
+                        tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element, &charactersRead));
                         break;
                     default:
                         assert(false && "Invalid type attribute");
+                }
+                // Check if everything was read.
+                if (charactersRead != element.size()) {
+                    throw std::invalid_argument(
+                            "Expected: " + delimiter + " or \\n. Got: " + element[charactersRead]);
                 }
             } catch (...) {
                 std::stringstream errorMessage;
@@ -112,6 +120,75 @@ protected:
         }
 
         return tuple;
+    }
+
+    /**
+     * Read a signed element. Possible bases are 2, 10, 16
+     * Base is indicated by first two chars.
+     */
+    RamSigned readRamSigned(const std::string& element, size_t* charactersRead = nullptr) {
+        // Sanity check
+        assert(element.size() > 0);
+
+        RamSigned value = 0;
+
+        size_t prefixPosition = 0;
+
+        // Handle minus case.
+        if (element[0] == '-') {
+            prefixPosition = 1;
+        }
+
+        // Check prefix and parse the input.
+        if (match("0b", element, prefixPosition)) {
+            value = RamDomainFromString(element, charactersRead, 2);
+        } else if (match("0x", element, prefixPosition)) {
+            value = RamDomainFromString(element, charactersRead, 16);
+        } else {
+            value = RamDomainFromString(element, charactersRead);
+        }
+
+        return value;
+    }
+
+    /**
+     * Read an unsigned element. Possible bases are 2, 10, 16
+     * Base is indicated by first two chars.
+     */
+    RamUnsigned readRamUnsigned(const std::string& element, size_t* charactersRead = nullptr) {
+        // Sanity check
+        assert(element.size() > 0);
+
+        RamSigned value = 0;
+
+        // Check prefix and parse the input.
+        if (match("0b", element)) {
+            value = RamUnsignedFromString(element, charactersRead, 2);
+        } else if (match("0x", element)) {
+            value = RamUnsignedFromString(element, charactersRead, 16);
+        } else {
+            value = RamUnsignedFromString(element, charactersRead);
+        }
+
+        return value;
+    }
+
+    /**
+     * Check if substring is present in element starting at the positionInElement.
+     */
+    bool match(const std::string& substring, const std::string& element, size_t positionInElement = 0) {
+        auto itSubstr = substring.begin();
+        auto itElement = element.begin() + positionInElement;
+
+        while (itSubstr != substring.end() && itElement != element.end()) {
+            if (*itSubstr != *itElement) {
+                break;
+            }
+            ++itSubstr;
+            ++itElement;
+        }
+
+        return itSubstr == substring.end();
     }
 
     std::string nextElement(const std::string& line, size_t& start, size_t& end) {

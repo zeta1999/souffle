@@ -74,7 +74,7 @@ protected:
      *
      */
     RamDomain readRecord(const std::string& source, const std::string& recordTypeName, size_t pos = 0,
-            size_t* _consumed = nullptr) {
+            size_t* charactersRead = nullptr) {
         const size_t initial_position = pos;
 
         Json recordInfo = types["records"][recordTypeName];
@@ -87,8 +87,8 @@ protected:
         // Handle nil case
         consumeWhiteSpace(source, pos);
         if (source.substr(pos, 3) == "nil") {
-            if (_consumed != nullptr) {
-                *_consumed = 3;
+            if (charactersRead != nullptr) {
+                *charactersRead = 3;
             }
             return recordTable.getNil();
         }
@@ -131,22 +131,22 @@ protected:
         }
         consumeChar(source, ']', pos);
 
-        if (_consumed != nullptr) {
-            *_consumed = pos - initial_position;
+        if (charactersRead != nullptr) {
+            *charactersRead = pos - initial_position;
         }
 
         return recordTable.pack(recordValues);
     }
 
-    RamDomain readStringInRecord(const std::string& source, const size_t pos, size_t* _consumed) {
+    RamDomain readStringInRecord(const std::string& source, const size_t pos, size_t* charactersRead) {
         size_t endOfSymbol = source.find_first_of(",]", pos);
 
         if (endOfSymbol == std::string::npos) {
             throw std::invalid_argument("Unexpected end of input in record");
         }
 
-        *_consumed = endOfSymbol - pos;
-        std::string str = source.substr(pos, *_consumed);
+        *charactersRead = endOfSymbol - pos;
+        std::string str = source.substr(pos, *charactersRead);
 
         return symbolTable.unsafeLookup(str);
     }

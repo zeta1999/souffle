@@ -98,10 +98,7 @@ protected:
         Json recordInfo = types["records"][name];
 
         // Check if record type information are present
-        if (recordInfo.is_null()) {
-            std::cerr << "Missing record type information: " << name << std::endl;
-            abort();
-        }
+        assert(!recordInfo.is_null() && "Missing record type information");
 
         // Check for nil
         if (recordTable.isNil(value)) {

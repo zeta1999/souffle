@@ -1020,16 +1020,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // initialize result
             RamDomain res = 0;
             switch (cur.getFunction()) {
-                case souffle::MIN:
+                case AggregateFunction::min:
                     res = MAX_RAM_DOMAIN;
                     break;
-                case souffle::MAX:
+                case AggregateFunction::max:
                     res = MIN_RAM_DOMAIN;
                     break;
-                case souffle::COUNT:
+                case AggregateFunction::count:
                     res = 0;
                     break;
-                case souffle::SUM:
+                case AggregateFunction::sum:
                     res = 0;
                     break;
             }
@@ -1042,7 +1042,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
 
                 // count is easy
-                if (cur.getFunction() == souffle::COUNT) {
+                if (cur.getFunction() == AggregateFunction::count) {
                     ++res;
                     continue;
                 }
@@ -1053,16 +1053,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 RamDomain val = execute(node->getChild(1), ctxt);
 
                 switch (cur.getFunction()) {
-                    case souffle::MIN:
+                    case AggregateFunction::min:
                         res = std::min(res, val);
                         break;
-                    case souffle::MAX:
+                    case AggregateFunction::max:
                         res = std::max(res, val);
                         break;
-                    case souffle::COUNT:
+                    case AggregateFunction::count:
                         res = 0;
                         break;
-                    case souffle::SUM:
+                    case AggregateFunction::sum:
                         res += val;
                         break;
                 }
@@ -1073,10 +1073,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             tuple[0] = res;
             ctxt[cur.getTupleId()] = tuple;
 
-            if (cur.getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
+            if (cur.getFunction() == AggregateFunction::max && res == MIN_RAM_DOMAIN) {
                 // no maximum found
                 return true;
-            } else if (cur.getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
+            } else if (cur.getFunction() == AggregateFunction::min && res == MAX_RAM_DOMAIN) {
                 // no minimum found
                 return true;
             } else {
@@ -1089,16 +1089,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // initialize result
             RamDomain res = 0;
             switch (cur.getFunction()) {
-                case souffle::MIN:
+                case AggregateFunction::min:
                     res = MAX_RAM_DOMAIN;
                     break;
-                case souffle::MAX:
+                case AggregateFunction::max:
                     res = MIN_RAM_DOMAIN;
                     break;
-                case souffle::COUNT:
+                case AggregateFunction::count:
                     res = 0;
                     break;
-                case souffle::SUM:
+                case AggregateFunction::sum:
                     res = 0;
                     break;
             }
@@ -1133,7 +1133,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
 
                 // count is easy
-                if (cur.getFunction() == souffle::COUNT) {
+                if (cur.getFunction() == AggregateFunction::count) {
                     ++res;
                     continue;
                 }
@@ -1144,16 +1144,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 RamDomain val = execute(node->getChild(arity + 1), ctxt);
 
                 switch (cur.getFunction()) {
-                    case souffle::MIN:
+                    case AggregateFunction::min:
                         res = std::min(res, val);
                         break;
-                    case souffle::MAX:
+                    case AggregateFunction::max:
                         res = std::max(res, val);
                         break;
-                    case souffle::COUNT:
+                    case AggregateFunction::count:
                         res = 0;
                         break;
-                    case souffle::SUM:
+                    case AggregateFunction::sum:
                         res += val;
                         break;
                 }
@@ -1165,10 +1165,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             ctxt[cur.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
-            if (cur.getFunction() == souffle::MAX && res == MIN_RAM_DOMAIN) {
+            if (cur.getFunction() == AggregateFunction::max && res == MIN_RAM_DOMAIN) {
                 // no maximum found
                 return true;
-            } else if (cur.getFunction() == souffle::MIN && res == MAX_RAM_DOMAIN) {
+            } else if (cur.getFunction() == AggregateFunction::min && res == MAX_RAM_DOMAIN) {
                 // no minimum found
                 return true;
             } else {

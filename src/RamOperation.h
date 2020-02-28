@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "AggregateFunction.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
 #include "RamNode.h"
@@ -641,9 +642,6 @@ public:
     }
 };
 
-/** Types of aggregation functions */
-enum AggregateFunction { MAX, MIN, COUNT, SUM };
-
 /**
  * @class RamAbstractAggregate
  * @brief Abstract class for aggregation
@@ -685,20 +683,20 @@ public:
 
     void print(std::ostream& os, int /* tabpos */) const {
         switch (function) {
-            case MIN:
+            case AggregateFunction::min:
                 os << "MIN ";
                 break;
-            case MAX:
+            case AggregateFunction::max:
                 os << "MAX ";
                 break;
-            case COUNT:
+            case AggregateFunction::count:
                 os << "COUNT ";
                 break;
-            case SUM:
+            case AggregateFunction::sum:
                 os << "SUM ";
                 break;
         }
-        if (function != COUNT) {
+        if (function != AggregateFunction::count) {
             os << *expression << " ";
         }
     }

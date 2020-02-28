@@ -289,7 +289,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             aggClause->setHead(std::unique_ptr<AstAtom>(head));
 
             // instantiate unnamed variables in count operations
-            if (agg.getOperator() == AstAggregator::count) {
+            if (agg.getOperator() == AggregateFunction::count) {
                 int count = 0;
                 for (const auto& cur : aggClause->getBodyLiterals()) {
                     cur->apply(makeLambdaAstMapper(
@@ -1064,12 +1064,12 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
             // Apply to all aggregates of the form
             // sum k : { .. } where k is a constant
             if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
-                if (agg->getOperator() == AstAggregator::Op::sum) {
+                if (agg->getOperator() == AggregateFunction::sum) {
                     if (const auto* constant =
                                     dynamic_cast<const AstNumberConstant*>(agg->getTargetExpression())) {
                         changed = true;
                         // Then construct the new thing to replace it with
-                        auto count = std::make_unique<AstAggregator>(AstAggregator::Op::count);
+                        auto count = std::make_unique<AstAggregator>(AggregateFunction::count);
                         // Duplicate the body of the aggregate
                         for (const auto& lit : agg->getBodyLiterals()) {
                             count->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));

@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "AggregateFunction.h"
 #include "AstAbstract.h"
 #include "AstNode.h"
 #include "AstType.h"
@@ -493,28 +494,21 @@ protected:
  */
 class AstAggregator : public AstArgument {
 public:
-    /**
-     * The kind of utilised aggregation operator.
-     * Note: lower-case is utilized due to a collision with
-     *  constants in the parser.
-     */
-    enum Op { min, max, count, sum };
-
     /** Creates a new aggregation node */
-    AstAggregator(Op fun) : fun(fun), expression(nullptr) {}
+    AstAggregator(AggregateFunction fun) : fun(fun), expression(nullptr) {}
 
     void print(std::ostream& os) const override {
         switch (fun) {
-            case sum:
+            case AggregateFunction::sum:
                 os << "sum";
                 break;
-            case min:
+            case AggregateFunction::min:
                 os << "min";
                 break;
-            case max:
+            case AggregateFunction::max:
                 os << "max";
                 break;
-            case count:
+            case AggregateFunction::count:
                 os << "count";
                 break;
             default:
@@ -534,7 +528,7 @@ public:
     }
 
     /** Get aggregate operator */
-    Op getOperator() const {
+    AggregateFunction getOperator() const {
         return fun;
     }
 
@@ -602,7 +596,7 @@ protected:
 
 private:
     /** The aggregation operator of this aggregation step */
-    Op fun;
+    AggregateFunction fun;
 
     /** The expression to be aggregated */
     std::unique_ptr<AstArgument> expression;

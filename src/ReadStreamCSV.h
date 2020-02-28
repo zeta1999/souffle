@@ -95,7 +95,7 @@ protected:
                                 readRecord(element, typeAttributes[inputMap[column]], 0, &charactersRead);
                         break;
                     case 'i':
-                        tuple[inputMap[column]] = readRamSigned(element, &charactersRead);
+                        tuple[inputMap[column]] = RamDomainFromString(element, &charactersRead);
                         break;
                     case 'u':
                         tuple[inputMap[column]] = ramBitCast(readRamUnsigned(element, &charactersRead));
@@ -123,37 +123,8 @@ protected:
     }
 
     /**
-     * Read a signed element. Possible bases are 2, 10, 16
-     * Base is indicated by first two chars.
-     */
-    RamSigned readRamSigned(const std::string& element, size_t* charactersRead = nullptr) {
-        // Sanity check
-        assert(element.size() > 0);
-
-        RamSigned value = 0;
-
-        size_t prefixPosition = 0;
-
-        // Handle minus case.
-        if (element[0] == '-') {
-            prefixPosition = 1;
-        }
-
-        // Check prefix and parse the input.
-        if (match("0b", element, prefixPosition)) {
-            value = RamDomainFromString(element, charactersRead, 2);
-        } else if (match("0x", element, prefixPosition)) {
-            value = RamDomainFromString(element, charactersRead, 16);
-        } else {
-            value = RamDomainFromString(element, charactersRead);
-        }
-
-        return value;
-    }
-
-    /**
      * Read an unsigned element. Possible bases are 2, 10, 16
-     * Base is indicated by first two chars.
+     * Base is indicated by the first two chars.
      */
     RamUnsigned readRamUnsigned(const std::string& element, size_t* charactersRead = nullptr) {
         // Sanity check
@@ -163,13 +134,14 @@ protected:
 
         // Check prefix and parse the input.
         if (match("0b", element)) {
-            value = RamUnsignedFromString(element, charactersRead, 2);
+            // Default C++ parsing function don't recognize this prefix. Thus we take a substr.
+            value = RamUnsignedFromString(element.substr(2), charactersRead, 2);
+            *charactersRead += 2;
         } else if (match("0x", element)) {
             value = RamUnsignedFromString(element, charactersRead, 16);
         } else {
             value = RamUnsignedFromString(element, charactersRead);
         }
-
         return value;
     }
 

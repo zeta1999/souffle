@@ -16,6 +16,7 @@
 
 #include "RamTransformer.h"
 #include "DebugReport.h"
+#include "DebugReporter.h"
 #include "RamTranslationUnit.h"
 #include "Util.h"
 
@@ -53,17 +54,8 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
     if (changed) {
         translationUnit.invalidateAnalyses();
 
-        TempFileStream in_old, in_new;
-        in_old << ramProgStrOld.str();
-        in_new << translationUnit.getProgram();
-        in_old.flush();
-        in_new.flush();
-        std::string diff_cmd =
-                "diff --new-line-format='+%L' "
-                "     --old-line-format='-%L' "
-                "     --unchanged-line-format=' %L' ";
-        auto ramProgStr = execStdOut(diff_cmd + in_old.getFileName() + " " + in_new.getFileName()).str();
-        translationUnit.getDebugReport().addSection(getName(), "RAM Program after " + getName(), ramProgStr);
+        translationUnit.getDebugReport().addSection(getName(), "RAM Program after " + getName(),
+                DebugReporter::generateDiff(ramProgStrOld.str(), translationUnit.getProgram()));
 
     } else {
         translationUnit.getDebugReport().addSection(

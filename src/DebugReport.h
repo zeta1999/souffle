@@ -93,8 +93,8 @@ public:
         return sections.empty();
     }
 
-    void addSection(const DebugReportSection& section) {
-        sections.push_back(section);
+    void addSection(DebugReportSection section) {
+        sections.emplace_back(std::move(section));
     }
 
     void addSection(const std::string& id, std::string title, std::string code) {

@@ -97,7 +97,7 @@ public:
         sections.emplace_back(std::move(section));
     }
 
-    void addSection(const std::string& id, std::string title, std::string code) {
+    void addSection(std::string id, std::string title, std::string code) {
         std::stringstream codeHTML;
         std::string escapedCode = std::move(code);
         while (true) {
@@ -108,7 +108,7 @@ public:
             escapedCode.replace(i, 1, "&lt;");
         }
         codeHTML << "<pre>" << escapedCode << "</pre>\n";
-        sections.push_back(DebugReportSection(id, std::move(title), {}, codeHTML.str()));
+        sections.emplace_back(DebugReportSection(std::move(id), std::move(title), {}, codeHTML.str()));
     }
 
     /**

@@ -14,6 +14,7 @@
  ***********************************************************************/
 
 #include "InterpreterEngine.h"
+#include "AggregateOp.h"
 #include "IOSystem.h"
 #include "InterpreterGenerator.h"
 #include "Logger.h"

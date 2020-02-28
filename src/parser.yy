@@ -30,6 +30,7 @@
 
 /* -- Dependencies -- */
 %code requires {
+    #include "AggregateOp.h"
     #include "AstArgument.h"
     #include "AstClause.h"
     #include "AstComponent.h"

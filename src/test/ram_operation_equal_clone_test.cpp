@@ -14,6 +14,7 @@
  *
  ***********************************************************************/
 
+#include "AggregateOp.h"
 #include "RamOperation.h"
 #include "RamRelation.h"
 

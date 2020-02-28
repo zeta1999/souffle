@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "Synthesiser.h"
+#include "AggregateOp.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"

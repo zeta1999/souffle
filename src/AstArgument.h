@@ -159,18 +159,11 @@ protected:
 /**
  * Numeric Constant
  */
-// NumericType ⲉ {RamSigned, RamUnsigned, RamFloat}
 class AstNumericConstant : public AstConstant {
 public:
     enum class Type { Int, Uint, Float };
 
     AstNumericConstant(std::string constant, Type type) : AstConstant(std::move(constant)), type(type) {}
-
-    AstNumericConstant(RamDomain value) : AstConstant(std::to_string(value)), type(Type::Int) {}
-
-    AstNumericConstant(RamUnsigned value) : AstConstant(std::to_string(value)), type(Type::Uint) {}
-
-    AstNumericConstant(RamFloat value) : AstConstant(std::to_string(value)), type(Type::Float) {}
 
     AstNumericConstant* clone() const override {
         auto* copy = new AstNumericConstant(getConstant(), type);
@@ -194,16 +187,6 @@ protected:
     }
 
 private:
-    // NumericType parseVal(const std::string& constant, const Type type) {
-    //     switch (type) {
-    //         case Type::Int:
-    //             return RamDomainFromString(constant);
-    //         case Type::Uint:
-    //             return RamUnsignedFromString(constant);
-    //         case Type::Float:
-    //             return RamFloatFromString(constant);
-    //     }
-    // }
     const Type type;
 };
 

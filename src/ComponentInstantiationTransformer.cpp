@@ -46,6 +46,7 @@ struct ComponentContent {
     std::vector<std::unique_ptr<AstType>> types;
     std::vector<std::unique_ptr<AstRelation>> relations;
     std::vector<std::unique_ptr<AstIO>> ios;
+    std::vector<std::unique_ptr<AstClause>> clauses;
 
     void add(std::unique_ptr<AstType>& type, ErrorReport& report) {
         // add to result content (check existence first)
@@ -77,6 +78,10 @@ struct ComponentContent {
             report.addDiagnostic(err);
         }
         relations.push_back(std::move(rel));
+    }
+
+    void add(std::unique_ptr<AstClause>& clause, ErrorReport& report) {
+        clauses.push_back(std::move(clause));
     }
 
     void add(std::unique_ptr<AstIO>& directive, ErrorReport& report) {
@@ -224,7 +229,8 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
         if (overridden.count(cur->getHead()->getQualifiedName().getQualifiers()[0]) == 0) {
             AstRelation* rel = index[cur->getHead()->getQualifiedName()];
             if (rel != nullptr) {
-                program.addClause(std::unique_ptr<AstClause>(cur->clone()));
+                std::unique_ptr<AstClause> instantiatedClause(cur->clone());
+                res.add(instantiatedClause, report);
             } else {
                 orphans.emplace_back(cur->clone());
             }
@@ -237,7 +243,8 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
         AstRelation* rel = index[cur->getHead()->getQualifiedName()];
         if (rel != nullptr) {
             // add orphan to current instance and delete from orphan list
-            program.addClause(std::unique_ptr<AstClause>(cur->clone()));
+            std::unique_ptr<AstClause> instantiatedClause(cur->clone());
+            res.add(instantiatedClause, report);
             iter = orphans.erase(iter);
         } else {
             ++iter;
@@ -371,8 +378,13 @@ ComponentContent getInstantiatedContent(AstProgram& program, const AstComponentI
         });
     };
 
-    // rename attribute type in headers and atoms in clauses of the relation
+    // rename attributes in relation decls
     for (const auto& cur : res.relations) {
+        fixNames(*cur);
+    }
+
+    // rename added clauses
+    for (const auto& cur : res.clauses) {
         fixNames(*cur);
     }
 
@@ -413,6 +425,9 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         }
         for (auto& rel : content.relations) {
             program.addRelation(std::move(rel));
+        }
+        for (auto& clause : content.clauses) {
+            program.addClause(std::move(clause));
         }
         for (auto& io : content.ios) {
             program.addIO(std::move(io));

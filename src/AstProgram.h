@@ -78,8 +78,9 @@ public:
                 }
             }
         }
-        if (!clauses.empty()) {
-            os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
+        const auto& orphanClauses = getOrphanClauses(*this);
+        if (!orphanClauses.empty()) {
+            os << join(orphanClauses, "\n\n", print_deref<AstClause*>()) << "\n";
         }
         if (!ios.empty()) {
             os << join(ios, "\n\n", print_deref<std::unique_ptr<AstIO>>()) << "\n";

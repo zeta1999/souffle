@@ -291,8 +291,6 @@ protected:
 protected:
     friend class ComponentInstantiationTransformer;
     friend class ParserDriver;
-    friend class ProvenanceTransformer;
-    friend class MagicSetTransformer;
 
     /* add type */
     void addType(std::unique_ptr<AstType> type) {

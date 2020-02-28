@@ -2121,7 +2121,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     for (auto load : loadIOs) {
         os << "try {";
         os << "std::map<std::string, std::string> directiveMap(";
-        os << directive << ");\n";
+        os << load->getIODirective() << ");\n";
         os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";

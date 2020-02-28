@@ -98,7 +98,7 @@ protected:
                         tuple[inputMap[column]] = RamDomainFromString(element, &charactersRead);
                         break;
                     case 'u':
-                        tuple[inputMap[column]] = ramBitCast(readRamUnsigned(element, &charactersRead));
+                        tuple[inputMap[column]] = ramBitCast(readRamUnsigned(element, charactersRead));
                         break;
                     case 'f':
                         tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element, &charactersRead));
@@ -126,7 +126,7 @@ protected:
      * Read an unsigned element. Possible bases are 2, 10, 16
      * Base is indicated by the first two chars.
      */
-    RamUnsigned readRamUnsigned(const std::string& element, size_t* charactersRead = nullptr) {
+    RamUnsigned readRamUnsigned(const std::string& element, size_t& charactersRead) {
         // Sanity check
         assert(element.size() > 0);
 
@@ -135,12 +135,12 @@ protected:
         // Check prefix and parse the input.
         if (isPrefix("0b", element)) {
             // Default C++ parsing function don't recognize this prefix. Thus we take a substr.
-            value = RamUnsignedFromString(element.substr(2), charactersRead, 2);
-            *charactersRead += 2;
+            value = RamUnsignedFromString(element.substr(2), &charactersRead, 2);
+            charactersRead += 2;
         } else if (isPrefix("0x", element)) {
-            value = RamUnsignedFromString(element, charactersRead, 16);
+            value = RamUnsignedFromString(element, &charactersRead, 16);
         } else {
-            value = RamUnsignedFromString(element, charactersRead);
+            value = RamUnsignedFromString(element, &charactersRead);
         }
         return value;
     }

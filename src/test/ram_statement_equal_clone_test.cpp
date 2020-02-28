@@ -24,29 +24,31 @@ namespace souffle {
 
 namespace test {
 
-TEST(RamLoad, CloneAndEquals) {
+TEST(RamIO1, CloneAndEquals) {
     // LOAD DATA FOR A FROM {...}
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    RamLoad a(std::make_unique<RamRelationReference>(&A), {});
-    RamLoad b(std::make_unique<RamRelationReference>(&A), {});
+    IODirectives ioEmpty;
+    RamIO a(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
+    RamIO b(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamLoad* c = a.clone();
+    RamIO* c = a.clone();
     EXPECT_EQ(a, *c);
     EXPECT_NE(&a, c);
     delete c;
 }
 
-TEST(RamStore, CloneAndEquals) {
+TEST(RamIO2, CloneAndEquals) {
     // STORE DATA FOR A TO {...}
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    RamStore a(std::make_unique<RamRelationReference>(&A), {});
-    RamStore b(std::make_unique<RamRelationReference>(&A), {});
+    IODirectives ioEmpty;
+    RamIO a(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
+    RamIO b(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamStore* c = a.clone();
+    RamIO* c = a.clone();
     EXPECT_EQ(a, *c);
     EXPECT_NE(&a, c);
     delete c;
@@ -191,13 +193,13 @@ TEST(RamSequence, CloneAndEquals) {
     // multiple statements in the sequence
     // LOAD DATA FOR A FROM {}
     // CLEAR A
-    std::vector<IODirectives> g_load_IODir;
-    std::vector<IODirectives> h_load_IODir;
+    IODirectives g_load_IODir;
+    IODirectives h_load_IODir;
     RamSequence g(
-            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(g_load_IODir)),
+            std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(g_load_IODir)),
             std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
     RamSequence h(
-            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(h_load_IODir)),
+            std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(h_load_IODir)),
             std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
     EXPECT_EQ(g, h);
     EXPECT_NE(&g, &h);
@@ -323,13 +325,13 @@ TEST(RamLogRelationTimer, CloneAndEquals) {
      *   LOAD DATA FOR A FROM {}
      * END_TIMER
      * */
-    std::vector<IODirectives> a_IODir;
-    std::vector<IODirectives> b_IODir;
+    IODirectives a_IODir;
+    IODirectives b_IODir;
     RamLogRelationTimer a(
-            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+            std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
             "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
     RamLogRelationTimer b(
-            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(b_IODir)),
+            std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(b_IODir)),
             "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
@@ -347,11 +349,11 @@ TEST(RamLogTimer, CloneAndEquals) {
      *   LOAD DATA FOR A FROM {}
      * END_TIMER
      * */
-    std::vector<IODirectives> a_IODir;
-    std::vector<IODirectives> b_IODir;
-    RamLogTimer a(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+    IODirectives a_IODir;
+    IODirectives b_IODir;
+    RamLogTimer a(std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
             "@runtime");
-    RamLogTimer b(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+    RamLogTimer b(std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
             "@runtime");
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);

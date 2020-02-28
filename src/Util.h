@@ -1144,7 +1144,7 @@ inline std::string unescape(const std::string& inputString) {
     return unescaped;
 }
 
-inline std::stringstream exec_stdout(char const* cmd) {
+inline std::stringstream execStdOut(char const* cmd) {
     FILE* in = popen(cmd, "r");
     std::stringstream data;
     while (in != nullptr) {
@@ -1158,8 +1158,8 @@ inline std::stringstream exec_stdout(char const* cmd) {
     return data;
 }
 
-inline std::stringstream exec_stdout(std::string const& cmd) {
-    return exec_stdout(cmd.c_str());
+inline std::stringstream execStdOut(std::string const& cmd) {
+    return execStdOut(cmd.c_str());
 }
 
 class TempFileStream : public std::fstream {

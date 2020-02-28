@@ -62,9 +62,8 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
                 "diff --new-line-format='+%L' "
                 "     --old-line-format='-%L' "
                 "     --unchanged-line-format=' %L' ";
-        auto ramProgStr = exec_stdout(diff_cmd + in_old.getFileName() + " " + in_new.getFileName()).str();
-        translationUnit.getDebugReport().addSection(
-                getName(), "RAM Program after " + getName(), ramProgStr);
+        auto ramProgStr = execStdOut(diff_cmd + in_old.getFileName() + " " + in_new.getFileName()).str();
+        translationUnit.getDebugReport().addSection(getName(), "RAM Program after " + getName(), ramProgStr);
 
     } else {
         translationUnit.getDebugReport().addSection(

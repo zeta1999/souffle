@@ -73,7 +73,7 @@ DebugReportSection DebugReporter::getDotGraphSection(
     TempFileStream dotFile;
     dotFile << dotSpec;
     dotFile.flush();
-    std::string data = exec_stdout("dot -Tsvg < " + dotFile.getFileName()).str();
+    std::string data = execStdOut("dot -Tsvg < " + dotFile.getFileName()).str();
 
     std::stringstream graphHTML;
     if (data.find("<svg") != std::string::npos) {

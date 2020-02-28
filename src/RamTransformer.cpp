@@ -17,6 +17,7 @@
 #include "RamTransformer.h"
 #include "DebugReport.h"
 #include "RamTranslationUnit.h"
+#include "Util.h"
 
 #include <algorithm>
 
@@ -25,6 +26,9 @@ namespace souffle {
 bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
     // take snapshot of alive analyses before invocation
     std::set<const RamAnalysis*> beforeInvocation = translationUnit.getAliveAnalyses();
+
+    std::stringstream ramProgStrOld;
+    ramProgStrOld << translationUnit.getProgram();
 
     // invoke the transformation
     bool changed = transform(translationUnit);
@@ -48,10 +52,19 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
 
     if (changed) {
         translationUnit.invalidateAnalyses();
-        std::stringstream ramProgStr;
-        ramProgStr << translationUnit.getProgram();
+
+        TempFileStream in_old, in_new;
+        in_old << ramProgStrOld.str();
+        in_new << translationUnit.getProgram();
+        in_old.flush();
+        in_new.flush();
+        std::string diff_cmd =
+                "diff --new-line-format='+%L' "
+                "     --old-line-format='-%L' "
+                "     --unchanged-line-format=' %L' ";
+        auto ramProgStr = exec_stdout(diff_cmd + in_old.getFileName() + " " + in_new.getFileName()).str();
         translationUnit.getDebugReport().addSection(
-                getName(), "RAM Program after " + getName(), ramProgStr.str());
+                getName(), "RAM Program after " + getName(), ramProgStr);
 
     } else {
         translationUnit.getDebugReport().addSection(

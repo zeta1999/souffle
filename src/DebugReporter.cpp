@@ -70,28 +70,14 @@ static std::string toBase64(const std::string& data) {
 
 DebugReportSection DebugReporter::getDotGraphSection(
         const std::string& id, std::string title, const std::string& dotSpec) {
-    std::string tempFileName = tempFile();
-    {
-        std::ofstream dotFile(tempFileName);
-        dotFile << dotSpec;
-    }
-
-    std::string cmd = "dot -Tsvg < " + tempFileName;
-    FILE* in = popen(cmd.c_str(), "r");
-    std::stringstream data;
-    while (in != nullptr) {
-        char c = fgetc(in);
-        if (feof(in) != 0) {
-            break;
-        }
-        data << c;
-    }
-    pclose(in);
-    remove(tempFileName.c_str());
+    TempFileStream dotFile;
+    dotFile << dotSpec;
+    dotFile.flush();
+    std::string data = exec_stdout("dot -Tsvg < " + dotFile.getFileName()).str();
 
     std::stringstream graphHTML;
-    if (data.str().find("<svg") != std::string::npos) {
-        graphHTML << "<img alt='graph image' src='data:image/svg+xml;base64," << toBase64(data.str())
+    if (data.find("<svg") != std::string::npos) {
+        graphHTML << "<img alt='graph image' src='data:image/svg+xml;base64," << toBase64(data)
                   << "'><br/>\n";
     } else {
         graphHTML << "<p>(error: unable to generate dot graph image)</p>";

@@ -24,6 +24,7 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -1142,6 +1143,40 @@ inline std::string unescape(const std::string& inputString) {
     unescaped = unescape(unescaped, "\\n", "\n");
     return unescaped;
 }
+
+inline std::stringstream exec_stdout(char const* cmd) {
+    FILE* in = popen(cmd, "r");
+    std::stringstream data;
+    while (in != nullptr) {
+        char c = fgetc(in);
+        if (feof(in) != 0) {
+            break;
+        }
+        data << c;
+    }
+    pclose(in);
+    return data;
+}
+
+inline std::stringstream exec_stdout(std::string const& cmd) {
+    return exec_stdout(cmd.c_str());
+}
+
+class TempFileStream : public std::fstream {
+    std::string fileName;
+
+public:
+    TempFileStream(std::string fileName = tempFile())
+            : std::fstream(fileName), fileName(std::move(fileName)) {}
+    ~TempFileStream() {
+        close();
+        remove(fileName.c_str());
+    }
+
+    std::string const& getFileName() const {
+        return fileName;
+    }
+};
 
 // -------------------------------------------------------------------------------
 //                              Hint / Cache

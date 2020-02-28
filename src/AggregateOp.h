@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AggregateFunction.h
+ * @file AggregateOp.h
  *
  * Defines aggregation operators for AST and RAM
  *
@@ -19,7 +19,7 @@
 namespace souffle {
 
 /** Types of aggregation functions */
-enum class AggregateFunction {
+enum class AggregateOp {
     max,
     min,
     count,

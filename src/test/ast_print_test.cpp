@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "AggregateFunction.h"
+#include "AggregateOp.h"
 #include "AstArgument.h"
 #include "AstLiteral.h"
 #include "AstProgram.h"
@@ -103,7 +103,7 @@ TEST(AstPrint, Counter) {
 TEST(AstPrint, AggregatorMin) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto min = std::make_unique<AstAggregator>(AggregateFunction::min);
+    auto min = std::make_unique<AstAggregator>(AggregateOp::min);
     min->setTargetExpression(std::make_unique<AstVariable>("x"));
     min->addBodyLiteral(std::move(atom));
 
@@ -117,7 +117,7 @@ TEST(AstPrint, AggregatorMin) {
 TEST(AstPrint, AggregatorMax) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto max = std::make_unique<AstAggregator>(AggregateFunction::max);
+    auto max = std::make_unique<AstAggregator>(AggregateOp::max);
     max->setTargetExpression(std::make_unique<AstVariable>("x"));
     max->addBodyLiteral(std::move(atom));
 
@@ -131,7 +131,7 @@ TEST(AstPrint, AggregatorMax) {
 TEST(AstPrint, AggregatorCount) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto count = std::make_unique<AstAggregator>(AggregateFunction::count);
+    auto count = std::make_unique<AstAggregator>(AggregateOp::count);
     count->addBodyLiteral(std::move(atom));
 
     auto tu1 = makeATU();
@@ -144,7 +144,7 @@ TEST(AstPrint, AggregatorCount) {
 TEST(AstPrint, AggregatorSum) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto sum = std::make_unique<AstAggregator>(AggregateFunction::sum);
+    auto sum = std::make_unique<AstAggregator>(AggregateOp::sum);
     sum->setTargetExpression(std::make_unique<AstVariable>("x"));
     sum->addBodyLiteral(std::move(atom));
 

@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "AggregateFunction.h"
+#include "AggregateOp.h"
 #include "AstProgram.h"
 #include "AstTranslationUnit.h"
 #include "ParserDriver.h"
@@ -179,7 +179,7 @@ TESTASTCLONEANDEQUAL(RelationCopies,
 TEST(AstProgram, RemoveClause) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto sum = std::make_unique<AstAggregator>(AggregateFunction::sum);
+    auto sum = std::make_unique<AstAggregator>(AggregateOp::sum);
     sum->setTargetExpression(std::make_unique<AstVariable>("x"));
     sum->addBodyLiteral(std::move(atom));
 

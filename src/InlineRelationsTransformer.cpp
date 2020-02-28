@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "AggregateFunction.h"
+#include "AggregateOp.h"
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
@@ -561,7 +561,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // Literal can be inlined!
                     changed = true;
 
-                    AggregateFunction op = aggr->getOperator();
+                    AggregateOp op = aggr->getOperator();
 
                     // Create an aggregator (with the same operation) for each possible body
                     std::vector<AstAggregator*> aggrVersions;
@@ -589,16 +589,16 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     }
 
                     // Create the actual overall aggregator that ties the replacement aggregators together.
-                    if (op == AggregateFunction::min) {
+                    if (op == AggregateOp::min) {
                         // min x : { a(x) }. <=> min ( min x : { a1(x) }, min x : { a2(x) }, ... )
                         versions.push_back(combineAggregators(aggrVersions, FunctorOp::MIN));
-                    } else if (op == AggregateFunction::max) {
+                    } else if (op == AggregateOp::max) {
                         // max x : { a(x) }. <=> max ( max x : { a1(x) }, max x : { a2(x) }, ... )
                         versions.push_back(combineAggregators(aggrVersions, FunctorOp::MAX));
-                    } else if (op == AggregateFunction::count) {
+                    } else if (op == AggregateOp::count) {
                         // count : { a(x) }. <=> sum ( count : { a1(x) }, count : { a2(x) }, ... )
                         versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
-                    } else if (op == AggregateFunction::sum) {
+                    } else if (op == AggregateOp::sum) {
                         // sum x : { a(x) }. <=> sum ( sum x : { a1(x) }, sum x : { a2(x) }, ... )
                         versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
                     } else {

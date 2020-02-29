@@ -62,8 +62,8 @@ bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
 }
 
 void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
-    const TypeEnvironment& typeEnv =
-            translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
+    const TypeEnvironmentAnalysis& typeEnvAnalysis = *translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
+    const TypeEnvironment& typeEnv = typeEnvAnalysis.getTypeEnvironment();
     const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
     const PrecedenceGraph& precedenceGraph = *translationUnit.getAnalysis<PrecedenceGraph>();
     const RecursiveClauses& recursiveClauses = *translationUnit.getAnalysis<RecursiveClauses>();
@@ -105,7 +105,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
     // -- conduct checks --
     // TODO: re-write to use visitors
-    checkTypes(report, program);
+    checkTypes(report, typeEnvAnalysis, program);
     checkRules(report, typeEnv, program, recursiveClauses, ioTypes);
     checkNamespaces(report, program);
     checkIODirectives(report, program);
@@ -735,70 +735,6 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
 
 // ----- types --------
 
-// check if a union contains a number primitive
-static bool unionContainsNumber(const AstProgram& program, const AstUnionType& type) {
-    // avoid problems with union recursion
-    static std::set<AstQualifiedName> seen;
-    if (seen.find(type.getQualifiedName()) != seen.end()) {
-        return false;
-    }
-    seen.insert(type.getQualifiedName());
-
-    // check if any of the elements of the union are or contain a number primitive
-    for (const AstQualifiedName& elemTypeID : type.getTypes()) {
-        if (elemTypeID == "number") {
-            return true;
-        }
-        const AstType* elemType = getType(program, elemTypeID);
-        if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
-            if (unionContainsNumber(program, *unionT)) {
-                return true;
-            }
-            // if union does not contain a number, continue looking
-        }
-        if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(elemType)) {
-            if (primitive->isNumeric()) {
-                return true;
-            }
-            // if this primitive is not numeric, continue looking
-        }
-    }
-    // no elements returned true, so no numbers
-    return false;
-}
-
-// check if a union contains a symbol primitive
-static bool unionContainsSymbol(const AstProgram& program, const AstUnionType& type) {
-    // avoid problems with union recursion
-    static std::set<AstQualifiedName> seen;
-    if (seen.find(type.getQualifiedName()) != seen.end()) {
-        return false;
-    }
-    seen.insert(type.getQualifiedName());
-
-    // check if any of the elements of the union are or contain a symbol primitive
-    for (const AstQualifiedName& elemTypeID : type.getTypes()) {
-        if (elemTypeID == "symbol") {
-            return true;
-        }
-        const AstType* elemType = getType(program, elemTypeID);
-        if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
-            if (unionContainsSymbol(program, *unionT)) {
-                return true;
-            }
-            // if the union does not contain a symbol, continue looking
-        }
-        if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(elemType)) {
-            if (primitive->isSymbolic()) {
-                return true;
-            }
-            // if this primitive is not a symbol, continue looking
-        }
-    }
-    // no elements returned true, so no symbols
-    return false;
-}
-
 void AstSemanticChecker::checkUnionType(
         ErrorReport& report, const AstProgram& program, const AstUnionType& type) {
     // check presence of all the element types and that all element types are based off a primitive
@@ -816,13 +752,6 @@ void AstSemanticChecker::checkUnionType(
                         type.getSrcLoc());
             }
         }
-    }
-
-    // check all element types are based on the same primitive
-    if (unionContainsSymbol(program, type) && unionContainsNumber(program, type)) {
-        report.addError("Union type " + toString(type.getQualifiedName()) +
-                                " contains a mixture of symbol and number types",
-                type.getSrcLoc());
     }
 }
 
@@ -958,10 +887,23 @@ void AstSemanticChecker::checkRecursiveUnionTypes(ErrorReport& report, const Ast
     }
 }
 
-void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& program) {
+void AstSemanticChecker::checkTypes(
+        ErrorReport& report, const TypeEnvironmentAnalysis& typeEnvAnalysis, const AstProgram& program) {
     /* check each type individually */
     for (const auto& cur : program.getTypes()) {
         checkType(report, program, *cur);
+    }
+
+    /* check that union types do not mix number and symbol types */
+    const auto& numericUnions = typeEnvAnalysis.getNumericUnions();
+    const auto& symbolicUnions = typeEnvAnalysis.getSymbolicUnions();
+    for (const auto& type : program.getTypes()) {
+        const auto& name = type->getQualifiedName();
+        if (contains(numericUnions, name) && contains(symbolicUnions, name)) {
+            report.addError(
+                    "Union type " + toString(name) + " contains a mixture of symbol and number types",
+                    type->getSrcLoc());
+        }
     }
 
     /* check that union types are not defined recursively */

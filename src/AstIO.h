@@ -91,6 +91,7 @@ protected:
     AstQualifiedName name;
 
     /** key-value pair map */
+    // TODO (b-scholz): replace map by an I/O directive 
     std::map<std::string, std::string> kvps;
 };
 

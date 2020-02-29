@@ -19,7 +19,7 @@
 #include "souffle/Brie.h"
 #include "souffle/CompiledIndexUtils.h"
 #include "souffle/CompiledTuple.h"
-#include "souffle/IODirectives.h"
+#include "souffle/IODirective.h"
 #include "souffle/IOSystem.h"
 #include "souffle/ParallelUtils.h"
 #include "souffle/RamTypes.h"

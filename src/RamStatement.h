@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "IODirectives.h"
+#include "IODirective.h"
 #include "RamExpression.h"
 #include "RamNode.h"
 #include "RamOperation.h"
@@ -91,11 +91,11 @@ protected:
  */
 class RamIO : public RamRelationStatement {
 public:
-    RamIO(std::unique_ptr<RamRelationReference> relRef, IODirectives directive)
+    RamIO(std::unique_ptr<RamRelationReference> relRef, IODirective directive)
             : RamRelationStatement(std::move(relRef)), directive(std::move(directive)) {}
 
     /** @brief Get load directives */
-    const IODirectives& getIODirective() const {
+    const IODirective& getIODirective() const {
         return directive;
     }
 
@@ -118,7 +118,7 @@ protected:
 
 protected:
     /** Load directives of a relation */
-    const IODirectives directive;
+    const IODirective directive;
 };
 
 /**

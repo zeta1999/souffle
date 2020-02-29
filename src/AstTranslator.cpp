@@ -32,7 +32,7 @@
 #include "BinaryConstraintOps.h"
 #include "DebugReport.h"
 #include "Global.h"
-#include "IODirectives.h"
+#include "IODirective.h"
 #include "LogStatement.h"
 #include "PrecedenceGraph.h"
 #include "RamCondition.h"
@@ -87,7 +87,7 @@ size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     }
 }
 
-void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation* rel,
+void AstTranslator::makeIODirective(IODirective& ioDirective, const AstRelation* rel,
         const std::string& filePath, const std::string& fileExt) {
     // set relation name correctly
     ioDirective.setRelationName(getRelationName(rel->getQualifiedName()));
@@ -131,9 +131,9 @@ void AstTranslator::makeIODirective(IODirectives& ioDirective, const AstRelation
     ioDirective.set("types", types.dump());
 }
 
-std::vector<IODirectives> AstTranslator::getInputIODirectives(
+std::vector<IODirective> AstTranslator::getInputIODirective(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
-    std::vector<IODirectives> inputDirectives;
+    std::vector<IODirective> inputDirectives;
 
     std::vector<AstIO*> relLoads;
     for (const auto& io : program->getIOs()) {
@@ -142,7 +142,7 @@ std::vector<IODirectives> AstTranslator::getInputIODirectives(
         }
     }
     for (const auto& current : relLoads) {
-        IODirectives ioDirectives;
+        IODirective ioDirectives;
         for (const auto& currentPair : current->getIODirectiveMap()) {
             ioDirectives.set(currentPair.first, currentPair.second);
         }
@@ -163,9 +163,9 @@ std::vector<IODirectives> AstTranslator::getInputIODirectives(
     return inputDirectives;
 }
 
-std::vector<IODirectives> AstTranslator::getOutputIODirectives(
+std::vector<IODirective> AstTranslator::getOutputIODirective(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
-    std::vector<IODirectives> outputDirectives;
+    std::vector<IODirective> outputDirectives;
 
     std::vector<AstIO*> relStores;
     for (const auto& store : program->getIOs()) {
@@ -178,7 +178,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
     if (Global::config().get("output-dir") == "-") {
         bool hasOutput = false;
         for (const auto* current : relStores) {
-            IODirectives ioDirectives;
+            IODirective ioDirectives;
             if (current->getKVP("operation") == "printsize") {
                 ioDirectives.setIOType("stdoutprintsize");
                 ioDirectives.set("operation", "printsize");
@@ -193,7 +193,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         }
     } else {
         for (const auto* current : relStores) {
-            IODirectives ioDirectives;
+            IODirective ioDirectives;
             for (const auto& currentPair : current->getIODirectiveMap()) {
                 ioDirectives.set(currentPair.first, currentPair.second);
             }
@@ -1514,7 +1514,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     const auto& makeRamLoad = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const std::string& inputDirectory, const std::string& fileExtension) {
         for (auto ioDirective :
-                getInputIODirectives(relation, Global::config().get(inputDirectory), fileExtension)) {
+                getInputIODirective(relation, Global::config().get(inputDirectory), fileExtension)) {
             std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
                     std::unique_ptr<RamRelationReference>(translateRelation(relation)), ioDirective);
             if (Global::config().has("profile")) {
@@ -1531,7 +1531,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                        const std::string& outputDirectory, const std::string& fileExtension) {
         for (auto ioDirective :
-                getOutputIODirectives(relation, Global::config().get(outputDirectory), fileExtension)) {
+                getOutputIODirective(relation, Global::config().get(outputDirectory), fileExtension)) {
             std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
                     std::unique_ptr<RamRelationReference>(translateRelation(relation)), ioDirective);
             if (Global::config().has("profile")) {

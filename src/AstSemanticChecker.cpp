@@ -108,7 +108,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     checkTypes(report, program);
     checkRules(report, typeEnv, program, recursiveClauses, ioTypes);
     checkNamespaces(report, program);
-    checkIODirectives(report, program);
+    checkIODirective(report, program);
     checkWitnessProblem(report, program);
     checkInlining(report, program, precedenceGraph, ioTypes);
 
@@ -969,7 +969,7 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
     checkRecursiveUnionTypes(report, program);
 }
 
-void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram& program) {
+void AstSemanticChecker::checkIODirective(ErrorReport& report, const AstProgram& program) {
     auto checkIODirective = [&](const AstIO* directive) {
         auto* r = program.getRelation(directive->getQualifiedName());
         if (r == nullptr) {

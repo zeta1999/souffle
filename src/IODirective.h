@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file IODirectives.h
+ * @file IODirective.h
  *
  ***********************************************************************/
 
@@ -20,26 +20,36 @@
 
 namespace souffle {
 
-class IODirectives {
-public:
-    IODirectives() = default;
 
-    IODirectives(const std::map<std::string, std::string>& directiveMap) {
+
+/**
+ * @class IODirective
+ * @brief Describes an I/O operation in RAM, synthesiser, and interpreter
+ * 
+ * TODO (b-scholz): confused interface; either we have a pure generic interface
+ *                  using get/set or specialize it to all aspects of I/O. 
+ *                  at the moment this is a mixed approach and quite bad. 
+ */
+class IODirective {
+public:
+    IODirective() = default;
+    IODirective(const std::map<std::string, std::string>& directiveMap) {
         for (const auto& pair : directiveMap) {
             directives[pair.first] = pair.second;
         }
     }
+    virtual ~IODirective() = default;
 
-    ~IODirectives() = default;
-
-    const std::string& getIOType() const {
-        return get("IO");
+    /**
+     * @brief check whether registry is empty
+     */ 
+    bool isEmpty() {
+        return directives.empty();
     }
 
-    void setIOType(const std::string& type) {
-        directives["IO"] = type;
-    }
-
+    /**
+     * @brief get value for a given key
+     */
     const std::string& get(const std::string& key) const {
         if (directives.count(key) == 0) {
             throw std::invalid_argument("Requested IO directive <" + key + "> was not specified");
@@ -48,7 +58,7 @@ public:
     }
 
     /**
-     * Get value at key if present, else return default.
+     * @brief get value for a given key; if not found, return default value. 
      */
     const std::string& getOr(const std::string& key, const std::string& defaultValue) const {
         if (this->has(key)) {
@@ -57,34 +67,52 @@ public:
         return defaultValue;
     }
 
+    /**
+     * @brief set value for a given key
+     */
     void set(const std::string& key, const std::string& value) {
         directives[key] = value;
     }
 
+    /**
+     * @brief check whether key exists
+     */
     bool has(const std::string& key) const {
         return directives.count(key) > 0;
     }
 
+    // TODO (b-scholz): remove this method 
+    const std::string& getIOType() const {
+        return get("IO");
+    }
+
+    // TODO (b-scholz): remove this method 
+    void setIOType(const std::string& type) {
+        directives["IO"] = type;
+    }
+
+    // TODO (b-scholz): remove this method 
     const std::string& getFileName() const {
         return get("filename");
     }
 
+    // TODO (b-scholz): remove this method 
     void setFileName(const std::string& filename) {
         directives["filename"] = filename;
     }
 
+    // TODO (b-scholz): remove this method 
     const std::string& getRelationName() const {
         return get("name");
     }
 
+    // TODO (b-scholz): remove this method 
     void setRelationName(const std::string& name) {
         directives["name"] = name;
     }
 
-    bool isEmpty() {
-        return directives.empty();
-    }
 
+    // TODO (b-scholz): printing is clumsy; use join; should be in protected section
     void print(std::ostream& out) const {
         auto cur = directives.begin();
         if (cur == directives.end()) {
@@ -99,20 +127,21 @@ public:
         out << '}';
     }
 
-    friend std::ostream& operator<<(std::ostream& out, const IODirectives& ioDirectives) {
+    friend std::ostream& operator<<(std::ostream& out, const IODirective& ioDirectives) {
         ioDirectives.print(out);
         return out;
     }
 
-    bool operator==(const IODirectives& other) const {
+    bool operator==(const IODirective& other) const {
         return directives == other.directives;
     }
 
-    bool operator!=(const IODirectives& other) const {
+    bool operator!=(const IODirective& other) const {
         return directives != other.directives;
     }
 
 private:
+    // TODO (b-scholz): this method has no state => move to Util.h
     std::string escape(const std::string& inputString) const {
         std::string escaped = escape(inputString, "\"", "\\\"");
         escaped = escape(escaped, "\t", "\\t");
@@ -121,6 +150,7 @@ private:
         return escaped;
     }
 
+    // TODO (b-scholz): this method has no state => move to Util.h
     std::string escape(
             const std::string& inputString, const std::string& needle, const std::string& replacement) const {
         std::string result = inputString;
@@ -132,6 +162,7 @@ private:
         return result;
     }
 
+    /** key/value store */ 
     std::map<std::string, std::string> directives;
 };
 }  // namespace souffle

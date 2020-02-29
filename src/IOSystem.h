@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "IODirectives.h"
+#include "IODirective.h"
 #include "RamTypes.h"
 #include "ReadStream.h"
 #include "ReadStreamCSV.h"
@@ -51,7 +51,7 @@ public:
     /**
      * Return a new WriteStream
      */
-    std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const IODirective& ioDirectives, const SymbolTable& symbolTable,
             const RecordTable& recordTable) const {
         std::string ioType = ioDirectives.getIOType();
         if (outputFactories.count(ioType) == 0) {
@@ -63,7 +63,7 @@ public:
      * Return a new ReadStream
      */
     std::unique_ptr<ReadStream> getReader(
-            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) const {
+            const IODirective& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) const {
         std::string ioType = ioDirectives.getIOType();
         if (inputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested input type <" + ioType + "> is not supported.");

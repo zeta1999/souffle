@@ -92,7 +92,7 @@ protected:
 class RamIO : public RamRelationStatement {
 public:
     RamIO(std::unique_ptr<RamRelationReference> relRef, IODirective directive)
-            : RamRelationStatement(std::move(relRef)), directive(std::move(directive)) {}
+            : RamRelationStatement(std::move(relRef)), directive(directive) {}
 
     /** @brief Get load directives */
     const IODirective& getIODirective() const {

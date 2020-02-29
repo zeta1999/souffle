@@ -2151,7 +2151,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "try {";
         os << "IODirective ioDirectives;\n";
         os << "ioDirectives.set(\"IO\", \"stdout\");\n";
-        os << "ioDirectives.set(\"name\", \"" << name << "\");\n";
+        os << R"(ioDirectives.set("name", ")" << name << "\");\n";
         os << "ioDirectives.set(\"types\",";
         os << "\"" << escapeJSONstring(types.dump()) << "\"";
         os << ");\n";

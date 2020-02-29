@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "Synthesiser.h"
+#include "AggregateOp.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
@@ -841,7 +842,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = isa->getSearchSignature(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == souffle::COUNT && keys == 0 &&
+            if (aggregate.getFunction() == AggregateOp::count && keys == 0 &&
                     isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -854,16 +855,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case souffle::MIN:
+                case AggregateOp::min:
                     init = "MAX_RAM_DOMAIN";
                     break;
-                case souffle::MAX:
+                case AggregateOp::max:
                     init = "MIN_RAM_DOMAIN";
                     break;
-                case souffle::COUNT:
+                case AggregateOp::count:
                     init = "0";
                     break;
-                case souffle::SUM:
+                case AggregateOp::sum:
                     init = "0";
                     break;
                 default:
@@ -908,21 +909,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << ") {\n";
 
             switch (aggregate.getFunction()) {
-                case souffle::MIN:
+                case AggregateOp::min:
                     out << "res" << identifier << " = std::min (res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
-                case souffle::MAX:
+                case AggregateOp::max:
                     out << "res" << identifier << " = std::max (res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
-                case souffle::COUNT:
+                case AggregateOp::count:
                     // count is easy
                     out << "++res" << identifier << "\n;";
                     break;
-                case souffle::SUM:
+                case AggregateOp::sum:
                     out << "res" << identifier << " += ";
                     visit(aggregate.getExpression(), out);
                     out << ";\n";
@@ -939,7 +940,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // write result into environment tuple
             out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
-            if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
+            if (aggregate.getFunction() == AggregateOp::min || aggregate.getFunction() == AggregateOp::max) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
                 visitTupleOperation(aggregate, out);
@@ -963,7 +964,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == souffle::COUNT && isRamTrue(&aggregate.getCondition())) {
+            if (aggregate.getFunction() == AggregateOp::count && isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -975,16 +976,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case souffle::MIN:
+                case AggregateOp::min:
                     init = "MAX_RAM_DOMAIN";
                     break;
-                case souffle::MAX:
+                case AggregateOp::max:
                     init = "MIN_RAM_DOMAIN";
                     break;
-                case souffle::COUNT:
+                case AggregateOp::count:
                     init = "0";
                     break;
-                case souffle::SUM:
+                case AggregateOp::sum:
                     init = "0";
                     break;
                 default:
@@ -1003,20 +1004,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // pick function
             switch (aggregate.getFunction()) {
-                case souffle::MIN:
+                case AggregateOp::min:
                     out << "res" << identifier << " = std::min(res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
-                case souffle::MAX:
+                case AggregateOp::max:
                     out << "res" << identifier << " = std::max(res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
-                case souffle::COUNT:
+                case AggregateOp::count:
                     out << "++res" << identifier << "\n;";
                     break;
-                case souffle::SUM:
+                case AggregateOp::sum:
                     out << "res" << identifier << " += ";
                     visit(aggregate.getExpression(), out);
                     out << ";\n";
@@ -1033,7 +1034,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // write result into environment tuple
             out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
-            if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
+            if (aggregate.getFunction() == AggregateOp::min || aggregate.getFunction() == AggregateOp::max) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
                 visitTupleOperation(aggregate, out);

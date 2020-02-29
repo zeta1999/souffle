@@ -81,8 +81,6 @@ public:
         return registry.count(key) > 0;
     }
 
-    // TODO (b-scholz): printing is clumsy; use join; should be in protected section
-
     friend std::ostream& operator<<(std::ostream& out, const IODirective& ioDirective) {
         ioDirective.print(out);
         return out;

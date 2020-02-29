@@ -429,6 +429,9 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         for (auto& clause : content.clauses) {
             program.addClause(std::move(clause));
         }
+        for (auto& orphan : orphans) {
+            program.addClause(std::move(orphan));
+        }
         for (auto& io : content.ios) {
             program.addIO(std::move(io));
         }

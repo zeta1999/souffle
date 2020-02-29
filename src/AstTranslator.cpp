@@ -90,21 +90,21 @@ size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
 void AstTranslator::makeIODirective(IODirective& ioDirective, const AstRelation* rel,
         const std::string& filePath, const std::string& fileExt) {
     // set relation name correctly
-    ioDirective.setRelationName(getRelationName(rel->getQualifiedName()));
+    ioDirective.set("name", getRelationName(rel->getQualifiedName()));
     // set a default IO type of file and a default filename if not supplied
     if (!ioDirective.has("IO")) {
-        ioDirective.setIOType("file");
+        ioDirective.set("IO", "file");
     }
 
     // load intermediate relations from correct files
-    if (ioDirective.getIOType() == "file") {
+    if (ioDirective.get("IO") == "file") {
         // set filename by relation if not given
         if (!ioDirective.has("filename")) {
-            ioDirective.setFileName(ioDirective.getRelationName() + fileExt);
+            ioDirective.set("filename", ioDirective.get("name") + fileExt);
         }
         // if filename is not an absolute path, concat with cmd line facts directory
-        if (ioDirective.getIOType() == "file" && ioDirective.getFileName().front() != '/') {
-            ioDirective.setFileName(filePath + "/" + ioDirective.getFileName());
+        if (ioDirective.get("IO") == "file" && ioDirective.get("filename").front() != '/') {
+            ioDirective.set("filename", filePath + "/" + ioDirective.get("filename"));
         }
     }
 
@@ -180,12 +180,12 @@ std::vector<IODirective> AstTranslator::getOutputIODirective(
         for (const auto* current : relStores) {
             IODirective ioDirectives;
             if (current->getKVP("operation") == "printsize") {
-                ioDirectives.setIOType("stdoutprintsize");
+                ioDirectives.set("IO", "stdoutprintsize");
                 ioDirectives.set("operation", "printsize");
                 outputDirectives.push_back(ioDirectives);
             } else if (!hasOutput) {
                 hasOutput = true;
-                ioDirectives.setIOType("stdout");
+                ioDirectives.set("IO", "stdout");
                 ioDirectives.set("headers", "true");
                 ioDirectives.set("operation", current->getKVP("operation"));
                 outputDirectives.push_back(ioDirectives);

@@ -18,7 +18,7 @@
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
-#include "IODirectives.h"
+#include "IODirective.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
 #include "RamIndexAnalysis.h"
@@ -216,7 +216,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "directiveMap[\"filename\"].front() != '/') {";
                 out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
-                out << "IODirectives ioDirectives(directiveMap);\n";
+                out << "IODirective ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
                 out << "ioDirectives, symTable, recordTable";
                 out << ")->readAll(*" << synthesiser.getRelationName(io.getRelation());
@@ -231,7 +231,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "directiveMap[\"filename\"].front() != '/') {";
                 out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
-                out << "IODirectives ioDirectives(directiveMap);\n";
+                out << "IODirective ioDirectives(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
                 out << "ioDirectives, symTable, recordTable";
                 out << ")->writeAll(*" << synthesiser.getRelationName(io.getRelation()) << ");\n";
@@ -2091,7 +2091,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
-        os << "IODirectives ioDirectives(directiveMap);\n";
+        os << "IODirective ioDirectives(directiveMap);\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "ioDirectives, symTable, recordTable";
         os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
@@ -2126,7 +2126,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
-        os << "IODirectives ioDirectives(directiveMap);\n";
+        os << "IODirective ioDirectives(directiveMap);\n";
         os << "IOSystem::getInstance().getReader(";
         os << "ioDirectives, symTable, recordTable";
         os << ")->readAll(*" << getRelationName(load->getRelation());
@@ -2149,9 +2149,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         Json types = Json::object{{name, relJson}};
 
         os << "try {";
-        os << "IODirectives ioDirectives;\n";
-        os << "ioDirectives.setIOType(\"stdout\");\n";
-        os << "ioDirectives.setRelationName(\"" << name << "\");\n";
+        os << "IODirective ioDirectives;\n";
+        os << "ioDirectives.set(\"IO\", \"stdout\");\n";
+        os << "ioDirectives.set(\"name\", \"" << name << "\");\n";
         os << "ioDirectives.set(\"types\",";
         os << "\"" << escapeJSONstring(types.dump()) << "\"";
         os << ");\n";

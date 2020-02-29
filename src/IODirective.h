@@ -10,59 +10,59 @@
  *
  * @file IODirective.h
  *
+ * Declaration of the I/O directive class
+ *
  ***********************************************************************/
 
 #pragma once
 
+#include "Util.h"
 #include <map>
 #include <sstream>
 #include <string>
 
 namespace souffle {
 
-
-
 /**
  * @class IODirective
- * @brief Describes an I/O operation in RAM, synthesiser, and interpreter
- * 
- * TODO (b-scholz): confused interface; either we have a pure generic interface
- *                  using get/set or specialize it to all aspects of I/O. 
- *                  at the moment this is a mixed approach and quite bad. 
+ * @brief An IO directive is a registry describing a single I/O operation;
+ *        the registry contains key/value pairs describing the nature of the
+ *        I/O operation.
+ *
  */
 class IODirective {
 public:
     IODirective() = default;
     IODirective(const std::map<std::string, std::string>& directiveMap) {
         for (const auto& pair : directiveMap) {
-            directives[pair.first] = pair.second;
+            registry[pair.first] = pair.second;
         }
     }
     virtual ~IODirective() = default;
 
     /**
      * @brief check whether registry is empty
-     */ 
-    bool isEmpty() {
-        return directives.empty();
+     */
+    bool isEmpty() const {
+        return registry.empty();
     }
 
     /**
      * @brief get value for a given key
      */
     const std::string& get(const std::string& key) const {
-        if (directives.count(key) == 0) {
+        if (registry.count(key) == 0) {
             throw std::invalid_argument("Requested IO directive <" + key + "> was not specified");
         }
-        return directives.at(key);
+        return registry.at(key);
     }
 
     /**
-     * @brief get value for a given key; if not found, return default value. 
+     * @brief get value for a given key; if not found, return default value.
      */
     const std::string& getOr(const std::string& key, const std::string& defaultValue) const {
         if (this->has(key)) {
-            return directives.at(key);
+            return registry.at(key);
         }
         return defaultValue;
     }
@@ -71,98 +71,47 @@ public:
      * @brief set value for a given key
      */
     void set(const std::string& key, const std::string& value) {
-        directives[key] = value;
+        registry[key] = value;
     }
 
     /**
      * @brief check whether key exists
      */
     bool has(const std::string& key) const {
-        return directives.count(key) > 0;
+        return registry.count(key) > 0;
     }
-
-    // TODO (b-scholz): remove this method 
-    const std::string& getIOType() const {
-        return get("IO");
-    }
-
-    // TODO (b-scholz): remove this method 
-    void setIOType(const std::string& type) {
-        directives["IO"] = type;
-    }
-
-    // TODO (b-scholz): remove this method 
-    const std::string& getFileName() const {
-        return get("filename");
-    }
-
-    // TODO (b-scholz): remove this method 
-    void setFileName(const std::string& filename) {
-        directives["filename"] = filename;
-    }
-
-    // TODO (b-scholz): remove this method 
-    const std::string& getRelationName() const {
-        return get("name");
-    }
-
-    // TODO (b-scholz): remove this method 
-    void setRelationName(const std::string& name) {
-        directives["name"] = name;
-    }
-
 
     // TODO (b-scholz): printing is clumsy; use join; should be in protected section
+
+    friend std::ostream& operator<<(std::ostream& out, const IODirective& ioDirective) {
+        ioDirective.print(out);
+        return out;
+    }
+
+    bool operator==(const IODirective& other) const {
+        return registry == other.registry;
+    }
+
+    bool operator!=(const IODirective& other) const {
+        return registry != other.registry;
+    }
+
+protected:
+    // TODO (b-scholz): clumsy printing / use join
     void print(std::ostream& out) const {
-        auto cur = directives.begin();
-        if (cur == directives.end()) {
+        auto cur = registry.begin();
+        if (cur == registry.end()) {
             return;
         }
-
         out << "{{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
         ++cur;
-        for (; cur != directives.end(); ++cur) {
+        for (; cur != registry.end(); ++cur) {
             out << ",{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
         }
         out << '}';
     }
 
-    friend std::ostream& operator<<(std::ostream& out, const IODirective& ioDirectives) {
-        ioDirectives.print(out);
-        return out;
-    }
-
-    bool operator==(const IODirective& other) const {
-        return directives == other.directives;
-    }
-
-    bool operator!=(const IODirective& other) const {
-        return directives != other.directives;
-    }
-
-private:
-    // TODO (b-scholz): this method has no state => move to Util.h
-    std::string escape(const std::string& inputString) const {
-        std::string escaped = escape(inputString, "\"", "\\\"");
-        escaped = escape(escaped, "\t", "\\t");
-        escaped = escape(escaped, "\r", "\\r");
-        escaped = escape(escaped, "\n", "\\n");
-        return escaped;
-    }
-
-    // TODO (b-scholz): this method has no state => move to Util.h
-    std::string escape(
-            const std::string& inputString, const std::string& needle, const std::string& replacement) const {
-        std::string result = inputString;
-        size_t pos = 0;
-        while ((pos = result.find(needle, pos)) != std::string::npos) {
-            result = result.replace(pos, needle.length(), replacement);
-            pos += replacement.length();
-        }
-        return result;
-    }
-
-    /** key/value store */ 
-    std::map<std::string, std::string> directives;
+    /** key/value registry for a I/O directive */
+    std::map<std::string, std::string> registry;
 };
 }  // namespace souffle

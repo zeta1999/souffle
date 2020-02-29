@@ -53,7 +53,7 @@ public:
      */
     std::unique_ptr<WriteStream> getWriter(const IODirective& ioDirectives, const SymbolTable& symbolTable,
             const RecordTable& recordTable) const {
-        std::string ioType = ioDirectives.getIOType();
+        std::string ioType = ioDirectives.get("IO");
         if (outputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested output type <" + ioType + "> is not supported.");
         }
@@ -64,7 +64,7 @@ public:
      */
     std::unique_ptr<ReadStream> getReader(
             const IODirective& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) const {
-        std::string ioType = ioDirectives.getIOType();
+        std::string ioType = ioDirectives.get("IO");
         if (inputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested input type <" + ioType + "> is not supported.");
         }

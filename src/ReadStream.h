@@ -33,7 +33,7 @@ class ReadStream {
 protected:
     ReadStream(const IODirective& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
             : symbolTable(symbolTable), recordTable(recordTable) {
-        const std::string& relationName{ioDirectives.getRelationName()};
+        const std::string& relationName{ioDirectives.get("name")};
 
         std::string parseErrors;
 

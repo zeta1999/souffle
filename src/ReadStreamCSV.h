@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "IODirectives.h"
+#include "IODirective.h"
 #include "RamTypes.h"
 #include "ReadStream.h"
 #include "RecordTable.h"
@@ -37,7 +37,7 @@ namespace souffle {
 
 class ReadStreamCSV : public ReadStream {
 public:
-    ReadStreamCSV(std::istream& file, const IODirectives& ioDirectives, SymbolTable& symbolTable,
+    ReadStreamCSV(std::istream& file, const IODirective& ioDirectives, SymbolTable& symbolTable,
             RecordTable& recordTable)
             : ReadStream(ioDirectives, symbolTable, recordTable),
               delimiter(ioDirectives.getOr("delimiter", "\t")), file(file), lineNumber(0),
@@ -214,7 +214,7 @@ protected:
         return element;
     }
 
-    std::map<int, int> getInputColumnMap(const IODirectives& ioDirectives, const unsigned arity_) const {
+    std::map<int, int> getInputColumnMap(const IODirective& ioDirectives, const unsigned arity_) const {
         std::string columnString = ioDirectives.getOr("columns", "");
         std::map<int, int> inputColumnMap;
 
@@ -245,7 +245,7 @@ protected:
 
 class ReadFileCSV : public ReadStreamCSV {
 public:
-    ReadFileCSV(const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
+    ReadFileCSV(const IODirective& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
             : ReadStreamCSV(fileHandle, ioDirectives, symbolTable, recordTable),
               baseName(souffle::baseName(getFileName(ioDirectives))),
               fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {
@@ -281,8 +281,8 @@ public:
     ~ReadFileCSV() override = default;
 
 protected:
-    std::string getFileName(const IODirectives& ioDirectives) const {
-        return ioDirectives.getOr("filename", ioDirectives.getRelationName() + ".facts");
+    std::string getFileName(const IODirective& ioDirectives) const {
+        return ioDirectives.getOr("filename", ioDirectives.get("name") + ".facts");
     }
     std::string baseName;
 #ifdef USE_LIBZ
@@ -295,7 +295,7 @@ protected:
 class ReadCinCSVFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(
-            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
+            const IODirective& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
         return std::make_unique<ReadStreamCSV>(std::cin, ioDirectives, symbolTable, recordTable);
     }
 
@@ -309,7 +309,7 @@ public:
 class ReadFileCSVFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(
-            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
+            const IODirective& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
         return std::make_unique<ReadFileCSV>(ioDirectives, symbolTable, recordTable);
     }
 

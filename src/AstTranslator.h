@@ -304,8 +304,8 @@ private:
     void makeIODirective(IODirective& ioDirective, const AstRelation* rel, const std::string& filePath,
             const std::string& fileExt);
 
-    std::vector<IODirective> getInputIODirective(const AstRelation* rel,
-            std::string filePath = std::string(), const std::string& fileExt = std::string());
+    std::vector<IODirective> getInputIODirective(const AstRelation* rel, std::string filePath = std::string(),
+            const std::string& fileExt = std::string());
 
     std::vector<IODirective> getOutputIODirective(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());

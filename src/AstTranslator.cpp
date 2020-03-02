@@ -87,24 +87,24 @@ size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     }
 }
 
-void AstTranslator::makeIODirective(std::map<std::string, std::string>& ioDirective, const AstRelation* rel,
+void AstTranslator::makeIODirective(std::map<std::string, std::string>& directives, const AstRelation* rel,
         const std::string& filePath, const std::string& fileExt) {
     // set relation name correctly
-    ioDirective["name"] = getRelationName(rel->getQualifiedName());
+    directives["name"] = getRelationName(rel->getQualifiedName());
     // set a default IO type of file and a default filename if not supplied
-    if (ioDirective.find("IO") == ioDirective.end()) {
-        ioDirective["IO"] = "file";
+    if (directives.find("IO") == directives.end()) {
+        directives["IO"] = "file";
     }
 
     // load intermediate relations from correct files
-    if (ioDirective.at("IO") == "file") {
+    if (directives.at("IO") == "file") {
         // set filename by relation if not given
-        if (ioDirective.find("filename") == ioDirective.end()) {
-            ioDirective["filename"] = ioDirective.at("name") + fileExt;
+        if (directives.find("filename") == directives.end()) {
+            directives["filename"] = directives.at("name") + fileExt;
         }
         // if filename is not an absolute path, concat with cmd line facts directory
-        if (ioDirective.at("IO") == "file" && ioDirective.at("filename").front() != '/') {
-            ioDirective["filename"] = filePath + "/" + ioDirective.at("filename");
+        if (directives.at("IO") == "file" && directives.at("filename").front() != '/') {
+            directives["filename"] = filePath + "/" + directives.at("filename");
         }
     }
 
@@ -128,7 +128,7 @@ void AstTranslator::makeIODirective(std::map<std::string, std::string>& ioDirect
 
     Json types = Json::object{{name, relJson}, {"records", getRecordsTypes()}};
 
-    ioDirective["types"] = types.dump();
+    directives["types"] = types.dump();
 }
 
 std::vector<std::map<std::string, std::string>> AstTranslator::getInputIODirective(
@@ -142,12 +142,12 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputIODirecti
         }
     }
     for (const auto& current : relLoads) {
-        std::map<std::string, std::string> ioDirectives;
+        std::map<std::string, std::string> directives;
         for (const auto& currentPair : current->getDirectives()) {
-            ioDirectives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
+            directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
         }
-        ioDirectives["operation"] = "input";
-        inputDirectives.push_back(ioDirectives);
+        directives["operation"] = "input";
+        inputDirectives.push_back(directives);
     }
 
     if (inputDirectives.empty()) {
@@ -157,8 +157,8 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputIODirecti
     const std::string inputFilePath = (filePath.empty()) ? Global::config().get("fact-dir") : filePath;
     const std::string inputFileExt = (fileExt.empty()) ? ".facts" : fileExt;
 
-    for (auto& ioDirective : inputDirectives) {
-        makeIODirective(ioDirective, rel, inputFilePath, inputFileExt);
+    for (auto& directives : inputDirectives) {
+        makeIODirective(directives, rel, inputFilePath, inputFileExt);
     }
 
     return inputDirectives;
@@ -180,32 +180,32 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputIODirect
     if (Global::config().get("output-dir") == "-") {
         bool hasOutput = false;
         for (const auto* current : relStores) {
-            std::map<std::string, std::string> ioDirectives;
+            std::map<std::string, std::string> directives;
             if (current->getType() == AstIO::PrintsizeIO) {
-                ioDirectives["operation"] = "printsize";
-                ioDirectives["IO"] = "stdoutprintsize";
-                outputDirectives.push_back(ioDirectives);
+                directives["operation"] = "printsize";
+                directives["IO"] = "stdoutprintsize";
+                outputDirectives.push_back(directives);
             } else if (!hasOutput) {
                 hasOutput = true;
-                ioDirectives["IO"] = "stdout";
-                ioDirectives["headers"] = "true";
-                ioDirectives["operation"] = "output";
-                outputDirectives.push_back(ioDirectives);
+                directives["IO"] = "stdout";
+                directives["headers"] = "true";
+                directives["operation"] = "output";
+                outputDirectives.push_back(directives);
             }
         }
     } else {
         for (const auto* current : relStores) {
-            std::map<std::string, std::string> ioDirectives;
+            std::map<std::string, std::string> directives;
             for (const auto& currentPair : current->getDirectives()) {
-                ioDirectives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
+                directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
             }
             if (current->getType() == AstIO::PrintsizeIO) {
-                ioDirectives["operation"] = "printsize";
-                ioDirectives["IO"] = "stdoutprintsize";
+                directives["operation"] = "printsize";
+                directives["IO"] = "stdoutprintsize";
             } else {
-                ioDirectives["operation"] = "output";
+                directives["operation"] = "output";
             }
-            outputDirectives.push_back(ioDirectives);
+            outputDirectives.push_back(directives);
         }
     }
 
@@ -216,13 +216,13 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputIODirect
     const std::string outputFilePath = (filePath.empty()) ? Global::config().get("output-dir") : filePath;
     const std::string outputFileExt = (fileExt.empty()) ? ".csv" : fileExt;
 
-    for (auto& ioDirective : outputDirectives) {
-        makeIODirective(ioDirective, rel, outputFilePath, outputFileExt);
+    for (auto& directives : outputDirectives) {
+        makeIODirective(directives, rel, outputFilePath, outputFileExt);
 
-        if (ioDirective.find("attributeNames") == ioDirective.end()) {
+        if (directives.find("attributeNames") == directives.end()) {
             std::string delimiter("\t");
-            if (ioDirective.find("delimiter") != ioDirective.end()) {
-                delimiter = ioDirective.at("delimiter");
+            if (directives.find("delimiter") != directives.end()) {
+                delimiter = directives.at("delimiter");
             }
             std::vector<std::string> attributeNames;
             for (const auto* attribute : rel->getAttributes()) {
@@ -232,9 +232,9 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputIODirect
             if (Global::config().has("provenance")) {
                 std::vector<std::string> originalAttributeNames(
                         attributeNames.begin(), attributeNames.end() - auxArityAnalysis->getArity(rel));
-                ioDirective["attributeNames"] = toString(join(originalAttributeNames, delimiter));
+                directives["attributeNames"] = toString(join(originalAttributeNames, delimiter));
             } else {
-                ioDirective["attributeNames"] = toString(join(attributeNames, delimiter));
+                directives["attributeNames"] = toString(join(attributeNames, delimiter));
             }
         }
     }
@@ -1505,10 +1505,10 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // a function to load relations
     const auto& makeRamLoad = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                       const std::string& inputDirectory, const std::string& fileExtension) {
-        for (auto ioDirective :
+        for (auto directives :
                 getInputIODirective(relation, Global::config().get(inputDirectory), fileExtension)) {
             std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
-                    std::unique_ptr<RamRelationReference>(translateRelation(relation)), ioDirective);
+                    std::unique_ptr<RamRelationReference>(translateRelation(relation)), directives);
             if (Global::config().has("profile")) {
                 const std::string logTimerStatement = LogStatement::tRelationLoadTime(
                         toString(relation->getQualifiedName()), relation->getSrcLoc());
@@ -1522,10 +1522,10 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // a function to store relations
     const auto& makeRamStore = [&](std::unique_ptr<RamStatement>& current, const AstRelation* relation,
                                        const std::string& outputDirectory, const std::string& fileExtension) {
-        for (auto ioDirective :
+        for (auto directives :
                 getOutputIODirective(relation, Global::config().get(outputDirectory), fileExtension)) {
             std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
-                    std::unique_ptr<RamRelationReference>(translateRelation(relation)), ioDirective);
+                    std::unique_ptr<RamRelationReference>(translateRelation(relation)), directives);
             if (Global::config().has("profile")) {
                 const std::string logTimerStatement = LogStatement::tRelationSaveTime(
                         toString(relation->getQualifiedName()), relation->getSrcLoc());

@@ -451,6 +451,12 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 }
             }
 
+            try {
+                fun.getReturnType();
+            } catch (std::bad_optional_access& e) {
+                return;
+            }
+
             // add a constraint for the return type of the functor
             switch (fun.getReturnType()) {
                 case TypeAttribute::Signed:

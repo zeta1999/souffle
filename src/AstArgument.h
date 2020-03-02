@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "AggregateOp.h"
 #include "AstAbstract.h"
 #include "AstNode.h"
 #include "AstType.h"
@@ -27,6 +28,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -363,25 +365,22 @@ public:
 
     /** get type of the functor argument*/
     TypeAttribute getArgType(const size_t arg) const override {
-        return argTypes.at(arg);
+        return argTypes->at(arg);
     }
 
     /** get type of the functor argument*/
     TypeAttribute getReturnType() const override {
-        return returnType;
+        return returnType.value();
     }
 
-    void setArgsTypes(std::vector<TypeAttribute> types) {
-        assert(types.size() == args.size() && "Size of types must match size of arguments");
-        argTypes = types;
+    void setTypes(std::vector<TypeAttribute> argumentsTypes, TypeAttribute retType) {
+        assert(argumentsTypes.size() == args.size() && "Size of types must match size of arguments");
+        argTypes = argumentsTypes;
+        returnType = retType;
     }
 
     const std::vector<TypeAttribute>& getArgsTypes() const {
-        return argTypes;
-    }
-
-    void setReturnType(TypeAttribute type) {
-        returnType = type;
+        return argTypes.value();
     }
 
     AstUserDefinedFunctor* clone() const override {
@@ -390,13 +389,10 @@ public:
         for (auto& arg : args) {
             res->args.emplace_back(arg->clone());
         }
-        // Set types
         // Only copy types if they have already been set.
-        if (!argTypes.empty()) {
-            res->setArgsTypes(argTypes);
+        if (returnType.has_value()) {
+            res->setTypes(argTypes.value(), returnType.value());
         }
-        res->setReturnType(returnType);
-
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -408,8 +404,8 @@ protected:
         return name == other.name && AstFunctor::equal(node);
     }
 
-    std::vector<TypeAttribute> argTypes;
-    TypeAttribute returnType;
+    std::optional<std::vector<TypeAttribute>> argTypes;
+    std::optional<TypeAttribute> returnType;
 
     /** name of user-defined functor */
     const std::string name;
@@ -498,28 +494,21 @@ protected:
  */
 class AstAggregator : public AstArgument {
 public:
-    /**
-     * The kind of utilised aggregation operator.
-     * Note: lower-case is utilized due to a collision with
-     *  constants in the parser.
-     */
-    enum Op { min, max, count, sum };
-
     /** Creates a new aggregation node */
-    AstAggregator(Op fun) : fun(fun), expression(nullptr) {}
+    AstAggregator(AggregateOp fun) : fun(fun), expression(nullptr) {}
 
     void print(std::ostream& os) const override {
         switch (fun) {
-            case sum:
+            case AggregateOp::sum:
                 os << "sum";
                 break;
-            case min:
+            case AggregateOp::min:
                 os << "min";
                 break;
-            case max:
+            case AggregateOp::max:
                 os << "max";
                 break;
-            case count:
+            case AggregateOp::count:
                 os << "count";
                 break;
             default:
@@ -539,7 +528,7 @@ public:
     }
 
     /** Get aggregate operator */
-    Op getOperator() const {
+    AggregateOp getOperator() const {
         return fun;
     }
 
@@ -607,7 +596,7 @@ protected:
 
 private:
     /** The aggregation operator of this aggregation step */
-    Op fun;
+    AggregateOp fun;
 
     /** The expression to be aggregated */
     std::unique_ptr<AstArgument> expression;

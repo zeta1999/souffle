@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "AggregateOp.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
 #include "RamNode.h"
@@ -641,9 +642,6 @@ public:
     }
 };
 
-/** Types of aggregation functions */
-enum AggregateFunction { MAX, MIN, COUNT, SUM };
-
 /**
  * @class RamAbstractAggregate
  * @brief Abstract class for aggregation
@@ -654,7 +652,7 @@ enum AggregateFunction { MAX, MIN, COUNT, SUM };
 class RamAbstractAggregate {
 public:
     RamAbstractAggregate(
-            AggregateFunction fun, std::unique_ptr<RamExpression> expr, std::unique_ptr<RamCondition> cond)
+            AggregateOp fun, std::unique_ptr<RamExpression> expr, std::unique_ptr<RamCondition> cond)
             : function(fun), expression(std::move(expr)), condition(std::move(cond)) {
         assert(condition != nullptr && "Condition is a null-pointer");
         assert(expression != nullptr && "Expression is a null-pointer");
@@ -669,7 +667,7 @@ public:
     }
 
     /** @brief Get aggregation function */
-    AggregateFunction getFunction() const {
+    AggregateOp getFunction() const {
         return function;
     }
 
@@ -685,20 +683,20 @@ public:
 
     void print(std::ostream& os, int /* tabpos */) const {
         switch (function) {
-            case MIN:
-                os << "MIN ";
+            case AggregateOp::min:
+                os << "min ";
                 break;
-            case MAX:
-                os << "MAX ";
+            case AggregateOp::max:
+                os << "max ";
                 break;
-            case COUNT:
-                os << "COUNT ";
+            case AggregateOp::count:
+                os << "count ";
                 break;
-            case SUM:
-                os << "SUM ";
+            case AggregateOp::sum:
+                os << "sum ";
                 break;
         }
-        if (function != COUNT) {
+        if (function != AggregateOp::count) {
             os << *expression << " ";
         }
     }
@@ -711,7 +709,7 @@ protected:
     }
 
     /** Aggregation function */
-    AggregateFunction function;
+    AggregateOp function;
 
     /** Aggregation expression */
     std::unique_ptr<RamExpression> expression;
@@ -733,7 +731,7 @@ protected:
  */
 class RamAggregate : public RamRelationOperation, public RamAbstractAggregate {
 public:
-    RamAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
+    RamAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, int ident)
             : RamRelationOperation(std::move(relRef), ident, std::move(nested)),
@@ -784,7 +782,7 @@ protected:
  */
 class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate {
 public:
-    RamIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateFunction fun,
+    RamIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
             int ident)

@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AstTransforms.h"
+#include "AggregateOp.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
@@ -289,7 +290,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             aggClause->setHead(std::unique_ptr<AstAtom>(head));
 
             // instantiate unnamed variables in count operations
-            if (agg.getOperator() == AstAggregator::count) {
+            if (agg.getOperator() == AggregateOp::count) {
                 int count = 0;
                 for (const auto& cur : aggClause->getBodyLiterals()) {
                     cur->apply(makeLambdaAstMapper(
@@ -1064,12 +1065,12 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
             // Apply to all aggregates of the form
             // sum k : { .. } where k is a constant
             if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
-                if (agg->getOperator() == AstAggregator::Op::sum) {
+                if (agg->getOperator() == AggregateOp::sum) {
                     if (const auto* constant =
                                     dynamic_cast<const AstNumberConstant*>(agg->getTargetExpression())) {
                         changed = true;
                         // Then construct the new thing to replace it with
-                        auto count = std::make_unique<AstAggregator>(AstAggregator::Op::count);
+                        auto count = std::make_unique<AstAggregator>(AggregateOp::count);
                         // Duplicate the body of the aggregate
                         for (const auto& lit : agg->getBodyLiterals()) {
                             count->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));
@@ -1328,8 +1329,8 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
                 }
 
                 // Set types of functor instance based on its declaration.
-                userFunctor->setArgsTypes(functorDeclaration->getArgsTypes());
-                userFunctor->setReturnType(functorDeclaration->getReturnType());
+                userFunctor->setTypes(
+                        functorDeclaration->getArgsTypes(), functorDeclaration->getReturnType());
 
                 changed = true;
             }

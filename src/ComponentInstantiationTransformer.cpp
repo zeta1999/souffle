@@ -148,6 +148,11 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
                     res.add(rel, report);
                 }
 
+                // process clauses
+                for (auto& clause : content.clauses) {
+                    res.add(clause, report);
+                }
+
                 // process io directives
                 for (auto& io : content.ios) {
                     res.add(io, report);

@@ -113,8 +113,8 @@ public:
     }
 
     /** get io directives */
-    const std::vector<std::unique_ptr<AstIO>>& getIOs() const {
-        return ios;
+    std::vector<AstIO*> getIOs() const {
+        return toPtrVector(ios);
     }
 
     /** get pragma directives */

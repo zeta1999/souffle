@@ -135,10 +135,10 @@ std::vector<IODirectives> AstTranslator::getInputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> inputDirectives;
 
-    std::vector<AstIO*> relLoads;
-    for (const auto& io : program->getIOs()) {
+    std::vector<const AstIO*> relLoads;
+    for (const auto* io : program->getIOs()) {
         if (io->getQualifiedName() == rel->getQualifiedName() && io->getKVP("operation") == "input") {
-            relLoads.push_back(io.get());
+            relLoads.push_back(io);
         }
     }
     for (const auto& current : relLoads) {
@@ -167,11 +167,11 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> outputDirectives;
 
-    std::vector<AstIO*> relStores;
-    for (const auto& store : program->getIOs()) {
+    std::vector<const AstIO*> relStores;
+    for (const auto* store : program->getIOs()) {
         if (store->getQualifiedName() == rel->getQualifiedName() &&
                 (store->getKVP("operation") == "output" || store->getKVP("operation") == "printsize")) {
-            relStores.push_back(store.get());
+            relStores.push_back(store);
         }
     }
     // If stdout is requested then remove all directives from the datalog file.

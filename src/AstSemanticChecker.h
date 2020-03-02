@@ -74,7 +74,8 @@ private:
     static void checkRecordType(ErrorReport& report, const AstProgram& program, const AstRecordType& type);
     static void checkType(ErrorReport& report, const AstProgram& program, const AstType& type);
     static void checkRecursiveUnionTypes(ErrorReport& report, const AstProgram& program);
-    static void checkTypes(ErrorReport& report, const TypeEnvironmentAnalysis& typeEnvAnalysis, const AstProgram& program);
+    static void checkTypes(
+            ErrorReport& report, const TypeEnvironmentAnalysis& typeEnvAnalysis, const AstProgram& program);
 
     static void checkNamespaces(ErrorReport& report, const AstProgram& program);
     static void checkIODirectives(ErrorReport& report, const AstProgram& program);

@@ -1117,20 +1117,19 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 // copy over input directives to new adorned relation
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
-                    visitDepthFirst(*program, [&](AstIO& current) {
-                        if (current.getQualifiedName() != originalName &&
-                                current.getKVP("operation") != "input") {
-                            return;
+                    for (AstIO* io : program->getIOs()) {
+                        if (io->getQualifiedName() != originalName && io->getKVP("operation") != "input") {
+                            continue;
                         }
-                        current.setQualifiedName(newRelName);
-                        auto directives = current.getIODirectiveMap();
+                        io->setQualifiedName(newRelName);
+                        auto directives = io->getIODirectiveMap();
                         if (directives.find("IO") == directives.end()) {
-                            current.addKVP("IO", "file");
+                            io->addKVP("IO", "file");
                         }
                         if (directives["IO"] == "file" && directives.find("filename") == directives.end()) {
-                            current.addKVP("filename", originalName.getQualifiers()[0] + ".facts");
+                            io->addKVP("filename", originalName.getQualifiers()[0] + ".facts");
                         }
-                    });
+                    }
                 }
                 adornedRelation = newRelation;
             }

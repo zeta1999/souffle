@@ -900,8 +900,7 @@ void AstSemanticChecker::checkTypes(
     for (const auto& type : program.getTypes()) {
         const auto& name = type->getQualifiedName();
         if (contains(numericUnions, name) && contains(symbolicUnions, name)) {
-            report.addError(
-                    "Union type " + toString(name) + " contains a mixture of symbol and number types",
+            report.addError("Union type " + toString(name) + " contains a mixture of symbol and number types",
                     type->getSrcLoc());
         }
     }
@@ -918,8 +917,8 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
                     "Undefined relation " + toString(directive->getQualifiedName()), directive->getSrcLoc());
         }
     };
-    for (const auto& directive : program.getIOs()) {
-        checkIODirective(directive.get());
+    for (const auto* directive : program.getIOs()) {
+        checkIODirective(directive);
     }
 }
 

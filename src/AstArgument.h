@@ -165,7 +165,8 @@ class AstNumericConstant : public AstConstant {
 public:
     enum class Type { Int, Uint, Float };
 
-    AstNumericConstant(std::string constant, Type type) : AstConstant(std::move(constant)), type(type) {}
+    AstNumericConstant(std::string constant, Type type = Type::Int)
+            : AstConstant(std::move(constant)), type(type) {}
 
     AstNumericConstant* clone() const override {
         auto* copy = new AstNumericConstant(getConstant(), type);

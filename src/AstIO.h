@@ -26,7 +26,7 @@ namespace souffle {
 
 /**
  * @class AstIO
- * @brief Intermediate representation of an I/O operation.
+ * @brief I/O operation has a type (input/output/printsize), qualified relation name, and I/O directives.    
  */
 class AstIO : public AstNode {
 public:

@@ -23,26 +23,22 @@
 namespace souffle {
 
 void IOType::run(const AstTranslationUnit& translationUnit) {
-    visitDepthFirst(*translationUnit.getProgram(), [&](const AstLoad& directive) {
+    visitDepthFirst(*translationUnit.getProgram(), [&](const AstIO& directive) {
         auto* relation = translationUnit.getProgram()->getRelation(directive.getQualifiedName());
         if (relation == nullptr) {
             return;
         }
-        inputRelations.insert(relation);
-    });
-    visitDepthFirst(*translationUnit.getProgram(), [&](const AstStore& directive) {
-        auto* relation = translationUnit.getProgram()->getRelation(directive.getQualifiedName());
-        if (relation == nullptr) {
-            return;
+        const std::string& op = directive.getKVP("operation");
+        if (op == "input") {
+            inputRelations.insert(relation);
+        } else if (op == "output") {
+            outputRelations.insert(relation);
+        } else if (op == "printsize") {
+            printSizeRelations.insert(relation);
+            outputRelations.insert(relation);
+        } else {
+            assert("Unrecognized I/O operation");
         }
-        outputRelations.insert(relation);
-    });
-    visitDepthFirst(*translationUnit.getProgram(), [&](const AstPrintSize& directive) {
-        auto* relation = translationUnit.getProgram()->getRelation(directive.getQualifiedName());
-        if (relation == nullptr) {
-            return;
-        }
-        printSizeRelations.insert(relation);
     });
 }
 

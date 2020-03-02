@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AstTranslator.h"
+#include "AggregateOp.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
@@ -135,10 +136,10 @@ std::vector<IODirectives> AstTranslator::getInputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> inputDirectives;
 
-    std::vector<AstLoad*> relLoads;
-    for (const auto& load : program->getLoads()) {
-        if (load->getQualifiedName() == rel->getQualifiedName()) {
-            relLoads.push_back(load.get());
+    std::vector<AstIO*> relLoads;
+    for (const auto& io : program->getIOs()) {
+        if (io->getQualifiedName() == rel->getQualifiedName() && io->getKVP("operation") == "input") {
+            relLoads.push_back(io.get());
         }
     }
     for (const auto& current : relLoads) {
@@ -167,9 +168,10 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<IODirectives> outputDirectives;
 
-    std::vector<AstStore*> relStores;
-    for (const auto& store : program->getStores()) {
-        if (store->getQualifiedName() == rel->getQualifiedName()) {
+    std::vector<AstIO*> relStores;
+    for (const auto& store : program->getIOs()) {
+        if (store->getQualifiedName() == rel->getQualifiedName() &&
+                (store->getKVP("operation") == "output" || store->getKVP("operation") == "printsize")) {
             relStores.push_back(store.get());
         }
     }
@@ -178,7 +180,7 @@ std::vector<IODirectives> AstTranslator::getOutputIODirectives(
         bool hasOutput = false;
         for (const auto* current : relStores) {
             IODirectives ioDirectives;
-            if (dynamic_cast<const AstPrintSize*>(current) != nullptr) {
+            if (current->getKVP("operation") == "printsize") {
                 ioDirectives.setIOType("stdoutprintsize");
                 outputDirectives.push_back(ioDirectives);
             } else if (!hasOutput) {
@@ -720,23 +722,6 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
     for (auto it = aggregators.rbegin(); it != aggregators.rend(); ++it, --level) {
         const AstAggregator* cur = *it;
 
-        // translate aggregation function
-        AggregateFunction fun = souffle::MIN;
-        switch (cur->getOperator()) {
-            case AstAggregator::min:
-                fun = souffle::MIN;
-                break;
-            case AstAggregator::max:
-                fun = souffle::MAX;
-                break;
-            case AstAggregator::count:
-                fun = souffle::COUNT;
-                break;
-            case AstAggregator::sum:
-                fun = souffle::SUM;
-                break;
-        }
-
         // condition for aggregate and helper function to add terms
         std::unique_ptr<RamCondition> aggCondition;
         auto addAggCondition = [&](std::unique_ptr<RamCondition>& arg) {
@@ -808,8 +793,9 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
 
         // add Ram-Aggregation layer
-        std::unique_ptr<RamAggregate> aggregate = std::make_unique<RamAggregate>(std::move(op), fun,
-                translator.translateRelation(atom), std::move(expr), std::move(aggCondition), level);
+        std::unique_ptr<RamAggregate> aggregate =
+                std::make_unique<RamAggregate>(std::move(op), cur->getOperator(),
+                        translator.translateRelation(atom), std::move(expr), std::move(aggCondition), level);
         op = std::move(aggregate);
     }
 

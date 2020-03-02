@@ -221,6 +221,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     visitDepthFirst(nodes, [&](const AstFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
+
         if (!eqTypeTypeAttribute(fun.getReturnType(), resultType)) {
             switch (fun.getReturnType()) {
                 case TypeAttribute::Signed:
@@ -976,10 +977,7 @@ void AstSemanticChecker::checkIODirectives(ErrorReport& report, const AstProgram
                     "Undefined relation " + toString(directive->getQualifiedName()), directive->getSrcLoc());
         }
     };
-    for (const auto& directive : program.getLoads()) {
-        checkIODirective(directive.get());
-    }
-    for (const auto& directive : program.getStores()) {
+    for (const auto& directive : program.getIOs()) {
         checkIODirective(directive.get());
     }
 }

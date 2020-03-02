@@ -91,34 +91,39 @@ protected:
  */
 class RamIO : public RamRelationStatement {
 public:
-    RamIO(std::unique_ptr<RamRelationReference> relRef, IODirective directive)
-            : RamRelationStatement(std::move(relRef)), directive(directive) {}
+    RamIO(std::unique_ptr<RamRelationReference> relRef, std::map<std::string, std::string> directives)
+            : RamRelationStatement(std::move(relRef)), directives(directives) {}
 
-    /** @brief Get load directives */
-    const IODirective& getIODirective() const {
-        return directive;
+    /** @brief get I/O directives */
+    const std::map<std::string, std::string>& getDirectives() const {
+        return directives;
+    }
+
+    /** @get value of I/O directive */
+    const std::string get(const std::string& key) const {
+        return directives.at(key);
     }
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << directive.get("operation") << " " << rel.getName() << directive << "\n";
+        os << "IO " << rel.getName() << " " << directives << "\n";
         os << std::endl;
     };
 
     RamIO* clone() const override {
-        return new RamIO(std::unique_ptr<RamRelationReference>(relationRef->clone()), directive);
+        return new RamIO(std::unique_ptr<RamRelationReference>(relationRef->clone()), directives);
     }
 
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIO&>(node);
-        return RamRelationStatement::equal(other) && directive == other.directive;
+        return RamRelationStatement::equal(other) && directives == other.directives;
     }
 
 protected:
-    /** Load directives of a relation */
-    const IODirective directive;
+    /** IO directives */
+    std::map<std::string, std::string> directives;
 };
 
 /**

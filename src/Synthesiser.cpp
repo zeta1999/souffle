@@ -204,14 +204,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitIO(const RamIO& io, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            const auto& directive = io.getIODirective();
-            const std::string& op = directive.get("operation");
+            const auto& directive = io.getDirectives();
+            const std::string& op = io.get("operation");
             out << "if (performIO) {\n";
 
             // get some table details
             if (op == "input") {
                 out << "try {";
                 out << "std::map<std::string, std::string> directiveMap(";
+                // TODO (b-scholz): printing to C++ format here
                 out << directive << ");\n";
                 out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
                 out << "directiveMap[\"filename\"].front() != '/') {";
@@ -227,6 +228,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                        "'\\n';}\n";
             } else if (op == "output" || op == "printsize") {
                 out << "try {";
+                // TODO (b-scholz): printing to C++ format here
                 out << "std::map<std::string, std::string> directiveMap(" << directive << ");\n";
                 out << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
                 out << "directiveMap[\"filename\"].front() != '/') {";
@@ -1903,7 +1905,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // collect load/store operations/relations
     visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
-        auto op = io.getIODirective().get("operation");
+        auto op = io.get("operation");
         if (op == "input") {
             loadRelations.insert(io.getRelation().getName());
             loadIOs.insert(&io);
@@ -2085,8 +2087,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
 
     for (auto store : storeIOs) {
-        auto const& directive = store->getIODirective();
+        auto const& directive = store->getDirectives();
         os << "try {";
+        // TODO (b-scholz): rewrite this
         os << "std::map<std::string, std::string> directiveMap(" << directive << ");\n";
         os << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
         os << "directiveMap[\"filename\"].front() != '/') {";
@@ -2122,7 +2125,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     for (auto load : loadIOs) {
         os << "try {";
         os << "std::map<std::string, std::string> directiveMap(";
-        os << load->getIODirective() << ");\n";
+        os << load->getDirectives() << ");\n";
         os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";

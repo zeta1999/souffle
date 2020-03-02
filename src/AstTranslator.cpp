@@ -33,7 +33,6 @@
 #include "BinaryConstraintOps.h"
 #include "DebugReport.h"
 #include "Global.h"
-#include "IODirective.h"
 #include "LogStatement.h"
 #include "PrecedenceGraph.h"
 #include "RamCondition.h"
@@ -88,24 +87,24 @@ size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     }
 }
 
-void AstTranslator::makeIODirective(IODirective& ioDirective, const AstRelation* rel,
+void AstTranslator::makeIODirective(std::map<std::string, std::string>& ioDirective, const AstRelation* rel,
         const std::string& filePath, const std::string& fileExt) {
     // set relation name correctly
-    ioDirective.set("name", getRelationName(rel->getQualifiedName()));
+    ioDirective["name"] = getRelationName(rel->getQualifiedName());
     // set a default IO type of file and a default filename if not supplied
-    if (!ioDirective.has("IO")) {
-        ioDirective.set("IO", "file");
+    if (ioDirective.find("IO") == ioDirective.end()) {
+        ioDirective["IO"] = "file";
     }
 
     // load intermediate relations from correct files
-    if (ioDirective.get("IO") == "file") {
+    if (ioDirective.at("IO") == "file") {
         // set filename by relation if not given
-        if (!ioDirective.has("filename")) {
-            ioDirective.set("filename", ioDirective.get("name") + fileExt);
+        if (ioDirective.find("filename") == ioDirective.end()) {
+            ioDirective["filename"] = ioDirective.at("name") + fileExt;
         }
         // if filename is not an absolute path, concat with cmd line facts directory
-        if (ioDirective.get("IO") == "file" && ioDirective.get("filename").front() != '/') {
-            ioDirective.set("filename", filePath + "/" + ioDirective.get("filename"));
+        if (ioDirective.at("IO") == "file" && ioDirective.at("filename").front() != '/') {
+            ioDirective["filename"] = filePath + "/" + ioDirective.at("filename");
         }
     }
 
@@ -129,12 +128,12 @@ void AstTranslator::makeIODirective(IODirective& ioDirective, const AstRelation*
 
     Json types = Json::object{{name, relJson}, {"records", getRecordsTypes()}};
 
-    ioDirective.set("types", types.dump());
+    ioDirective["types"] = types.dump();
 }
 
-std::vector<IODirective> AstTranslator::getInputIODirective(
+std::vector<std::map<std::string, std::string>> AstTranslator::getInputIODirective(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
-    std::vector<IODirective> inputDirectives;
+    std::vector<std::map<std::string, std::string>> inputDirectives;
 
     std::vector<AstIO*> relLoads;
     for (const auto& io : program->getIOs()) {
@@ -143,11 +142,11 @@ std::vector<IODirective> AstTranslator::getInputIODirective(
         }
     }
     for (const auto& current : relLoads) {
-        IODirective ioDirectives;
+        std::map<std::string, std::string> ioDirectives;
         for (const auto& currentPair : current->getDirectives()) {
-            ioDirectives.set(currentPair.first, unescape(currentPair.second));
+            ioDirectives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
         }
-        ioDirectives.set("operation","input"); 
+        ioDirectives["operation"] = "input";
         inputDirectives.push_back(ioDirectives);
     }
 
@@ -165,14 +164,14 @@ std::vector<IODirective> AstTranslator::getInputIODirective(
     return inputDirectives;
 }
 
-std::vector<IODirective> AstTranslator::getOutputIODirective(
+std::vector<std::map<std::string, std::string>> AstTranslator::getOutputIODirective(
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
-    std::vector<IODirective> outputDirectives;
+    std::vector<std::map<std::string, std::string>> outputDirectives;
 
     std::vector<AstIO*> relStores;
     for (const auto& store : program->getIOs()) {
         if (store->getQualifiedName() == rel->getQualifiedName() &&
-                (store->getType() == AstIO::OutputIO || store->getType() == AstIO::PrintsizeIO )) {
+                (store->getType() == AstIO::OutputIO || store->getType() == AstIO::PrintsizeIO)) {
             relStores.push_back(store.get());
         }
     }
@@ -181,31 +180,31 @@ std::vector<IODirective> AstTranslator::getOutputIODirective(
     if (Global::config().get("output-dir") == "-") {
         bool hasOutput = false;
         for (const auto* current : relStores) {
-            IODirective ioDirectives;
+            std::map<std::string, std::string> ioDirectives;
             if (current->getType() == AstIO::PrintsizeIO) {
-                ioDirectives.set("operation", "printsize");
-                ioDirectives.set("IO", "stdoutprintsize");
+                ioDirectives["operation"] = "printsize";
+                ioDirectives["IO"] = "stdoutprintsize";
                 outputDirectives.push_back(ioDirectives);
             } else if (!hasOutput) {
                 hasOutput = true;
-                ioDirectives.set("IO", "stdout");
-                ioDirectives.set("headers", "true");
-                ioDirectives.set("operation", "output");
+                ioDirectives["IO"] = "stdout";
+                ioDirectives["headers"] = "true";
+                ioDirectives["operation"] = "output";
                 outputDirectives.push_back(ioDirectives);
             }
         }
     } else {
         for (const auto* current : relStores) {
-            IODirective ioDirectives;
+            std::map<std::string, std::string> ioDirectives;
             for (const auto& currentPair : current->getDirectives()) {
-                ioDirectives.set(currentPair.first, unescape(currentPair.second));
+                ioDirectives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
             }
             if (current->getType() == AstIO::PrintsizeIO) {
-               ioDirectives.set("operation", "printsize");
-               ioDirectives.set("IO", "stdoutprintsize");
+                ioDirectives["operation"] = "printsize";
+                ioDirectives["IO"] = "stdoutprintsize";
             } else {
-               ioDirectives.set("operation", "output");
-            } 
+                ioDirectives["operation"] = "output";
+            }
             outputDirectives.push_back(ioDirectives);
         }
     }
@@ -220,10 +219,10 @@ std::vector<IODirective> AstTranslator::getOutputIODirective(
     for (auto& ioDirective : outputDirectives) {
         makeIODirective(ioDirective, rel, outputFilePath, outputFileExt);
 
-        if (!ioDirective.has("attributeNames")) {
+        if (ioDirective.find("attributeNames") == ioDirective.end()) {
             std::string delimiter("\t");
-            if (ioDirective.has("delimiter")) {
-                delimiter = ioDirective.get("delimiter");
+            if (ioDirective.find("delimiter") != ioDirective.end()) {
+                delimiter = ioDirective.at("delimiter");
             }
             std::vector<std::string> attributeNames;
             for (const auto* attribute : rel->getAttributes()) {
@@ -233,9 +232,9 @@ std::vector<IODirective> AstTranslator::getOutputIODirective(
             if (Global::config().has("provenance")) {
                 std::vector<std::string> originalAttributeNames(
                         attributeNames.begin(), attributeNames.end() - auxArityAnalysis->getArity(rel));
-                ioDirective.set("attributeNames", toString(join(originalAttributeNames, delimiter)));
+                ioDirective["attributeNames"] = toString(join(originalAttributeNames, delimiter));
             } else {
-                ioDirective.set("attributeNames", toString(join(attributeNames, delimiter)));
+                ioDirective["attributeNames"] = toString(join(attributeNames, delimiter));
             }
         }
     }

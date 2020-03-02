@@ -28,19 +28,19 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
         if (relation == nullptr) {
             return;
         }
-        switch(io.getType()) {
-        case AstIO::InputIO: 
-            inputRelations.insert(relation);
-            break;
-        case AstIO::OutputIO:
-            outputRelations.insert(relation);
-            break;
-        case AstIO::PrintsizeIO:
-            printSizeRelations.insert(relation);
-            outputRelations.insert(relation);
-            break;
-        default:
-            assert("Unrecognized I/O operation");
+        switch (io.getType()) {
+            case AstIO::InputIO:
+                inputRelations.insert(relation);
+                break;
+            case AstIO::OutputIO:
+                outputRelations.insert(relation);
+                break;
+            case AstIO::PrintsizeIO:
+                printSizeRelations.insert(relation);
+                outputRelations.insert(relation);
+                break;
+            default:
+                assert("Unrecognized I/O operation");
         }
     });
 }

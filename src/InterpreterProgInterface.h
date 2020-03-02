@@ -211,7 +211,7 @@ public:
             bool output;
             visitDepthFirst(prog, [&](const RamIO& io) {
                 if (io.getRelation() == rel) {
-                    const std::string& op = io.getIODirective().get("operation");
+                    const std::string& op = io.get("operation");
                     if (op == "input") {
                         input = true;
                     } else if (op == "output" || op == "printsize") {

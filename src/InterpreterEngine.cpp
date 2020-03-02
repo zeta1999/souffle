@@ -1289,14 +1289,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(IO)
 
-            const auto& directive = cur.getIODirective();
-            const std::string& op = directive.get("operation");
+            const auto& directive = cur.getDirectives();
+            const std::string& op = cur.get("operation");
 
             if (op == "input") {
                 try {
                     InterpreterRelation& relation = *node->getRelation();
                     IOSystem::getInstance()
-                            .getReader(directive, getSymbolTable(), getRecordTable())
+                            .getReader(IODirective(directive), getSymbolTable(), getRecordTable())
                             ->readAll(relation);
                 } catch (std::exception& e) {
                     std::cerr << "Error loading data: " << e.what() << "\n";
@@ -1305,7 +1305,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             } else if (op == "output" || op == "printsize") {
                 try {
                     IOSystem::getInstance()
-                            .getWriter(directive, getSymbolTable(), getRecordTable())
+                            .getWriter(IODirective(directive), getSymbolTable(), getRecordTable())
                             ->writeAll(*node->getRelation());
                 } catch (std::exception& e) {
                     std::cerr << e.what();

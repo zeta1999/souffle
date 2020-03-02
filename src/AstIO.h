@@ -26,11 +26,11 @@ namespace souffle {
 
 /**
  * @class AstIO
- * @brief I/O operation has a type (input/output/printsize), qualified relation name, and I/O directives.    
+ * @brief I/O operation has a type (input/output/printsize), qualified relation name, and I/O directives.
  */
 class AstIO : public AstNode {
 public:
-    enum AstIOType {InputIO, OutputIO, PrintsizeIO}; 
+    enum AstIOType { InputIO, OutputIO, PrintsizeIO };
 
     AstIO(const AstIO& io) : type(io.type), name(io.name), directives(io.directives) {
         this->setSrcLoc(io.getSrcLoc());
@@ -38,12 +38,16 @@ public:
     AstIO() = default;
 
     void print(std::ostream& os) const override {
-        switch(type) { 
-        case InputIO: os << ".input "; 
-        case OutputIO: os << ".output "; 
-        case PrintsizeIO: os << ".printsize "; 
-        default: assert("Unknown I/O operation type"); 
-        } 
+        switch (type) {
+            case InputIO:
+                os << ".input ";
+            case OutputIO:
+                os << ".output ";
+            case PrintsizeIO:
+                os << ".printsize ";
+            default:
+                assert("Unknown I/O operation type");
+        }
         os << name;
         if (!directives.empty()) {
             os << "(" << join(directives, ",", [](std::ostream& out, const auto& arg) {
@@ -52,15 +56,15 @@ public:
         }
     }
 
-    /** get I/O type */ 
+    /** get I/O type */
     const AstIOType getType() const {
         return type;
-    } 
+    }
 
-    /** set I/O type */ 
-    void setType(AstIOType type) { 
+    /** set I/O type */
+    void setType(AstIOType type) {
         this->type = type;
-    } 
+    }
 
     /** get relation name */
     const AstQualifiedName& getQualifiedName() const {
@@ -84,7 +88,7 @@ public:
 
     /** check for I/O directive */
     bool hasDirective(const std::string& key) const {
-        return directives.find(key) != directives.end(); 
+        return directives.find(key) != directives.end();
     }
 
     /** get I/O-directive map */
@@ -104,13 +108,11 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstIO*>(&node));
         const auto& other = static_cast<const AstIO&>(node);
-        return other.type == type && 
-               other.name == name && 
-               other.directives == directives;
+        return other.type == type && other.name == name && other.directives == directives;
     }
 
-    /** type of I/O operation */ 
-    AstIOType type; 
+    /** type of I/O operation */
+    AstIOType type;
 
     /** relation name of I/O operation */
     AstQualifiedName name;

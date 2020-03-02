@@ -89,8 +89,7 @@ struct ComponentContent {
             auto type = (*foundItem)->getType();
             if (type == newIO->getType() && type != AstIO::OutputIO) {
                 Diagnostic err(Diagnostic::ERROR,
-                        DiagnosticMessage("Redefinition I/O operation " +
-                                                  toString(newIO->getQualifiedName()),
+                        DiagnosticMessage("Redefinition I/O operation " + toString(newIO->getQualifiedName()),
                                 newIO->getSrcLoc()),
                         {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
                 report.addDiagnostic(err);

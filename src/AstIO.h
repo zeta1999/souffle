@@ -46,7 +46,7 @@ public:
         } 
         os << name;
         if (!directives.empty()) {
-            os << "(" << join(temp, ",", [](std::ostream& out, const auto& arg) {
+            os << "(" << join(directives, ",", [](std::ostream& out, const auto& arg) {
                 out << arg.first << "=\"" << arg.second << "\"";
             }) << ")";
         }
@@ -58,7 +58,7 @@ public:
     } 
 
     /** set I/O type */ 
-    void AstIOType setType(AstIOType type) const { 
+    void setType(AstIOType type) { 
         this->type = type;
     } 
 
@@ -72,18 +72,18 @@ public:
         this->name = name;
     }
 
-    /** add new I/O directive */
-    void addDirective(const std::string& key, const std::string& value) {
-        directives[key] = value;
-    }
-
     /** get value of I/O directive */
     const std::string& getDirective(const std::string& key) const {
         return directives.at(key);
     }
 
-    /** has new I/O directive */ 
-    void hasDirective(const std::string& key, const std::string& value) {
+    /** add new I/O directive */
+    void addDirective(const std::string& key, const std::string& value) {
+        directives[key] = value;
+    }
+
+    /** check for I/O directive */
+    bool hasDirective(const std::string& key) const {
         return directives.find(key) != directives.end(); 
     }
 
@@ -104,7 +104,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstIO*>(&node));
         const auto& other = static_cast<const AstIO&>(node);
-        return other.type = type && 
+        return other.type == type && 
                other.name == name && 
                other.directives == directives;
     }

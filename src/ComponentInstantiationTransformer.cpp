@@ -79,25 +79,25 @@ struct ComponentContent {
         relations.push_back(std::move(rel));
     }
 
-    void add(std::unique_ptr<AstIO>& directive, ErrorReport& report) {
+    void add(std::unique_ptr<AstIO>& newIO, ErrorReport& report) {
         // Check if i/o directive already exists
         auto foundItem = std::find_if(ios.begin(), ios.end(), [&](const std::unique_ptr<AstIO>& io) {
-            return io->getQualifiedName() == directive->getQualifiedName();
+            return io->getQualifiedName() == newIO->getQualifiedName();
         });
         // if yes, add error
         if (foundItem != ios.end()) {
-            const std::string& op = (*foundItem)->getKVP("operation");
-            if (op == directive->getKVP("operation") && op != "output") {
+            auto type = (*foundItem)->getType();
+            if (type == newIO->getType() && type != AstIO::OutputIO) {
                 Diagnostic err(Diagnostic::ERROR,
-                        DiagnosticMessage("Redefinition of " + op + " directive " +
-                                                  toString(directive->getQualifiedName()),
-                                directive->getSrcLoc()),
+                        DiagnosticMessage("Redefinition I/O operation " +
+                                                  toString(newIO->getQualifiedName()),
+                                newIO->getSrcLoc()),
                         {DiagnosticMessage("Previous definition", (*foundItem)->getSrcLoc())});
                 report.addDiagnostic(err);
             }
         }
         // if not, add it
-        ios.push_back(std::move(directive));
+        ios.push_back(std::move(newIO));
     }
 };
 

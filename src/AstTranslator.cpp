@@ -138,14 +138,14 @@ std::vector<IODirective> AstTranslator::getInputIODirective(
 
     std::vector<AstIO*> relLoads;
     for (const auto& io : program->getIOs()) {
-        if (io->getQualifiedName() == rel->getQualifiedName() && io->getKVP("operation") == "input") {
+        if (io->getQualifiedName() == rel->getQualifiedName() && io->getType() == AstIO::InputIO) {
             relLoads.push_back(io.get());
         }
     }
     for (const auto& current : relLoads) {
         IODirective ioDirectives;
-        for (const auto& currentPair : current->getIODirectiveMap()) {
-            ioDirectives.set(currentPair.first, currentPair.second);
+        for (const auto& currentPair : current->getDirectives()) {
+            ioDirectives.set(currentPair.first, unescape(currentPair.second));
         }
         inputDirectives.push_back(ioDirectives);
     }
@@ -171,32 +171,36 @@ std::vector<IODirective> AstTranslator::getOutputIODirective(
     std::vector<AstIO*> relStores;
     for (const auto& store : program->getIOs()) {
         if (store->getQualifiedName() == rel->getQualifiedName() &&
-                (store->getKVP("operation") == "output" || store->getKVP("operation") == "printsize")) {
+                (store->getType() == AstIO::OutputIO || store->getType() == AstIO::PrintsizeIO )) {
             relStores.push_back(store.get());
         }
     }
+
     // If stdout is requested then remove all directives from the datalog file.
     if (Global::config().get("output-dir") == "-") {
         bool hasOutput = false;
         for (const auto* current : relStores) {
             IODirective ioDirectives;
-            if (current->getKVP("operation") == "printsize") {
-                ioDirectives.set("IO", "stdoutprintsize");
+            if (current->getType() == AstIO::PrintsizeIO) {
                 ioDirectives.set("operation", "printsize");
+                ioDirectives.set("IO", "stdoutprintsize");
                 outputDirectives.push_back(ioDirectives);
             } else if (!hasOutput) {
                 hasOutput = true;
                 ioDirectives.set("IO", "stdout");
                 ioDirectives.set("headers", "true");
-                ioDirectives.set("operation", current->getKVP("operation"));
+                ioDirectives.set("operation", "output");
                 outputDirectives.push_back(ioDirectives);
             }
         }
     } else {
         for (const auto* current : relStores) {
             IODirective ioDirectives;
-            for (const auto& currentPair : current->getIODirectiveMap()) {
-                ioDirectives.set(currentPair.first, currentPair.second);
+            for (const auto& currentPair : current->getDirectives()) {
+                ioDirectives.set(currentPair.first, unescape(currentPair.second));
+                if (current->getType() == AstIO::PrintsizeIO) {
+                    ioDirectives.set("IO", "stdoutprintsize");
+                }
             }
             outputDirectives.push_back(ioDirectives);
         }

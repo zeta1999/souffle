@@ -1119,16 +1119,16 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 if (ioTypes->isInput(originalRelation)) {
                     visitDepthFirst(*program, [&](AstIO& current) {
                         if (current.getQualifiedName() != originalName &&
-                                current.getKVP("operation") != "input") {
+                                current.getType() != AstIO::InputIO) {
                             return;
                         }
                         current.setQualifiedName(newRelName);
-                        auto directives = current.getIODirectiveMap();
-                        if (directives.find("IO") == directives.end()) {
-                            current.addKVP("IO", "file");
+                        auto directives = current.getDirectives();
+                        if (current.hasDirective("IO")) {
+                            current.addDirective("IO", "file");
                         }
-                        if (directives["IO"] == "file" && directives.find("filename") == directives.end()) {
-                            current.addKVP("filename", originalName.getQualifiers()[0] + ".facts");
+                        if (directives["IO"] == "file" && current.hasDirective("filename")) {
+                            current.addDirective("filename", originalName.getQualifiers()[0] + ".facts");
                         }
                     });
                 }

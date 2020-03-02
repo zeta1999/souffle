@@ -1633,7 +1633,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // add subroutines for each clause
     if (Global::config().has("provenance")) {
-        visitDepthFirst(program->getRelations(), [&](const AstClause& clause) {
+        visitDepthFirst(*program, [&](const AstClause& clause) {
             std::stringstream relName;
             relName << clause.getHead()->getQualifiedName();
 

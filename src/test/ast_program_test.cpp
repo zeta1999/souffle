@@ -14,14 +14,13 @@
  *
  ***********************************************************************/
 
+#include "AggregateOp.h"
 #include "AstProgram.h"
 #include "AstTranslationUnit.h"
 #include "ParserDriver.h"
 #include "test.h"
 
-namespace souffle {
-
-namespace test {
+namespace souffle::test {
 
 inline std::unique_ptr<AstTranslationUnit> makeATU(std::string program) {
     ErrorReport e;
@@ -95,7 +94,6 @@ TESTASTCLONEANDEQUAL(Record,
         R"(
                  .type N
                  .type R = [ a : N, B : N ]
-
 
                  .decl r ( r : R )
                  .decl s ( r : N )
@@ -181,7 +179,7 @@ TESTASTCLONEANDEQUAL(RelationCopies,
 TEST(AstProgram, RemoveClause) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto sum = std::make_unique<AstAggregator>(AstAggregator::sum);
+    auto sum = std::make_unique<AstAggregator>(AggregateOp::sum);
     sum->setTargetExpression(std::make_unique<AstVariable>("x"));
     sum->addBodyLiteral(std::move(atom));
 
@@ -212,5 +210,4 @@ TEST(AstProgram, RemoveAstRelation) {
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
 
-}  // end namespace test
-}  // end namespace souffle
+}  // end namespace souffle::test

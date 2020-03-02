@@ -30,6 +30,7 @@
 
 /* -- Dependencies -- */
 %code requires {
+    #include "AggregateOp.h"
     #include "AstArgument.h"
     #include "AstClause.h"
     #include "AstComponent.h"
@@ -1265,7 +1266,7 @@ arg
 
     /* -- aggregators -- */
   | COUNT COLON atom {
-        auto aggr = new AstAggregator(AstAggregator::count);
+        auto aggr = new AstAggregator(AggregateOp::count);
 
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
 
@@ -1275,7 +1276,7 @@ arg
         $atom = nullptr;
     }
   | COUNT COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AstAggregator::count);
+        auto aggr = new AstAggregator(AggregateOp::count);
 
         auto bodies = $body->toClauseBodies();
 
@@ -1294,7 +1295,7 @@ arg
     }
 
   | SUM arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AstAggregator::sum);
+        auto aggr = new AstAggregator(AggregateOp::sum);
 
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
@@ -1306,7 +1307,7 @@ arg
         $atom = nullptr;
     }
   | SUM arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AstAggregator::sum);
+        auto aggr = new AstAggregator(AggregateOp::sum);
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
@@ -1328,7 +1329,7 @@ arg
     }
 
   | MIN arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AstAggregator::min);
+        auto aggr = new AstAggregator(AggregateOp::min);
 
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
@@ -1341,7 +1342,7 @@ arg
         $atom = nullptr;
     }
   | MIN arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AstAggregator::min);
+        auto aggr = new AstAggregator(AggregateOp::min);
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
@@ -1363,7 +1364,7 @@ arg
     }
 
   | MAX arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AstAggregator::max);
+        auto aggr = new AstAggregator(AggregateOp::max);
 
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
@@ -1375,7 +1376,7 @@ arg
         $atom = nullptr;
     }
   | MAX arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AstAggregator::max);
+        auto aggr = new AstAggregator(AggregateOp::max);
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();

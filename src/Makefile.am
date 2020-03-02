@@ -58,6 +58,7 @@ endif
 
 
 souffle_sources = \
+        AggregateOp.h                             \
         AstAbstract.h                             \
         AstAnalysis.h                             \
         AuxArityAnalysis.cpp  AuxArityAnalysis.h  \

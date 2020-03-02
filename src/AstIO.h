@@ -35,7 +35,7 @@ public:
     AstIO(const AstIO& io) : type(io.type), name(io.name), directives(io.directives) {
         this->setSrcLoc(io.getSrcLoc());
     }
-    AstIO() : type(UndefinedIO) { }
+    AstIO() = default;
 
     void print(std::ostream& os) const override {
         switch (type) {
@@ -119,7 +119,7 @@ protected:
     }
 
     /** type of I/O operation */
-    AstIOType type;
+    AstIOType type = UndefinedIO;
 
     /** relation name of I/O operation */
     AstQualifiedName name;

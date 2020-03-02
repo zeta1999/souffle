@@ -426,19 +426,19 @@ bool ComponentInstantiationTransformer::transform(AstTranslationUnit& translatio
         ComponentContent content = getInstantiatedContent(
                 program, *cur, nullptr, *componentLookup, orphans, translationUnit.getErrorReport());
         for (auto& type : content.types) {
-            program.addType(std::move(type));
+            program.types.push_back(std::move(type));
         }
         for (auto& rel : content.relations) {
-            program.addRelation(std::move(rel));
+            program.relations.push_back(std::move(rel));
         }
         for (auto& clause : content.clauses) {
-            program.addClause(std::move(clause));
+            program.clauses.push_back(std::move(clause));
         }
         for (auto& orphan : orphans) {
-            program.addClause(std::move(orphan));
+            program.clauses.push_back(std::move(orphan));
         }
         for (auto& io : content.ios) {
-            program.addIO(std::move(io));
+            program.ios.push_back(std::move(io));
         }
     }
 

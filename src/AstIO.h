@@ -26,56 +26,76 @@ namespace souffle {
 
 /**
  * @class AstIO
- * @brief Intermediate representation of IO operations.
+ * @brief Intermediate representation of an I/O operation.
  */
 class AstIO : public AstNode {
 public:
-    AstIO(const AstIO& io) : name(io.name), kvps(io.kvps) {
+    enum AstIOType {InputIO, OutputIO, PrintsizeIO}; 
+
+    AstIO(const AstIO& io) : type(io.type), name(io.name), directives(io.directives) {
         this->setSrcLoc(io.getSrcLoc());
     }
     AstIO() = default;
 
     void print(std::ostream& os) const override {
-        auto temp = kvps;
-        temp.erase("operation");
-        os << "." << kvps.at("operation") << " ";
+        switch(type) { 
+        case InputIO: os << ".input "; 
+        case OutputIO: os << ".output "; 
+        case PrintsizeIO: os << ".printsize "; 
+        default: assert("Unknown I/O operation type"); 
+        } 
         os << name;
-        if (!temp.empty()) {
+        if (!directives.empty()) {
             os << "(" << join(temp, ",", [](std::ostream& out, const auto& arg) {
                 out << arg.first << "=\"" << arg.second << "\"";
             }) << ")";
         }
     }
 
-    /** relation name of I/O-directive */
+    /** get I/O type */ 
+    const AstIOType getType() const {
+        return type;
+    } 
+
+    /** set I/O type */ 
+    void AstIOType setType(AstIOType type) const { 
+        this->type = type;
+    } 
+
+    /** get relation name */
     const AstQualifiedName& getQualifiedName() const {
         return name;
     }
 
-    /** set relation name of I/O-directive */
+    /** set relation name */
     void setQualifiedName(const AstQualifiedName& name) {
         this->name = name;
     }
 
-    /** add key-value pair */
-    void addKVP(const std::string& key, const std::string& value) {
-        kvps[key] = unescape(value);
+    /** add new I/O directive */
+    void addDirective(const std::string& key, const std::string& value) {
+        directives[key] = value;
     }
 
-    /** get value */
-    const std::string& getKVP(const std::string& key) const {
-        return kvps.at(key);
+    /** get value of I/O directive */
+    const std::string& getDirective(const std::string& key) const {
+        return directives.at(key);
+    }
+
+    /** has new I/O directive */ 
+    void hasDirective(const std::string& key, const std::string& value) {
+        return directives.find(key) != directives.end(); 
     }
 
     /** get I/O-directive map */
-    const std::map<std::string, std::string>& getIODirectiveMap() const {
-        return kvps;
+    const std::map<std::string, std::string>& getDirectives() const {
+        return directives;
     }
 
     AstIO* clone() const override {
         auto res = new AstIO();
         res->name = name;
-        res->kvps = kvps;
+        res->directives = directives;
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -84,15 +104,19 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstIO*>(&node));
         const auto& other = static_cast<const AstIO&>(node);
-        return other.name == name && other.kvps == kvps;
+        return other.type = type && 
+               other.name == name && 
+               other.directives == directives;
     }
 
-    /** relation name of I/O directive */
+    /** type of I/O operation */ 
+    AstIOType type; 
+
+    /** relation name of I/O operation */
     AstQualifiedName name;
 
-    /** key-value pair map */
-    // TODO (b-scholz): replace map by an I/O directive
-    std::map<std::string, std::string> kvps;
+    /** I/O directives */
+    std::map<std::string, std::string> directives;
 };
 
 }  // end of namespace souffle

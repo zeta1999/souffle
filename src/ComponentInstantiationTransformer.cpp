@@ -293,6 +293,11 @@ ComponentContent getInstantiatedContent(AstProgram& program, const AstComponentI
             res.add(rel, report);
         }
 
+        // add clauses
+        for (auto& clause : nestedContent.clauses) {
+            res.add(clause, report);
+        }
+
         // add IO directives
         for (auto& io : nestedContent.ios) {
             res.add(io, report);

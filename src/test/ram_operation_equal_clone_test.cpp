@@ -14,14 +14,13 @@
  *
  ***********************************************************************/
 
+#include "AggregateOp.h"
 #include "RamOperation.h"
 #include "RamRelation.h"
 
 #include "test.h"
 
-namespace souffle {
-
-namespace test {
+namespace souffle::test {
 
 TEST(RamScan, CloneAndEquals) {
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
@@ -310,16 +309,14 @@ TEST(RamAggregate, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> a_return_args;
     a_return_args.emplace_back(new RamTupleElement(0, 0));
     auto a_return = std::make_unique<RamSubroutineReturnValue>(std::move(a_return_args));
-    RamAggregate a(std::move(a_return), AggregateFunction::COUNT,
-            std::make_unique<RamRelationReference>(&edge), std::make_unique<RamTupleElement>(0, 0),
-            std::make_unique<RamTrue>(), 1);
+    RamAggregate a(std::move(a_return), AggregateOp::count, std::make_unique<RamRelationReference>(&edge),
+            std::make_unique<RamTupleElement>(0, 0), std::make_unique<RamTrue>(), 1);
 
     std::vector<std::unique_ptr<RamExpression>> b_return_args;
     b_return_args.emplace_back(new RamTupleElement(0, 0));
     auto b_return = std::make_unique<RamSubroutineReturnValue>(std::move(b_return_args));
-    RamAggregate b(std::move(b_return), AggregateFunction::COUNT,
-            std::make_unique<RamRelationReference>(&edge), std::make_unique<RamTupleElement>(0, 0),
-            std::make_unique<RamTrue>(), 1);
+    RamAggregate b(std::move(b_return), AggregateOp::count, std::make_unique<RamRelationReference>(&edge),
+            std::make_unique<RamTupleElement>(0, 0), std::make_unique<RamTrue>(), 1);
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
@@ -342,9 +339,8 @@ TEST(RamIndexAggregate, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> a_criteria;
     a_criteria.emplace_back(new RamUndefValue);
     a_criteria.emplace_back(new RamUndefValue);
-    RamIndexAggregate a(std::move(a_return), AggregateFunction::MIN,
-            std::make_unique<RamRelationReference>(&sqrt), std::make_unique<RamTupleElement>(1, 1),
-            std::move(a_cond), std::move(a_criteria), 1);
+    RamIndexAggregate a(std::move(a_return), AggregateOp::min, std::make_unique<RamRelationReference>(&sqrt),
+            std::make_unique<RamTupleElement>(1, 1), std::move(a_cond), std::move(a_criteria), 1);
 
     std::vector<std::unique_ptr<RamExpression>> b_return_args;
     b_return_args.emplace_back(new RamTupleElement(0, 0));
@@ -354,9 +350,8 @@ TEST(RamIndexAggregate, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> b_criteria;
     b_criteria.emplace_back(new RamUndefValue);
     b_criteria.emplace_back(new RamUndefValue);
-    RamIndexAggregate b(std::move(b_return), AggregateFunction::MIN,
-            std::make_unique<RamRelationReference>(&sqrt), std::make_unique<RamTupleElement>(1, 1),
-            std::move(b_cond), std::move(b_criteria), 1);
+    RamIndexAggregate b(std::move(b_return), AggregateOp::min, std::make_unique<RamRelationReference>(&sqrt),
+            std::make_unique<RamTupleElement>(1, 1), std::move(b_cond), std::move(b_criteria), 1);
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
@@ -507,5 +502,4 @@ TEST(RamSubroutineReturnValue, CloneAndEquals) {
     EXPECT_NE(&d, f);
     delete f;
 }
-}  // end namespace test
-}  // end namespace souffle
+}  // end namespace souffle::test

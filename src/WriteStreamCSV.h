@@ -35,16 +35,10 @@ class WriteStreamCSV : public WriteStream {
 protected:
     WriteStreamCSV(
             const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStream(ioDirectives, symbolTable, recordTable), delimiter(getDelimiter(ioDirectives)){};
+            : WriteStream(ioDirectives, symbolTable, recordTable),
+              delimiter(ioDirectives.getOr("delimiter", "\t")){};
 
     const std::string delimiter;
-
-    std::string getDelimiter(const IODirectives& ioDirectives) const {
-        if (ioDirectives.has("delimiter")) {
-            return ioDirectives.get("delimiter");
-        }
-        return "\t";
-    }
 
     void writeNextTupleCSV(std::ostream& destination, const RamDomain* tuple) {
         writeNextTupleElement(destination, typeAttributes.at(0), tuple[0]);

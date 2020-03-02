@@ -39,8 +39,9 @@ class ReadStreamCSV : public ReadStream {
 public:
     ReadStreamCSV(std::istream& file, const IODirectives& ioDirectives, SymbolTable& symbolTable,
             RecordTable& recordTable)
-            : ReadStream(ioDirectives, symbolTable, recordTable), delimiter(getDelimiter(ioDirectives)),
-              file(file), lineNumber(0), inputMap(getInputColumnMap(ioDirectives, arity)) {
+            : ReadStream(ioDirectives, symbolTable, recordTable),
+              delimiter(ioDirectives.getOr("delimiter", "\t")), file(file), lineNumber(0),
+              inputMap(getInputColumnMap(ioDirectives, arity)) {
         while (inputMap.size() < arity) {
             int size = static_cast<int>(inputMap.size());
             inputMap[size] = size;
@@ -76,6 +77,7 @@ protected:
         size_t end = 0;
         size_t columnsFilled = 0;
         for (uint32_t column = 0; columnsFilled < arity; column++) {
+            size_t charactersRead = 0;
             std::string element = nextElement(line, start, end);
             if (inputMap.count(column) == 0) {
                 continue;
@@ -86,21 +88,28 @@ protected:
                 switch (typeAttributes.at(inputMap[column])[0]) {
                     case 's':
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
+                        charactersRead = element.size();
                         break;
                     case 'r':
-                        tuple[inputMap[column]] = readRecord(element, typeAttributes[inputMap[column]]);
+                        tuple[inputMap[column]] =
+                                readRecord(element, typeAttributes[inputMap[column]], 0, &charactersRead);
                         break;
                     case 'i':
-                        tuple[inputMap[column]] = RamDomainFromString(element);
+                        tuple[inputMap[column]] = RamDomainFromString(element, &charactersRead);
                         break;
                     case 'u':
-                        tuple[inputMap[column]] = ramBitCast(RamUnsignedFromString(element));
+                        tuple[inputMap[column]] = ramBitCast(readRamUnsigned(element, charactersRead));
                         break;
                     case 'f':
-                        tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element));
+                        tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element, &charactersRead));
                         break;
                     default:
                         assert(false && "Invalid type attribute");
+                }
+                // Check if everything was read.
+                if (charactersRead != element.size()) {
+                    throw std::invalid_argument(
+                            "Expected: " + delimiter + " or \\n. Got: " + element[charactersRead]);
                 }
             } catch (...) {
                 std::stringstream errorMessage;
@@ -111,6 +120,44 @@ protected:
         }
 
         return tuple;
+    }
+
+    /**
+     * Read an unsigned element. Possible bases are 2, 10, 16
+     * Base is indicated by the first two chars.
+     */
+    RamUnsigned readRamUnsigned(const std::string& element, size_t& charactersRead) {
+        // Sanity check
+        assert(element.size() > 0);
+
+        RamSigned value = 0;
+
+        // Check prefix and parse the input.
+        if (isPrefix("0b", element)) {
+            // Default C++ parsing function don't recognize this prefix. Thus we take a substr.
+            value = RamUnsignedFromString(element.substr(2), &charactersRead, 2);
+            charactersRead += 2;
+        } else if (isPrefix("0x", element)) {
+            value = RamUnsignedFromString(element, &charactersRead, 16);
+        } else {
+            value = RamUnsignedFromString(element, &charactersRead);
+        }
+        return value;
+    }
+
+    bool isPrefix(const std::string& prefix, const std::string& element) {
+        auto itPrefix = prefix.begin();
+        auto itElement = element.begin();
+
+        while (itPrefix != prefix.end() && itElement != element.end()) {
+            if (*itPrefix != *itElement) {
+                break;
+            }
+            ++itPrefix;
+            ++itElement;
+        }
+
+        return itPrefix == prefix.end();
     }
 
     std::string nextElement(const std::string& line, size_t& start, size_t& end) {
@@ -167,18 +214,8 @@ protected:
         return element;
     }
 
-    std::string getDelimiter(const IODirectives& ioDirectives) const {
-        if (ioDirectives.has("delimiter")) {
-            return ioDirectives.get("delimiter");
-        }
-        return "\t";
-    }
-
     std::map<int, int> getInputColumnMap(const IODirectives& ioDirectives, const unsigned arity_) const {
-        std::string columnString = "";
-        if (ioDirectives.has("columns")) {
-            columnString = ioDirectives.get("columns");
-        }
+        std::string columnString = ioDirectives.getOr("columns", "");
         std::map<int, int> inputColumnMap;
 
         if (!columnString.empty()) {
@@ -245,10 +282,7 @@ public:
 
 protected:
     std::string getFileName(const IODirectives& ioDirectives) const {
-        if (ioDirectives.has("filename")) {
-            return ioDirectives.get("filename");
-        }
-        return ioDirectives.getRelationName() + ".facts";
+        return ioDirectives.getOr("filename", ioDirectives.getRelationName() + ".facts");
     }
     std::string baseName;
 #ifdef USE_LIBZ

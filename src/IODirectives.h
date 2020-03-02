@@ -47,6 +47,16 @@ public:
         return directives.at(key);
     }
 
+    /**
+     * Get value at key if present, else return default.
+     */
+    const std::string& getOr(const std::string& key, const std::string& defaultValue) const {
+        if (this->has(key)) {
+            return directives.at(key);
+        }
+        return defaultValue;
+    }
+
     void set(const std::string& key, const std::string& value) {
         directives[key] = value;
     }

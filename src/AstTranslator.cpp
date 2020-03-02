@@ -147,6 +147,7 @@ std::vector<IODirective> AstTranslator::getInputIODirective(
         for (const auto& currentPair : current->getDirectives()) {
             ioDirectives.set(currentPair.first, unescape(currentPair.second));
         }
+        ioDirectives.set("operation","input"); 
         inputDirectives.push_back(ioDirectives);
     }
 
@@ -198,10 +199,13 @@ std::vector<IODirective> AstTranslator::getOutputIODirective(
             IODirective ioDirectives;
             for (const auto& currentPair : current->getDirectives()) {
                 ioDirectives.set(currentPair.first, unescape(currentPair.second));
-                if (current->getType() == AstIO::PrintsizeIO) {
-                    ioDirectives.set("IO", "stdoutprintsize");
-                }
             }
+            if (current->getType() == AstIO::PrintsizeIO) {
+               ioDirectives.set("operation", "printsize");
+               ioDirectives.set("IO", "stdoutprintsize");
+            } else {
+               ioDirectives.set("operation", "output");
+            } 
             outputDirectives.push_back(ioDirectives);
         }
     }

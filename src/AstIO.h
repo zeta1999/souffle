@@ -35,7 +35,7 @@ public:
     AstIO(const AstIO& io) : type(io.type), name(io.name), directives(io.directives) {
         this->setSrcLoc(io.getSrcLoc());
     }
-    AstIO() : type(UndefinedIO) { }
+    AstIO() : type(UndefinedIO) {}
 
     void print(std::ostream& os) const override {
         switch (type) {
@@ -104,7 +104,7 @@ public:
 
     AstIO* clone() const override {
         auto res = new AstIO();
-        res->type = type; 
+        res->type = type;
         res->name = name;
         res->directives = directives;
         res->setSrcLoc(getSrcLoc());

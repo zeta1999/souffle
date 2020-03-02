@@ -30,21 +30,27 @@ namespace souffle {
  */
 class AstIO : public AstNode {
 public:
-    enum AstIOType { InputIO, OutputIO, PrintsizeIO };
+    enum AstIOType { UndefinedIO, InputIO, OutputIO, PrintsizeIO };
 
     AstIO(const AstIO& io) : type(io.type), name(io.name), directives(io.directives) {
         this->setSrcLoc(io.getSrcLoc());
     }
-    AstIO() = default;
+    AstIO() : type(UndefinedIO) { }
 
     void print(std::ostream& os) const override {
         switch (type) {
+            case UndefinedIO:
+                os << ".undefined ";
+                break;
             case InputIO:
                 os << ".input ";
+                break;
             case OutputIO:
                 os << ".output ";
+                break;
             case PrintsizeIO:
                 os << ".printsize ";
+                break;
             default:
                 assert("Unknown I/O operation type");
         }
@@ -98,6 +104,7 @@ public:
 
     AstIO* clone() const override {
         auto res = new AstIO();
+        res->type = type; 
         res->name = name;
         res->directives = directives;
         res->setSrcLoc(getSrcLoc());

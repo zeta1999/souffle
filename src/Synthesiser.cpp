@@ -204,7 +204,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitIO(const RamIO& io, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            const auto& directive = io.getDirectives();
+            // print directives as C++ initializers
+            auto printDirectives = [&](const std::map<std::string, std::string>& registry) {
+                auto cur = registry.begin();
+                if (cur == registry.end()) {
+                    return;
+                }
+                out << "{{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
+                ++cur;
+                for (; cur != registry.end(); ++cur) {
+                    out << ",{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
+                }
+                out << '}';
+            };
+
+            const auto& directives = io.getDirectives();
             const std::string& op = io.get("operation");
             out << "if (performIO) {\n";
 
@@ -212,8 +226,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (op == "input") {
                 out << "try {";
                 out << "std::map<std::string, std::string> directiveMap(";
-                // TODO (b-scholz): printing to C++ format here
-                out << directive << ");\n";
+                printDirectives(directives);
+                out << ");\n";
                 out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
                 out << "directiveMap[\"filename\"].front() != '/') {";
                 out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
@@ -228,8 +242,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                        "'\\n';}\n";
             } else if (op == "output" || op == "printsize") {
                 out << "try {";
-                // TODO (b-scholz): printing to C++ format here
-                out << "std::map<std::string, std::string> directiveMap(" << directive << ");\n";
+                out << "std::map<std::string, std::string> directiveMap(";
+                printDirectives(directives);
+                out << ");\n";
                 out << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
                 out << "directiveMap[\"filename\"].front() != '/') {";
                 out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
@@ -2086,11 +2101,26 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
 
+    // print directives as C++ initializers
+    auto printDirectives = [&](const std::map<std::string, std::string>& registry) {
+        auto cur = registry.begin();
+        if (cur == registry.end()) {
+            return;
+        }
+        os << "{{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
+        ++cur;
+        for (; cur != registry.end(); ++cur) {
+            os << ",{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
+        }
+        os << '}';
+    };
+
     for (auto store : storeIOs) {
         auto const& directive = store->getDirectives();
         os << "try {";
-        // TODO (b-scholz): rewrite this
-        os << "std::map<std::string, std::string> directiveMap(" << directive << ");\n";
+        os << "std::map<std::string, std::string> directiveMap(";
+        printDirectives(directive);
+        os << ");\n";
         os << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
@@ -2125,7 +2155,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     for (auto load : loadIOs) {
         os << "try {";
         os << "std::map<std::string, std::string> directiveMap(";
-        os << load->getDirectives() << ");\n";
+        printDirectives(load->getDirectives());
+        os << ");\n";
         os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";

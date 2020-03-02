@@ -1126,7 +1126,8 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         if (directives.find("IO") == directives.end()) {
                             io->addKVP("IO", "file");
                         }
-                        if (directives.at("IO") == "file" && directives.find("filename") == directives.end()) {
+                        if (directives.at("IO") == "file" &&
+                                directives.find("filename") == directives.end()) {
                             io->addKVP("filename", originalName.getQualifiers()[0] + ".facts");
                         }
                     }

@@ -118,7 +118,7 @@ public:
         return constant;
     }
 
-    virtual void print(std::ostream& os) const override {
+    void print(std::ostream& os) const override {
         os << getConstant();
     }
 

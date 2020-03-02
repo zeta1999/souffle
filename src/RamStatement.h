@@ -107,8 +107,11 @@ public:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
-        os << "IO " << rel.getName() << " " << directives << "\n";
-        os << std::endl;
+        os << "IO " << rel.getName() << " (";
+        os << join(directives, ",", [](std::ostream& out, const auto& arg) {
+            out << arg.first << "=\"" << escape(arg.second) << "\"";
+        });
+        os << ")" << std::endl;
     };
 
     RamIO* clone() const override {

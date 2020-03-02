@@ -27,7 +27,7 @@ namespace test {
 TEST(RamIO1, CloneAndEquals) {
     // LOAD DATA FOR A FROM {...}
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    IODirective ioEmpty;
+    std::map<std::string, std::string> ioEmpty;
     RamIO a(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
     RamIO b(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
     EXPECT_EQ(a, b);
@@ -42,7 +42,7 @@ TEST(RamIO1, CloneAndEquals) {
 TEST(RamIO2, CloneAndEquals) {
     // STORE DATA FOR A TO {...}
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    IODirective ioEmpty;
+    std::map<std::string, std::string> ioEmpty;
     RamIO a(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
     RamIO b(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
     EXPECT_EQ(a, b);
@@ -193,8 +193,8 @@ TEST(RamSequence, CloneAndEquals) {
     // multiple statements in the sequence
     // LOAD DATA FOR A FROM {}
     // CLEAR A
-    IODirective g_load_IODir;
-    IODirective h_load_IODir;
+    std::map<std::string, std::string> g_load_IODir;
+    std::map<std::string, std::string> h_load_IODir;
     RamSequence g(
             std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(g_load_IODir)),
             std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
@@ -325,8 +325,8 @@ TEST(RamLogRelationTimer, CloneAndEquals) {
      *   LOAD DATA FOR A FROM {}
      * END_TIMER
      * */
-    IODirective a_IODir;
-    IODirective b_IODir;
+    std::map<std::string, std::string> a_IODir;
+    std::map<std::string, std::string> b_IODir;
     RamLogRelationTimer a(
             std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
             "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
@@ -349,8 +349,8 @@ TEST(RamLogTimer, CloneAndEquals) {
      *   LOAD DATA FOR A FROM {}
      * END_TIMER
      * */
-    IODirective a_IODir;
-    IODirective b_IODir;
+    std::map<std::string, std::string> a_IODir;
+    std::map<std::string, std::string> b_IODir;
     RamLogTimer a(std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
             "@runtime");
     RamLogTimer b(std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),

@@ -104,7 +104,7 @@ public:
 
     AstIO* clone() const override {
         auto res = new AstIO();
-        res->type = type; 
+        res->type = type;
         res->name = name;
         res->directives = directives;
         res->setSrcLoc(getSrcLoc());

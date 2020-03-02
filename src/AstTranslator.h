@@ -300,7 +300,7 @@ private:
         return toString(join(id.getQualifiers(), "."));
     }
 
-    void makeIODirective(std::map<std::string, std::string>& ioDirective, const AstRelation* rel,
+    void makeIODirective(std::map<std::string, std::string>& directives, const AstRelation* rel,
             const std::string& filePath, const std::string& fileExt);
 
     std::vector<std::map<std::string, std::string>> getInputIODirective(const AstRelation* rel,

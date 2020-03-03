@@ -54,30 +54,18 @@ std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation&
 }
 
 AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name) {
-    for (AstRelation* rel : program.getRelations()) {
-        if (rel->getQualifiedName() == name) {
-            return rel;
-        }
-    }
-    return nullptr;
+    return getIf<AstRelation>(
+            program.getRelations(), [&](const AstRelation* r) { return r->getQualifiedName() == name; });
 }
 
 const AstType* getType(const AstProgram& program, const AstQualifiedName& name) {
-    for (const AstType* type : program.getTypes()) {
-        if (type->getQualifiedName() == name) {
-            return type;
-        }
-    }
-    return nullptr;
+    return getIf<AstType>(
+            program.getTypes(), [&](const AstType* t) { return t->getQualifiedName() == name; });
 }
 
 const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, const std::string& name) {
-    for (const AstFunctorDeclaration* f : program.getFunctorDeclarations()) {
-        if (f->getName() == name) {
-            return f;
-        }
-    }
-    return nullptr;
+    return getIf<AstFunctorDeclaration>(program.getFunctorDeclarations(),
+            [&](const AstFunctorDeclaration* f) { return f->getName() == name; });
 }
 
 std::vector<AstClause*> getOrphanClauses(const AstProgram& program) {

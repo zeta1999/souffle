@@ -166,29 +166,26 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     });
 
     // all signed constants are used as numbers
-    visitDepthFirst(nodes, [&](const AstNumberConstant& constant) {
+    visitDepthFirst(nodes, [&](const AstNumericConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        if (!isNumberType(types)) {
-            report.addError("Number constant (type mismatch)", constant.getSrcLoc());
+        switch (constant.getType()) {
+            case AstNumericConstant::Type::Int:
+                if (!isNumberType(types)) {
+                    report.addError("Number constant (type mismatch)", constant.getSrcLoc());
+                }
+                break;
+            case AstNumericConstant::Type::Uint:
+                if (!isUnsignedType(types)) {
+                    report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
+                }
+                break;
+            case AstNumericConstant::Type::Float:
+                if (!isFloatType(types)) {
+                    report.addError("Float constant (type mismatch)", constant.getSrcLoc());
+                }
+                break;
         }
     });
-
-    // all float constants are used as floats
-    visitDepthFirst(nodes, [&](const AstFloatConstant& constant) {
-        TypeSet types = typeAnalysis.getTypes(&constant);
-        if (!isFloatType(types)) {
-            report.addError("Float constant (type mismatch)", constant.getSrcLoc());
-        }
-    });
-
-    // all unsigned constants are used as unsigned
-    visitDepthFirst(nodes, [&](const AstUnsignedConstant& constant) {
-        TypeSet types = typeAnalysis.getTypes(&constant);
-        if (!isUnsignedType(types)) {
-            report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
-        }
-    });
-
     // all nil constants are used as records
     visitDepthFirst(nodes, [&](const AstNilConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
@@ -522,13 +519,7 @@ void AstSemanticChecker::checkArgument(
 }
 
 static bool isConstantArithExpr(const AstArgument& argument) {
-    if (dynamic_cast<const AstNumberConstant*>(&argument) != nullptr) {
-        return true;
-    }
-    if (dynamic_cast<const AstFloatConstant*>(&argument) != nullptr) {
-        return true;
-    }
-    if (dynamic_cast<const AstUnsignedConstant*>(&argument) != nullptr) {
+    if (dynamic_cast<const AstNumericConstant*>(&argument) != nullptr) {
         return true;
     }
     if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {

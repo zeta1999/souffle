@@ -232,11 +232,7 @@ bool isValidPermutation(
                 }
             } else if (castEq<AstStringConstant>(leftArg, rightArg)) {
                 validMapping = true;
-            } else if (castEq<AstFloatConstant>(leftArg, rightArg)) {
-                validMapping = true;
-            } else if (castEq<AstUnsignedConstant>(leftArg, rightArg)) {
-                validMapping = true;
-            } else if (castEq<AstNumberConstant>(leftArg, rightArg)) {
+            } else if (castEq<AstNumericConstant>(leftArg, rightArg)) {
                 validMapping = true;
             } else if (dynamic_cast<AstNilConstant*>(leftArg) != nullptr) {
                 validMapping = dynamic_cast<AstNilConstant*>(rightArg) != nullptr;

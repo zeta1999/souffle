@@ -111,17 +111,17 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
     // partition unions into numeric or symbolic types
     Graph<AstQualifiedName> typeDependencyGraph;
     for (const auto& cur : program.getTypes()) {
-        if (auto t = dynamic_cast<const AstPrimitiveType*>(cur)) {
-            if (t->isNumeric()) {
-                typeDependencyGraph.insert(t->getQualifiedName(), "number");
+        if (auto type = dynamic_cast<const AstPrimitiveType*>(cur)) {
+            if (type->isNumeric()) {
+                typeDependencyGraph.insert(type->getQualifiedName(), "number");
             } else {
-                typeDependencyGraph.insert(t->getQualifiedName(), "symbol");
+                typeDependencyGraph.insert(type->getQualifiedName(), "symbol");
             }
         } else if (dynamic_cast<const AstRecordType*>(cur) != nullptr) {
             // do nothing
-        } else if (auto t = dynamic_cast<const AstUnionType*>(cur)) {
-            for (const auto& subtype : t->getTypes()) {
-                typeDependencyGraph.insert(t->getQualifiedName(), subtype);
+        } else if (auto type = dynamic_cast<const AstUnionType*>(cur)) {
+            for (const auto& subtype : type->getTypes()) {
+                typeDependencyGraph.insert(type->getQualifiedName(), subtype);
             }
         } else {
             std::cout << "Unsupported type construct: " << typeid(cur).name() << "\n";

@@ -281,20 +281,19 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             return std::make_unique<RamUndefValue>();
         }
 
-        std::unique_ptr<RamExpression> visitUnsignedConstant(const AstUnsignedConstant& c) override {
-            return std::make_unique<RamUnsignedConstant>(c.getValue());
-        }
-
-        std::unique_ptr<RamExpression> visitFloatConstant(const AstFloatConstant& c) override {
-            return std::make_unique<RamFloatConstant>(c.getValue());
-        }
-
-        std::unique_ptr<RamExpression> visitNumberConstant(const AstNumberConstant& c) override {
-            return std::make_unique<RamSignedConstant>(c.getValue());
+        std::unique_ptr<RamExpression> visitNumericConstant(const AstNumericConstant& c) override {
+            switch (c.getType()) {
+                case AstNumericConstant::Type::Int:
+                    return std::make_unique<RamSignedConstant>(RamDomainFromString(c.getConstant()));
+                case AstNumericConstant::Type::Uint:
+                    return std::make_unique<RamUnsignedConstant>(RamUnsignedFromString(c.getConstant()));
+                case AstNumericConstant::Type::Float:
+                    return std::make_unique<RamFloatConstant>(RamFloatFromString(c.getConstant()));
+            }
         }
 
         std::unique_ptr<RamExpression> visitStringConstant(const AstStringConstant& c) override {
-            return std::make_unique<RamSignedConstant>(translator.getSymbolTable().lookup(c.getValue()));
+            return std::make_unique<RamSignedConstant>(translator.getSymbolTable().lookup(c.getConstant()));
         }
 
         std::unique_ptr<RamExpression> visitNilConstant(const AstNilConstant&) override {

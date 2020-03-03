@@ -412,18 +412,18 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         }
 
         // int
-        void visitNumberConstant(const AstNumberConstant& constant) override {
-            addConstraint(isSubtypeOf(getVar(constant), env.getNumberType()));
-        }
-
-        // float
-        void visitFloatConstant(const AstFloatConstant& constant) override {
-            addConstraint(isSubtypeOf(getVar(constant), env.getFloatType()));
-        }
-
-        // unsigned
-        void visitUnsignedConstant(const AstUnsignedConstant& constant) override {
-            addConstraint(isSubtypeOf(getVar(constant), env.getUnsignedType()));
+        void visitNumericConstant(const AstNumericConstant& constant) override {
+            switch (constant.getType()) {
+                case AstNumericConstant::Type::Int:
+                    addConstraint(isSubtypeOf(getVar(constant), env.getNumberType()));
+                    break;
+                case AstNumericConstant::Type::Uint:
+                    addConstraint(isSubtypeOf(getVar(constant), env.getUnsignedType()));
+                    break;
+                case AstNumericConstant::Type::Float:
+                    addConstraint(isSubtypeOf(getVar(constant), env.getFloatType()));
+                    break;
+            }
         }
 
         // binary constraint

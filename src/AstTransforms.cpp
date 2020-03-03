@@ -553,13 +553,15 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                         // Empty aggregator body!
                         // Not currently handled, so add in a false literal in the body
                         // E.g. max x : { } =becomes=> max 1 : {0 = 1}
-                        replacementAggregator->setTargetExpression(std::make_unique<AstNumberConstant>(1));
+                        replacementAggregator->setTargetExpression(
+                                std::make_unique<AstNumericConstant>(std::string("1")));
 
                         // Add '0 = 1' if false was found, '1 = 1' otherwise
                         int lhsConstant = containsFalse ? 0 : 1;
-                        replacementAggregator->addBodyLiteral(std::make_unique<AstBinaryConstraint>(
-                                BinaryConstraintOp::EQ, std::make_unique<AstNumberConstant>(lhsConstant),
-                                std::make_unique<AstNumberConstant>(1)));
+                        replacementAggregator->addBodyLiteral(
+                                std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                                        std::make_unique<AstNumericConstant>(std::to_string(lhsConstant)),
+                                        std::make_unique<AstNumericConstant>(std::string("1"))));
                     }
 
                     return replacementAggregator;
@@ -1067,7 +1069,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
             if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
                 if (agg->getOperator() == AggregateOp::sum) {
                     if (const auto* constant =
-                                    dynamic_cast<const AstNumberConstant*>(agg->getTargetExpression())) {
+                                    dynamic_cast<const AstNumericConstant*>(agg->getTargetExpression())) {
                         changed = true;
                         // Then construct the new thing to replace it with
                         auto count = std::make_unique<AstAggregator>(AggregateOp::count);
@@ -1075,7 +1077,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
                         for (const auto& lit : agg->getBodyLiterals()) {
                             count->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));
                         }
-                        auto number = std::unique_ptr<AstNumberConstant>(constant->clone());
+                        auto number = std::unique_ptr<AstNumericConstant>(constant->clone());
                         // Now it's constant * count : { ... }
                         auto result = std::make_unique<AstIntrinsicFunctor>(
                                 FunctorOp::MUL, std::move(number), std::move(count));
@@ -1133,7 +1135,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                std::string constantValue = stringConstant->getValue();
+                std::string constantValue = stringConstant->getConstant();
                 std::stringstream newVariableName;
                 newVariableName << boundPrefix << changeCount << "_" << constantValue << "_s";
 
@@ -1145,14 +1147,13 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
 
                 // update constant to be the variable created
                 return newVariable;
-            } else if (auto* numberConstant = dynamic_cast<AstNumberConstant*>(node.get())) {
+            } else if (auto* numberConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
                 // number constant found
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                RamDomain constantValue = numberConstant->getValue();
                 std::stringstream newVariableName;
-                newVariableName << boundPrefix << changeCount << "_" << constantValue << "_n";
+                newVariableName << boundPrefix << changeCount << "_" << numberConstant->getConstant() << "_n";
 
                 // create new constraint (+abdulX = constant)
                 auto newVariable = std::make_unique<AstVariable>(newVariableName.str());

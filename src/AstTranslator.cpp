@@ -289,6 +289,8 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
                     return std::make_unique<RamUnsignedConstant>(RamUnsignedFromString(c.getConstant()));
                 case AstNumericConstant::Type::Float:
                     return std::make_unique<RamFloatConstant>(RamFloatFromString(c.getConstant()));
+                default:
+                    assert(false && "unexpected numeric constant type");
             }
         }
 

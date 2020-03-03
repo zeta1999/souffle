@@ -112,6 +112,21 @@ public:
 class AstConstant : public AstArgument {
 public:
     AstConstant* clone() const override = 0;
+
+    /** @return String representation of Constant */
+    const std::string& getConstant() const {
+        return constant;
+    }
+
+    void print(std::ostream& os) const override {
+        os << getConstant();
+    }
+
+protected:
+    AstConstant(std::string value) : constant(std::move(value)){};
+
+private:
+    const std::string constant;
 };
 
 /**
@@ -119,91 +134,71 @@ public:
  */
 class AstStringConstant : public AstConstant {
 public:
-    explicit AstStringConstant(std::string value) : value(std::move(value)) {}
+    explicit AstStringConstant(std::string value) : AstConstant(std::move(value)) {}
 
     void print(std::ostream& os) const override {
-        os << "\"" << value << "\"";
-    }
-
-    /** @return String representation of this Constant */
-    const std::string& getValue() const {
-        return value;
+        os << "\"" << getConstant() << "\"";
     }
 
     AstStringConstant* clone() const override {
-        auto* res = new AstStringConstant(value);
+        auto* res = new AstStringConstant(getConstant());
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
     bool operator==(const AstStringConstant& other) const {
-        return getValue() == other.getValue();
+        return getConstant() == other.getConstant();
     }
 
 protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstStringConstant*>(&node));
         const auto& other = static_cast<const AstStringConstant&>(node);
-        return getValue() == other.getValue();
+        return getConstant() == other.getConstant();
     }
-
-private:
-    const std::string value;
 };
 
 /**
  * Numeric Constant
  */
-template <typename NumericType>  // NumericType ⲉ {RamSigned, RamUnsigned, RamFloat}
 class AstNumericConstant : public AstConstant {
 public:
-    explicit AstNumericConstant(NumericType value) : value(value) {}
+    enum class Type { Int, Uint, Float };
 
-    void print(std::ostream& os) const override {
-        os << value;
-    }
+    AstNumericConstant(std::string constant, Type type = Type::Int)
+            : AstConstant(std::move(constant)), type(type) {}
 
-    /** Get the value of the constant. */
-    NumericType getValue() const {
-        return value;
-    }
-
-    AstNumericConstant<NumericType>* clone() const override {
-        auto* copy = new AstNumericConstant<NumericType>(value);
+    AstNumericConstant* clone() const override {
+        auto* copy = new AstNumericConstant(getConstant(), type);
         copy->setSrcLoc(getSrcLoc());
         return copy;
     }
 
-    bool operator==(const AstNumericConstant<NumericType>& other) const {
-        return getValue() == other.getValue();
+    Type getType() const {
+        return type;
+    }
+
+    bool operator==(const AstNumericConstant& other) const {
+        return type == other.type && getConstant() == other.getConstant();
     }
 
 protected:
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstNumericConstant<NumericType>*>(&node));
-        const auto& other = static_cast<const AstNumericConstant<NumericType>&>(node);
-        return value == other.value;
+        assert(nullptr != dynamic_cast<const AstNumericConstant*>(&node));
+        const auto& other = static_cast<const AstNumericConstant&>(node);
+        return getConstant() == other.getConstant() && type == other.type;
     }
 
 private:
-    const NumericType value;
+    const Type type;
 };
-
-// This definitions are used by AstVisitor.
-using AstNumberConstant = AstNumericConstant<RamSigned>;
-using AstFloatConstant = AstNumericConstant<RamFloat>;
-using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
 
 /**
  * Nil Constant
  */
 class AstNilConstant : public AstConstant {
 public:
-    AstNilConstant() = default;
-
-    void print(std::ostream& os) const override {
-        os << "nil";
-    }
+    AstNilConstant() : AstConstant("nil"){};
 
     AstNilConstant* clone() const override {
         auto* res = new AstNilConstant();

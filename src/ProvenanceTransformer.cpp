@@ -78,8 +78,9 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     auto infoClauseHead = new AstAtom();
     infoClauseHead->setQualifiedName(name);
 
+    // (darth_tytus): Can this be unsigned?
     infoRelation->addAttribute(std::make_unique<AstAttribute>("clause_num", AstQualifiedName("number")));
-    infoClauseHead->addArgument(std::make_unique<AstNumberConstant>(originalClauseNum));
+    infoClauseHead->addArgument(std::make_unique<AstNumericConstant>(std::to_string(originalClauseNum)));
 
     // add head relation as meta info
     std::vector<std::string> headVariables;
@@ -252,12 +253,13 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
     // get next level number
     auto getNextLevelNumber = [&](std::vector<AstArgument*> levels) {
         if (levels.empty()) {
-            return static_cast<AstArgument*>(new AstNumberConstant(0));
+            return static_cast<AstArgument*>(new AstNumericConstant("0"));
         }
 
         if (levels.size() == 1) {
-            return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
-                    std::unique_ptr<AstArgument>(levels[0]), std::make_unique<AstNumberConstant>(1)));
+            return static_cast<AstArgument*>(
+                    new AstIntrinsicFunctor(FunctorOp::ADD, std::unique_ptr<AstArgument>(levels[0]),
+                            std::make_unique<AstNumericConstant>(std::string("1"))));
         }
 
         auto currentMax = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>(levels[0]),
@@ -268,8 +270,9 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                     std::unique_ptr<AstArgument>(levels[i]));
         }
 
-        return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
-                std::unique_ptr<AstArgument>(currentMax), std::make_unique<AstNumberConstant>(1)));
+        return static_cast<AstArgument*>(
+                new AstIntrinsicFunctor(FunctorOp::ADD, std::unique_ptr<AstArgument>(currentMax),
+                        std::make_unique<AstNumericConstant>(std::string("1"))));
     };
 
     for (auto relation : program->getRelations()) {
@@ -336,9 +339,9 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
 
             // if fact, level number is 0
             if (isFact(*clause)) {
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
+                clause->getHead()->addArgument(std::make_unique<AstNumericConstant>(std::string("0")));
                 for (size_t i = 0; i < auxArityAnalysis.getArity(relation) - 1; i++) {
-                    clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
+                    clause->getHead()->addArgument(std::make_unique<AstNumericConstant>(std::string("0")));
                 }
             } else {
                 std::vector<AstArgument*> bodyLevels;
@@ -365,7 +368,8 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
 
                 // add provenance columns to head lit
                 // rule number
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(clauseNum));
+                clause->getHead()->addArgument(
+                        std::make_unique<AstNumericConstant>(std::to_string(clauseNum)));
                 // max level
                 clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
                 // level numbers
@@ -375,7 +379,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                             std::make_unique<AstVariable>("@level_number_" + std::to_string(j)));
                 }
                 for (size_t j = numAtoms; j < auxArityAnalysis.getArity(relation) - 2; j++) {
-                    clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(-1));
+                    clause->getHead()->addArgument(std::make_unique<AstNumericConstant>(std::string("-1")));
                 }
             }
         }
@@ -389,12 +393,13 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
     // get next level number
     auto getNextLevelNumber = [&](std::vector<AstArgument*> levels) {
         if (levels.empty()) {
-            return static_cast<AstArgument*>(new AstNumberConstant(0));
+            return static_cast<AstArgument*>(new AstNumericConstant("0"));
         }
 
         if (levels.size() == 1) {
-            return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
-                    std::unique_ptr<AstArgument>(levels[0]), std::make_unique<AstNumberConstant>(1)));
+            return static_cast<AstArgument*>(
+                    new AstIntrinsicFunctor(FunctorOp::ADD, std::unique_ptr<AstArgument>(levels[0]),
+                            std::make_unique<AstNumericConstant>(std::string("1"))));
         }
 
         auto currentMax = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>(levels[0]),
@@ -405,8 +410,9 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
                     std::unique_ptr<AstArgument>(levels[i]));
         }
 
-        return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
-                std::unique_ptr<AstArgument>(currentMax), std::make_unique<AstNumberConstant>(1)));
+        return static_cast<AstArgument*>(
+                new AstIntrinsicFunctor(FunctorOp::ADD, std::unique_ptr<AstArgument>(currentMax),
+                        std::make_unique<AstNumericConstant>(std::string("1"))));
     };
 
     for (auto relation : program->getRelations()) {
@@ -462,8 +468,8 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
 
             // if fact, level number is 0
             if (isFact(*clause)) {
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(0));
+                clause->getHead()->addArgument(std::make_unique<AstNumericConstant>(std::string("0")));
+                clause->getHead()->addArgument(std::make_unique<AstNumericConstant>(std::string("0")));
             } else {
                 std::vector<AstArgument*> bodyLevels;
 
@@ -482,7 +488,8 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
                 }
 
                 // add two provenance columns to head lit
-                clause->getHead()->addArgument(std::make_unique<AstNumberConstant>(clauseNum));
+                clause->getHead()->addArgument(
+                        std::make_unique<AstNumericConstant>(std::to_string(clauseNum)));
                 clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
             }
         }

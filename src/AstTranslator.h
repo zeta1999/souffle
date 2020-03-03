@@ -399,18 +399,21 @@ private:
      */
     RamDomain getConstantRamRepresentation(const AstConstant& constant) {
         if (auto strConstant = dynamic_cast<const AstStringConstant*>(&constant)) {
-            return getSymbolTable().lookup(strConstant->getValue());
+            return getSymbolTable().lookup(strConstant->getConstant());
         } else if (dynamic_cast<const AstNilConstant*>(&constant) != nullptr) {
             return RecordTable::getNil();
-        } else if (auto numConstant = dynamic_cast<const AstNumberConstant*>(&constant)) {
-            return numConstant->getValue();
-        } else if (auto floatConstant = dynamic_cast<const AstFloatConstant*>(&constant)) {
-            return floatConstant->getValue();
-        } else if (auto unsignedConstant = dynamic_cast<const AstUnsignedConstant*>(&constant)) {
-            return unsignedConstant->getValue();
-        } else {
-            assert(false && "Unaccounted-for constant");
+        } else if (auto* numConstant = dynamic_cast<const AstNumericConstant*>(&constant)) {
+            switch (numConstant->getType()) {
+                case AstNumericConstant::Type::Int:
+                    return RamDomainFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Uint:
+                    return RamUnsignedFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Float:
+                    return RamFloatFromString(numConstant->getConstant());
+            }
         }
+
+        assert(false && "Unaccounted-for constant");
     }
 
     /**

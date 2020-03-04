@@ -17,6 +17,7 @@
 
 #include "AstTransformer.h"
 #include "DebugReport.h"
+#include "Util.h"
 
 #include <memory>
 #include <set>
@@ -65,14 +66,33 @@ public:
      * @param id the unique id of the generated section
      * @param title the text to display as the heading of the section
      */
-    static void generateDebugReport(
-            AstTranslationUnit& translationUnit, const std::string& id, std::string title);
+    static void generateDebugReport(AstTranslationUnit& translationUnit,
+            const std::string& preTransformDatalog, const std::string& id, std::string title);
+
+    /**
+     * Generate a full-content diff between two sources.
+     * Both arguments are passed into a `std::ostream` so you may exploit stream implementations.
+     */
+    template <typename A, typename B>
+    static std::string generateDiff(const A& prev, const B& curr) {
+        TempFileStream in_prev;
+        TempFileStream in_curr;
+        in_prev << prev;
+        in_curr << curr;
+        in_prev.flush();
+        in_curr.flush();
+        std::string diff_cmd =
+                "diff --new-line-format='+%L' "
+                "     --old-line-format='-%L' "
+                "     --unchanged-line-format=' %L' ";
+        return execStdOut(diff_cmd + in_prev.getFileName() + " " + in_curr.getFileName()).str();
+    }
 
     /**
      * Generated a debug report section for a dot graph specification, with the given id and title.
      */
     static DebugReportSection getDotGraphSection(
-            const std::string& id, std::string title, const std::string& dotSpec);
+            std::string id, std::string title, const std::string& dotSpec);
 
 private:
     std::unique_ptr<AstTransformer> wrappedTransformer;

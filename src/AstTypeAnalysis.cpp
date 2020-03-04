@@ -143,7 +143,7 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
 }
 
 /**
- * Force types to be of the same base type.
+ * Ensure that types of left and right have the same base types.
  */
 TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& right) {
     struct C : public Constraint<TypeVar> {
@@ -188,18 +188,17 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
                 }
             }
 
-            // Calculate intersection.
             baseTypes = TypeSet::intersection(baseTypesLeft, baseTypesRight);
 
             TypeSet resultLeft;
             TypeSet resultRight;
 
-            // Handle top
+            // Handle all
             if (assigmentsLeft.isAll() && assigmentsRight.isAll()) {
                 return false;
             }
 
-            // If left xor right is top, assign base types of the other side as possible values.
+            // If left xor right is all, assign base types of the other side as possible values.
             if (assigmentsLeft.isAll()) {
                 assigmentsLeft = baseTypesRight;
                 return true;

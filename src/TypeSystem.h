@@ -89,7 +89,7 @@ private:
 };
 
 /**
- * A special, internal type for the predefined symbolic and numeric types.
+ * PredefinedType = Number/Unsigned/Float/Symbol
  */
 struct PredefinedType : public Type {
     PredefinedType(const TypeEnvironment& environment, const AstQualifiedName& name)

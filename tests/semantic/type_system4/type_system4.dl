@@ -9,7 +9,7 @@
 //
 // This test checks that legacy code is handled correctly (#1296).
 // In the previous version of souffle the following was a valid program.
-// To not break users projects, we want the only issue warning for now. 
+// To not break users projects, we want to only issue warning for now.
 //
 
 

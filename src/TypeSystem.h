@@ -233,6 +233,25 @@ public:
         types.insert(&type);
     }
 
+    /** Calculate intersection of two TypeSet */
+    static TypeSet intersection(const TypeSet& left, const TypeSet& right) {
+        TypeSet result;
+
+        if (left.isAll()) {
+            return right;
+        } else if (right.isAll()) {
+            return left;
+        }
+
+        for (const auto& element : left) {
+            if (right.contains(element)) {
+                result.insert(element);
+            }
+        }
+
+        return result;
+    }
+
     /** Inserts all the types of the given set into this set */
     void insert(const TypeSet& set) {
         if (all) {

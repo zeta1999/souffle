@@ -36,7 +36,6 @@
 #include <cassert>
 #include <map>
 #include <memory>
-#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -190,11 +189,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             }
 
             // Calculate intersection.
-            for (const auto& type : baseTypesLeft) {
-                if (baseTypesRight.contains(type)) {
-                    baseTypes.insert(type);
-                }
-            }
+            baseTypes = TypeSet::intersection(baseTypesLeft, baseTypesRight);
 
             TypeSet resultLeft;
             TypeSet resultRight;
@@ -216,17 +211,17 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
 
             // Allow types if they are subtypes of any of the common base types.
             for (const Type& type : assigmentsLeft) {
-                bool valid = any_of(baseTypes.begin(), baseTypes.end(),
+                bool isSubtypeOfCommonBaseType = any_of(baseTypes.begin(), baseTypes.end(),
                         [&type](const Type& baseType) { return isSubtypeOf(type, baseType); });
-                if (valid) {
+                if (isSubtypeOfCommonBaseType) {
                     resultLeft.insert(type);
                 }
             }
 
             for (const Type& type : assigmentsRight) {
-                bool valid = any_of(baseTypes.begin(), baseTypes.end(),
+                bool isSubtypeOfCommonBaseType = any_of(baseTypes.begin(), baseTypes.end(),
                         [&type](const Type& baseType) { return isSubtypeOf(type, baseType); });
-                if (valid) {
+                if (isSubtypeOfCommonBaseType) {
                     resultRight.insert(type);
                 }
             }

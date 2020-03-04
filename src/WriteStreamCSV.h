@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "IODirective.h"
+#include "RWOperation.h"
 #include "ParallelUtils.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
@@ -34,9 +34,9 @@ namespace souffle {
 class WriteStreamCSV : public WriteStream {
 protected:
     WriteStreamCSV(
-            const IODirective& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStream(ioDirectives, symbolTable, recordTable),
-              delimiter(ioDirectives.getOr("delimiter", "\t")){};
+            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            : WriteStream(rwOperation, symbolTable, recordTable),
+              delimiter(rwOperation.getOr("delimiter", "\t")){};
 
     const std::string delimiter;
 
@@ -77,11 +77,11 @@ protected:
 class WriteFileCSV : public WriteStreamCSV {
 public:
     WriteFileCSV(
-            const IODirective& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStreamCSV(ioDirectives, symbolTable, recordTable),
-              file(ioDirectives.get("filename"), std::ios::out | std::ios::binary) {
-        if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
-            file << ioDirectives.get("attributeNames") << std::endl;
+            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            : WriteStreamCSV(rwOperation, symbolTable, recordTable),
+              file(rwOperation.get("filename"), std::ios::out | std::ios::binary) {
+        if (rwOperation.has("headers") && rwOperation.get("headers") == "true") {
+            file << rwOperation.get("attributeNames") << std::endl;
         }
     }
 
@@ -103,11 +103,11 @@ protected:
 class WriteGZipFileCSV : public WriteStreamCSV {
 public:
     WriteGZipFileCSV(
-            const IODirective& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStreamCSV(ioDirectives, symbolTable, recordTable),
-              file(ioDirectives.get("filename"), std::ios::out | std::ios::binary) {
-        if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
-            file << ioDirectives.get("attributeNames") << std::endl;
+            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            : WriteStreamCSV(rwOperation, symbolTable, recordTable),
+              file(rwOperation.get("filename"), std::ios::out | std::ios::binary) {
+        if (rwOperation.has("headers") && rwOperation.get("headers") == "true") {
+            file << rwOperation.get("attributeNames") << std::endl;
         }
     }
 
@@ -129,11 +129,11 @@ protected:
 class WriteCoutCSV : public WriteStreamCSV {
 public:
     WriteCoutCSV(
-            const IODirective& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStreamCSV(ioDirectives, symbolTable, recordTable) {
-        std::cout << "---------------\n" << ioDirectives.get("name");
-        if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
-            std::cout << "\n" << ioDirectives.get("attributeNames");
+            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            : WriteStreamCSV(rwOperation, symbolTable, recordTable) {
+        std::cout << "---------------\n" << rwOperation.get("name");
+        if (rwOperation.has("headers") && rwOperation.get("headers") == "true") {
+            std::cout << "\n" << rwOperation.get("attributeNames");
         }
         std::cout << "\n===============\n";
     }
@@ -154,9 +154,9 @@ protected:
 
 class WriteCoutPrintSize : public WriteStream {
 public:
-    explicit WriteCoutPrintSize(const IODirective& ioDirectives)
-            : WriteStream(ioDirectives, {}, {}), lease(souffle::getOutputLock().acquire()) {
-        std::cout << ioDirectives.get("name") << "\t";
+    explicit WriteCoutPrintSize(const RWOperation& rwOperation)
+            : WriteStream(rwOperation, {}, {}), lease(souffle::getOutputLock().acquire()) {
+        std::cout << rwOperation.get("name") << "\t";
     }
 
     ~WriteCoutPrintSize() override = default;
@@ -179,14 +179,14 @@ protected:
 
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const IODirective& ioDirectives, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const RWOperation& rwOperation, const SymbolTable& symbolTable,
             const RecordTable& recordTable) override {
 #ifdef USE_LIBZ
-        if (ioDirectives.has("compress")) {
-            return std::make_unique<WriteGZipFileCSV>(ioDirectives, symbolTable, recordTable);
+        if (rwOperation.has("compress")) {
+            return std::make_unique<WriteGZipFileCSV>(rwOperation, symbolTable, recordTable);
         }
 #endif
-        return std::make_unique<WriteFileCSV>(ioDirectives, symbolTable, recordTable);
+        return std::make_unique<WriteFileCSV>(rwOperation, symbolTable, recordTable);
     }
     const std::string& getName() const override {
         static const std::string name = "file";
@@ -197,9 +197,9 @@ public:
 
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const IODirective& ioDirectives, const SymbolTable& symbolTable,
+    std::unique_ptr<WriteStream> getWriter(const RWOperation& rwOperation, const SymbolTable& symbolTable,
             const RecordTable& recordTable) override {
-        return std::make_unique<WriteCoutCSV>(ioDirectives, symbolTable, recordTable);
+        return std::make_unique<WriteCoutCSV>(rwOperation, symbolTable, recordTable);
     }
 
     const std::string& getName() const override {
@@ -212,8 +212,8 @@ public:
 class WriteCoutPrintSizeFactory : public WriteStreamFactory {
 public:
     std::unique_ptr<WriteStream> getWriter(
-            const IODirective& ioDirectives, const SymbolTable&, const RecordTable&) override {
-        return std::make_unique<WriteCoutPrintSize>(ioDirectives);
+            const RWOperation& rwOperation, const SymbolTable&, const RecordTable&) override {
+        return std::make_unique<WriteCoutPrintSize>(rwOperation);
     }
     const std::string& getName() const override {
         static const std::string name = "stdoutprintsize";

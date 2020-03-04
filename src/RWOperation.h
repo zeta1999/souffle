@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file IODirective.h
+ * @file RWOperation.h
  *
  * Declaration of the I/O directive class
  *
@@ -24,21 +24,21 @@
 namespace souffle {
 
 /**
- * @class IODirective
+ * @class RWOperation
  * @brief An IO directive is a registry describing a single I/O operation;
  *        the registry contains key/value pairs describing the nature of the
  *        I/O operation.
  *
  */
-class IODirective {
+class RWOperation {
 public:
-    IODirective() = default;
-    IODirective(const std::map<std::string, std::string>& directiveMap) {
+    RWOperation() = default;
+    RWOperation(const std::map<std::string, std::string>& directiveMap) {
         for (const auto& pair : directiveMap) {
             registry[pair.first] = pair.second;
         }
     }
-    virtual ~IODirective() = default;
+    virtual ~RWOperation() = default;
 
     /**
      * @brief check whether registry is empty
@@ -81,34 +81,7 @@ public:
         return registry.count(key) > 0;
     }
 
-    friend std::ostream& operator<<(std::ostream& out, const IODirective& ioDirective) {
-        ioDirective.print(out);
-        return out;
-    }
-
-    bool operator==(const IODirective& other) const {
-        return registry == other.registry;
-    }
-
-    bool operator!=(const IODirective& other) const {
-        return registry != other.registry;
-    }
-
 protected:
-    // TODO (b-scholz): clumsy printing / use join
-    void print(std::ostream& out) const {
-        auto cur = registry.begin();
-        if (cur == registry.end()) {
-            return;
-        }
-        out << "{{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
-        ++cur;
-        for (; cur != registry.end(); ++cur) {
-            out << ",{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
-        }
-        out << '}';
-    }
-
     /** key/value registry for a I/O directive */
     std::map<std::string, std::string> registry;
 };

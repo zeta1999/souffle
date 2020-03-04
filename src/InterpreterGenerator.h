@@ -397,16 +397,10 @@ public:
         return std::make_unique<InterpreterNode>(I_LogSize, &size, NodePtrVec{}, rel);
     }
 
-    NodePtr visitLoad(const RamLoad& load) override {
-        size_t relId = encodeRelation(load.getRelation());
+    NodePtr visitIO(const RamIO& io) override {
+        size_t relId = encodeRelation(io.getRelation());
         auto rel = relations[relId].get();
-        return std::make_unique<InterpreterNode>(I_Load, &load, NodePtrVec{}, rel);
-    }
-
-    NodePtr visitStore(const RamStore& store) override {
-        size_t relId = encodeRelation(store.getRelation());
-        auto rel = relations[relId].get();
-        return std::make_unique<InterpreterNode>(I_Store, &store, NodePtrVec{}, rel);
+        return std::make_unique<InterpreterNode>(I_IO, &io, NodePtrVec{}, rel);
     }
 
     NodePtr visitQuery(const RamQuery& query) override {

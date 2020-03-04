@@ -1287,33 +1287,36 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(LogSize)
 
-        CASE(Load)
-            try {
-                for (IODirectives ioDirectives : cur.getIODirectives()) {
+        CASE(IO)
+
+            const auto& directive = cur.getDirectives();
+            const std::string& op = cur.get("operation");
+
+            if (op == "input") {
+                try {
                     InterpreterRelation& relation = *node->getRelation();
                     IOSystem::getInstance()
-                            .getReader(ioDirectives, getSymbolTable(), getRecordTable())
+                            .getReader(RWOperation(directive), getSymbolTable(), getRecordTable())
                             ->readAll(relation);
+                } catch (std::exception& e) {
+                    std::cerr << "Error loading data: " << e.what() << "\n";
                 }
-            } catch (std::exception& e) {
-                std::cerr << "Error loading data: " << e.what() << "\n";
-            }
-            return true;
-        ESAC(Load)
-
-        CASE(Store)
-            try {
-                for (IODirectives ioDirectives : cur.getIODirectives()) {
+                return true;
+            } else if (op == "output" || op == "printsize") {
+                try {
                     IOSystem::getInstance()
-                            .getWriter(ioDirectives, getSymbolTable(), getRecordTable())
+                            .getWriter(RWOperation(directive), getSymbolTable(), getRecordTable())
                             ->writeAll(*node->getRelation());
+                } catch (std::exception& e) {
+                    std::cerr << e.what();
+                    exit(1);
                 }
-            } catch (std::exception& e) {
-                std::cerr << e.what();
-                exit(1);
+                return true;
+            } else {
+                assert("wrong i/o operation");
+                return true;
             }
-            return true;
-        ESAC(Store)
+        ESAC(IO)
 
         CASE_NO_CAST(Query)
             InterpreterPreamble* preamble = node->getPreamble();

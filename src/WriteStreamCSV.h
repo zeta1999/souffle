@@ -14,8 +14,8 @@
 
 #pragma once
 
-#include "RWOperation.h"
 #include "ParallelUtils.h"
+#include "RWOperation.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"

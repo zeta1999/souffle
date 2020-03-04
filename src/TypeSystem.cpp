@@ -21,14 +21,6 @@
 
 namespace souffle {
 
-/**
- * A special, internal type for the predefined symbolic and numeric types.
- */
-struct PredefinedType : public Type {
-    PredefinedType(const TypeEnvironment& environment, const AstQualifiedName& name)
-            : Type(environment, name) {}
-};
-
 void PrimitiveType::print(std::ostream& out) const {
     out << getName() << " <: " << baseType;
 }

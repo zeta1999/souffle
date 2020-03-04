@@ -146,81 +146,109 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
 /**
  * Force types to be of the same base type.
  */
-TypeConstraint subtypesOfTheSameBaseType(const TypeVar& var, const TypeVar& var2) {
+TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& right) {
     struct C : public Constraint<TypeVar> {
-        TypeVar var;
-        TypeVar var2;
+        TypeVar left;
+        TypeVar right;
 
-        C(TypeVar var, TypeVar var2) : var(std::move(var)), var2(std::move(var2)) {}
+        C(TypeVar left, TypeVar right) : left(std::move(left)), right(std::move(right)) {}
 
         bool update(Assignment<TypeVar>& assigment) const override {
             // get current value of variable a
-            TypeSet& assigments = assigment[var];
-            TypeSet& assigments2 = assigment[var2];
+            TypeSet& assigmentsLeft = assigment[left];
+            TypeSet& assigmentsRight = assigment[right];
 
-            // Handle top.
-            if (assigments.isAll() && assigments2.isAll()) {
-                return false;
-            } else if (assigments.isAll()) {
-                assigments = assigments2;
-                return true;
-            } else if (assigments2.isAll()) {
-                assigments2 = assigments;
-                return true;
-            } else if (assigments.empty() || assigments2.empty()) {
+            // Base types common to left and right variables.
+            TypeSet baseTypes;
+
+            // Base types present in left/right variable.
+            TypeSet baseTypesLeft;
+            TypeSet baseTypesRight;
+
+            // Iterate over possible types extracting base types.
+            // Left
+            if (!assigmentsLeft.isAll()) {
+                for (const auto& type : assigmentsLeft) {
+                    // Predefined type is always a base type.
+                    if (dynamic_cast<const PredefinedType*>(&type) != nullptr) {
+                        baseTypesLeft.insert(type);
+                    } else if (auto* primitive = dynamic_cast<const PrimitiveType*>(&type)) {
+                        baseTypesLeft.insert(primitive->getBaseType());
+                    }
+                }
+            }
+            // Right
+            if (!assigmentsRight.isAll()) {
+                for (const auto& type : assigmentsRight) {
+                    // Predefined type is always a base type.
+                    if (dynamic_cast<const PredefinedType*>(&type) != nullptr) {
+                        baseTypesRight.insert(type);
+                    } else if (auto* primitive = dynamic_cast<const PrimitiveType*>(&type)) {
+                        baseTypesRight.insert(primitive->getBaseType());
+                    }
+                }
+            }
+
+            // Calculate intersection.
+            for (const auto& type : baseTypesLeft) {
+                if (baseTypesRight.contains(type)) {
+                    baseTypes.insert(type);
+                }
+            }
+
+            TypeSet resultLeft;
+            TypeSet resultRight;
+
+            // Handle top
+            if (assigmentsLeft.isAll() && assigmentsRight.isAll()) {
                 return false;
             }
 
-            TypeSet resultVar;
-            TypeSet resultVar2;
-            std::optional<const Type*> baseType;
+            // If left xor right is top, assign base types of the other side as possible values.
+            if (assigmentsLeft.isAll()) {
+                assigmentsLeft = baseTypesRight;
+                return true;
+            }
+            if (assigmentsRight.isAll()) {
+                assigmentsRight = baseTypesLeft;
+                return true;
+            }
 
-            for (const Type& assigment : assigments) {
-                if (auto* primitive = dynamic_cast<const PrimitiveType*>(&assigment)) {
-                    if (!baseType.has_value()) {
-                        baseType = &primitive->getBaseType();
-                    }
-
-                    if (**baseType == primitive->getBaseType()) {
-                        resultVar.insert(assigment);
-                    }
-                }
-                if (dynamic_cast<const PredefinedType*>(&assigment) != nullptr) {
-                    resultVar.insert(assigment);
+            // Allow types if they are subtypes of any of the common base types.
+            for (const Type& type : assigmentsLeft) {
+                bool valid = any_of(baseTypes.begin(), baseTypes.end(),
+                        [&type](const Type& baseType) { return isSubtypeOf(type, baseType); });
+                if (valid) {
+                    resultLeft.insert(type);
                 }
             }
 
-            for (const Type& assigment : assigments2) {
-                if (auto* primitive = dynamic_cast<const PrimitiveType*>(&assigment)) {
-                    if (!baseType.has_value()) {
-                        baseType = &primitive->getBaseType();
-                    }
-                    if (**baseType == primitive->getBaseType()) {
-                        resultVar2.insert(assigment);
-                    }
-                }
-                if (dynamic_cast<const PredefinedType*>(&assigment) != nullptr) {
-                    resultVar2.insert(assigment);
+            for (const Type& type : assigmentsRight) {
+                bool valid = any_of(baseTypes.begin(), baseTypes.end(),
+                        [&type](const Type& baseType) { return isSubtypeOf(type, baseType); });
+                if (valid) {
+                    resultRight.insert(type);
                 }
             }
 
             // check whether there was a change
-            if (resultVar == assigments && resultVar2 == assigments2) {
+            if (resultLeft == assigmentsLeft && resultRight == assigmentsRight) {
                 return false;
             }
-            assigments = resultVar;
-            assigments2 = resultVar2;
+            assigmentsLeft = resultLeft;
+            assigmentsRight = resultRight;
             return true;
         }
-
-        // Update this - write from actual baseVaues
+        //
         void print(std::ostream& out) const override {
-            out << var << " <: "
-                << "{number, unsigned, float, symbol}";
+            out << "∃ t : (" << left << " <: t)"
+                << " ∧ "
+                << "(" << right << " <: t)"
+                << " where t is a base type";
         }
     };
 
-    return std::make_shared<C>(var, var2);
+    return std::make_shared<C>(left, right);
 }
 
 /**

@@ -1144,7 +1144,7 @@ inline std::string unescape(const std::string& inputString) {
     unescaped = unescape(unescaped, "\\n", "\n");
     return unescaped;
 }
-  
+
 inline std::string escape(
         const std::string& inputString, const std::string& needle, const std::string& replacement) {
     std::string result = inputString;

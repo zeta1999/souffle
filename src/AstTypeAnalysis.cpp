@@ -541,8 +541,11 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         void visitFunctor(const AstFunctor& fun) override {
             auto functorVar = getVar(fun);
 
-            // Require every argument to be a subtype of the return type.
-            // Require return type to be one of int/uint/float
+            // In polymorphic case
+            // We only require arguments to share a base type with a return type.
+            // (instead of, for example, requiring them to be of the same type)
+            // This approach is related to old type semantics
+            // See #1296 and tests/semantic/type_system4
             if (auto intrinsicFunctor = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
                 if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
                     for (auto* argument : intrinsicFunctor->getArguments()) {

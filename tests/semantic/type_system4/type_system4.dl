@@ -17,6 +17,6 @@
 .number_type Var
 
 .decl numeric(m:M, v:Var)
-numeric(m, v) :- m = v - 1, m = 1, v = 2.
+numeric(m, v) :- m = v - 1, v = 2.
 
-.output numeric
+.output numeric(delimiter=", ")

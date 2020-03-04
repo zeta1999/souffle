@@ -974,7 +974,11 @@ AstArgument* extractConstant(const std::string& normalisedConstant) {
         return new AstStringConstant(stringRep);
     } else if (indicatorChar == 'n') {
         // numeric argument
-        return new AstNumberConstant(static_cast<RamDomain>(stoll(stringRep)));
+        return new AstNumericConstant(stringRep, AstNumericConstant::Type::Int);
+    } else if (indicatorChar == 'u') {
+        return new AstNumericConstant(stringRep, AstNumericConstant::Type::Uint);
+    } else if (indicatorChar == 'f') {
+        return new AstNumericConstant(stringRep, AstNumericConstant::Type::Float);
     } else {
         // invalid format
         return nullptr;

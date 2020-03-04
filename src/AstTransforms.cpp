@@ -79,12 +79,6 @@ bool FixpointTransformer::transform(AstTranslationUnit& translationUnit) {
 bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& translationUnit) {
     using alias_map = std::map<AstQualifiedName, AstQualifiedName>;
 
-    // tests whether something is a variable
-    auto isVar = [&](const AstArgument& arg) { return dynamic_cast<const AstVariable*>(&arg) != nullptr; };
-
-    // tests whether something is a record
-    auto isRec = [&](const AstArgument& arg) { return dynamic_cast<const AstRecordInit*>(&arg) != nullptr; };
-
     // collect aliases
     alias_map isDirectAliasOf;
 
@@ -102,28 +96,37 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
             if (!isFact(*cl) && cl->getBodyLiterals().size() == 1u && bodyAtoms.size() == 1u) {
                 AstAtom* atom = bodyAtoms[0];
                 if (equal_targets(cl->getHead()->getArguments(), atom->getArguments())) {
-                    // we have a match but have to check that all arguments are either
-                    // variables or records containing variables
-                    bool onlyVars = true;
+                    // Requirements:
+                    // 1) (checked) It is a rule with exactly one body.
+                    // 3) (checked) The body consists of an atom.
+                    // 4) (checked) The atom's arguments must be identical to the rule's head.
+                    // 5) (pending) The rules's head must consist only of either:
+                    //  5a) Variables
+                    //  5b) Records unpacked into variables
+                    // 6) (pending) Each variable must have a distinct name.
+                    bool onlyDistinctHeadVars = true;
+                    std::set<std::string> headVars;
+
                     auto args = cl->getHead()->getArguments();
-                    while (!args.empty()) {
+                    while (onlyDistinctHeadVars && !args.empty()) {
                         const auto cur = args.back();
                         args.pop_back();
-                        if (!isVar(*cur)) {
-                            if (isRec(*cur)) {
-                                // records are decomposed and their arguments are checked
-                                const auto& rec_args = static_cast<const AstRecordInit&>(*cur).getArguments();
-                                for (auto rec_arg : rec_args) {
-                                    args.push_back(rec_arg);
-                                }
-                            } else {
-                                onlyVars = false;
-                                break;
+
+                        if (auto var = dynamic_cast<const AstVariable*>(cur)) {
+                            onlyDistinctHeadVars &= headVars.insert(var->getName()).second;
+                        } else if (auto init = dynamic_cast<const AstRecordInit*>(cur)) {
+                            // records are decomposed and their arguments are checked
+                            for (auto rec_arg : init->getArguments()) {
+                                args.push_back(rec_arg);
                             }
+                        } else {
+                            onlyDistinctHeadVars = false;
                         }
                     }
-                    if (onlyVars) {
-                        // all arguments are either variables or records containing variables
+
+                    if (onlyDistinctHeadVars) {
+                        // all arguments are either distinct variables or records unpacked into distinct
+                        // variables
                         isDirectAliasOf[cl->getHead()->getQualifiedName()] = atom->getQualifiedName();
                     }
                 }
@@ -553,13 +556,15 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                         // Empty aggregator body!
                         // Not currently handled, so add in a false literal in the body
                         // E.g. max x : { } =becomes=> max 1 : {0 = 1}
-                        replacementAggregator->setTargetExpression(std::make_unique<AstNumberConstant>(1));
+                        replacementAggregator->setTargetExpression(
+                                std::make_unique<AstNumericConstant>(std::string("1")));
 
                         // Add '0 = 1' if false was found, '1 = 1' otherwise
                         int lhsConstant = containsFalse ? 0 : 1;
-                        replacementAggregator->addBodyLiteral(std::make_unique<AstBinaryConstraint>(
-                                BinaryConstraintOp::EQ, std::make_unique<AstNumberConstant>(lhsConstant),
-                                std::make_unique<AstNumberConstant>(1)));
+                        replacementAggregator->addBodyLiteral(
+                                std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                                        std::make_unique<AstNumericConstant>(std::to_string(lhsConstant)),
+                                        std::make_unique<AstNumericConstant>(std::string("1"))));
                     }
 
                     return replacementAggregator;
@@ -1067,7 +1072,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
             if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
                 if (agg->getOperator() == AggregateOp::sum) {
                     if (const auto* constant =
-                                    dynamic_cast<const AstNumberConstant*>(agg->getTargetExpression())) {
+                                    dynamic_cast<const AstNumericConstant*>(agg->getTargetExpression())) {
                         changed = true;
                         // Then construct the new thing to replace it with
                         auto count = std::make_unique<AstAggregator>(AggregateOp::count);
@@ -1075,7 +1080,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
                         for (const auto& lit : agg->getBodyLiterals()) {
                             count->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));
                         }
-                        auto number = std::unique_ptr<AstNumberConstant>(constant->clone());
+                        auto number = std::unique_ptr<AstNumericConstant>(constant->clone());
                         // Now it's constant * count : { ... }
                         auto result = std::make_unique<AstIntrinsicFunctor>(
                                 FunctorOp::MUL, std::move(number), std::move(count));
@@ -1133,7 +1138,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                std::string constantValue = stringConstant->getValue();
+                std::string constantValue = stringConstant->getConstant();
                 std::stringstream newVariableName;
                 newVariableName << boundPrefix << changeCount << "_" << constantValue << "_s";
 
@@ -1145,14 +1150,13 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
 
                 // update constant to be the variable created
                 return newVariable;
-            } else if (auto* numberConstant = dynamic_cast<AstNumberConstant*>(node.get())) {
+            } else if (auto* numberConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
                 // number constant found
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                RamDomain constantValue = numberConstant->getValue();
                 std::stringstream newVariableName;
-                newVariableName << boundPrefix << changeCount << "_" << constantValue << "_n";
+                newVariableName << boundPrefix << changeCount << "_" << numberConstant->getConstant() << "_n";
 
                 // create new constraint (+abdulX = constant)
                 auto newVariable = std::make_unique<AstVariable>(newVariableName.str());

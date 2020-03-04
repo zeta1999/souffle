@@ -44,7 +44,6 @@ class AstLiteral;
 class AstProgram;
 class AstRelation;
 class AstTranslationUnit;
-class IODirectives;
 class RamCondition;
 class RamTupleElement;
 class RamOperation;
@@ -301,13 +300,17 @@ private:
         return toString(join(id.getQualifiers(), "."));
     }
 
-    void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
-            const std::string& fileExt);
+    /** translate AST directives to RAM directives */
+    // TODO (b-scholz): revisit / refactor
+    void translateDirectives(std::map<std::string, std::string>& directives, const AstRelation* rel,
+            const std::string& filePath, const std::string& fileExt);
 
-    std::vector<IODirectives> getInputIODirectives(const AstRelation* rel,
+    // TODO (b-scholz): revisit / refactor so that only one directive is translated
+    std::vector<std::map<std::string, std::string>> getInputDirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
-    std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel,
+    // TODO (b-scholz): revisit / refactor so that only one directive is translated
+    std::vector<std::map<std::string, std::string>> getOutputDirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
     /** create a reference to a RAM relation */

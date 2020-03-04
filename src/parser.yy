@@ -283,24 +283,23 @@ unit
         for (auto* cur : $relation_decl) {
             if (cur->hasQualifier(RelationQualifier::INPUT)) {
                 auto load = std::make_unique<AstIO>();
-                load->setQualifiedName(cur->getQualifiedName());
                 load->setSrcLoc(cur->getSrcLoc());
-                load->addKVP("operation","input");
+                load->setType(AstIO::InputIO); 
+                load->setQualifiedName(cur->getQualifiedName());
                 driver.addIO(std::move(load));
             }
             if (cur->hasQualifier(RelationQualifier::OUTPUT)) {
                 auto store = std::make_unique<AstIO>();
-                store->setQualifiedName(cur->getQualifiedName());
                 store->setSrcLoc(cur->getSrcLoc());
-                store->addKVP("operation","output");
+                store->setType(AstIO::OutputIO); 
+                store->setQualifiedName(cur->getQualifiedName());
                 driver.addIO(std::move(store));
             }
             if (cur->hasQualifier(RelationQualifier::PRINTSIZE)) {
                 auto printSize = std::make_unique<AstIO>();
-                printSize->setQualifiedName(cur->getQualifiedName());
                 printSize->setSrcLoc(cur->getSrcLoc());
-                printSize->addKVP("operation","printsize");
-                printSize->addKVP("IO", "stdoutprintsize");
+                printSize->setType(AstIO::PrintsizeIO); 
+                printSize->setQualifiedName(cur->getQualifiedName());
                 driver.addIO(std::move(printSize));
             }
             driver.addRelation(std::unique_ptr<AstRelation>(cur));
@@ -1486,23 +1485,23 @@ component_body
         for (auto* rel : $relation_decl) {
             if (rel->hasQualifier(RelationQualifier::INPUT)) {
                 auto load = std::make_unique<AstIO>();
-                load->setQualifiedName(rel->getQualifiedName());
                 load->setSrcLoc(rel->getSrcLoc());
-                load->addKVP("operation","input");
+                load->setType(AstIO::InputIO); 
+                load->setQualifiedName(rel->getQualifiedName());
                 driver.addIO(std::move(load));
             }
             if (rel->hasQualifier(RelationQualifier::OUTPUT)) {
                 auto store = std::make_unique<AstIO>();
-                store->setQualifiedName(rel->getQualifiedName());
                 store->setSrcLoc(rel->getSrcLoc());
-                store->addKVP("operation","output");
+                store->setType(AstIO::OutputIO); 
+                store->setQualifiedName(rel->getQualifiedName());
                 driver.addIO(std::move(store));
             }
             if (rel->hasQualifier(RelationQualifier::PRINTSIZE)) {
                 auto printSize = std::make_unique<AstIO>();
-                printSize->setQualifiedName(rel->getQualifiedName());
                 printSize->setSrcLoc(rel->getSrcLoc());
-                printSize->addKVP("operation","printsize");
+                printSize->setQualifiedName(rel->getQualifiedName());
+                printSize->setType(AstIO::PrintsizeIO); 
                 driver.addIO(std::move(printSize));
             }
             $$->addRelation(std::unique_ptr<AstRelation>(rel));
@@ -1639,24 +1638,23 @@ pragma
 io_head
   : INPUT_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            auto newIO = new AstIO(*io); 
-            newIO->addKVP("operation","input");
-            $$.push_back(newIO);
+            auto load = new AstIO(*io); 
+            load->setType(AstIO::InputIO); 
+            $$.push_back(load);
         }
     }
   | OUTPUT_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            auto newIO = new AstIO(*io); 
-            newIO->addKVP("operation","output");
-            $$.push_back(newIO);
+            auto store = new AstIO(*io); 
+            store->setType(AstIO::OutputIO); 
+            $$.push_back(store);
         }
     }
   | PRINTSIZE_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            auto newIO = new AstIO(*io);
-            newIO->addKVP("operation","printsize");
-            newIO->addKVP("IO", "stdoutprintsize");
-            $$.push_back(newIO);
+            auto printsize = new AstIO(*io);
+            printsize->setType(AstIO::PrintsizeIO);
+            $$.push_back(printsize);
         }
     }
   ;
@@ -1676,7 +1674,7 @@ io_directive_list
   | io_relation_list LPAREN non_empty_key_value_pairs RPAREN {
         for (auto* io : $io_relation_list) {
             for (const auto& kvp : $non_empty_key_value_pairs) {
-                io->addKVP(kvp.first, kvp.second);
+                io->addDirective(kvp.first, kvp.second);
             }
         }
         $$ = $io_relation_list;

@@ -1124,7 +1124,8 @@ inline std::string identifier(std::string id) {
     return id;
 }
 
-/** string operation for I/O directives */
+// TODO (b-scholz): tidy up unescape/escape functions
+
 inline std::string unescape(
         const std::string& inputString, const std::string& needle, const std::string& replacement) {
     std::string result = inputString;
@@ -1142,6 +1143,25 @@ inline std::string unescape(const std::string& inputString) {
     unescaped = unescape(unescaped, "\\r", "\r");
     unescaped = unescape(unescaped, "\\n", "\n");
     return unescaped;
+}
+  
+inline std::string escape(
+        const std::string& inputString, const std::string& needle, const std::string& replacement) {
+    std::string result = inputString;
+    size_t pos = 0;
+    while ((pos = result.find(needle, pos)) != std::string::npos) {
+        result = result.replace(pos, needle.length(), replacement);
+        pos += replacement.length();
+    }
+    return result;
+}
+
+inline std::string escape(const std::string& inputString) {
+    std::string escaped = escape(inputString, "\"", "\\\"");
+    escaped = escape(escaped, "\t", "\\t");
+    escaped = escape(escaped, "\r", "\\r");
+    escaped = escape(escaped, "\n", "\\n");
+    return escaped;
 }
 
 inline std::stringstream execStdOut(char const* cmd) {

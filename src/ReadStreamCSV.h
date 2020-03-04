@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "IODirectives.h"
+#include "RWOperation.h"
 #include "RamTypes.h"
 #include "ReadStream.h"
 #include "RecordTable.h"
@@ -37,11 +37,11 @@ namespace souffle {
 
 class ReadStreamCSV : public ReadStream {
 public:
-    ReadStreamCSV(std::istream& file, const IODirectives& ioDirectives, SymbolTable& symbolTable,
+    ReadStreamCSV(std::istream& file, const RWOperation& rwOperation, SymbolTable& symbolTable,
             RecordTable& recordTable)
-            : ReadStream(ioDirectives, symbolTable, recordTable),
-              delimiter(ioDirectives.getOr("delimiter", "\t")), file(file), lineNumber(0),
-              inputMap(getInputColumnMap(ioDirectives, arity)) {
+            : ReadStream(rwOperation, symbolTable, recordTable),
+              delimiter(rwOperation.getOr("delimiter", "\t")), file(file), lineNumber(0),
+              inputMap(getInputColumnMap(rwOperation, arity)) {
         while (inputMap.size() < arity) {
             int size = static_cast<int>(inputMap.size());
             inputMap[size] = size;
@@ -214,8 +214,8 @@ protected:
         return element;
     }
 
-    std::map<int, int> getInputColumnMap(const IODirectives& ioDirectives, const unsigned arity_) const {
-        std::string columnString = ioDirectives.getOr("columns", "");
+    std::map<int, int> getInputColumnMap(const RWOperation& rwOperation, const unsigned arity_) const {
+        std::string columnString = rwOperation.getOr("columns", "");
         std::map<int, int> inputColumnMap;
 
         if (!columnString.empty()) {
@@ -245,16 +245,16 @@ protected:
 
 class ReadFileCSV : public ReadStreamCSV {
 public:
-    ReadFileCSV(const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
-            : ReadStreamCSV(fileHandle, ioDirectives, symbolTable, recordTable),
-              baseName(souffle::baseName(getFileName(ioDirectives))),
-              fileHandle(getFileName(ioDirectives), std::ios::in | std::ios::binary) {
-        if (!ioDirectives.has("intermediate")) {
+    ReadFileCSV(const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable)
+            : ReadStreamCSV(fileHandle, rwOperation, symbolTable, recordTable),
+              baseName(souffle::baseName(getFileName(rwOperation))),
+              fileHandle(getFileName(rwOperation), std::ios::in | std::ios::binary) {
+        if (!rwOperation.has("intermediate")) {
             if (!fileHandle.is_open()) {
                 throw std::invalid_argument("Cannot open fact file " + baseName + "\n");
             }
             // Strip headers if we're using them
-            if (ioDirectives.has("headers") && ioDirectives.get("headers") == "true") {
+            if (rwOperation.has("headers") && rwOperation.get("headers") == "true") {
                 std::string line;
                 getline(file, line);
             }
@@ -281,8 +281,8 @@ public:
     ~ReadFileCSV() override = default;
 
 protected:
-    std::string getFileName(const IODirectives& ioDirectives) const {
-        return ioDirectives.getOr("filename", ioDirectives.getRelationName() + ".facts");
+    std::string getFileName(const RWOperation& rwOperation) const {
+        return rwOperation.getOr("filename", rwOperation.get("name") + ".facts");
     }
     std::string baseName;
 #ifdef USE_LIBZ
@@ -295,8 +295,8 @@ protected:
 class ReadCinCSVFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(
-            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
-        return std::make_unique<ReadStreamCSV>(std::cin, ioDirectives, symbolTable, recordTable);
+            const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable) override {
+        return std::make_unique<ReadStreamCSV>(std::cin, rwOperation, symbolTable, recordTable);
     }
 
     const std::string& getName() const override {
@@ -309,8 +309,8 @@ public:
 class ReadFileCSVFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(
-            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
-        return std::make_unique<ReadFileCSV>(ioDirectives, symbolTable, recordTable);
+            const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable) override {
+        return std::make_unique<ReadFileCSV>(rwOperation, symbolTable, recordTable);
     }
 
     const std::string& getName() const override {

@@ -14,7 +14,7 @@
 
 #pragma once
 
-#include "IODirectives.h"
+#include "RWOperation.h"
 #include "RamTypes.h"
 #include "RecordTable.h"
 #include "SymbolTable.h"
@@ -31,14 +31,14 @@ using json11::Json;
 class WriteStream {
 public:
     WriteStream(
-            const IODirectives& ioDirectives, const SymbolTable& symbolTable, const RecordTable& recordTable)
+            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
             : symbolTable(symbolTable), recordTable(recordTable),
-              summary(ioDirectives.getIOType() == "stdoutprintsize") {
-        const std::string& relationName{ioDirectives.getRelationName()};
+              summary(rwOperation.get("IO") == "stdoutprintsize") {
+        const std::string& relationName{rwOperation.get("name")};
 
         std::string parseErrors;
 
-        types = Json::parse(ioDirectives.get("types"), parseErrors);
+        types = Json::parse(rwOperation.get("types"), parseErrors);
 
         assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
 
@@ -148,7 +148,7 @@ protected:
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(const IODirectives& ioDirectives,
+    virtual std::unique_ptr<WriteStream> getWriter(const RWOperation& rwOperation,
             const SymbolTable& symbolTable, const RecordTable& recordTable) = 0;
 
     virtual const std::string& getName() const = 0;

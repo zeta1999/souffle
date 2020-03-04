@@ -57,15 +57,14 @@ const std::string testInterpreterStore(std::vector<std::string> attribs,
             Json::object{{"arity", static_cast<long long>(arity)}, {"auxArity", static_cast<long long>(0)},
                     {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> dirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> dirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
 
-    std::vector<IODirectives> ioDirs;
-    ioDirs.push_back(IODirectives(dirs));
+    std::map<std::string, std::string> ioDirs = std::map<std::string, std::string>(dirs);
 
     std::unique_ptr<RamStatement> main = std::make_unique<RamSequence>(
             std::make_unique<RamQuery>(std::make_unique<RamProject>(std::move(ref1), std::move(exprs))),
-            std::make_unique<RamStore>(std::move(ref2), ioDirs));
+            std::make_unique<RamIO>(std::move(ref2), ioDirs));
 
     rels.push_back(std::move(myrel));
     std::map<std::string, std::unique_ptr<RamStatement>> subs;
@@ -246,11 +245,10 @@ TEST(IO_store, SignedChangedDelimiter) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> dirs = {{"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"},
-            {"delimiter", delimiter}, {"types", types.dump()}};
+    std::map<std::string, std::string> dirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"delimiter", delimiter}, {"types", types.dump()}};
 
-    std::vector<IODirectives> ioDirs;
-    ioDirs.push_back(IODirectives(dirs));
+    std::map<std::string, std::string> ioDirs = std::map<std::string, std::string>(dirs);
 
     std::vector<std::unique_ptr<RamExpression>> exprs;
     for (RamDomain i : randomNumbers) {
@@ -259,7 +257,7 @@ TEST(IO_store, SignedChangedDelimiter) {
 
     std::unique_ptr<RamStatement> main = std::make_unique<RamSequence>(
             std::make_unique<RamQuery>(std::make_unique<RamProject>(std::move(ref1), std::move(exprs))),
-            std::make_unique<RamStore>(std::move(ref2), ioDirs));
+            std::make_unique<RamIO>(std::move(ref2), ioDirs));
 
     rels.push_back(std::move(myrel));
     std::map<std::string, std::unique_ptr<RamStatement>> subs;
@@ -321,10 +319,9 @@ TEST(IO_store, MixedTypes) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> dirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> ioDirs;
-    ioDirs.push_back(IODirectives(dirs));
+    std::map<std::string, std::string> dirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> ioDirs = std::map<std::string, std::string>(dirs);
 
     SymbolTable symbolTable;
     ErrorReport errReport;
@@ -339,7 +336,7 @@ TEST(IO_store, MixedTypes) {
 
     std::unique_ptr<RamStatement> main = std::make_unique<RamSequence>(
             std::make_unique<RamQuery>(std::make_unique<RamProject>(std::move(ref1), std::move(exprs))),
-            std::make_unique<RamStore>(std::move(ref2), ioDirs));
+            std::make_unique<RamIO>(std::move(ref2), ioDirs));
 
     rels.push_back(std::move(myrel));
     std::map<std::string, std::unique_ptr<RamStatement>> subs;
@@ -396,19 +393,17 @@ TEST(IO_load, Signed) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> readDirs = {
-            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> readIoDirs;
-    readIoDirs.push_back(IODirectives(readDirs));
+    std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> readIoDirs = std::map<std::string, std::string>(readDirs);
 
-    std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> writeIoDirs;
-    writeIoDirs.push_back(IODirectives(writeDirs));
+    std::map<std::string, std::string> writeDirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> writeIoDirs = std::map<std::string, std::string>(writeDirs);
 
     std::unique_ptr<RamStatement> main =
-            std::make_unique<RamSequence>(std::make_unique<RamLoad>(std::move(ref1), readIoDirs),
-                    std::make_unique<RamStore>(std::move(ref2), writeIoDirs));
+            std::make_unique<RamSequence>(std::make_unique<RamIO>(std::move(ref1), readIoDirs),
+                    std::make_unique<RamIO>(std::move(ref2), writeIoDirs));
 
     rels.push_back(std::move(myrel));
     std::map<std::string, std::unique_ptr<RamStatement>> subs;
@@ -464,19 +459,17 @@ TEST(IO_load, Float) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> readDirs = {
-            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> readIoDirs;
-    readIoDirs.push_back(IODirectives(readDirs));
+    std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> readIoDirs = std::map<std::string, std::string>(readDirs);
 
-    std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> writeIoDirs;
-    writeIoDirs.push_back(IODirectives(writeDirs));
+    std::map<std::string, std::string> writeDirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> writeIoDirs = std::map<std::string, std::string>(writeDirs);
 
     std::unique_ptr<RamStatement> main =
-            std::make_unique<RamSequence>(std::make_unique<RamLoad>(std::move(ref1), readIoDirs),
-                    std::make_unique<RamStore>(std::move(ref2), writeIoDirs));
+            std::make_unique<RamSequence>(std::make_unique<RamIO>(std::move(ref1), readIoDirs),
+                    std::make_unique<RamIO>(std::move(ref2), writeIoDirs));
 
     rels.push_back(std::move(myrel));
     std::map<std::string, std::unique_ptr<RamStatement>> subs;
@@ -532,19 +525,17 @@ TEST(IO_load, Unsigned) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> readDirs = {
-            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> readIoDirs;
-    readIoDirs.push_back(IODirectives(readDirs));
+    std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> readIoDirs = std::map<std::string, std::string>(readDirs);
 
-    std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> writeIoDirs;
-    writeIoDirs.push_back(IODirectives(writeDirs));
+    std::map<std::string, std::string> writeDirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> writeIoDirs = std::map<std::string, std::string>(writeDirs);
 
     std::unique_ptr<RamStatement> main =
-            std::make_unique<RamSequence>(std::make_unique<RamLoad>(std::move(ref1), readIoDirs),
-                    std::make_unique<RamStore>(std::move(ref2), writeIoDirs));
+            std::make_unique<RamSequence>(std::make_unique<RamIO>(std::move(ref1), readIoDirs),
+                    std::make_unique<RamIO>(std::move(ref2), writeIoDirs));
 
     rels.push_back(std::move(myrel));
     std::map<std::string, std::unique_ptr<RamStatement>> subs;
@@ -600,19 +591,17 @@ TEST(IO_load, MixedTypesLoad) {
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
-    std::map<std::string, std::string> readDirs = {
-            {"IO", "stdin"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> readIoDirs;
-    readIoDirs.push_back(IODirectives(readDirs));
+    std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> readIoDirs = std::map<std::string, std::string>(readDirs);
 
-    std::map<std::string, std::string> writeDirs = {
-            {"IO", "stdout"}, {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
-    std::vector<IODirectives> writeIoDirs;
-    writeIoDirs.push_back(IODirectives(writeDirs));
+    std::map<std::string, std::string> writeDirs = {{"operation", "output"}, {"IO", "stdout"},
+            {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
+    std::map<std::string, std::string> writeIoDirs = std::map<std::string, std::string>(writeDirs);
 
     std::unique_ptr<RamStatement> main =
-            std::make_unique<RamSequence>(std::make_unique<RamLoad>(std::move(ref1), readIoDirs),
-                    std::make_unique<RamStore>(std::move(ref2), writeIoDirs));
+            std::make_unique<RamSequence>(std::make_unique<RamIO>(std::move(ref1), readIoDirs),
+                    std::make_unique<RamIO>(std::move(ref2), writeIoDirs));
 
     rels.push_back(std::move(myrel));
     std::map<std::string, std::unique_ptr<RamStatement>> subs;

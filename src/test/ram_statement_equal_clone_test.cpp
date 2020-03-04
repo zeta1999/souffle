@@ -25,26 +25,12 @@ namespace souffle {
 namespace test {
 
 TEST(RamIO1, CloneAndEquals) {
-    // LOAD DATA FOR A FROM {...}
+    // IO A ()
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    std::map<std::string, std::string> ioEmpty;
-    RamIO a(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
-    RamIO b(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
-    EXPECT_EQ(a, b);
-    EXPECT_NE(&a, &b);
-
-    RamIO* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
-}
-
-TEST(RamIO2, CloneAndEquals) {
-    // STORE DATA FOR A TO {...}
-    RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    std::map<std::string, std::string> ioEmpty;
-    RamIO a(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
-    RamIO b(std::make_unique<RamRelationReference>(&A), std::move(ioEmpty));
+    std::map<std::string, std::string> ioEmptyA;
+    std::map<std::string, std::string> ioEmptyB;
+    RamIO a(std::make_unique<RamRelationReference>(&A), std::move(ioEmptyA));
+    RamIO b(std::make_unique<RamRelationReference>(&A), std::move(ioEmptyB));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
@@ -191,7 +177,7 @@ TEST(RamSequence, CloneAndEquals) {
     delete f;
 
     // multiple statements in the sequence
-    // LOAD DATA FOR A FROM {}
+    // IO A ()
     // CLEAR A
     std::map<std::string, std::string> g_load_IODir;
     std::map<std::string, std::string> h_load_IODir;
@@ -322,7 +308,7 @@ TEST(RamLogRelationTimer, CloneAndEquals) {
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     /*
      * START_TIMER ON A "file.dl [8:1-8:8]"
-     *   LOAD DATA FOR A FROM {}
+     *   IO A()
      * END_TIMER
      * */
     std::map<std::string, std::string> a_IODir;
@@ -346,7 +332,7 @@ TEST(RamLogTimer, CloneAndEquals) {
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     /*
      * START_TIMER "@runtime"
-     *   LOAD DATA FOR A FROM {}
+     *   IO .. (..)
      * END_TIMER
      * */
     std::map<std::string, std::string> a_IODir;

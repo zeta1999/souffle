@@ -36,6 +36,7 @@
 #include <cassert>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -140,6 +141,86 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
     };
 
     return std::make_shared<C>(a, b);
+}
+
+/**
+ * Force types to be of the same base type.
+ */
+TypeConstraint subtypesOfTheSameBaseType(const TypeVar& var, const TypeVar& var2) {
+    struct C : public Constraint<TypeVar> {
+        TypeVar var;
+        TypeVar var2;
+
+        C(TypeVar var, TypeVar var2) : var(std::move(var)), var2(std::move(var2)) {}
+
+        bool update(Assignment<TypeVar>& assigment) const override {
+            // get current value of variable a
+            TypeSet& assigments = assigment[var];
+            TypeSet& assigments2 = assigment[var2];
+
+            // Handle top.
+            if (assigments.isAll() && assigments2.isAll()) {
+                return false;
+            } else if (assigments.isAll()) {
+                assigments = assigments2;
+                return true;
+            } else if (assigments2.isAll()) {
+                assigments2 = assigments;
+                return true;
+            } else if (assigments.empty() || assigments2.empty()) {
+                return false;
+            }
+
+            TypeSet resultVar;
+            TypeSet resultVar2;
+            std::optional<const Type*> baseType;
+
+            for (const Type& assigment : assigments) {
+                if (auto* primitive = dynamic_cast<const PrimitiveType*>(&assigment)) {
+                    if (!baseType.has_value()) {
+                        baseType = &primitive->getBaseType();
+                    }
+
+                    if (**baseType == primitive->getBaseType()) {
+                        resultVar.insert(assigment);
+                    }
+                }
+                if (dynamic_cast<const PredefinedType*>(&assigment) != nullptr) {
+                    resultVar.insert(assigment);
+                }
+            }
+
+            for (const Type& assigment : assigments2) {
+                if (auto* primitive = dynamic_cast<const PrimitiveType*>(&assigment)) {
+                    if (!baseType.has_value()) {
+                        baseType = &primitive->getBaseType();
+                    }
+                    if (**baseType == primitive->getBaseType()) {
+                        resultVar2.insert(assigment);
+                    }
+                }
+                if (dynamic_cast<const PredefinedType*>(&assigment) != nullptr) {
+                    resultVar2.insert(assigment);
+                }
+            }
+
+            // check whether there was a change
+            if (resultVar == assigments && resultVar2 == assigments2) {
+                return false;
+            }
+            assigments = resultVar;
+            assigments2 = resultVar2;
+            return true;
+        }
+
+        // Update this - write from actual baseVaues
+        void print(std::ostream& out) const override {
+            out << var << " <: "
+                << "{number, unsigned, float, symbol}";
+        }
+    };
+
+    return std::make_shared<C>(var, var2);
 }
 
 /**
@@ -443,8 +524,9 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
                 if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
                     for (auto* argument : intrinsicFunctor->getArguments()) {
                         auto argumentVar = getVar(argument);
-                        addConstraint(isSubtypeOf(argumentVar, functorVar));
+                        addConstraint(subtypesOfTheSameBaseType(argumentVar, functorVar));
                     }
+
                     return;
                 }
             }

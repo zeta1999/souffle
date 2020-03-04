@@ -89,6 +89,14 @@ private:
 };
 
 /**
+ * A special, internal type for the predefined symbolic and numeric types.
+ */
+struct PredefinedType : public Type {
+    PredefinedType(const TypeEnvironment& environment, const AstQualifiedName& name)
+            : Type(environment, name) {}
+};
+
+/**
  * A primitive type. The basic type construct to build new types.
  */
 class PrimitiveType : public Type {
@@ -183,7 +191,7 @@ public:
     }
 
     template <typename... Types>
-    TypeSet(const Types&... types) : all(false) {
+    explicit TypeSet(const Types&... types) : all(false) {
         for (const Type* cur : toVector<const Type*>(&types...)) {
             this->types.insert(cur);
         }

@@ -174,6 +174,9 @@ public:
         return copy;
     }
 
+    bool hasType() const {
+        return true;
+    }
     Type getType() const {
         return type;
     }
@@ -190,7 +193,7 @@ protected:
     }
 
 private:
-    const Type type;
+    const Type type;  // Make type optional.
 };
 
 /**

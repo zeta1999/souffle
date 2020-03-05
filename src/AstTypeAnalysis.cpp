@@ -563,17 +563,37 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // Numeric constant
         void visitNumericConstant(const AstNumericConstant& constant) override {
-            switch (constant.getType()) {
-                case AstNumericConstant::Type::Int:
-                    addConstraint(hasSuperTypeInSet(getVar(constant), TypeSet(env.getNumberType())));
-                    break;
-                case AstNumericConstant::Type::Uint:
-                    addConstraint(hasSuperTypeInSet(getVar(constant), TypeSet(env.getUnsignedType())));
-                    break;
-                case AstNumericConstant::Type::Float:
-                    addConstraint(hasSuperTypeInSet(getVar(constant), TypeSet(env.getFloatType())));
-                    break;
+            TypeSet possibleTypes;
+
+            // Check if the type is already given.
+            if (constant.hasType()) {
+                switch (constant.getType()) {
+                    case AstNumericConstant::Type::Int:
+                        // Assert that it can be parsed here.
+                        possibleTypes.insert(env.getNumberType());
+                        break;
+                    case AstNumericConstant::Type::Uint:
+                        possibleTypes.insert(env.getUnsignedType());
+                        break;
+                    case AstNumericConstant::Type::Float:
+                        possibleTypes.insert(env.getFloatType());
+                        break;
+                }
+            } else {
+                if (canBeParsedAsRamSigned(constant.getConstant())) {
+                    possibleTypes.insert(env.getNumberType());
+                }
+
+                if (canBeParsedAsRamUnsigned(constant.getConstant())) {
+                    possibleTypes.insert(env.getUnsignedType());
+                }
+
+                if (canBeParsedAsRamFloat(constant.getConstant())) {
+                    possibleTypes.insert(env.getFloatType());
+                }
             }
+
+            addConstraint(hasSuperTypeInSet(getVar(constant), possibleTypes));
         }
 
         // binary constraint

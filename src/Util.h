@@ -147,6 +147,41 @@ inline RamUnsigned RamUnsignedFromString(
     return static_cast<RamUnsigned>(val);
 }
 
+// Todo: handle binary & hex
+
+/**
+ * Can a string be parsed as RamSigned.
+ */
+inline bool canBeParsedAsRamSigned(const std::string& string) {
+    size_t charactersRead = 0;
+    try {
+        RamDomainFromString(string, &charactersRead);
+    } catch (...) {
+        return false;
+    }
+    return charactersRead == string.size();
+}
+
+inline bool canBeParsedAsRamUnsigned(const std::string& string) {
+    size_t charactersRead = 0;
+    try {
+        RamUnsignedFromString(string, &charactersRead);
+    } catch (...) {
+        return false;
+    }
+    return charactersRead == string.size();
+}
+
+inline bool canBeParsedAsRamFloat(const std::string& string) {
+    size_t charactersRead = 0;
+    try {
+        RamFloatFromString(string, &charactersRead);
+    } catch (...) {
+        return false;
+    }
+    return charactersRead == string.size();
+}
+
 #if RAM_DOMAIN_SIZE == 64
 inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
     return static_cast<RamDomain>(std::stoull(str, pos, base));

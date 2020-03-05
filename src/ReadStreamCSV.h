@@ -145,21 +145,6 @@ protected:
         return value;
     }
 
-    bool isPrefix(const std::string& prefix, const std::string& element) {
-        auto itPrefix = prefix.begin();
-        auto itElement = element.begin();
-
-        while (itPrefix != prefix.end() && itElement != element.end()) {
-            if (*itPrefix != *itElement) {
-                break;
-            }
-            ++itPrefix;
-            ++itElement;
-        }
-
-        return itPrefix == prefix.end();
-    }
-
     std::string nextElement(const std::string& line, size_t& start, size_t& end) {
         std::string element;
 

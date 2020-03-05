@@ -160,6 +160,10 @@ protected:
 
 /**
  * Numeric Constant
+ *
+ * The constant can be initialized with type.
+ * If this is the case, the typesystem will be forced to use it.
+ * Otherwise the type is inferred from context.
  */
 class AstNumericConstant : public AstConstant {
 public:

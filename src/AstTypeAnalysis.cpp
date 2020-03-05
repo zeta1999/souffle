@@ -568,20 +568,27 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
             std::optional<AstNumericConstant::Type> maybeType = constant.getType();
 
-            // Check if the type is already given.
+            // Check if the type is given.
             if (maybeType.has_value()) {
                 switch (*maybeType) {
+                    // Insert a type, but only after checking that parsing is possible.
                     case AstNumericConstant::Type::Int:
-                        // Assert that it can be parsed here.
-                        possibleTypes.insert(env.getNumberType());
+                        if (canBeParsedAsRamSigned(constant.getConstant())) {
+                            possibleTypes.insert(env.getNumberType());
+                        }
                         break;
                     case AstNumericConstant::Type::Uint:
-                        possibleTypes.insert(env.getUnsignedType());
+                        if (canBeParsedAsRamUnsigned(constant.getConstant())) {
+                            possibleTypes.insert(env.getUnsignedType());
+                        }
                         break;
                     case AstNumericConstant::Type::Float:
-                        possibleTypes.insert(env.getFloatType());
+                        if (canBeParsedAsRamFloat(constant.getConstant())) {
+                            possibleTypes.insert(env.getFloatType());
+                        }
                         break;
                 }
+                // Else: all numeric types that can be parsed are valid.
             } else {
                 if (canBeParsedAsRamSigned(constant.getConstant())) {
                     possibleTypes.insert(env.getNumberType());

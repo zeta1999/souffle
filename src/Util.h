@@ -106,6 +106,9 @@ inline unsigned long __builtin_ctzll(unsigned long long value) {
 
 namespace souffle {
 
+// Forward declaration
+inline bool isPrefix(const std::string& prefix, const std::string& element);
+
 /**
  * Converts a string to a RamDomain
  */
@@ -736,6 +739,24 @@ detail::multiplying_printer<T> times(const T& value, unsigned num) {
 // -------------------------------------------------------------------------------
 //                              String Utils
 // -------------------------------------------------------------------------------
+
+/**
+ * Determine if one string is a prefix of another
+ */
+inline bool isPrefix(const std::string& prefix, const std::string& element) {
+    auto itPrefix = prefix.begin();
+    auto itElement = element.begin();
+
+    while (itPrefix != prefix.end() && itElement != element.end()) {
+        if (*itPrefix != *itElement) {
+            break;
+        }
+        ++itPrefix;
+        ++itElement;
+    }
+
+    return itPrefix == prefix.end();
+}
 
 /**
  * Determines whether the given value string ends with the given

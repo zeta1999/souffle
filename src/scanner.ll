@@ -43,7 +43,14 @@
     #include "RamTypes.h"
     #include "parser.hh"
 
-    #include "Util.h"
+    #include "utility/StringUtil.h"
+#include "utility/FileUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/ContainerUtil.h"
+#include "utility/CacheUtil.h"
+#include "utility/ParallelUtil.h"
 
     #define register
 

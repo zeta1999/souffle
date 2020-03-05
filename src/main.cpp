@@ -39,9 +39,16 @@
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "Synthesiser.h"
-#include "Util.h"
 #include "config.h"
 #include "profile/Tui.h"
+#include "utility/CacheUtil.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FileUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/ParallelUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
 #include <cassert>
 #include <chrono>
 #include <cstdio>

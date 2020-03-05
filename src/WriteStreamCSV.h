@@ -14,11 +14,11 @@
 
 #pragma once
 
-#include "ParallelUtils.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
 #include "Util.h"
 #include "WriteStream.h"
+#include "utility/ParallelUtil.h"
 #ifdef USE_LIBZ
 #include "gzfstream.h"
 #endif

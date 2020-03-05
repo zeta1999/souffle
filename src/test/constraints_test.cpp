@@ -15,7 +15,6 @@
  ***********************************************************************/
 
 #include "Constraints.h"
-#include "Util.h"
 #include "test.h"
 
 #include <set>

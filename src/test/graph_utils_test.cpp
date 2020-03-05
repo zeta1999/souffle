@@ -15,7 +15,6 @@
  ***********************************************************************/
 
 #include "GraphUtils.h"
-#include "Util.h"
 #include "test.h"
 
 namespace souffle {

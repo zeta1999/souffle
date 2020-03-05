@@ -14,8 +14,8 @@
  *
  ***********************************************************************/
 
-#include "ParallelUtils.h"
 #include "test.h"
+#include "utility/ParallelUtil.h"
 
 namespace souffle {
 

@@ -8,14 +8,21 @@
 
 /************************************************************************
  *
- * @file table_test.h
+ * @file util_test.cpp
  *
- * Test cases for the Table data structure.
+ * Test cases for utilities.
  *
  ***********************************************************************/
 
-#include "Util.h"
 #include "test.h"
+#include "utility/CacheUtil.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FileUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/ParallelUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
 
 using namespace souffle;
 

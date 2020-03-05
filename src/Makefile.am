@@ -200,7 +200,6 @@ soufflepublic_HEADERS = \
         IterUtils.h                               \
         LambdaBTree.h                             \
         Logger.h                                  \
-        ParallelUtils.h                           \
         PiggyList.h                               \
         ProfileDatabase.h                         \
         ProfileEvent.h                            \
@@ -214,7 +213,14 @@ soufflepublic_HEADERS = \
         SymbolTable.h                             \
         Table.h                                   \
         UnionFind.h                               \
-        Util.h                                    \
+        utility/CacheUtil.h                       \
+        utility/ContainerUtil.h                   \
+        utility/FileUtil.h                        \
+        utility/FunctionalUtil.h                  \
+        utility/MiscUtil.h                        \
+        utility/ParallelUtil.h                    \
+        utility/StreamUtil.h                      \
+        utility/StringUtil.h                      \
         WriteStream.h                             \
         WriteStreamCSV.h                          \
         json11.h                                  \

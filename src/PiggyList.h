@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ParallelUtils.h"
+#include "utility/ParallelUtil.h"
 #include <array>
 #include <atomic>
 #include <cstring>

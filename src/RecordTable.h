@@ -18,8 +18,8 @@
 #pragma once
 
 #include "CompiledTuple.h"
-#include "ParallelUtils.h"
 #include "RamTypes.h"
+#include "utility/ParallelUtil.h"
 #include <cassert>
 #include <iostream>
 #include <limits>

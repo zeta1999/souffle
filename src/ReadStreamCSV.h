@@ -18,7 +18,14 @@
 #include "ReadStream.h"
 #include "RecordTable.h"
 #include "SymbolTable.h"
-#include "Util.h"
+#include "utility/CacheUtil.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FileUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/ParallelUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
 
 #ifdef USE_LIBZ
 #include "gzfstream.h"

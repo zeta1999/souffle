@@ -143,6 +143,52 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
 }
 
 /**
+ * A constraint factory ensuring that all the types associated to the variable
+ * are subtypes of some values of set domain
+ */
+TypeConstraint hasSuperTypeInSet(const TypeVar& var, const TypeSet& values) {
+    struct C : public Constraint<TypeVar> {
+        TypeVar var;
+        const TypeSet& values;
+
+        C(TypeVar var, const TypeSet& values) : var(std::move(var)), values(values) {}
+
+        bool update(Assignment<TypeVar>& assigment) const override {
+            // get current value of variable a
+            TypeSet& assigments = assigment[var];
+
+            // remove all types that are not sub-types of b
+            if (assigments.isAll()) {
+                assigments = values;
+                return true;
+            }
+
+            TypeSet newAssigments;
+            for (const Type& type : assigments) {
+                bool existsSuperTypeInValues = any_of(values.begin(), values.end(),
+                        [&type](const Type& value) { return isSubtypeOf(type, value); });
+                if (existsSuperTypeInValues) {
+                    newAssigments.insert(type);
+                }
+            }
+
+            // check whether there was a change
+            if (newAssigments == assigments) {
+                return false;
+            }
+            assigments = newAssigments;
+            return true;
+        }
+
+        void print(std::ostream& out) const override {
+            out << "∃ t ∈ " << values << ": " << var << " <: t";
+        }
+    };
+
+    return std::make_shared<C>(var, values);
+}
+
+/**
  * Ensure that types of left and right have the same base types.
  */
 TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& right) {

@@ -145,13 +145,15 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
 /**
  * A constraint factory ensuring that all the types associated to the variable
  * are subtypes of some values of set domain
+ *
+ * Values can't be all.
  */
-TypeConstraint hasSuperTypeInSet(const TypeVar& var, const TypeSet& values) {
+TypeConstraint hasSuperTypeInSet(const TypeVar& var, TypeSet values) {
     struct C : public Constraint<TypeVar> {
         TypeVar var;
-        const TypeSet& values;
+        TypeSet values;
 
-        C(TypeVar var, const TypeSet& values) : var(std::move(var)), values(values) {}
+        C(TypeVar var, TypeSet values) : var(std::move(var)), values(std::move(values)) {}
 
         bool update(Assignment<TypeVar>& assigment) const override {
             // get current value of variable a
@@ -559,17 +561,17 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             addConstraint(isSubtypeOf(getVar(cnst), env.getSymbolType()));
         }
 
-        // int
+        // Numeric constant
         void visitNumericConstant(const AstNumericConstant& constant) override {
             switch (constant.getType()) {
                 case AstNumericConstant::Type::Int:
-                    addConstraint(isSubtypeOf(getVar(constant), env.getNumberType()));
+                    addConstraint(hasSuperTypeInSet(getVar(constant), TypeSet(env.getNumberType())));
                     break;
                 case AstNumericConstant::Type::Uint:
-                    addConstraint(isSubtypeOf(getVar(constant), env.getUnsignedType()));
+                    addConstraint(hasSuperTypeInSet(getVar(constant), TypeSet(env.getUnsignedType())));
                     break;
                 case AstNumericConstant::Type::Float:
-                    addConstraint(isSubtypeOf(getVar(constant), env.getFloatType()));
+                    addConstraint(hasSuperTypeInSet(getVar(constant), TypeSet(env.getFloatType())));
                     break;
             }
         }

@@ -154,6 +154,7 @@ inline RamUnsigned RamUnsignedFromString(
 
 /**
  * Can a string be parsed as RamSigned.
+ * Function utilized by type system and semantic checker.
  */
 inline bool canBeParsedAsRamSigned(const std::string& string) {
     size_t charactersRead = 0;
@@ -165,6 +166,10 @@ inline bool canBeParsedAsRamSigned(const std::string& string) {
     return charactersRead == string.size();
 }
 
+/**
+ * Can a string be parsed as RamUnsigned.
+ * Function utilized by type system and semantic checker.
+ */
 inline bool canBeParsedAsRamUnsigned(const std::string& string) {
     size_t charactersRead = 0;
     try {
@@ -175,6 +180,10 @@ inline bool canBeParsedAsRamUnsigned(const std::string& string) {
     return charactersRead == string.size();
 }
 
+/**
+ * Can a string be parsed as RamFloat.
+ * Function utilized by type system and semantic checker.
+ */
 inline bool canBeParsedAsRamFloat(const std::string& string) {
     size_t charactersRead = 0;
     try {

@@ -165,7 +165,8 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all signed constants are used as numbers
+    // If constant has a declared type it must have this type.
+    // Otherwise there must exist at least one type that it can have.
     visitDepthFirst(nodes, [&](const AstNumericConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
 
@@ -174,19 +175,44 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         if (maybeType.has_value()) {
             switch (*maybeType) {
                 case AstNumericConstant::Type::Int:
-                    if (!isNumberType(types)) {
+                    // All good
+                    if (isNumberType(types)) {
+                        break;
+                    }
+                    // Report error
+                    if (!canBeParsedAsRamSigned(constant.getConstant())) {
+                        report.addError("Constant declared as integer, but it can't be parsed as integer",
+                                constant.getSrcLoc());
+                    } else {
                         report.addError("Number constant (type mismatch)", constant.getSrcLoc());
                     }
                     break;
                 case AstNumericConstant::Type::Uint:
-                    if (!isUnsignedType(types)) {
+                    if (isUnsignedType(types)) {
+                        break;
+                    }
+
+                    if (!canBeParsedAsRamUnsigned(constant.getConstant())) {
+                        report.addError(
+                                "Constant declared as unsigned integer, but it can't be parsed as unsigned "
+                                "integer",
+                                constant.getSrcLoc());
+                    } else {
                         report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
                     }
                     break;
                 case AstNumericConstant::Type::Float:
-                    if (!isFloatType(types)) {
+                    if (isFloatType(types)) {
+                        break;
+                    }
+
+                    if (!canBeParsedAsRamFloat(constant.getConstant())) {
+                        report.addError("Constant declared as float, but it can't be parsed as float",
+                                constant.getSrcLoc());
+                    } else {
                         report.addError("Float constant (type mismatch)", constant.getSrcLoc());
                     }
+
                     break;
             }
             // Otherwise, make sure that there is some solution.

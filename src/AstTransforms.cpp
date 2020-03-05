@@ -556,15 +556,13 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                         // Empty aggregator body!
                         // Not currently handled, so add in a false literal in the body
                         // E.g. max x : { } =becomes=> max 1 : {0 = 1}
-                        replacementAggregator->setTargetExpression(
-                                std::make_unique<AstNumericConstant>(std::string("1")));
+                        replacementAggregator->setTargetExpression(std::make_unique<AstNumericConstant>(1));
 
                         // Add '0 = 1' if false was found, '1 = 1' otherwise
                         int lhsConstant = containsFalse ? 0 : 1;
-                        replacementAggregator->addBodyLiteral(
-                                std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
-                                        std::make_unique<AstNumericConstant>(std::to_string(lhsConstant)),
-                                        std::make_unique<AstNumericConstant>(std::string("1"))));
+                        replacementAggregator->addBodyLiteral(std::make_unique<AstBinaryConstraint>(
+                                BinaryConstraintOp::EQ, std::make_unique<AstNumericConstant>(lhsConstant),
+                                std::make_unique<AstNumericConstant>(1)));
                     }
 
                     return replacementAggregator;

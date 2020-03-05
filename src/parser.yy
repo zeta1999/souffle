@@ -975,7 +975,7 @@ arg
         if (const auto* original = dynamic_cast<const AstNumericConstant*>($nested_arg)) {
             switch (original->getType()) {
                 case AstNumericConstant::Type::Int:
-                    $$ = new AstNumericConstant(std::to_string(-1 * RamDomainFromString(original->getConstant())));
+                    $$ = new AstNumericConstant(-1 * RamDomainFromString(original->getConstant()));
                     break;
                 case AstNumericConstant::Type::Float:
                     $$ = new AstNumericConstant(std::to_string(-1 * RamFloatFromString(original->getConstant())), original->getType());

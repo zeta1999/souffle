@@ -54,7 +54,7 @@ TEST(AstPrint, NilConstant) {
 }
 
 TEST(AstPrint, NumberConstant) {
-    auto testArgument = std::make_unique<AstNumericConstant>(std::string("2"));
+    auto testArgument = std::make_unique<AstNumericConstant>(2);
 
     auto tu1 = makeATU();
     tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));

@@ -44,7 +44,7 @@ protected:
         arity = static_cast<size_t>(types[relationName]["arity"].long_value());
         auxiliaryArity = static_cast<size_t>(types[relationName]["auxArity"].long_value());
 
-        for (size_t i = 0; i < arity; ++i) {
+        for (size_t i = 0; i < arity + auxiliaryArity; ++i) {
             std::string type = types[relationName]["types"][i].string_value();
             typeAttributes.push_back(std::move(type));
         }

@@ -69,7 +69,11 @@ public:
             f->print(os);
             os << "\n";
         }
+
+        // print declared relations and their corresponding clauses
+        std::set<AstQualifiedName> declaredRelations;
         for (const auto& rel : relations) {
+            declaredRelations.insert(rel->getQualifiedName());
             os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
             os << *rel << "\n\n";
             for (const auto& clause : clauses) {
@@ -78,13 +82,18 @@ public:
                 }
             }
         }
-        const auto& orphanClauses = getOrphanClauses(*this);
-        if (!orphanClauses.empty()) {
-            os << join(orphanClauses, "\n\n", print_deref<AstClause*>()) << "\n";
+
+        // print clauses without a corresponding relation declaration
+        for (const auto& clause : clauses) {
+            if (!contains(declaredRelations, clause->getHead()->getQualifiedName())) {
+                os << *clause << "\n\n";
+            }
         }
+
         if (!ios.empty()) {
             os << join(ios, "\n\n", print_deref<std::unique_ptr<AstIO>>()) << "\n";
         }
+
         if (!pragmaDirectives.empty()) {
             for (const auto& cur : pragmaDirectives) {
                 os << *cur << "\n";

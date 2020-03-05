@@ -137,7 +137,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirective
 
     std::vector<const AstIO*> relLoads;
     for (const auto* io : program->getIOs()) {
-        if (io->getQualifiedName() == rel->getQualifiedName() && io_>getType() == AstIO::InputIO) {
+        if (io->getQualifiedName() == rel->getQualifiedName() && io->getType() == AstIO::InputIO) {
             relLoads.push_back(io);
         }
     }

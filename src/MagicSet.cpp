@@ -1123,10 +1123,9 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 if (ioTypes->isInput(originalRelation)) {
                     for (AstIO* io : program->getIOs()) {
                         if (io->getQualifiedName() != originalName && io->getType() != AstIO::InputIO) {
-                            return;
+                            continue;
                         }
                         io->setQualifiedName(newRelName);
-                        const auto& directives = io->getDirectives();
                         if (!io->hasDirective("IO")) {
                             io->addDirective("IO", "file");
                         }

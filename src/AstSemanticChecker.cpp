@@ -701,11 +701,6 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     // start with declaration
     checkRelationDeclaration(report, typeEnv, program, relation, ioTypes);
 
-    // check clauses
-    for (AstClause* c : getClauses(program, relation)) {
-        checkClause(report, program, *c, recursiveClauses);
-    }
-
     // check whether this relation is empty
     if (getClauses(program, relation).empty() && !ioTypes.isInput(&relation) &&
             !relation.hasQualifier(RelationQualifier::SUPPRESSED)) {
@@ -716,12 +711,12 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
 
 void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& typeEnv,
         const AstProgram& program, const RecursiveClauses& recursiveClauses, const IOType& ioTypes) {
-    for (AstRelation* cur : program.getRelations()) {
-        checkRelation(report, typeEnv, program, *cur, recursiveClauses, ioTypes);
+    for (const AstRelation* rel : program.getRelations()) {
+        checkRelation(report, typeEnv, program, *rel, recursiveClauses, ioTypes);
     }
 
-    for (AstClause* cur : getOrphanClauses(program)) {
-        checkClause(report, program, *cur, recursiveClauses);
+    for (const AstClause* clause : program.getClauses()) {
+        checkClause(report, program, *clause, recursiveClauses);
     }
 }
 

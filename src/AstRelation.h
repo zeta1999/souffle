@@ -23,7 +23,6 @@
 #include "AstNode.h"
 #include "AstQualifiedName.h"
 #include "AstType.h"
-#include "AstUtils.h"
 #include "Global.h"
 #include "RelationTag.h"
 

@@ -194,9 +194,10 @@ bool contains(const C& container, const typename C::value_type& element) {
  * Returns the first element in a container that satisfies a given predicate,
  * nullptr otherwise.
  */
-template <typename T, template <typename...> typename C>
-T* getIf(const C<T*>& container, std::function<bool(const T*)> pred) {
-    auto res = std::find_if(container.begin(), container.end(), [&](const T* item) { return pred(item); });
+template <typename C>
+typename C::value_type getIf(const C& container, std::function<bool(const typename C::value_type)> pred) {
+    auto res = std::find_if(
+            container.begin(), container.end(), [&](const typename C::value_type item) { return pred(item); });
     return res == container.end() ? nullptr : *res;
 }
 

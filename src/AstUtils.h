@@ -120,14 +120,6 @@ const AstType* getType(const AstProgram& program, const AstQualifiedName& name);
 const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, const std::string& name);
 
 /**
- * Returns the set of orphan clauses in the program; i.e. clauses without a relation declaration.
- *
- * @param program the program
- * @return the set of orphan clauses
- */
-std::vector<AstClause*> getOrphanClauses(const AstProgram& program);
-
-/**
  * Removes the set of clauses with the given relation name.
  *
  * @param program the program

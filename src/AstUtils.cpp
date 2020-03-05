@@ -54,35 +54,16 @@ std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation&
 }
 
 AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name) {
-    return getIf<AstRelation>(
-            program.getRelations(), [&](const AstRelation* r) { return r->getQualifiedName() == name; });
+    return getIf(program.getRelations(), [&](const AstRelation* r) { return r->getQualifiedName() == name; });
 }
 
 const AstType* getType(const AstProgram& program, const AstQualifiedName& name) {
-    return getIf<AstType>(
-            program.getTypes(), [&](const AstType* t) { return t->getQualifiedName() == name; });
+    return getIf(program.getTypes(), [&](const AstType* t) { return t->getQualifiedName() == name; });
 }
 
 const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, const std::string& name) {
-    return getIf<AstFunctorDeclaration>(program.getFunctorDeclarations(),
+    return getIf(program.getFunctorDeclarations(),
             [&](const AstFunctorDeclaration* f) { return f->getName() == name; });
-}
-
-std::vector<AstClause*> getOrphanClauses(const AstProgram& program) {
-    // get existing relation names
-    std::set<AstQualifiedName> existingRelations;
-    for (AstRelation* rel : program.getRelations()) {
-        existingRelations.insert(rel->getQualifiedName());
-    }
-
-    // collect set of clauses not belonging to a relation
-    std::vector<AstClause*> orphans;
-    for (AstClause* clause : program.getClauses()) {
-        if (existingRelations.find(clause->getHead()->getQualifiedName()) == existingRelations.end()) {
-            orphans.push_back(clause);
-        }
-    }
-    return orphans;
 }
 
 void removeRelationClauses(AstProgram& program, const AstQualifiedName& name) {

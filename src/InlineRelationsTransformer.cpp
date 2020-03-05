@@ -836,9 +836,11 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
                 addedBodyLiterals = formNegatedLiterals(program, atom);
             }
         }
-        for (const auto& curVec : atomVersions.getVector()) {
-            for (auto* cur : curVec) {
-                delete cur;
+        if (atomVersions.isValid()) {
+            for (const auto& curVec : atomVersions.getVector()) {
+                for (auto* cur : curVec) {
+                    delete cur;
+                }
             }
         }
     } else if (auto* constraint = dynamic_cast<AstBinaryConstraint*>(lit)) {

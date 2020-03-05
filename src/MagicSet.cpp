@@ -1122,17 +1122,16 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
                     for (AstIO* io : program->getIOs()) {
-                        if (io->getQualifiedName() != originalName || io->getKVP("operation") != "input") {
-                            continue;
+                        if (io->getQualifiedName() != originalName && io->getType() != AstIO::InputIO) {
+                            return;
                         }
                         io->setQualifiedName(newRelName);
-                        const auto& directives = io->getIODirectiveMap();
-                        if (directives.find("IO") == directives.end()) {
-                            io->addKVP("IO", "file");
+                        const auto& directives = io->getDirectives();
+                        if (!io->hasDirective("IO")) {
+                            io->addDirective("IO", "file");
                         }
-                        if (directives.at("IO") == "file" &&
-                                directives.find("filename") == directives.end()) {
-                            io->addKVP("filename", originalName.getQualifiers()[0] + ".facts");
+                        if (io->getDirective("IO") == "file" && !io->hasDirective("filename")) {
+                            io->addDirective("filename", originalName.getQualifiers()[0] + ".facts");
                         }
                     }
                 }

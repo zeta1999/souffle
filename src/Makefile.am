@@ -106,7 +106,6 @@ souffle_sources = \
         FunctorOps.h                              \
         Global.cpp            Global.h            \
         GraphUtils.h                              \
-        IODirectives.h                            \
         IOSystem.h                                \
         RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
         InlineRelationsTransformer.cpp            \
@@ -148,6 +147,7 @@ souffle_sources = \
         RelationTag.h                             \
         ReorderLiteralsTransformer.cpp            \
         ResolveAliasesTransformer.cpp             \
+        RWOperation.h                             \
         SignalHandler.h                           \
         SrcLocation.cpp    SrcLocation.h          \
         Synthesiser.cpp       Synthesiser.h       \
@@ -194,7 +194,7 @@ soufflepublic_HEADERS = \
         ExplainProvenanceImpl.h                   \
         ExplainTree.h                             \
         EquivalenceRelation.h                     \
-        IODirectives.h                            \
+        RWOperation.h                             \
         IOSystem.h                                \
         IterUtils.h                               \
         LambdaBTree.h                             \

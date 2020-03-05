@@ -78,7 +78,7 @@ private:
             ErrorReport& report, const TypeEnvironmentAnalysis& typeEnvAnalysis, const AstProgram& program);
 
     static void checkNamespaces(ErrorReport& report, const AstProgram& program);
-    static void checkIODirectives(ErrorReport& report, const AstProgram& program);
+    static void checkIO(ErrorReport& report, const AstProgram& program);
     static void checkWitnessProblem(ErrorReport& report, const AstProgram& program);
     static void checkInlining(ErrorReport& report, const AstProgram& program,
             const PrecedenceGraph& precedenceGraph, const IOType& ioTypes);

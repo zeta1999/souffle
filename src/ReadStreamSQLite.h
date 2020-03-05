@@ -30,9 +30,9 @@ namespace souffle {
 
 class ReadStreamSQLite : public ReadStream {
 public:
-    ReadStreamSQLite(const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable)
-            : ReadStream(ioDirectives, symbolTable, recordTable), dbFilename(ioDirectives.get("dbname")),
-              relationName(ioDirectives.getRelationName()) {
+    ReadStreamSQLite(const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable)
+            : ReadStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("dbname")),
+              relationName(rwOperation.get("name")) {
         openDB();
         checkTableExists();
         prepareSelectStatement();
@@ -159,8 +159,8 @@ protected:
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
     std::unique_ptr<ReadStream> getReader(
-            const IODirectives& ioDirectives, SymbolTable& symbolTable, RecordTable& recordTable) override {
-        return std::make_unique<ReadStreamSQLite>(ioDirectives, symbolTable, recordTable);
+            const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable) override {
+        return std::make_unique<ReadStreamSQLite>(rwOperation, symbolTable, recordTable);
     }
 
     const std::string& getName() const override {

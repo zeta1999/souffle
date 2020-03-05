@@ -89,6 +89,14 @@ private:
 };
 
 /**
+ * PredefinedType = Number/Unsigned/Float/Symbol
+ */
+struct PredefinedType : public Type {
+    PredefinedType(const TypeEnvironment& environment, const AstQualifiedName& name)
+            : Type(environment, name) {}
+};
+
+/**
  * A primitive type. The basic type construct to build new types.
  */
 class PrimitiveType : public Type {
@@ -183,7 +191,7 @@ public:
     }
 
     template <typename... Types>
-    TypeSet(const Types&... types) : all(false) {
+    explicit TypeSet(const Types&... types) : all(false) {
         for (const Type* cur : toVector<const Type*>(&types...)) {
             this->types.insert(cur);
         }
@@ -223,6 +231,25 @@ public:
             return;
         }
         types.insert(&type);
+    }
+
+    /** Calculate intersection of two TypeSet */
+    static TypeSet intersection(const TypeSet& left, const TypeSet& right) {
+        TypeSet result;
+
+        if (left.isAll()) {
+            return right;
+        } else if (right.isAll()) {
+            return left;
+        }
+
+        for (const auto& element : left) {
+            if (right.contains(element)) {
+                result.insert(element);
+            }
+        }
+
+        return result;
     }
 
     /** Inserts all the types of the given set into this set */

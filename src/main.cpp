@@ -456,7 +456,7 @@ int main(int argc, char** argv) {
         auto parser_end = std::chrono::high_resolution_clock::now();
         std::string runtimeStr =
                 "(" + std::to_string(std::chrono::duration<double>(parser_end - parser_start).count()) + "s)";
-        DebugReporter::generateDebugReport(*astTranslationUnit, "Parsing", "After Parsing " + runtimeStr);
+        DebugReporter::generateDebugReport(*astTranslationUnit, "", "Parsing", "After Parsing " + runtimeStr);
 
         pipeline->setDebugReport();
     }

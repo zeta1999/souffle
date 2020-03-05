@@ -69,29 +69,15 @@ static std::string toBase64(const std::string& data) {
 }
 
 DebugReportSection DebugReporter::getDotGraphSection(
-        const std::string& id, std::string title, const std::string& dotSpec) {
-    std::string tempFileName = tempFile();
-    {
-        std::ofstream dotFile(tempFileName);
-        dotFile << dotSpec;
-    }
-
-    std::string cmd = "dot -Tsvg < " + tempFileName;
-    FILE* in = popen(cmd.c_str(), "r");
-    std::stringstream data;
-    while (in != nullptr) {
-        char c = fgetc(in);
-        if (feof(in) != 0) {
-            break;
-        }
-        data << c;
-    }
-    pclose(in);
-    remove(tempFileName.c_str());
+        std::string id, std::string title, const std::string& dotSpec) {
+    TempFileStream dotFile;
+    dotFile << dotSpec;
+    dotFile.flush();
+    std::string data = execStdOut("dot -Tsvg < " + dotFile.getFileName()).str();
 
     std::stringstream graphHTML;
-    if (data.str().find("<svg") != std::string::npos) {
-        graphHTML << "<img alt='graph image' src='data:image/svg+xml;base64," << toBase64(data.str())
+    if (data.find("<svg") != std::string::npos) {
+        graphHTML << "<img alt='graph image' src='data:image/svg+xml;base64," << toBase64(data)
                   << "'><br/>\n";
     } else {
         graphHTML << "<p>(error: unable to generate dot graph image)</p>";
@@ -102,16 +88,19 @@ DebugReportSection DebugReporter::getDotGraphSection(
               << "' style='display:none'>\n";
     graphHTML << "<pre>" << dotSpec << "</pre>\n";
     graphHTML << "</div>\n";
-    return DebugReportSection(id, std::move(title), {}, graphHTML.str());
+    return DebugReportSection(std::move(id), std::move(title), {}, graphHTML.str());
 }
 
 bool DebugReporter::transform(AstTranslationUnit& translationUnit) {
+    std::stringstream datalogSpecOriginal;
+    datalogSpecOriginal << *translationUnit.getProgram();
+
     auto start = std::chrono::high_resolution_clock::now();
     bool changed = applySubtransformer(translationUnit, wrappedTransformer.get());
     auto end = std::chrono::high_resolution_clock::now();
     std::string runtimeStr = "(" + std::to_string(std::chrono::duration<double>(end - start).count()) + "s)";
     if (changed) {
-        generateDebugReport(translationUnit, wrappedTransformer->getName(),
+        generateDebugReport(translationUnit, datalogSpecOriginal.str(), wrappedTransformer->getName(),
                 "After " + wrappedTransformer->getName() + " " + runtimeStr);
     } else {
         translationUnit.getDebugReport().addSection(DebugReportSection(wrappedTransformer->getName(),
@@ -134,78 +123,29 @@ DebugReportSection formatCodeSection(const std::string& id, const std::string& t
     return DebugReportSection(id, title, codeHTML.str());
 }
 
-DebugReportSection formatDotGraphSection(
-        const std::string& id, const std::string& title, const std::string& dotSpec) {
-    std::string tempFileName = tempFile();
-    {
-        std::ofstream dotFile(tempFileName);
-        dotFile << dotSpec;
-    }
+void DebugReporter::generateDebugReport(AstTranslationUnit& tu, const std::string& preTransformDatalog,
+        const std::string& id, std::string title) {
+    auto show = [](auto* x) {
+        std::stringstream ss;
+        if (x) ss << *x;
+        return ss.str();
+    };
 
-    std::string cmd = "dot -Tsvg < " + tempFileName;
-    FILE* in = popen(cmd.c_str(), "r");
-    std::stringstream data;
-    while (in != nullptr) {
-        char c = fgetc(in);
-        if (feof(in) != 0) {
-            break;
-        }
-        data << c;
-    }
-    pclose(in);
-    remove(tempFileName.c_str());
+    std::string datalogSpec = show(tu.getProgram());
+    DebugReportSection datalogSection = formatCodeSection(id + "-dl", "Datalog",
+            preTransformDatalog.empty() ? std::move(datalogSpec)
+                                        : generateDiff(preTransformDatalog, datalogSpec));
 
-    std::stringstream graphHTML;
-    if (data.str().find("<svg") != std::string::npos) {
-        graphHTML << "<img alt='graph image' src='data:image/svg+xml;base64," << toBase64(data.str())
-                  << "'><br/>\n";
-    } else {
-        graphHTML << "<p>(error: unable to generate dot graph image)</p>";
-    }
-    graphHTML << "<a href=\"javascript:toggleVisibility('" << id << "-source"
-              << "')\">(show dot source)</a>\n";
-    graphHTML << "<div id='" << id << "-source"
-              << "' style='display:none'>\n";
-    graphHTML << "<pre>" << dotSpec << "</pre>\n";
-    graphHTML << "</div>\n";
-    return DebugReportSection(id, title, graphHTML.str());
-}
-void DebugReporter::generateDebugReport(
-        AstTranslationUnit& translationUnit, const std::string& id, std::string title) {
-    std::stringstream datalogSpec;
-    translationUnit.getProgram()->print(datalogSpec);
-
-    DebugReportSection datalogSection = formatCodeSection(id + "-dl", "Datalog", datalogSpec.str());
-
-    std::stringstream typeAnalysis;
-    translationUnit.getAnalysis<TypeAnalysis>()->print(typeAnalysis);
-    DebugReportSection typeAnalysisSection =
-            formatCodeSection(id + "-ta", "Type Analysis", typeAnalysis.str());
-
-    std::stringstream typeEnvironmentAnalysis;
-    translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->print(typeEnvironmentAnalysis);
-    DebugReportSection typeEnvironmentAnalysisSection =
-            formatCodeSection(id + "-tea", "Type Environment Analysis", typeEnvironmentAnalysis.str());
-
-    std::stringstream precGraphDot;
-    translationUnit.getAnalysis<PrecedenceGraph>()->print(precGraphDot);
-    DebugReportSection precedenceGraphSection =
-            formatDotGraphSection(id + "-prec-graph", "Precedence Graph", precGraphDot.str());
-
-    std::stringstream sccGraphDot;
-    translationUnit.getAnalysis<SCCGraph>()->print(sccGraphDot);
-    DebugReportSection sccGraphSection =
-            formatDotGraphSection(id + "-scc-graph", "SCC Graph", sccGraphDot.str());
-
-    std::stringstream topsortSCCGraph;
-    translationUnit.getAnalysis<TopologicallySortedSCCGraph>()->print(topsortSCCGraph);
-    DebugReportSection topsortSCCGraphSection =
-            formatCodeSection(id + "-topsort-scc-graph", "SCC Topological Sort Order", topsortSCCGraph.str());
-
-    translationUnit.getDebugReport().addSection(DebugReportSection(id, std::move(title),
-            {datalogSection, typeAnalysisSection, typeEnvironmentAnalysisSection, precedenceGraphSection,
-                    sccGraphSection, topsortSCCGraphSection},
-            ""));
+    std::vector<DebugReportSection> sections{datalogSection,
+            formatCodeSection(id + "-ta", "Type Analysis", show(tu.getAnalysis<TypeAnalysis>())),
+            formatCodeSection(id + "-tea", "Type Environment Analysis",
+                    show(tu.getAnalysis<TypeEnvironmentAnalysis>())),
+            getDotGraphSection(
+                    id + "-prec-graph", "Precedence Graph", show(tu.getAnalysis<PrecedenceGraph>())),
+            getDotGraphSection(id + "-scc-graph", "SCC Graph", show(tu.getAnalysis<SCCGraph>())),
+            formatCodeSection(id + "-topsort-scc-graph", "SCC Topological Sort Order",
+                    show(tu.getAnalysis<TopologicallySortedSCCGraph>()))};
+    tu.getDebugReport().addSection(DebugReportSection(id, std::move(title), std::move(sections), ""));
 }
 
 }  // end of namespace souffle

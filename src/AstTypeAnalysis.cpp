@@ -143,6 +143,109 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
 }
 
 /**
+ * Ensure that types of left and right have the same base types.
+ */
+TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& right) {
+    struct C : public Constraint<TypeVar> {
+        TypeVar left;
+        TypeVar right;
+
+        C(TypeVar left, TypeVar right) : left(std::move(left)), right(std::move(right)) {}
+
+        bool update(Assignment<TypeVar>& assigment) const override {
+            // get current value of variable a
+            TypeSet& assigmentsLeft = assigment[left];
+            TypeSet& assigmentsRight = assigment[right];
+
+            // Base types common to left and right variables.
+            TypeSet baseTypes;
+
+            // Base types present in left/right variable.
+            TypeSet baseTypesLeft;
+            TypeSet baseTypesRight;
+
+            // Iterate over possible types extracting base types.
+            // Left
+            if (!assigmentsLeft.isAll()) {
+                for (const auto& type : assigmentsLeft) {
+                    // Predefined type is always a base type.
+                    if (dynamic_cast<const PredefinedType*>(&type) != nullptr) {
+                        baseTypesLeft.insert(type);
+                    } else if (auto* primitive = dynamic_cast<const PrimitiveType*>(&type)) {
+                        baseTypesLeft.insert(primitive->getBaseType());
+                    }
+                }
+            }
+            // Right
+            if (!assigmentsRight.isAll()) {
+                for (const auto& type : assigmentsRight) {
+                    // Predefined type is always a base type.
+                    if (dynamic_cast<const PredefinedType*>(&type) != nullptr) {
+                        baseTypesRight.insert(type);
+                    } else if (auto* primitive = dynamic_cast<const PrimitiveType*>(&type)) {
+                        baseTypesRight.insert(primitive->getBaseType());
+                    }
+                }
+            }
+
+            baseTypes = TypeSet::intersection(baseTypesLeft, baseTypesRight);
+
+            TypeSet resultLeft;
+            TypeSet resultRight;
+
+            // Handle all
+            if (assigmentsLeft.isAll() && assigmentsRight.isAll()) {
+                return false;
+            }
+
+            // If left xor right is all, assign base types of the other side as possible values.
+            if (assigmentsLeft.isAll()) {
+                assigmentsLeft = baseTypesRight;
+                return true;
+            }
+            if (assigmentsRight.isAll()) {
+                assigmentsRight = baseTypesLeft;
+                return true;
+            }
+
+            // Allow types if they are subtypes of any of the common base types.
+            for (const Type& type : assigmentsLeft) {
+                bool isSubtypeOfCommonBaseType = any_of(baseTypes.begin(), baseTypes.end(),
+                        [&type](const Type& baseType) { return isSubtypeOf(type, baseType); });
+                if (isSubtypeOfCommonBaseType) {
+                    resultLeft.insert(type);
+                }
+            }
+
+            for (const Type& type : assigmentsRight) {
+                bool isSubtypeOfCommonBaseType = any_of(baseTypes.begin(), baseTypes.end(),
+                        [&type](const Type& baseType) { return isSubtypeOf(type, baseType); });
+                if (isSubtypeOfCommonBaseType) {
+                    resultRight.insert(type);
+                }
+            }
+
+            // check whether there was a change
+            if (resultLeft == assigmentsLeft && resultRight == assigmentsRight) {
+                return false;
+            }
+            assigmentsLeft = resultLeft;
+            assigmentsRight = resultRight;
+            return true;
+        }
+        //
+        void print(std::ostream& out) const override {
+            out << "∃ t : (" << left << " <: t)"
+                << " ∧ "
+                << "(" << right << " <: t)"
+                << " where t is a base type";
+        }
+    };
+
+    return std::make_shared<C>(left, right);
+}
+
+/**
  * A constraint factory ensuring that all the types associated to the variable
  * a are subtypes of type b.
  */
@@ -438,15 +541,18 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         void visitFunctor(const AstFunctor& fun) override {
             auto functorVar = getVar(fun);
 
-            // Currently we take a very simple approach toward polymorphic function.
-            // We require argument and return type to be of the same type.
+            // In polymorphic case
+            // We only require arguments to share a base type with a return type.
+            // (instead of, for example, requiring them to be of the same type)
+            // This approach is related to old type semantics
+            // See #1296 and tests/semantic/type_system4
             if (auto intrinsicFunctor = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
                 if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
                     for (auto* argument : intrinsicFunctor->getArguments()) {
                         auto argumentVar = getVar(argument);
-                        addConstraint(isSubtypeOf(functorVar, argumentVar));
-                        addConstraint(isSubtypeOf(argumentVar, functorVar));
+                        addConstraint(subtypesOfTheSameBaseType(argumentVar, functorVar));
                     }
+
                     return;
                 }
             }

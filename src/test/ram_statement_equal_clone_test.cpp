@@ -24,29 +24,17 @@ namespace souffle {
 
 namespace test {
 
-TEST(RamLoad, CloneAndEquals) {
-    // LOAD DATA FOR A FROM {...}
+TEST(RamIO1, CloneAndEquals) {
+    // IO A ()
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    RamLoad a(std::make_unique<RamRelationReference>(&A), {});
-    RamLoad b(std::make_unique<RamRelationReference>(&A), {});
+    std::map<std::string, std::string> ioEmptyA;
+    std::map<std::string, std::string> ioEmptyB;
+    RamIO a(std::make_unique<RamRelationReference>(&A), std::move(ioEmptyA));
+    RamIO b(std::make_unique<RamRelationReference>(&A), std::move(ioEmptyB));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
 
-    RamLoad* c = a.clone();
-    EXPECT_EQ(a, *c);
-    EXPECT_NE(&a, c);
-    delete c;
-}
-
-TEST(RamStore, CloneAndEquals) {
-    // STORE DATA FOR A TO {...}
-    RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
-    RamStore a(std::make_unique<RamRelationReference>(&A), {});
-    RamStore b(std::make_unique<RamRelationReference>(&A), {});
-    EXPECT_EQ(a, b);
-    EXPECT_NE(&a, &b);
-
-    RamStore* c = a.clone();
+    RamIO* c = a.clone();
     EXPECT_EQ(a, *c);
     EXPECT_NE(&a, c);
     delete c;
@@ -189,15 +177,15 @@ TEST(RamSequence, CloneAndEquals) {
     delete f;
 
     // multiple statements in the sequence
-    // LOAD DATA FOR A FROM {}
+    // IO A ()
     // CLEAR A
-    std::vector<IODirectives> g_load_IODir;
-    std::vector<IODirectives> h_load_IODir;
+    std::map<std::string, std::string> g_load_IODir;
+    std::map<std::string, std::string> h_load_IODir;
     RamSequence g(
-            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(g_load_IODir)),
+            std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(g_load_IODir)),
             std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
     RamSequence h(
-            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(h_load_IODir)),
+            std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(h_load_IODir)),
             std::make_unique<RamClear>(std::make_unique<RamRelationReference>(&A)));
     EXPECT_EQ(g, h);
     EXPECT_NE(&g, &h);
@@ -320,16 +308,16 @@ TEST(RamLogRelationTimer, CloneAndEquals) {
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     /*
      * START_TIMER ON A "file.dl [8:1-8:8]"
-     *   LOAD DATA FOR A FROM {}
+     *   IO A()
      * END_TIMER
      * */
-    std::vector<IODirectives> a_IODir;
-    std::vector<IODirectives> b_IODir;
+    std::map<std::string, std::string> a_IODir;
+    std::map<std::string, std::string> b_IODir;
     RamLogRelationTimer a(
-            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+            std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
             "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
     RamLogRelationTimer b(
-            std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(b_IODir)),
+            std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(b_IODir)),
             "file.dl [8:1-8:8]", std::make_unique<RamRelationReference>(&A));
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
@@ -344,14 +332,14 @@ TEST(RamLogTimer, CloneAndEquals) {
     RamRelation A("A", 1, 1, {"x"}, {"i"}, RelationRepresentation::DEFAULT);
     /*
      * START_TIMER "@runtime"
-     *   LOAD DATA FOR A FROM {}
+     *   IO .. (..)
      * END_TIMER
      * */
-    std::vector<IODirectives> a_IODir;
-    std::vector<IODirectives> b_IODir;
-    RamLogTimer a(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+    std::map<std::string, std::string> a_IODir;
+    std::map<std::string, std::string> b_IODir;
+    RamLogTimer a(std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
             "@runtime");
-    RamLogTimer b(std::make_unique<RamLoad>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
+    RamLogTimer b(std::make_unique<RamIO>(std::make_unique<RamRelationReference>(&A), std::move(a_IODir)),
             "@runtime");
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);

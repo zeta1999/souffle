@@ -24,19 +24,24 @@ namespace souffle {
 
 void IOType::run(const AstTranslationUnit& translationUnit) {
     const AstProgram& program = *translationUnit.getProgram();
-    visitDepthFirst(program, [&](const AstIO& directive) {
-        auto* relation = getRelation(program, directive.getQualifiedName());
-        if (relation == nullptr) return;
-        const std::string& op = directive.getKVP("operation");
-        if (op == "input") {
-            inputRelations.insert(relation);
-        } else if (op == "output") {
-            outputRelations.insert(relation);
-        } else if (op == "printsize") {
-            printSizeRelations.insert(relation);
-            outputRelations.insert(relation);
-        } else {
-            assert("Unrecognized I/O operation");
+    visitDepthFirst(program, [&](const AstIO& io) {
+        auto* relation = getRelation(program, io.getQualifiedName());
+        if (relation == nullptr) {
+            return;
+        }
+        switch (io.getType()) {
+            case AstIO::InputIO:
+                inputRelations.insert(relation);
+                break;
+            case AstIO::OutputIO:
+                outputRelations.insert(relation);
+                break;
+            case AstIO::PrintsizeIO:
+                printSizeRelations.insert(relation);
+                outputRelations.insert(relation);
+                break;
+            default:
+                assert("Unrecognized I/O operation");
         }
     });
 }
@@ -44,7 +49,7 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
 void IOType::print(std::ostream& os) const {
     os << "input relations: " << inputRelations << std::endl;
     os << "output relations: " << outputRelations << std::endl;
-    os << "printSize relations: " << printSizeRelations << std::endl;
+    os << "printsize relations: " << printSizeRelations << std::endl;
 }
 
 }  // end of namespace souffle

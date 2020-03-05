@@ -3,6 +3,9 @@
 // Licensed under the Universal Permissive License v 1.0 as shown at:
 // - https://opensource.org/licenses/UPL
 // - <souffle root>/licenses/SOUFFLE-UPL.txt
+// 
+// This is a more complex test for provenance and includes testing
+// for the IO system adaptations for provenance
 
 .pragma "provenance" "explain"
 

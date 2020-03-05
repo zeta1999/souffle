@@ -36,6 +36,7 @@
 #include <cassert>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -565,9 +566,11 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         void visitNumericConstant(const AstNumericConstant& constant) override {
             TypeSet possibleTypes;
 
+            std::optional<AstNumericConstant::Type> maybeType = constant.getType();
+
             // Check if the type is already given.
-            if (constant.hasType()) {
-                switch (constant.getType()) {
+            if (maybeType.has_value()) {
+                switch (*maybeType) {
                     case AstNumericConstant::Type::Int:
                         // Assert that it can be parsed here.
                         possibleTypes.insert(env.getNumberType());

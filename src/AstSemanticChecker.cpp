@@ -168,24 +168,33 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // all signed constants are used as numbers
     visitDepthFirst(nodes, [&](const AstNumericConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        switch (constant.getType()) {
-            case AstNumericConstant::Type::Int:
-                if (!isNumberType(types)) {
-                    report.addError("Number constant (type mismatch)", constant.getSrcLoc());
-                }
-                break;
-            case AstNumericConstant::Type::Uint:
-                if (!isUnsignedType(types)) {
-                    report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
-                }
-                break;
-            case AstNumericConstant::Type::Float:
-                if (!isFloatType(types)) {
-                    report.addError("Float constant (type mismatch)", constant.getSrcLoc());
-                }
-                break;
+
+        // Check if specific type has been requested.
+        std::optional<AstNumericConstant::Type> maybeType = constant.getType();
+        if (maybeType.has_value()) {
+            switch (*maybeType) {
+                case AstNumericConstant::Type::Int:
+                    if (!isNumberType(types)) {
+                        report.addError("Number constant (type mismatch)", constant.getSrcLoc());
+                    }
+                    break;
+                case AstNumericConstant::Type::Uint:
+                    if (!isUnsignedType(types)) {
+                        report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
+                    }
+                    break;
+                case AstNumericConstant::Type::Float:
+                    if (!isFloatType(types)) {
+                        report.addError("Float constant (type mismatch)", constant.getSrcLoc());
+                    }
+                    break;
+            }
+            // Otherwise, make sure that there is some solution.
+        } else if (types.empty()) {
+            report.addError("Ambiguous constant (couldn't find any type solution)", constant.getSrcLoc());
         }
     });
+
     // all nil constants are used as records
     visitDepthFirst(nodes, [&](const AstNilConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);

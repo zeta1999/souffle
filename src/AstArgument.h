@@ -175,10 +175,7 @@ public:
         return copy;
     }
 
-    bool hasType() const {
-        return true;
-    }
-    Type getType() const {
+    const std::optional<Type>& getType() const {
         return type;
     }
 
@@ -194,7 +191,10 @@ protected:
     }
 
 private:
-    const Type type;  // Make type optional.
+    AstNumericConstant(std::string constant, std::optional<Type> type)
+            : AstConstant(std::move(constant)), type(std::move(type)) {}
+
+    const std::optional<Type> type;  // Make type optional.
 };
 
 /**

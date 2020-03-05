@@ -28,6 +28,7 @@
 #include <cassert>
 #include <map>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <string>
@@ -407,7 +408,8 @@ private:
         } else if (dynamic_cast<const AstNilConstant*>(&constant) != nullptr) {
             return RecordTable::getNil();
         } else if (auto* numConstant = dynamic_cast<const AstNumericConstant*>(&constant)) {
-            switch (numConstant->getType()) {
+            assert(numConstant->getType().has_value());
+            switch (*numConstant->getType()) {
                 case AstNumericConstant::Type::Int:
                     return RamDomainFromString(numConstant->getConstant());
                 case AstNumericConstant::Type::Uint:

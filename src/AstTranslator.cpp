@@ -57,6 +57,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <typeinfo>
 #include <utility>
@@ -291,13 +292,16 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitNumericConstant(const AstNumericConstant& c) override {
-            switch (c.getType()) {
-                case AstNumericConstant::Type::Int:
-                    return std::make_unique<RamSignedConstant>(RamDomainFromString(c.getConstant()));
-                case AstNumericConstant::Type::Uint:
-                    return std::make_unique<RamUnsignedConstant>(RamUnsignedFromString(c.getConstant()));
-                case AstNumericConstant::Type::Float:
-                    return std::make_unique<RamFloatConstant>(RamFloatFromString(c.getConstant()));
+            std::optional<AstNumericConstant::Type> maybeType = c.getType();
+            if (maybeType.has_value()) {
+                switch (*maybeType) {
+                    case AstNumericConstant::Type::Int:
+                        return std::make_unique<RamSignedConstant>(RamDomainFromString(c.getConstant()));
+                    case AstNumericConstant::Type::Uint:
+                        return std::make_unique<RamUnsignedConstant>(RamUnsignedFromString(c.getConstant()));
+                    case AstNumericConstant::Type::Float:
+                        return std::make_unique<RamFloatConstant>(RamFloatFromString(c.getConstant()));
+                }
             }
         }
 

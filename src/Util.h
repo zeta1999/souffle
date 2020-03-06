@@ -111,15 +111,37 @@ inline bool isPrefix(const std::string& prefix, const std::string& element);
 
 /**
  * Converts a string to a RamDomain
+ *
  */
 inline RamDomain RamDomainFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
     RamDomain val;
+
+    std::string binaryNumber;
+    bool parsingBinary = false;
+
+    // Stoi/stoll can't handle base 2 prefix by default.
+    if (base == 2) {
+        if (isPrefix("-0b", str)) {
+            binaryNumber = "-" + str.substr(3);
+            parsingBinary = true;
+        } else if (isPrefix("0b", str)) {
+            binaryNumber = str.substr(2);
+            parsingBinary = true;
+        }
+    }
+    const std::string& tmp = parsingBinary ? binaryNumber : str;
+
 #if RAM_DOMAIN_SIZE == 64
-    val = std::stoll(str, position, base);
+    val = std::stoll(tmp, position, base);
 #else
-    val = std::stoi(str, position, base);
+    val = std::stoi(tmp, position, base);
 #endif
+
+    if (parsingBinary && position) {
+        *position += 2;
+    }
+
     return static_cast<RamDomain>(val);
 }
 
@@ -146,16 +168,28 @@ inline RamUnsigned RamUnsignedFromString(
         throw std::invalid_argument("Unsigned number can't start with minus.");
     }
 
+    // stoul/stoull can't handle binary prefix by default.
+    std::string binaryNumber;
+    bool parsingBinary = false;
+    if (base == 2 && isPrefix("0b", str)) {
+        binaryNumber = str.substr(2);
+        parsingBinary = true;
+    }
+    const std::string& tmp = parsingBinary ? binaryNumber : str;
+
     RamUnsigned val;
 #if RAM_DOMAIN_SIZE == 64
-    val = std::stoul(str, position, base);
+    val = std::stoul(tmp, position, base);
 #else
-    val = std::stoull(str, position, base);
+    val = std::stoull(tmp, position, base);
 #endif
+
+    if (parsingBinary && position) {
+        *position += 2;
+    }
+
     return static_cast<RamUnsigned>(val);
 }
-
-// Todo: handle binary & hex
 
 /**
  * Can a string be parsed as RamSigned.
@@ -166,11 +200,19 @@ inline RamUnsigned RamUnsignedFromString(
  */
 inline bool canBeParsedAsRamSigned(const std::string& string) {
     size_t charactersRead = 0;
+
     try {
-        RamDomainFromString(string, &charactersRead);
+        if (isPrefix("-0b", string) || isPrefix("0b", string)) {
+            RamDomainFromString(string, &charactersRead, 2);
+        } else if (isPrefix("-0x", string) || isPrefix("0x", string)) {
+            RamDomainFromString(string, &charactersRead, 16);
+        } else {
+            RamDomainFromString(string, &charactersRead);
+        }
     } catch (...) {
         return false;
     }
+
     return charactersRead == string.size();
 }
 

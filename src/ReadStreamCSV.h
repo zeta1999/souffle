@@ -134,9 +134,7 @@ protected:
 
         // Check prefix and parse the input.
         if (isPrefix("0b", element)) {
-            // Default C++ parsing function don't recognize this prefix. Thus we take a substr.
-            value = RamUnsignedFromString(element.substr(2), &charactersRead, 2);
-            charactersRead += 2;
+            value = RamUnsignedFromString(element, &charactersRead, 2);
         } else if (isPrefix("0x", element)) {
             value = RamUnsignedFromString(element, &charactersRead, 16);
         } else {

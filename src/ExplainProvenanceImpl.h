@@ -136,8 +136,7 @@ public:
 
             // check whether the current atom is a constraint
             assert(bodyRel.size() > 0 && "body of a relation should have positive length");
-            bool isConstraint = std::find(constraintList.begin(), constraintList.end(),
-                                        splitString(bodyRel, ',')[0]) != constraintList.end();
+            bool isConstraint = contains(constraintList, bodyRel);
 
             // handle negated atom names
             auto bodyRelAtomName = bodyRel;
@@ -177,7 +176,7 @@ public:
             }
 
             // for a negation, display the corresponding tuple and do not recurse
-            if (bodyRel[0] == '!') {
+            if (bodyRel[0] == '!' && bodyRel != "!=") {
                 std::stringstream joinedTuple;
                 joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple), ", ");
                 auto joinedTupleStr = joinedTuple.str();
@@ -438,8 +437,7 @@ public:
             std::string bodyRel = atomRepresentation[0];
 
             // check whether the current atom is a constraint
-            bool isConstraint =
-                    std::find(constraintList.begin(), constraintList.end(), bodyRel) != constraintList.end();
+            bool isConstraint = contains(constraintList, bodyRel);
 
             // handle negated atom names
             auto bodyRelAtomName = bodyRel;

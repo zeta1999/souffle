@@ -141,6 +141,11 @@ inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position
  */
 inline RamUnsigned RamUnsignedFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
+    // Be default C++ allows unsigned numbers starting with "-".
+    if (isPrefix("-", str)) {
+        throw std::invalid_argument("Unsigned number can't start with minus.");
+    }
+
     RamUnsigned val;
 #if RAM_DOMAIN_SIZE == 64
     val = std::stoul(str, position, base);
@@ -154,7 +159,10 @@ inline RamUnsigned RamUnsignedFromString(
 
 /**
  * Can a string be parsed as RamSigned.
- * Function utilized by type system and semantic checker.
+ *
+ * Souffle (parser, not fact file readers) accepts: hex, binary and base 10.
+ * Integer can be negative, in all 3 formats this means that it
+ * starts with minus (which can be slightly unintuitive for binary/hex but this is c++ default semantics).
  */
 inline bool canBeParsedAsRamSigned(const std::string& string) {
     size_t charactersRead = 0;
@@ -168,12 +176,19 @@ inline bool canBeParsedAsRamSigned(const std::string& string) {
 
 /**
  * Can a string be parsed as RamUnsigned.
- * Function utilized by type system and semantic checker.
+ *
+ * Souffle accepts: hex, binary and base 10.
  */
 inline bool canBeParsedAsRamUnsigned(const std::string& string) {
     size_t charactersRead = 0;
     try {
-        RamUnsignedFromString(string, &charactersRead);
+        if (isPrefix("0b", string)) {
+            RamUnsignedFromString(string, &charactersRead, 2);
+        } else if (isPrefix("0x", string)) {
+            RamUnsignedFromString(string, &charactersRead, 16);
+        } else {
+            RamUnsignedFromString(string, &charactersRead);
+        }
     } catch (...) {
         return false;
     }
@@ -182,7 +197,6 @@ inline bool canBeParsedAsRamUnsigned(const std::string& string) {
 
 /**
  * Can a string be parsed as RamFloat.
- * Function utilized by type system and semantic checker.
  */
 inline bool canBeParsedAsRamFloat(const std::string& string) {
     size_t charactersRead = 0;

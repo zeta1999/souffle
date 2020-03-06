@@ -972,25 +972,20 @@ arg
     /* -- intrinsic functor -- */
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
-        if (const auto* original = dynamic_cast<const AstNumericConstant*>($nested_arg)) {
-            switch (*original->getType()) {
-                case AstNumericConstant::Type::Int:
-                    $$ = new AstNumericConstant(-1 * RamDomainFromString(original->getConstant()));
-                    break;
-                case AstNumericConstant::Type::Float:
-                    $$ = new AstNumericConstant(std::to_string(-1 * RamFloatFromString(original->getConstant())), *original->getType());
-                    break;
-                case AstNumericConstant::Type::Uint:
-                    assert(false && "We can't parse Uint");
-            }
+
+        // If we have a constant, that is not already negated we create a new constant.
+        const auto* asNumeric = dynamic_cast<const AstNumericConstant*>($nested_arg);
+        if (asNumeric && !isPrefix("-", asNumeric->getConstant())) {
+            $$ = new AstNumericConstant("-" + asNumeric->getConstant(), asNumeric->getType());
             $$->setSrcLoc(@nested_arg);
+
+        // Otherwise, create a functor.
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,
                 std::unique_ptr<AstArgument>($nested_arg));
             $nested_arg = nullptr;
             $$->setSrcLoc(@$);
         }
-
     }
   | BW_NOT arg[nested_arg] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BNOT,

@@ -173,6 +173,9 @@ public:
 
     AstNumericConstant(RamSigned value) : AstConstant(std::to_string(value)), type(Type::Int) {}
 
+    AstNumericConstant(std::string constant, std::optional<Type> type = std::nullopt)
+            : AstConstant(std::move(constant)), type(std::move(type)) {}
+
     AstNumericConstant* clone() const override {
         auto* copy = new AstNumericConstant(getConstant(), type);
         copy->setSrcLoc(getSrcLoc());
@@ -195,9 +198,6 @@ protected:
     }
 
 private:
-    AstNumericConstant(std::string constant, std::optional<Type> type)
-            : AstConstant(std::move(constant)), type(std::move(type)) {}
-
     const std::optional<Type> type;  // Make type optional.
 };
 

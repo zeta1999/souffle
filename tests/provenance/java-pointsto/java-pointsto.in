@@ -1,2 +1,0 @@
-setdepth 6
-explain VarPointsTo("java.lang.Object.<init>()V|@this", "A.method1()V|new X|0")

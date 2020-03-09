@@ -1093,8 +1093,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (project.getValues().empty()) {
                 out << "Tuple<RamDomain," << arity << "> tuple{{}};\n";
             } else {
-                out << "Tuple<RamDomain," << arity << "> tuple{{static_cast<RamDomain>("
-                    << join(project.getValues(), "),static_cast<RamDomain>(", rec) << ")}};\n";
+                out << "Tuple<RamDomain," << arity << "> tuple{{ramBitCast("
+                    << join(project.getValues(), "),ramBitCast(", rec) << ")}};\n";
             }
 
             // insert tuple
@@ -1488,13 +1488,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case FunctorOp::FEXP:
                 case FunctorOp::UEXP:
                 case FunctorOp::EXP: {
-                    // Cast as int64, then back to RamDomain of int32 to avoid wrapping to negative
-                    // when using int32 RamDomains
-                    out << "static_cast<int64_t>(std::pow(";
+                    out << "static_cast<RamDomain>(static_cast<int64_t>(std::pow(";
                     visit(args[0], out);
                     out << ",";
                     visit(args[1], out);
-                    out << "))";
+                    out << ")))";
                     break;
                 }
                 case FunctorOp::UMOD:

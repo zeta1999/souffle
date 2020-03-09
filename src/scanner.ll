@@ -167,14 +167,7 @@
                                           return yy::parser::make_NUMBER("0", yylloc);
                                         }
                                       }
-[0-9]+[.][0-9]+                       {
-                                        try {
-                                          return yy::parser::make_FLOAT(std::to_string(souffle::RamFloatFromString(yytext)), yylloc);
-                                        } catch (...) {
-                                          driver.error(yylloc, "float out of range");
-                                          return yy::parser::make_FLOAT("0", yylloc);
-                                        }
-                                      }
+[0-9]+[.][0-9]+                       { return yy::parser::make_FLOAT(yytext, yylloc); }
 0b[0-1]+                              {
                                         try {
                                           return yy::parser::make_NUMBER(std::to_string(souffle::stord(yytext+2, nullptr, 2)), yylloc);

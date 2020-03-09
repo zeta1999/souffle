@@ -26,6 +26,7 @@
 #include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
+#include "AstTypeAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
@@ -292,16 +293,19 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitNumericConstant(const AstNumericConstant& c) override {
-            std::optional<AstNumericConstant::Type> maybeType = c.getType();
-            if (maybeType.has_value()) {
-                switch (*maybeType) {
-                    case AstNumericConstant::Type::Int:
-                        return std::make_unique<RamSignedConstant>(RamDomainFromString(c.getConstant()));
-                    case AstNumericConstant::Type::Uint:
-                        return std::make_unique<RamUnsignedConstant>(RamUnsignedFromString(c.getConstant()));
-                    case AstNumericConstant::Type::Float:
-                        return std::make_unique<RamFloatConstant>(RamFloatFromString(c.getConstant()));
-                }
+            assert(c.getType().has_value() && "At this points all constants should have type.");
+
+            switch (*c.getType()) {
+                case AstNumericConstant::Type::Int:
+                    return std::make_unique<RamSignedConstant>(
+                            RamDomainFromString(c.getConstant(), nullptr, 0));
+                case AstNumericConstant::Type::Uint:
+                    return std::make_unique<RamUnsignedConstant>(
+                            RamUnsignedFromString(c.getConstant(), nullptr, 0));
+                case AstNumericConstant::Type::Float:
+                    return std::make_unique<RamFloatConstant>(RamFloatFromString(c.getConstant()));
+                default:
+                    assert(false);
             }
         }
 
@@ -1690,6 +1694,7 @@ const Json AstTranslator::getRecordsTypes(void) {
 std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationUnit& tu) {
     auto ram_start = std::chrono::high_resolution_clock::now();
     program = tu.getProgram();
+
     translateProgram(tu);
     SymbolTable& symTab = getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();

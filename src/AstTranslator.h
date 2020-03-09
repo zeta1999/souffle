@@ -411,9 +411,9 @@ private:
             assert(numConstant->getType().has_value());
             switch (*numConstant->getType()) {
                 case AstNumericConstant::Type::Int:
-                    return RamDomainFromString(numConstant->getConstant());
+                    return RamDomainFromString(numConstant->getConstant(), nullptr, 0);
                 case AstNumericConstant::Type::Uint:
-                    return RamUnsignedFromString(numConstant->getConstant());
+                    return RamUnsignedFromString(numConstant->getConstant(), nullptr, 0);
                 case AstNumericConstant::Type::Float:
                     return RamFloatFromString(numConstant->getConstant());
             }

@@ -558,7 +558,6 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // symbol
         void visitStringConstant(const AstStringConstant& cnst) override {
-            // this type has to be a sub-type of symbol
             addConstraint(isSubtypeOf(getVar(cnst), env.getSymbolType()));
         }
 

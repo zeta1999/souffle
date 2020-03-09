@@ -1251,6 +1251,24 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
             // rewrite sub-expressions first
             node->apply(*this);
 
+            if (auto* numericConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
+                // Check if there is no value yet.
+                if (!numericConstant->getType().has_value()) {
+                    TypeSet types = typeAnalysis.getTypes(numericConstant);
+
+                    if (hasSignedType(types)) {
+                        numericConstant->setType(AstNumericConstant::Type::Int);
+                        changed = true;
+                    } else if (hasUnsignedType(types)) {
+                        numericConstant->setType(AstNumericConstant::Type::Uint);
+                        changed = true;
+                    } else if (hasFloatType(types)) {
+                        numericConstant->setType(AstNumericConstant::Type::Float);
+                        changed = true;
+                    }
+                }
+            }
+
             // Handle functor
             if (auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
                 if (isOverloadedFunctor(functor->getFunction())) {

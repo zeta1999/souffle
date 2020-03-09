@@ -117,6 +117,15 @@ inline RamDomain RamDomainFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
     RamDomain val;
 
+    if (base == 0) {
+        if (isPrefix("-0b", str) || isPrefix("0b", str)) {
+            return RamDomainFromString(str, position, 2);
+        } else if (isPrefix("-0x", str) || isPrefix("0x", str)) {
+            return RamDomainFromString(str, position, 16);
+        } else {
+            return RamDomainFromString(str, position);
+        }
+    }
     std::string binaryNumber;
     bool parsingBinary = false;
 
@@ -166,6 +175,16 @@ inline RamUnsigned RamUnsignedFromString(
     // Be default C++ allows unsigned numbers starting with "-".
     if (isPrefix("-", str)) {
         throw std::invalid_argument("Unsigned number can't start with minus.");
+    }
+
+    if (base == 0) {
+        if (isPrefix("0b", str)) {
+            return RamUnsignedFromString(str, position, 2);
+        } else if (isPrefix("0x", str)) {
+            return RamUnsignedFromString(str, position, 16);
+        } else {
+            return RamUnsignedFromString(str, position);
+        }
     }
 
     // stoul/stoull can't handle binary prefix by default.

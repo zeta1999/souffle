@@ -146,10 +146,6 @@ public:
         return res;
     }
 
-    bool operator==(const AstStringConstant& other) const {
-        return getConstant() == other.getConstant();
-    }
-
 protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstStringConstant*>(&node));
@@ -177,7 +173,7 @@ public:
             : AstConstant(std::move(constant)), type(std::move(type)) {}
 
     AstNumericConstant* clone() const override {
-        auto* copy = new AstNumericConstant(getConstant(), type);
+        auto* copy = new AstNumericConstant(getConstant(), getType());
         copy->setSrcLoc(getSrcLoc());
         return copy;
     }
@@ -186,8 +182,8 @@ public:
         return type;
     }
 
-    bool operator==(const AstNumericConstant& other) const {
-        return type == other.type && getConstant() == other.getConstant();
+    void setType(Type newType) {
+        type = newType;
     }
 
 protected:
@@ -198,7 +194,7 @@ protected:
     }
 
 private:
-    const std::optional<Type> type;  // Make type optional.
+    std::optional<Type> type;
 };
 
 /**

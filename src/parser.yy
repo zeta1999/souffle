@@ -897,7 +897,7 @@ arg
         $$->setSrcLoc(@$);
     }
   | NUMBER {
-        $$ = new AstNumericConstant($NUMBER, AstNumericConstant::Type::Int);
+        $$ = new AstNumericConstant($NUMBER);
         $$->setSrcLoc(@$);
     }
   | UNDERSCORE {

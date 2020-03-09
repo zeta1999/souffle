@@ -485,6 +485,21 @@ inline bool isNumericType(const T& type) {
 }
 
 /**
+ * Is any value in the set signed
+ **/
+bool hasSignedType(const TypeSet& types);
+
+/**
+ * Is any value in the set unsigned
+ **/
+bool hasUnsignedType(const TypeSet& types);
+
+/**
+ * Is any value in the set float
+ **/
+bool hasFloatType(const TypeSet& types);
+
+/**
  * Determines whether the given type is a float type.
  */
 bool isFloatType(const Type& type);

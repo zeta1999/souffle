@@ -170,54 +170,28 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     visitDepthFirst(nodes, [&](const AstNumericConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
 
-        // Check if specific type has been requested.
-        std::optional<AstNumericConstant::Type> maybeType = constant.getType();
-        if (maybeType.has_value()) {
-            switch (*maybeType) {
-                case AstNumericConstant::Type::Int:
-                    // All good
-                    if (isNumberType(types)) {
-                        break;
-                    }
-                    // Report error
-                    if (!canBeParsedAsRamSigned(constant.getConstant())) {
-                        report.addError("Constant declared as integer, but it can't be parsed as integer",
-                                constant.getSrcLoc());
-                    } else {
-                        report.addError("Number constant (type mismatch)", constant.getSrcLoc());
-                    }
-                    break;
-                case AstNumericConstant::Type::Uint:
-                    if (isUnsignedType(types)) {
-                        break;
-                    }
+        if (!constant.getType().has_value()) {
+            report.addError("Ambiguous constant (unable to deduce type)", constant.getSrcLoc());
+            return;
+        }
 
-                    if (!canBeParsedAsRamUnsigned(constant.getConstant())) {
-                        report.addError(
-                                "Constant declared as unsigned integer, but it can't be parsed as unsigned "
-                                "integer",
-                                constant.getSrcLoc());
-                    } else {
-                        report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
-                    }
-                    break;
-                case AstNumericConstant::Type::Float:
-                    if (isFloatType(types)) {
-                        break;
-                    }
-
-                    if (!canBeParsedAsRamFloat(constant.getConstant())) {
-                        report.addError("Constant declared as float, but it can't be parsed as float",
-                                constant.getSrcLoc());
-                    } else {
-                        report.addError("Float constant (type mismatch)", constant.getSrcLoc());
-                    }
-
-                    break;
-            }
-            // Otherwise, make sure that there is some solution.
-        } else if (types.empty()) {
-            report.addError("Ambiguous constant (couldn't find any type solution)", constant.getSrcLoc());
+        // TODO (darth_tytus): tell when everything else is good, but parsing of the constant failed.
+        switch (*constant.getType()) {
+            case AstNumericConstant::Type::Int:
+                if (!hasSignedType(types)) {
+                    report.addError("Number constant (type mismatch)", constant.getSrcLoc());
+                }
+                break;
+            case AstNumericConstant::Type::Uint:
+                if (!hasUnsignedType(types)) {
+                    report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
+                }
+                break;
+            case AstNumericConstant::Type::Float:
+                if (!hasFloatType(types)) {
+                    report.addError("Float constant (type mismatch)", constant.getSrcLoc());
+                }
+                break;
         }
     });
 

@@ -33,12 +33,22 @@ public:
 
     void print(std::ostream& os) const override;
 
-    const TypeEnvironment& getTypeEnvironment() {
+    const TypeEnvironment& getTypeEnvironment() const {
         return env;
+    }
+
+    const std::set<AstQualifiedName>& getNumericUnions() const {
+        return numericUnions;
+    }
+
+    const std::set<AstQualifiedName>& getSymbolicUnions() const {
+        return symbolicUnions;
     }
 
 private:
     TypeEnvironment env;
+    std::set<AstQualifiedName> numericUnions;
+    std::set<AstQualifiedName> symbolicUnions;
 
     void updateTypeEnvironment(const AstProgram& program);
 };

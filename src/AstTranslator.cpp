@@ -78,10 +78,10 @@ std::unique_ptr<RamTupleElement> AstTranslator::makeRamTupleElement(const Locati
 size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     if (atom->getQualifiedName().toString().find("@delta_") == 0) {
         const AstQualifiedName& originalRel = AstQualifiedName(atom->getQualifiedName().toString().substr(7));
-        return auxArityAnalysis->getArity(program->getRelation(originalRel));
+        return auxArityAnalysis->getArity(getRelation(*program, originalRel));
     } else if (atom->getQualifiedName().toString().find("@new_") == 0) {
         const AstQualifiedName& originalRel = AstQualifiedName(atom->getQualifiedName().toString().substr(5));
-        return auxArityAnalysis->getArity(program->getRelation(originalRel));
+        return auxArityAnalysis->getArity(getRelation(*program, originalRel));
     } else if (atom->getQualifiedName().toString().find("@info_") == 0) {
         return 0;
     } else {
@@ -137,10 +137,10 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirective
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<std::map<std::string, std::string>> inputDirectives;
 
-    std::vector<AstIO*> relLoads;
-    for (const auto& io : program->getIOs()) {
+    std::vector<const AstIO*> relLoads;
+    for (const auto* io : program->getIOs()) {
         if (io->getQualifiedName() == rel->getQualifiedName() && io->getType() == AstIO::InputIO) {
-            relLoads.push_back(io.get());
+            relLoads.push_back(io);
         }
     }
     for (const auto& current : relLoads) {
@@ -170,11 +170,11 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
         const AstRelation* rel, std::string filePath, const std::string& fileExt) {
     std::vector<std::map<std::string, std::string>> outputDirectives;
 
-    std::vector<AstIO*> relStores;
-    for (const auto& store : program->getIOs()) {
+    std::vector<const AstIO*> relStores;
+    for (const auto* store : program->getIOs()) {
         if (store->getQualifiedName() == rel->getQualifiedName() &&
                 (store->getType() == AstIO::OutputIO || store->getType() == AstIO::PrintsizeIO)) {
-            relStores.push_back(store.get());
+            relStores.push_back(store);
         }
     }
 
@@ -305,7 +305,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
                 case AstNumericConstant::Type::Float:
                     return std::make_unique<RamFloatConstant>(RamFloatFromString(c.getConstant()));
                 default:
-                    assert(false);
+                    assert(false && "unexpected numeric constant type");
             }
         }
 
@@ -942,7 +942,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(
     std::unique_ptr<RamRelationReference> rrel = translateRelation(&rel);
 
     /* iterate over all clauses that belong to the relation */
-    for (AstClause* clause : rel.getClauses()) {
+    for (AstClause* clause : getClauses(*program, rel)) {
         // skip recursive rules
         if (recursiveClauses->recursive(clause)) {
             continue;
@@ -1114,7 +1114,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         std::unique_ptr<RamStatement> loopRelSeq;
 
         /* Find clauses for relation rel */
-        for (const auto& cl : rel->getClauses()) {
+        for (const auto& cl : getClauses(*program, *rel)) {
             // skip non-recursive clauses
             if (!recursiveClauses->recursive(cl)) {
                 continue;
@@ -1638,7 +1638,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // add subroutines for each clause
     if (Global::config().has("provenance")) {
-        visitDepthFirst(program->getRelations(), [&](const AstClause& clause) {
+        visitDepthFirst(*program, [&](const AstClause& clause) {
             std::stringstream relName;
             relName << clause.getHead()->getQualifiedName();
 

@@ -63,9 +63,9 @@ TEST(AstProgram, Parse) {
     EXPECT_EQ(1, prog->getTypes().size());
     EXPECT_EQ(2, prog->getRelations().size());
 
-    EXPECT_TRUE(prog->getRelation("e"));
-    EXPECT_TRUE(prog->getRelation("r"));
-    EXPECT_FALSE(prog->getRelation("n"));
+    EXPECT_TRUE(getRelation(*prog, "e"));
+    EXPECT_TRUE(getRelation(*prog, "r"));
+    EXPECT_FALSE(getRelation(*prog, "n"));
 }
 
 #define TESTASTCLONEANDEQUAL(SUBTYPE, DL)                                                      \
@@ -175,7 +175,7 @@ TESTASTCLONEANDEQUAL(RelationCopies,
 
             )");
 
-/** test removeClause, appendRelation and removeRelation */
+/** test removeClause, addRelation and removeRelation */
 TEST(AstProgram, RemoveClause) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
@@ -197,7 +197,7 @@ TEST(AstProgram, AppendAstRelation) {
     auto rel = std::make_unique<AstRelation>();
     rel->setQualifiedName("D");
     rel->addAttribute(std::make_unique<AstAttribute>("x", "number"));
-    prog1->appendRelation(std::move(rel));
+    prog1->addRelation(std::move(rel));
     auto tu2 = makeATU(".decl A,B,C,D(x:number)");
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }

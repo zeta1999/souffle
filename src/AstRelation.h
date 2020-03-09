@@ -117,40 +117,12 @@ public:
         return qualifiers.find(q) != qualifiers.end();
     }
 
-    /** Obtains a list of the associated clauses */
-    std::vector<AstClause*> getClauses() const {
-        return toPtrVector(clauses);
-    }
-
-    /** Add a clause to the relation */
-    void addClause(std::unique_ptr<AstClause> clause) {
-        assert(clause != nullptr && "Undefined clause");
-        assert(clause->getHead() != nullptr && "Undefined head of the clause");
-        assert(clause->getHead()->getQualifiedName() == name &&
-                "Name of the atom in the head of the clause and the relation do not match");
-        clauses.push_back(std::move(clause));
-    }
-
-    /** Removes the given clause from this relation */
-    bool removeClause(const AstClause* clause) {
-        for (auto it = clauses.begin(); it != clauses.end(); ++it) {
-            if (**it == *clause) {
-                clauses.erase(it);
-                return true;
-            }
-        }
-        return false;
-    }
-
     AstRelation* clone() const override {
         auto res = new AstRelation();
         res->name = name;
         res->setSrcLoc(getSrcLoc());
         for (const auto& cur : attributes) {
             res->attributes.emplace_back(cur->clone());
-        }
-        for (const auto& cur : clauses) {
-            res->clauses.emplace_back(cur->clone());
         }
         for (auto cur : qualifiers) {
             res->qualifiers.insert(cur);
@@ -162,17 +134,11 @@ public:
         for (auto& cur : attributes) {
             cur = map(std::move(cur));
         }
-        for (auto& cur : clauses) {
-            cur = map(std::move(cur));
-        }
     }
 
     std::vector<const AstNode*> getChildNodes() const override {
         std::vector<const AstNode*> res;
         for (const auto& cur : attributes) {
-            res.push_back(cur.get());
-        }
-        for (const auto& cur : clauses) {
             res.push_back(cur.get());
         }
         return res;
@@ -183,8 +149,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstRelation*>(&node));
         const auto& other = static_cast<const AstRelation&>(node);
-        return name == other.name && equal_targets(attributes, other.attributes) &&
-               equal_targets(clauses, other.clauses);
+        return name == other.name && equal_targets(attributes, other.attributes);
     }
 
     /** Name of relation */
@@ -192,9 +157,6 @@ protected:
 
     /** Attributes of the relation */
     std::vector<std::unique_ptr<AstAttribute>> attributes;
-
-    /** Clauses associated with this relation. Clauses could be either facts or rules. */
-    std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** Qualifiers of relation */
     std::set<RelationQualifier> qualifiers;

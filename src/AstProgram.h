@@ -25,6 +25,7 @@
 #include "AstQualifiedName.h"
 #include "AstRelation.h"
 #include "AstType.h"
+#include "AstUtils.h"
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
@@ -44,14 +45,12 @@ class AstIO;
 /**
  *  Intermediate representation of a datalog program
  *          that consists of relations, clauses and types
- *  TODO (b-scholz): there are a lot of dependencies (pareser etc);
- *       we need to simplify the interface / class
  */
 class AstProgram : public AstNode {
 public:
     void print(std::ostream& os) const override {
         for (const auto& cur : types) {
-            os << *cur.second << "\n";
+            os << *cur << "\n";
         }
         if (!components.empty()) {
             for (const auto& cur : components) {
@@ -64,26 +63,37 @@ public:
                 os << *cur << "\n";
             }
         }
-        for (const auto& cur : functors) {
-            const std::unique_ptr<AstFunctorDeclaration>& f = cur.second;
+
+        for (const auto& f : functors) {
             os << "\n\n// -- " << f->getName() << " --\n";
             f->print(os);
             os << "\n";
         }
-        for (const auto& cur : relations) {
-            const std::unique_ptr<AstRelation>& rel = cur.second;
+
+        // print declared relations and their corresponding clauses
+        std::set<AstQualifiedName> declaredRelations;
+        for (const auto& rel : relations) {
+            declaredRelations.insert(rel->getQualifiedName());
             os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
             os << *rel << "\n\n";
-            for (const auto clause : rel->getClauses()) {
+            for (const auto& clause : clauses) {
+                if (clause->getHead()->getQualifiedName() == rel->getQualifiedName()) {
+                    os << *clause << "\n\n";
+                }
+            }
+        }
+
+        // print clauses without a corresponding relation declaration
+        for (const auto& clause : clauses) {
+            if (!contains(declaredRelations, clause->getHead()->getQualifiedName())) {
                 os << *clause << "\n\n";
             }
         }
-        if (!clauses.empty()) {
-            os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
-        }
+
         if (!ios.empty()) {
             os << join(ios, "\n\n", print_deref<std::unique_ptr<AstIO>>()) << "\n";
         }
+
         if (!pragmaDirectives.empty()) {
             for (const auto& cur : pragmaDirectives) {
                 os << *cur << "\n";
@@ -91,54 +101,29 @@ public:
         }
     }
 
-    /** get type */
-    // TODO (b-scholz): remove this method
-    const AstType* getType(const AstQualifiedName& name) const {
-        auto pos = types.find(name);
-        return (pos == types.end()) ? nullptr : pos->second.get();
-    }
-
     /** get types */
-    std::vector<const AstType*> getTypes() const {
-        std::vector<const AstType*> res;
-        for (const auto& cur : types) {
-            res.push_back(cur.second.get());
-        }
-        return res;
+    std::vector<AstType*> getTypes() const {
+        return toPtrVector(types);
     }
 
     /** get relations */
     std::vector<AstRelation*> getRelations() const {
-        std::vector<AstRelation*> res;
-        for (const auto& rel : relations) {
-            res.push_back(rel.second.get());
-        }
-        return res;
+        return toPtrVector(relations);
     }
 
-    /** get relation */
-    // TODO (b-scholz): remove this method
-    AstRelation* getRelation(const AstQualifiedName& name) const {
-        auto pos = relations.find(name);
-        return (pos == relations.end()) ? nullptr : pos->second.get();
+    /** get clauses */
+    std::vector<AstClause*> getClauses() const {
+        return toPtrVector(clauses);
     }
 
-    /** get number of relations */
-    // TODO (b-scholz): remove this method
-    size_t relationSize() const {
-        return relations.size();
-    }
-
-    /** get functor declaration */
-    // TODO (b-scholz): replace by list of functors
-    AstFunctorDeclaration* getFunctorDeclaration(const std::string& name) const {
-        auto pos = functors.find(name);
-        return (pos == functors.end()) ? nullptr : pos->second.get();
+    /** get functor declarations */
+    std::vector<AstFunctorDeclaration*> getFunctorDeclarations() const {
+        return toPtrVector(functors);
     }
 
     /** get io directives */
-    const std::vector<std::unique_ptr<AstIO>>& getIOs() const {
-        return ios;
+    std::vector<AstIO*> getIOs() const {
+        return toPtrVector(ios);
     }
 
     /** get pragma directives */
@@ -146,47 +131,41 @@ public:
         return pragmaDirectives;
     }
 
-    /** append new relation */
-    void appendRelation(std::unique_ptr<AstRelation> r) {
-        // get relation
-        std::unique_ptr<AstRelation>& rel = relations[r->getQualifiedName()];
-        assert(!rel && "Adding pre-existing relation!");
-
-        // add relation
-        rel = std::move(r);
+    /* add relation */
+    void addRelation(std::unique_ptr<AstRelation> r) {
+        assert(getRelation(*this, r->getQualifiedName()) == nullptr && "Redefinition of relation!");
+        relations.push_back(std::move(r));
     }
 
     /** remove relation */
-    void removeRelation(const AstQualifiedName& name) {
-        /* Remove relation from map */
-        relations.erase(relations.find(name));
-    }
-
-    /** append clause */
-    void appendClause(std::unique_ptr<AstClause> clause) {
-        // get relation
-        std::unique_ptr<AstRelation>& r = relations[clause->getHead()->getQualifiedName()];
-        assert(r && "Trying to append to unknown relation!");
-
-        // delegate call
-        r->addClause(std::move(clause));
-    }
-
-    /** remove clause */
-    void removeClause(const AstClause* clause) {
-        // get relation
-        auto pos = relations.find(clause->getHead()->getQualifiedName());
-        if (pos == relations.end()) {
-            return;
+    bool removeRelation(const AstQualifiedName& name) {
+        for (auto it = relations.begin(); it != relations.end(); it++) {
+            const auto& rel = *it;
+            if (rel->getQualifiedName() == name) {
+                removeRelationClauses(*this, name);
+                relations.erase(it);
+                return true;
+            }
         }
-
-        // delegate call
-        pos->second->removeClause(clause);
+        return false;
     }
 
-    /** get orphan clauses (clauses without relation declarations) */
-    std::vector<AstClause*> getOrphanClauses() const {
-        return toPtrVector(clauses);
+    /** add a clause */
+    void addClause(std::unique_ptr<AstClause> clause) {
+        assert(clause != nullptr && "Undefined clause");
+        assert(clause->getHead() != nullptr && "Undefined head of the clause");
+        clauses.push_back(std::move(clause));
+    }
+
+    /** remove a clause */
+    bool removeClause(const AstClause* clause) {
+        for (auto it = clauses.begin(); it != clauses.end(); it++) {
+            if (**it == *clause) {
+                clauses.erase(it);
+                return true;
+            }
+        }
+        return false;
     }
 
     /** get components */
@@ -212,15 +191,13 @@ public:
             res->instantiations.emplace_back(cur->clone());
         }
         for (const auto& cur : types) {
-            res->types.insert(std::make_pair(cur.first, std::unique_ptr<AstType>(cur.second->clone())));
+            res->types.emplace_back(cur->clone());
         }
         for (const auto& cur : functors) {
-            res->functors.insert(
-                    std::make_pair(cur.first, std::unique_ptr<AstFunctorDeclaration>(cur.second->clone())));
+            res->functors.emplace_back(cur->clone());
         }
         for (const auto& cur : relations) {
-            res->relations.insert(
-                    std::make_pair(cur.first, std::unique_ptr<AstRelation>(cur.second->clone())));
+            res->relations.emplace_back(cur->clone());
         }
         for (const auto& cur : clauses) {
             res->clauses.emplace_back(cur->clone());
@@ -228,9 +205,6 @@ public:
         for (const auto& cur : ios) {
             res->ios.emplace_back(cur->clone());
         }
-
-        // TODO (b-scholz): that is odd - revisit!
-        res->finishParsing();
 
         // done
         return res;
@@ -247,13 +221,13 @@ public:
             cur = map(std::move(cur));
         }
         for (auto& cur : functors) {
-            cur.second = map(std::move(cur.second));
+            cur = map(std::move(cur));
         }
         for (auto& cur : types) {
-            cur.second = map(std::move(cur.second));
+            cur = map(std::move(cur));
         }
         for (auto& cur : relations) {
-            cur.second = map(std::move(cur.second));
+            cur = map(std::move(cur));
         }
         for (auto& cur : clauses) {
             cur = map(std::move(cur));
@@ -275,13 +249,13 @@ public:
             res.push_back(cur.get());
         }
         for (const auto& cur : functors) {
-            res.push_back(cur.second.get());
+            res.push_back(cur.get());
         }
         for (const auto& cur : types) {
-            res.push_back(cur.second.get());
+            res.push_back(cur.get());
         }
         for (const auto& cur : relations) {
-            res.push_back(cur.second.get());
+            res.push_back(cur.get());
         }
         for (const auto& cur : clauses) {
             res.push_back(cur.get());
@@ -327,27 +301,11 @@ protected:
 protected:
     friend class ComponentInstantiationTransformer;
     friend class ParserDriver;
-    friend class ProvenanceTransformer;
-    friend class MagicSetTransformer;
 
     /* add type */
     void addType(std::unique_ptr<AstType> type) {
-        auto& cur = types[type->getQualifiedName()];
-        assert(!cur && "Redefinition of type!");
-        cur = std::move(type);
-    }
-
-    /* add relation */
-    void addRelation(std::unique_ptr<AstRelation> r) {
-        const auto& name = r->getQualifiedName();
-        assert(relations.find(name) == relations.end() && "Redefinition of relation!");
-        relations[name] = std::move(r);
-    }
-
-    /** add a clause */
-    void addClause(std::unique_ptr<AstClause> clause) {
-        assert(clause && "NULL clause");
-        clauses.push_back(std::move(clause));
+        assert(getType(*this, type->getQualifiedName()) == nullptr && "Redefinition of type!");
+        types.push_back(std::move(type));
     }
 
     /** add IO directive */
@@ -364,9 +322,8 @@ protected:
 
     /** add functor */
     void addFunctorDeclaration(std::unique_ptr<souffle::AstFunctorDeclaration> f) {
-        const auto& name = f->getName();
-        assert(functors.find(name) == functors.end() && "Redefinition of relation!");
-        functors[name] = std::move(f);
+        assert(getFunctorDeclaration(*this, f->getName()) == nullptr && "Redefinition of functor!");
+        functors.push_back(std::move(f));
     }
 
     /** add component */
@@ -379,38 +336,16 @@ protected:
         instantiations.push_back(std::move(i));
     }
 
-    /** finishing parsing */
-    void finishParsing() {
-        // unbound clauses with no relation defined
-        std::vector<std::unique_ptr<AstClause>> unbound;
-
-        // add clauses
-        for (auto& cur : clauses) {
-            auto pos = relations.find(cur->getHead()->getQualifiedName());
-            if (pos != relations.end()) {
-                pos->second->addClause(std::move(cur));
-            } else {
-                unbound.push_back(std::move(cur));
-            }
-        }
-        // remember the remaining orphan clauses
-        clauses.clear();
-        clauses.swap(unbound);
-    }
-
     /** Program types  */
-    // TODO(b-scholz): change to vector
-    std::map<AstQualifiedName, std::unique_ptr<AstType>> types;
+    std::vector<std::unique_ptr<AstType>> types;
 
     /** Program relations */
-    // TODO(b-scholz): change to vector
-    std::map<AstQualifiedName, std::unique_ptr<AstRelation>> relations;
+    std::vector<std::unique_ptr<AstRelation>> relations;
 
     /** External Functors */
-    // TODO(b-scholz): change to vector
-    std::map<std::string, std::unique_ptr<AstFunctorDeclaration>> functors;
+    std::vector<std::unique_ptr<AstFunctorDeclaration>> functors;
 
-    /** The list of clauses provided by the user */
+    /** Program clauses */
     std::vector<std::unique_ptr<AstClause>> clauses;
 
     /** IO statements */

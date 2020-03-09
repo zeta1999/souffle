@@ -58,8 +58,6 @@ std::unique_ptr<AstTranslationUnit> ParserDriver::parse(
 
     yylex_destroy(scanner);
 
-    translationUnit->getProgram()->finishParsing();
-
     return std::move(translationUnit);
 }
 
@@ -77,8 +75,6 @@ std::unique_ptr<AstTranslationUnit> ParserDriver::parse(
     parser.parse();
 
     yylex_destroy(scanner);
-
-    translationUnit->getProgram()->finishParsing();
 
     return std::move(translationUnit);
 }
@@ -101,7 +97,7 @@ void ParserDriver::addPragma(std::unique_ptr<AstPragma> p) {
 
 void ParserDriver::addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> f) {
     const std::string& name = f->getName();
-    if (AstFunctorDeclaration* prev = translationUnit->getProgram()->getFunctorDeclaration(name)) {
+    if (const AstFunctorDeclaration* prev = getFunctorDeclaration(*translationUnit->getProgram(), name)) {
         Diagnostic err(Diagnostic::ERROR,
                 DiagnosticMessage("Redefinition of functor " + toString(name), f->getSrcLoc()),
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});
@@ -113,7 +109,7 @@ void ParserDriver::addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> 
 
 void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
     const auto& name = r->getQualifiedName();
-    if (AstRelation* prev = translationUnit->getProgram()->getRelation(name)) {
+    if (AstRelation* prev = getRelation(*translationUnit->getProgram(), name)) {
         Diagnostic err(Diagnostic::ERROR,
                 DiagnosticMessage("Redefinition of relation " + toString(name), r->getSrcLoc()),
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});
@@ -142,7 +138,7 @@ void ParserDriver::addIO(std::unique_ptr<AstIO> d) {
 
 void ParserDriver::addType(std::unique_ptr<AstType> type) {
     const auto& name = type->getQualifiedName();
-    if (const AstType* prev = translationUnit->getProgram()->getType(name)) {
+    if (const AstType* prev = getType(*translationUnit->getProgram(), name)) {
         Diagnostic err(Diagnostic::ERROR,
                 DiagnosticMessage("Redefinition of type " + toString(name), type->getSrcLoc()),
                 {DiagnosticMessage("Previous definition", prev->getSrcLoc())});

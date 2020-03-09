@@ -74,7 +74,7 @@ void normaliseInlinedHeads(AstProgram& program) {
             continue;
         }
 
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             // Set up the new clause with an empty body and no arguments in the head
             auto newClause = std::make_unique<AstClause>();
             newClause->setSrcLoc(clause->getSrcLoc());
@@ -106,7 +106,7 @@ void normaliseInlinedHeads(AstProgram& program) {
             newClause->setHead(std::move(clauseHead));
 
             // Replace the old clause with this one
-            rel->addClause(std::move(newClause));
+            program.addClause(std::move(newClause));
             program.removeClause(clause);
         }
     }
@@ -171,7 +171,7 @@ bool containsInlinedAtom(const AstProgram& program, const AstClause& clause) {
     bool foundInlinedAtom = false;
 
     visitDepthFirst(clause, [&](const AstAtom& atom) {
-        AstRelation* rel = program.getRelation(atom.getQualifiedName());
+        AstRelation* rel = getRelation(program, atom.getQualifiedName());
         if (rel->hasQualifier(RelationQualifier::INLINE)) {
             foundInlinedAtom = true;
         }
@@ -419,7 +419,7 @@ std::vector<std::vector<AstLiteral*>> formNegatedLiterals(AstProgram& program, A
     std::vector<std::vector<AstBinaryConstraint*>> addedConstraints;
 
     // Go through every possible clause associated with the given atom
-    for (AstClause* inClause : program.getRelation(atom->getQualifiedName())->getClauses()) {
+    for (AstClause* inClause : getClauses(program, *getRelation(program, atom->getQualifiedName()))) {
         // Form the replacement clause by inlining based on the current clause
         std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inlineResult =
                 inlineBodyLiterals(atom, inClause);
@@ -765,7 +765,7 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
 
     if (auto* atom = dynamic_cast<AstAtom*>(lit)) {
         // Check if this atom is meant to be inlined
-        AstRelation* rel = program.getRelation(atom->getQualifiedName());
+        AstRelation* rel = getRelation(program, atom->getQualifiedName());
 
         if (rel->hasQualifier(RelationQualifier::INLINE)) {
             // We found an atom in the clause that needs to be inlined!
@@ -774,7 +774,7 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
 
             // N new clauses should be formed, where N is the number of clauses
             // associated with the inlined relation
-            for (AstClause* inClause : rel->getClauses()) {
+            for (AstClause* inClause : getClauses(program, *rel)) {
                 // Form the replacement clause
                 std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inlineResult =
                         inlineBodyLiterals(atom, inClause);
@@ -1006,7 +1006,7 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
             }
 
             // Go through the relation's clauses and try inlining them
-            for (AstClause* clause : rel->getClauses()) {
+            for (AstClause* clause : getClauses(program, *rel)) {
                 if (containsInlinedAtom(program, *clause)) {
                     // Generate the inlined versions of this clause - the clause will be replaced by these
                     std::vector<AstClause*> newClauses = getInlinedClause(program, *clause);
@@ -1014,7 +1014,7 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
                     // Replace the clause with these equivalent versions
                     clausesToDelete.insert(clause);
                     for (AstClause* replacementClause : newClauses) {
-                        program.appendClause(std::unique_ptr<AstClause>(replacementClause));
+                        program.addClause(std::unique_ptr<AstClause>(replacementClause));
                     }
 
                     // We've changed the program this iteration

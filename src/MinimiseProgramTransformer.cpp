@@ -336,7 +336,7 @@ bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
     for (AstRelation* rel : program.getRelations()) {
         std::vector<std::vector<AstClause*>> equivalenceClasses;
 
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             bool added = false;
 
             for (std::vector<AstClause*>& eqClass : equivalenceClasses) {
@@ -383,8 +383,8 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Find all singleton relations to consider
     std::vector<AstClause*> singletonRelationClauses;
     for (AstRelation* rel : program.getRelations()) {
-        if (!ioTypes->isIO(rel) && rel->getClauses().size() == 1) {
-            AstClause* clause = rel->getClauses()[0];
+        if (!ioTypes->isIO(rel) && getClauses(program, *rel).size() == 1) {
+            AstClause* clause = getClauses(program, *rel)[0];
             singletonRelationClauses.push_back(clause);
         }
     }
@@ -419,7 +419,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Remove redundant relation definitions
     for (AstClause* clause : redundantClauses) {
         auto relName = clause->getHead()->getQualifiedName();
-        AstRelation* rel = program.getRelation(relName);
+        AstRelation* rel = getRelation(program, relName);
         assert(rel != nullptr && "relation does not exist in program");
         program.removeClause(clause);
         program.removeRelation(relName);

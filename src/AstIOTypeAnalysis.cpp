@@ -23,8 +23,9 @@
 namespace souffle {
 
 void IOType::run(const AstTranslationUnit& translationUnit) {
-    visitDepthFirst(*translationUnit.getProgram(), [&](const AstIO& io) {
-        auto* relation = translationUnit.getProgram()->getRelation(io.getQualifiedName());
+    const AstProgram& program = *translationUnit.getProgram();
+    visitDepthFirst(program, [&](const AstIO& io) {
+        auto* relation = getRelation(program, io.getQualifiedName());
         if (relation == nullptr) {
             return;
         }

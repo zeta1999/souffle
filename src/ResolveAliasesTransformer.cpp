@@ -440,7 +440,7 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
     // get all clauses
     std::vector<const AstClause*> clauses;
     visitDepthFirst(program, [&](const AstRelation& rel) {
-        for (const auto& clause : rel.getClauses()) {
+        for (const auto& clause : getClauses(program, rel)) {
             clauses.push_back(clause);
         }
     });
@@ -462,7 +462,7 @@ bool ResolveAliasesTransformer::transform(AstTranslationUnit& translationUnit) {
         if (*normalised != *clause) {
             changed = true;
             program.removeClause(clause);
-            program.appendClause(std::move(normalised));
+            program.addClause(std::move(normalised));
         }
     }
 

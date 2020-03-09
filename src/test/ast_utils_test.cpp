@@ -90,7 +90,7 @@ TEST(AstUtils, GroundedRecords) {
 
     AstProgram& program = *tu->getProgram();
 
-    AstClause* clause = program.getRelation("s")->getClauses()[0];
+    AstClause* clause = getClauses(program, "s")[0];
 
     // check construction
     EXPECT_EQ("s(x) :- \n   r([x,y]).", toString(*clause));
@@ -136,9 +136,9 @@ TEST(AstUtils, SimpleTypes) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    AstClause* a = program.getRelation("a")->getClauses()[0];
-    AstClause* b = program.getRelation("b")->getClauses()[0];
-    AstClause* u = program.getRelation("u")->getClauses()[0];
+    AstClause* a = getClauses(program, "a")[0];
+    AstClause* b = getClauses(program, "b")[0];
+    AstClause* u = getClauses(program, "u")[0];
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
@@ -148,10 +148,10 @@ TEST(AstUtils, SimpleTypes) {
     EXPECT_EQ("{B}", toString(typeAnalysis->getTypes(getX(b))));
     EXPECT_EQ("{U}", toString(typeAnalysis->getTypes(getX(u))));
 
-    AstClause* a1 = program.getRelation("a")->getClauses()[1];
+    AstClause* a1 = getClauses(program, "a")[1];
     EXPECT_EQ("{}", toString(typeAnalysis->getTypes(getX(a1))));
 
-    AstClause* a2 = program.getRelation("a")->getClauses()[2];
+    AstClause* a2 = getClauses(program, "a")[2];
     EXPECT_EQ("{A}", toString(typeAnalysis->getTypes(getX(a2))));
 }
 
@@ -179,9 +179,9 @@ TEST(AstUtils, NumericTypes) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    AstClause* a = program.getRelation("a")->getClauses()[0];
-    AstClause* b = program.getRelation("b")->getClauses()[0];
-    AstClause* u = program.getRelation("u")->getClauses()[0];
+    AstClause* a = getClauses(program, "a")[0];
+    AstClause* b = getClauses(program, "b")[0];
+    AstClause* u = getClauses(program, "u")[0];
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
@@ -214,7 +214,7 @@ TEST(AstUtils, SubtypeChain) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    AstClause* a = program.getRelation("R4")->getClauses()[0];
+    AstClause* a = getClauses(program, "R4")[0];
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArguments()[0]; };
 
@@ -261,9 +261,9 @@ TEST(AstUtils, FactTypes) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    AstClause* a = program.getRelation("a")->getClauses()[0];
-    AstClause* b = program.getRelation("b")->getClauses()[0];
-    AstClause* u = program.getRelation("u")->getClauses()[0];
+    AstClause* a = getClauses(program, "a")[0];
+    AstClause* b = getClauses(program, "b")[0];
+    AstClause* u = getClauses(program, "u")[0];
 
     auto typeAnalysis = tu->getAnalysis<TypeAnalysis>();
 
@@ -290,7 +290,7 @@ TEST(AstUtils, NestedFunctions) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    AstClause* a = program.getRelation("r")->getClauses()[0];
+    AstClause* a = getClauses(program, "r")[0];
 
     auto getX = [](const AstClause* c) { return c->getHead()->getArguments()[0]; };
 
@@ -314,7 +314,7 @@ TEST(AstUtils, GroundTermPropagation) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    AstClause* a = program.getRelation("p")->getClauses()[0];
+    AstClause* a = getClauses(program, "p")[0];
 
     EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = [x,y],\n   s = r,\n   s = [w,v],\n   [w,v] = [a,b].",
             toString(*a));
@@ -345,7 +345,7 @@ TEST(AstUtils, GroundTermPropagation2) {
     AstProgram& program = *tu->getProgram();
 
     // check types in clauses
-    AstClause* a = program.getRelation("p")->getClauses()[0];
+    AstClause* a = getClauses(program, "p")[0];
 
     EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   x = y,\n   x = a,\n   y = b.", toString(*a));
 
@@ -372,11 +372,11 @@ TEST(AstUtils, ResolveGroundedAliases) {
     AstProgram& program = *tu->getProgram();
 
     EXPECT_EQ("p(a,b) :- \n   p(x,y),\n   r = [x,y],\n   s = r,\n   s = [w,v],\n   [w,v] = [a,b].",
-            toString(*program.getRelation("p")->getClauses()[0]));
+            toString(*getClauses(program, "p")[0]));
 
     std::make_unique<ResolveAliasesTransformer>()->apply(*tu);
 
-    EXPECT_EQ("p(x,y) :- \n   p(x,y).", toString(*program.getRelation("p")->getClauses()[0]));
+    EXPECT_EQ("p(x,y) :- \n   p(x,y).", toString(*getClauses(program, "p")[0]));
 }
 
 TEST(AstUtils, ResolveAliasesWithTermsInAtoms) {
@@ -395,12 +395,12 @@ TEST(AstUtils, ResolveAliasesWithTermsInAtoms) {
     AstProgram& program = *tu->getProgram();
 
     EXPECT_EQ("p(x,c) :- \n   p(x,b),\n   p(b,c),\n   c = (b+1),\n   x = (c+2).",
-            toString(*program.getRelation("p")->getClauses()[0]));
+            toString(*getClauses(program, "p")[0]));
 
     std::make_unique<ResolveAliasesTransformer>()->apply(*tu);
 
     EXPECT_EQ("p(x,c) :- \n   p(x,b),\n   p(b,c),\n   c = (b+1),\n   x = (c+2).",
-            toString(*program.getRelation("p")->getClauses()[0]));
+            toString(*getClauses(program, "p")[0]));
 }
 
 TEST(AstUtils, RemoveRelationCopies) {
@@ -479,9 +479,9 @@ TEST(AstUtils, ReorderClauseAtoms) {
     AstProgram& program = *tu->getProgram();
     EXPECT_EQ(5, program.getRelations().size());
 
-    AstRelation* a = program.getRelation("a");
+    AstRelation* a = getRelation(program, "a");
     EXPECT_NE(a, nullptr);
-    const auto& clauses = a->getClauses();
+    const auto& clauses = getClauses(program, *a);
     EXPECT_EQ(1, clauses.size());
 
     AstClause* clause = clauses[0];

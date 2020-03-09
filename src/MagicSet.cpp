@@ -1122,7 +1122,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
                     for (AstIO* io : program->getIOs()) {
-                        if (io->getQualifiedName() != originalName && io->getType() != AstIO::InputIO) {
+                        if (io->getQualifiedName() != originalName || io->getType() != AstIO::InputIO) {
                             continue;
                         }
                         io->setQualifiedName(newRelName);

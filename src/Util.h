@@ -196,8 +196,8 @@ bool contains(const C& container, const typename C::value_type& element) {
  */
 template <typename C>
 typename C::value_type getIf(const C& container, std::function<bool(const typename C::value_type)> pred) {
-    auto res = std::find_if(
-            container.begin(), container.end(), [&](const typename C::value_type item) { return pred(item); });
+    auto res = std::find_if(container.begin(), container.end(),
+            [&](const typename C::value_type item) { return pred(item); });
     return res == container.end() ? nullptr : *res;
 }
 

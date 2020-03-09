@@ -54,14 +54,15 @@ TEST(AstPrint, NilConstant) {
 }
 
 // TODO: fix this.
-
 // TEST(AstPrint, NumberConstant) {
 //     auto testArgument = std::make_unique<AstNumericConstant>(2);
 
+//     EXPECT_EQ(testArgument, testArgument);
+
 //     auto tu1 = makeATU();
-//     tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+//     tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
 //     auto tu2 = makePrintedATU(tu1);
-//     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
+//     // EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 // }
 
 TEST(AstPrint, StringConstant) {

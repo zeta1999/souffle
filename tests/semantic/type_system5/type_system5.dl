@@ -1,0 +1,27 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2020, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+//
+// Type System 5
+//
+// Check if polymorphic constants work
+//
+
+
+
+// integer -> float (implicit) conversion.
+.decl Poly(x:float)
+Poly(1 + 1.0) :- true.
+Poly(1 + 2) :- true.
+
+
+// RHS has multiple possible types.
+.decl ImplicitType(x:number)
+ImplicitType(1) :- 1 - 1 = 0.
+
+
+
+.output Poly, ImplicitType

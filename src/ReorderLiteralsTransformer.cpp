@@ -370,12 +370,12 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
     std::vector<AstClause*> clausesToRemove;
 
     for (const AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             AstClause* newClause = reorderClauseWithSips(sipsFunction, clause);
             if (newClause != nullptr) {
                 // reordering needed - swap around
                 clausesToRemove.push_back(clause);
-                program.appendClause(std::unique_ptr<AstClause>(newClause));
+                program.addClause(std::unique_ptr<AstClause>(newClause));
             }
         }
     }
@@ -433,12 +433,12 @@ bool ReorderLiteralsTransformer::transform(AstTranslationUnit& translationUnit) 
         std::vector<AstClause*> clausesToRemove;
 
         for (const AstRelation* rel : program.getRelations()) {
-            for (AstClause* clause : rel->getClauses()) {
+            for (AstClause* clause : getClauses(program, *rel)) {
                 AstClause* newClause = reorderClauseWithSips(profilerSips, clause);
                 if (newClause != nullptr) {
                     // reordering needed - swap around
                     clausesToRemove.push_back(clause);
-                    program.appendClause(std::unique_ptr<AstClause>(newClause));
+                    program.addClause(std::unique_ptr<AstClause>(newClause));
                 }
             }
         }

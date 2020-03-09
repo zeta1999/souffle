@@ -197,7 +197,7 @@ std::string getNextEdbName(AstProgram* program) {
         newEdbName.str("");  // check
         edbNum++;
         newEdbName << "newedb" << edbNum;
-    } while (program->getRelation(newEdbName.str()) != nullptr);
+    } while (getRelation(*program, newEdbName.str()) != nullptr);
 
     return newEdbName.str();
 }
@@ -301,7 +301,7 @@ std::set<AstQualifiedName> addBackwardDependencies(
 
     // Add in all relations that need to use an ignored relation
     for (AstRelation* rel : program->getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(*program, *rel)) {
             AstQualifiedName clauseHeadName = clause->getHead()->getQualifiedName();
             if (!contains(relations, clauseHeadName)) {
                 // Clause hasn't been added yet, so check if it needs to be added
@@ -339,8 +339,8 @@ std::set<AstQualifiedName> addForwardDependencies(
         result.insert(relName);
 
         // Add in all the relations that it needs to use
-        AstRelation* associatedRelation = program->getRelation(relName);
-        for (AstClause* clause : associatedRelation->getClauses()) {
+        AstRelation* associatedRelation = getRelation(*program, relName);
+        for (AstClause* clause : getClauses(*program, *associatedRelation)) {
             visitDepthFirst(*clause, [&](const AstAtom& subatom) {
                 AstQualifiedName atomName = subatom.getQualifiedName();
                 result.insert(atomName);
@@ -650,7 +650,7 @@ BindingStore bindComposites(const AstProgram* program) {
 
     // apply the change to all clauses in the program
     for (AstRelation* rel : program->getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(*program, *rel)) {
             std::set<AstBinaryConstraint*> constraints;
             M update(compositeBindings, constraints, changeCount);
             clause->apply(update);
@@ -712,7 +712,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
 
         // check whether edb or idb
         bool is_edb = true;
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(*program, *rel)) {
             if (!isFact(*clause)) {
                 is_edb = false;
                 break;
@@ -736,7 +736,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
 
     // find atoms that should be ignored
     for (AstRelation* rel : program->getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(*program, *rel)) {
             // ignore atoms that have rules containing aggregators
             if (containsAggregators(clause)) {
                 ignoredAtoms.insert(clause->getHead()->getQualifiedName());
@@ -764,7 +764,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
         std::vector<AdornedClause> adornedClauses;
 
         // create an adorned predicate of the form outputName_ff..f
-        size_t arity = program->getRelation(outputQuery)->getArity();
+        size_t arity = getRelation(*program, outputQuery)->getArity();
         std::string frepeat = std::string(arity, 'f');  // #fs = #args
         AdornedPredicate outputPredicate(outputQuery, frepeat);
         currentPredicates.push_back(outputPredicate);
@@ -782,8 +782,8 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
             }
 
             // go through and adorn all IDB clauses defining the relation
-            AstRelation* rel = program->getRelation(currPredicate.getQualifiedName());
-            for (AstClause* clause : rel->getClauses()) {
+            AstRelation* rel = getRelation(*program, currPredicate.getQualifiedName());
+            for (AstClause* clause : getClauses(*program, *rel)) {
                 if (isFact(*clause)) {
                     continue;
                 }
@@ -897,7 +897,7 @@ void separateDBs(AstProgram* program) {
         bool is_edb = false;
         bool is_idb = false;
 
-        for (AstClause* clause : relation->getClauses()) {
+        for (AstClause* clause : getClauses(*program, *relation)) {
             if (isFact(*clause)) {
                 is_edb = true;
             } else {
@@ -914,15 +914,15 @@ void separateDBs(AstProgram* program) {
             // move all the relation's facts to a new relation with a unique name
             std::string newEdbName = getNextEdbName(program);
             AstRelation* newEdbRel = createNewRelation(relation, newEdbName);
-            program->appendRelation(std::unique_ptr<AstRelation>(newEdbRel));
+            program->addRelation(std::unique_ptr<AstRelation>(newEdbRel));
 
             // find all facts for the relation
-            for (AstClause* clause : relation->getClauses()) {
+            for (AstClause* clause : getClauses(*program, *relation)) {
                 if (isFact(*clause)) {
                     // clause is fact - add it to the new EDB relation
                     AstClause* newEdbClause = clause->clone();
                     newEdbClause->getHead()->setQualifiedName(newEdbName);
-                    program->appendClause(std::unique_ptr<AstClause>(newEdbClause));
+                    program->addClause(std::unique_ptr<AstClause>(newEdbClause));
                 }
             }
 
@@ -946,7 +946,7 @@ void separateDBs(AstProgram* program) {
             newIdbClause->setHead(std::unique_ptr<AstAtom>(headAtom));
             newIdbClause->addToBody(std::unique_ptr<AstAtom>(bodyAtom));
 
-            program->appendClause(std::unique_ptr<AstClause>(newIdbClause));
+            program->addClause(std::unique_ptr<AstClause>(newIdbClause));
         }
     }
 }
@@ -1022,7 +1022,7 @@ void replaceUnderscores(AstProgram* program) {
 
     M update;
     for (AstRelation* rel : program->getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(*program, *rel)) {
             clause->apply(update);
         }
     }
@@ -1072,7 +1072,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
     for (size_t querynum = 0; querynum < outputQueries.size(); querynum++) {
         AstQualifiedName outputQuery = outputQueries[querynum];
         std::vector<AdornedClause> adornedClauses = allAdornedClauses[querynum];
-        AstRelation* originalOutputRelation = program->getRelation(outputQuery);
+        AstRelation* originalOutputRelation = getRelation(*program, outputQuery);
 
         // add a relation for the output query
         // mN_outputname_ff...f()
@@ -1084,14 +1084,14 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         newQueryNames.push_back(magicOutputName);
 
         // add the new relation to the program
-        program->appendRelation(std::unique_ptr<AstRelation>(magicOutputRelation));
+        program->addRelation(std::unique_ptr<AstRelation>(magicOutputRelation));
 
         // add an empty fact to the program
         // i.e. mN_outputname_ff...f().
         auto* outputFact = new AstClause();
         outputFact->setSrcLoc(nextSrcLoc(originalOutputRelation->getSrcLoc()));
         outputFact->setHead(std::make_unique<AstAtom>(magicOutputName));
-        program->appendClause(std::unique_ptr<AstClause>(outputFact));
+        program->addClause(std::unique_ptr<AstClause>(outputFact));
 
         // perform the magic transformation based on the adornment for this output query
         for (AdornedClause adornedClause : adornedClauses) {
@@ -1106,35 +1106,33 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // find the adorned version of this relation
             std::string headAdornment = adornedClause.getHeadAdornment();
             AstQualifiedName newRelName = createAdornedIdentifier(originalName, headAdornment);
-            AstRelation* adornedRelation = program->getRelation(newRelName);
+            AstRelation* adornedRelation = getRelation(*program, newRelName);
 
             // check if adorned relation already created previously
             if (adornedRelation == nullptr) {
                 // adorned relation not created yet, so
                 // create the relation with the new adornment
-                AstRelation* originalRelation = program->getRelation(originalName);
+                AstRelation* originalRelation = getRelation(*program, originalName);
                 AstRelation* newRelation = createNewRelation(originalRelation, newRelName);
 
                 // add the created adorned relation to the program
-                program->appendRelation(std::unique_ptr<AstRelation>(newRelation));
+                program->addRelation(std::unique_ptr<AstRelation>(newRelation));
 
                 // copy over input directives to new adorned relation
                 // also - update input directives to correctly use default fact file names
                 if (ioTypes->isInput(originalRelation)) {
-                    visitDepthFirst(*program, [&](AstIO& current) {
-                        if (current.getQualifiedName() != originalName &&
-                                current.getType() != AstIO::InputIO) {
-                            return;
+                    for (AstIO* io : program->getIOs()) {
+                        if (io->getQualifiedName() != originalName || io->getType() != AstIO::InputIO) {
+                            continue;
                         }
-                        current.setQualifiedName(newRelName);
-                        auto directives = current.getDirectives();
-                        if (current.hasDirective("IO")) {
-                            current.addDirective("IO", "file");
+                        io->setQualifiedName(newRelName);
+                        if (!io->hasDirective("IO")) {
+                            io->addDirective("IO", "file");
                         }
-                        if (directives["IO"] == "file" && current.hasDirective("filename")) {
-                            current.addDirective("filename", originalName.getQualifiers()[0] + ".facts");
+                        if (io->getDirective("IO") == "file" && !io->hasDirective("filename")) {
+                            io->addDirective("filename", originalName.getQualifiers()[0] + ".facts");
                         }
-                    });
+                    }
                 }
                 adornedRelation = newRelation;
             }
@@ -1195,7 +1193,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         AstQualifiedName newAtomName = createMagicIdentifier(atomName, querynum);
 
                         // if the magic version does not exist, create it
-                        if (program->getRelation(newAtomName) == nullptr) {
+                        if (getRelation(*program, newAtomName) == nullptr) {
                             auto* magicRelation = new AstRelation();
                             magicRelation->setQualifiedName(newAtomName);
 
@@ -1204,7 +1202,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                             int endpt = getEndpoint(baseAtomName);
                             AstQualifiedName originalRelationName = createSubIdentifier(
                                     atomName, 0, endpt - 1);  // get rid of the extra + at the end
-                            AstRelation* originalRelation = program->getRelation(originalRelationName);
+                            AstRelation* originalRelation = getRelation(*program, originalRelationName);
 
                             // copy over the (bound) attributes from the original relation
                             int argcount = 0;
@@ -1219,7 +1217,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                             magicRelation->setRepresentation(originalRelation->getRepresentation());
 
                             // add the new magic relation to the program
-                            program->appendRelation(std::unique_ptr<AstRelation>(magicRelation));
+                            program->addRelation(std::unique_ptr<AstRelation>(magicRelation));
                         }
 
                         // start setting up the magic rule
@@ -1248,14 +1246,14 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         auto* addedMagicPred = new AstAtom(magPredName);
 
                         // create the relation if it does not exist
-                        if (program->getRelation(magPredName) == nullptr) {
+                        if (getRelation(*program, magPredName) == nullptr) {
                             AstRelation* originalRelation =
-                                    program->getRelation(newClause->getHead()->getQualifiedName());
+                                    getRelation(*program, newClause->getHead()->getQualifiedName());
                             AstRelation* newMagicRelation =
                                     createMagicRelation(originalRelation, magPredName);
 
                             // add the new relation to the prgoram
-                            program->appendRelation(std::unique_ptr<AstRelation>(newMagicRelation));
+                            program->addRelation(std::unique_ptr<AstRelation>(newMagicRelation));
                         }
 
                         // add (bound) arguments to the magic predicate from the clause head
@@ -1321,7 +1319,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
                         }
 
                         // magic rule done! add it to the program
-                        program->appendClause(std::unique_ptr<AstClause>(magicClause));
+                        program->addClause(std::unique_ptr<AstClause>(magicClause));
                     }
                 }
             }
@@ -1360,7 +1358,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // add the clause to the program and the set of new clauses
             newClause->setSrcLoc(nextSrcLoc(newClause->getSrcLoc()));
             newClauses.push_back(newClause);
-            adornedRelation->addClause(std::unique_ptr<AstClause>(newClause));
+            program->addClause(std::unique_ptr<AstClause>(newClause));
         }
     }
 
@@ -1384,13 +1382,13 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         AstQualifiedName newRelationName =
                 createSubIdentifier(newName, prefixpoint + 1, newBaseName.size() - (prefixpoint + 1));
 
-        AstRelation* adornedRelation = program->getRelation(newRelationName);
+        AstRelation* adornedRelation = getRelation(*program, newRelationName);
 
         if (adornedRelation == nullptr) {
             continue;
         }
 
-        AstRelation* outputRelation = program->getRelation(oldName);
+        AstRelation* outputRelation = getRelation(*program, oldName);
 
         // if the corresponding output relation does not exist yet, create it
         if (outputRelation == nullptr) {
@@ -1405,7 +1403,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
             // rename it back to its original name
             outputRelation->setQualifiedName(oldName);
             // add the new output to the program
-            program->appendRelation(std::unique_ptr<AstRelation>(outputRelation));
+            program->addRelation(std::unique_ptr<AstRelation>(outputRelation));
         }
 
         // rules need to be the same
@@ -1428,7 +1426,7 @@ bool MagicSetTransformer::transform(AstTranslationUnit& translationUnit) {
         referringClause->setHead(std::unique_ptr<AstAtom>(headatom));
         referringClause->addToBody(std::unique_ptr<AstAtom>(bodyatom));
 
-        program->appendClause(std::unique_ptr<AstClause>(referringClause));
+        program->addClause(std::unique_ptr<AstClause>(referringClause));
     }
 
     // replace all "+underscoreX" variables with actual underscores

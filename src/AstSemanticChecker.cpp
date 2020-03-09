@@ -62,8 +62,8 @@ bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
 }
 
 void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
-    const TypeEnvironment& typeEnv =
-            translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
+    const TypeEnvironmentAnalysis& typeEnvAnalysis = *translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
+    const TypeEnvironment& typeEnv = typeEnvAnalysis.getTypeEnvironment();
     const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
     const PrecedenceGraph& precedenceGraph = *translationUnit.getAnalysis<PrecedenceGraph>();
     const RecursiveClauses& recursiveClauses = *translationUnit.getAnalysis<RecursiveClauses>();
@@ -95,7 +95,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     }
 
                     // update suppressed qualifier if the relation is found
-                    if (AstRelation* rel = program.getRelation(relid)) {
+                    if (AstRelation* rel = getRelation(program, relid)) {
                         rel->addQualifier(RelationQualifier::SUPPRESSED);
                     }
                 }
@@ -105,7 +105,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
     // -- conduct checks --
     // TODO: re-write to use visitors
-    checkTypes(report, program);
+    checkTypes(report, typeEnvAnalysis, program);
     checkRules(report, typeEnv, program, recursiveClauses, ioTypes);
     checkNamespaces(report, program);
     checkIO(report, program);
@@ -115,7 +115,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // get the list of components to be checked
     std::vector<const AstNode*> nodes;
     for (const auto& rel : program.getRelations()) {
-        for (const auto& cls : rel->getClauses()) {
+        for (const auto& cls : getClauses(program, *rel)) {
             nodes.push_back(cls);
         }
     }
@@ -336,7 +336,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
 
 void AstSemanticChecker::checkAtom(ErrorReport& report, const AstProgram& program, const AstAtom& atom) {
     // check existence of relation
-    auto* r = program.getRelation(atom.getQualifiedName());
+    auto* r = getRelation(program, atom.getQualifiedName());
     if (r == nullptr) {
         report.addError("Undefined relation " + toString(atom.getQualifiedName()), atom.getSrcLoc());
     }
@@ -570,7 +570,7 @@ void AstSemanticChecker::checkFact(ErrorReport& report, const AstProgram& progra
         return;  // checked by clause
     }
 
-    AstRelation* rel = program.getRelation(head->getQualifiedName());
+    AstRelation* rel = getRelation(program, head->getQualifiedName());
     if (rel == nullptr) {
         return;  // checked by clause
     }
@@ -662,7 +662,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
 
         /* check whether type exists */
         if (typeName != "number" && typeName != "symbol" && typeName != "float" && typeName != "unsigned" &&
-                (program.getType(typeName) == nullptr)) {
+                (getType(program, typeName) == nullptr)) {
             report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
                                     toString(attr->getTypeName()),
                     attr->getSrcLoc());
@@ -701,13 +701,8 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
     // start with declaration
     checkRelationDeclaration(report, typeEnv, program, relation, ioTypes);
 
-    // check clauses
-    for (AstClause* c : relation.getClauses()) {
-        checkClause(report, program, *c, recursiveClauses);
-    }
-
     // check whether this relation is empty
-    if (relation.getClauses().empty() && !ioTypes.isInput(&relation) &&
+    if (getClauses(program, relation).empty() && !ioTypes.isInput(&relation) &&
             !relation.hasQualifier(RelationQualifier::SUPPRESSED)) {
         report.addWarning("No rules/facts defined for relation " + toString(relation.getQualifiedName()),
                 relation.getSrcLoc());
@@ -716,87 +711,23 @@ void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironmen
 
 void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& typeEnv,
         const AstProgram& program, const RecursiveClauses& recursiveClauses, const IOType& ioTypes) {
-    for (AstRelation* cur : program.getRelations()) {
-        checkRelation(report, typeEnv, program, *cur, recursiveClauses, ioTypes);
+    for (const AstRelation* rel : program.getRelations()) {
+        checkRelation(report, typeEnv, program, *rel, recursiveClauses, ioTypes);
     }
 
-    for (AstClause* cur : program.getOrphanClauses()) {
-        checkClause(report, program, *cur, recursiveClauses);
+    for (const AstClause* clause : program.getClauses()) {
+        checkClause(report, program, *clause, recursiveClauses);
     }
 }
 
 // ----- types --------
-
-// check if a union contains a number primitive
-static bool unionContainsNumber(const AstProgram& program, const AstUnionType& type) {
-    // avoid problems with union recursion
-    static std::set<AstQualifiedName> seen;
-    if (seen.find(type.getQualifiedName()) != seen.end()) {
-        return false;
-    }
-    seen.insert(type.getQualifiedName());
-
-    // check if any of the elements of the union are or contain a number primitive
-    for (const AstQualifiedName& elemTypeID : type.getTypes()) {
-        if (elemTypeID == "number") {
-            return true;
-        }
-        const AstType* elemType = program.getType(elemTypeID);
-        if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
-            if (unionContainsNumber(program, *unionT)) {
-                return true;
-            }
-            // if union does not contain a number, continue looking
-        }
-        if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(elemType)) {
-            if (primitive->isNumeric()) {
-                return true;
-            }
-            // if this primitive is not numeric, continue looking
-        }
-    }
-    // no elements returned true, so no numbers
-    return false;
-}
-
-// check if a union contains a symbol primitive
-static bool unionContainsSymbol(const AstProgram& program, const AstUnionType& type) {
-    // avoid problems with union recursion
-    static std::set<AstQualifiedName> seen;
-    if (seen.find(type.getQualifiedName()) != seen.end()) {
-        return false;
-    }
-    seen.insert(type.getQualifiedName());
-
-    // check if any of the elements of the union are or contain a symbol primitive
-    for (const AstQualifiedName& elemTypeID : type.getTypes()) {
-        if (elemTypeID == "symbol") {
-            return true;
-        }
-        const AstType* elemType = program.getType(elemTypeID);
-        if (const auto* unionT = dynamic_cast<const AstUnionType*>(elemType)) {
-            if (unionContainsSymbol(program, *unionT)) {
-                return true;
-            }
-            // if the union does not contain a symbol, continue looking
-        }
-        if (const auto* primitive = dynamic_cast<const AstPrimitiveType*>(elemType)) {
-            if (primitive->isSymbolic()) {
-                return true;
-            }
-            // if this primitive is not a symbol, continue looking
-        }
-    }
-    // no elements returned true, so no symbols
-    return false;
-}
 
 void AstSemanticChecker::checkUnionType(
         ErrorReport& report, const AstProgram& program, const AstUnionType& type) {
     // check presence of all the element types and that all element types are based off a primitive
     for (const AstQualifiedName& sub : type.getTypes()) {
         if (sub != "number" && sub != "symbol") {
-            const AstType* subt = program.getType(sub);
+            const AstType* subt = getType(program, sub);
             if (subt == nullptr) {
                 report.addError("Undefined type " + toString(sub) + " in definition of union type " +
                                         toString(type.getQualifiedName()),
@@ -809,20 +740,13 @@ void AstSemanticChecker::checkUnionType(
             }
         }
     }
-
-    // check all element types are based on the same primitive
-    if (unionContainsSymbol(program, type) && unionContainsNumber(program, type)) {
-        report.addError("Union type " + toString(type.getQualifiedName()) +
-                                " contains a mixture of symbol and number types",
-                type.getSrcLoc());
-    }
 }
 
 void AstSemanticChecker::checkRecordType(
         ErrorReport& report, const AstProgram& program, const AstRecordType& type) {
     // check proper definition of all field types
     for (const auto& field : type.getFields()) {
-        if (field.type != "number" && field.type != "symbol" && (program.getType(field.type) == nullptr)) {
+        if (field.type != "number" && field.type != "symbol" && (getType(program, field.type) == nullptr)) {
             report.addError(
                     "Undefined type " + toString(field.type) + " in definition of field " + field.name,
                     type.getSrcLoc());
@@ -950,10 +874,22 @@ void AstSemanticChecker::checkRecursiveUnionTypes(ErrorReport& report, const Ast
     }
 }
 
-void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& program) {
+void AstSemanticChecker::checkTypes(
+        ErrorReport& report, const TypeEnvironmentAnalysis& typeEnvAnalysis, const AstProgram& program) {
     /* check each type individually */
     for (const auto& cur : program.getTypes()) {
         checkType(report, program, *cur);
+    }
+
+    /* check that union types do not mix number and symbol types */
+    const auto& numericUnions = typeEnvAnalysis.getNumericUnions();
+    const auto& symbolicUnions = typeEnvAnalysis.getSymbolicUnions();
+    for (const auto& type : program.getTypes()) {
+        const auto& name = type->getQualifiedName();
+        if (contains(numericUnions, name) && contains(symbolicUnions, name)) {
+            report.addError("Union type " + toString(name) + " contains a mixture of symbol and number types",
+                    type->getSrcLoc());
+        }
     }
 
     /* check that union types are not defined recursively */
@@ -962,14 +898,14 @@ void AstSemanticChecker::checkTypes(ErrorReport& report, const AstProgram& progr
 
 void AstSemanticChecker::checkIO(ErrorReport& report, const AstProgram& program) {
     auto checkIO = [&](const AstIO* directive) {
-        auto* r = program.getRelation(directive->getQualifiedName());
+        auto* r = getRelation(program, directive->getQualifiedName());
         if (r == nullptr) {
             report.addError(
                     "Undefined relation " + toString(directive->getQualifiedName()), directive->getSrcLoc());
         }
     };
-    for (const auto& directive : program.getIOs()) {
-        checkIO(directive.get());
+    for (const auto* directive : program.getIOs()) {
+        checkIO(directive);
     }
 }
 
@@ -1246,7 +1182,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // If the result contains anything, then a cycle was found
     if (!result.empty()) {
-        AstRelation* cycleOrigin = program.getRelation(result[result.size() - 1]);
+        AstRelation* cycleOrigin = getRelation(program, result[result.size() - 1]);
 
         // Construct the string representation of the cycle
         std::stringstream cycle;
@@ -1268,7 +1204,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // Check if an inlined literal ever takes in a $
     visitDepthFirst(program, [&](const AstAtom& atom) {
-        AstRelation* associatedRelation = program.getRelation(atom.getQualifiedName());
+        AstRelation* associatedRelation = getRelation(program, atom.getQualifiedName());
         if (associatedRelation != nullptr && isInline(associatedRelation)) {
             visitDepthFirst(atom, [&](const AstArgument& arg) {
                 if (dynamic_cast<const AstCounter*>(&arg) != nullptr) {
@@ -1281,7 +1217,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // Check if an inlined clause ever contains a $
     for (const AstRelation* rel : inlinedRelations) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             visitDepthFirst(*clause, [&](const AstArgument& arg) {
                 if (dynamic_cast<const AstCounter*>(&arg) != nullptr) {
                     report.addError(
@@ -1300,7 +1236,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     AstRelationSet nonNegatableRelations;
     for (const AstRelation* rel : inlinedRelations) {
         bool foundNonNegatable = false;
-        for (const AstClause* clause : rel->getClauses()) {
+        for (const AstClause* clause : getClauses(program, *rel)) {
             // Get the variables in the head
             std::set<std::string> headVariables;
             visitDepthFirst(
@@ -1329,7 +1265,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     // Check that these relations never appear negated
     visitDepthFirst(program, [&](const AstNegation& neg) {
-        AstRelation* associatedRelation = program.getRelation(neg.getAtom()->getQualifiedName());
+        AstRelation* associatedRelation = getRelation(program, neg.getAtom()->getQualifiedName());
         if (associatedRelation != nullptr &&
                 nonNegatableRelations.find(associatedRelation) != nonNegatableRelations.end()) {
             report.addError(
@@ -1351,7 +1287,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
 
     visitDepthFirst(program, [&](const AstAggregator& aggr) {
         visitDepthFirst(aggr, [&](const AstAtom& subatom) {
-            const AstRelation* rel = program.getRelation(subatom.getQualifiedName());
+            const AstRelation* rel = getRelation(program, subatom.getQualifiedName());
             if (rel != nullptr && isInline(rel)) {
                 report.addError("Cannot inline relations that appear in aggregator", subatom.getSrcLoc());
             }
@@ -1399,7 +1335,7 @@ void AstSemanticChecker::checkInlining(ErrorReport& report, const AstProgram& pr
     // Perform the check
     visitDepthFirst(program, [&](const AstNegation& negation) {
         const AstAtom* associatedAtom = negation.getAtom();
-        const AstRelation* associatedRelation = program.getRelation(associatedAtom->getQualifiedName());
+        const AstRelation* associatedRelation = getRelation(program, associatedAtom->getQualifiedName());
         if (associatedRelation != nullptr && isInline(associatedRelation)) {
             std::pair<bool, SrcLocation> atomStatus = checkInvalidUnderscore(associatedAtom);
             if (atomStatus.first) {
@@ -1443,7 +1379,7 @@ bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
     for (const RelationScheduleStep& step : relationSchedule->schedule()) {
         const std::set<const AstRelation*>& scc = step.computed();
         for (const AstRelation* rel : scc) {
-            for (const AstClause* clause : rel->getClauses()) {
+            for (const AstClause* clause : getClauses(*translationUnit.getProgram(), *rel)) {
                 if (!recursiveClauses->recursive(clause)) {
                     continue;
                 }

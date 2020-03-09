@@ -20,6 +20,7 @@
 #include "AstLiteral.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
+#include "AstType.h"
 #include "AstVisitor.h"
 
 namespace souffle {
@@ -38,8 +39,41 @@ std::vector<const AstRecordInit*> getRecords(const AstNode& root) {
     return recs;
 }
 
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualifiedName& relationName) {
+    std::vector<AstClause*> clauses;
+    for (AstClause* clause : program.getClauses()) {
+        if (clause->getHead()->getQualifiedName() == relationName) {
+            clauses.push_back(clause);
+        }
+    }
+    return clauses;
+}
+
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation& rel) {
+    return getClauses(program, rel.getQualifiedName());
+}
+
+AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name) {
+    return getIf(program.getRelations(), [&](const AstRelation* r) { return r->getQualifiedName() == name; });
+}
+
+const AstType* getType(const AstProgram& program, const AstQualifiedName& name) {
+    return getIf(program.getTypes(), [&](const AstType* t) { return t->getQualifiedName() == name; });
+}
+
+const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, const std::string& name) {
+    return getIf(program.getFunctorDeclarations(),
+            [&](const AstFunctorDeclaration* f) { return f->getName() == name; });
+}
+
+void removeRelationClauses(AstProgram& program, const AstQualifiedName& name) {
+    for (const auto* clause : getClauses(program, name)) {
+        program.removeClause(clause);
+    }
+}
+
 const AstRelation* getAtomRelation(const AstAtom* atom, const AstProgram* program) {
-    return program->getRelation(atom->getQualifiedName());
+    return getRelation(*program, atom->getQualifiedName());
 }
 
 const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* program) {
@@ -62,11 +96,11 @@ std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const Ast
 size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
     // TODO (azreika): This number might change between the provenance transformer and the AST->RAM
     // translation. Might need a better way to assign IDs to clauses... (see PR #1288).
-    const AstRelation* rel = program->getRelation(clause->getHead()->getQualifiedName());
+    const AstRelation* rel = getRelation(*program, clause->getHead()->getQualifiedName());
     assert(rel != nullptr && "clause relation does not exist");
 
     size_t clauseNum = 1;
-    for (const auto* cur : rel->getClauses()) {
+    for (const auto* cur : getClauses(*program, *rel)) {
         bool isFact = cur->getBodyLiterals().empty();
         if (cur == clause) {
             return isFact ? 0 : clauseNum;
@@ -81,7 +115,7 @@ size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
 
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
-    for (const AstClause* cl : relation->getClauses()) {
+    for (const AstClause* cl : getClauses(*program, *relation)) {
         for (const auto* neg : getBodyLiterals<AstNegation>(*cl)) {
             if (negRelation == getAtomRelation(neg->getAtom(), program)) {
                 foundLiteral = neg;
@@ -94,7 +128,7 @@ bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation
 
 bool hasClauseWithAggregatedRelation(const AstRelation* relation, const AstRelation* aggRelation,
         const AstProgram* program, const AstLiteral*& foundLiteral) {
-    for (const AstClause* cl : relation->getClauses()) {
+    for (const AstClause* cl : getClauses(*program, *relation)) {
         bool hasAgg = false;
         visitDepthFirst(*cl, [&](const AstAggregator& cur) {
             visitDepthFirst(cur, [&](const AstAtom& atom) {

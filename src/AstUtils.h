@@ -25,10 +25,13 @@ namespace souffle {
 // some forward declarations
 class AstAtom;
 class AstClause;
+class AstFunctorDeclaration;
 class AstLiteral;
 class AstNode;
 class AstProgram;
+class AstQualifiedName;
 class AstRelation;
+class AstType;
 class AstVariable;
 class AstRecordInit;
 
@@ -60,7 +63,6 @@ std::vector<const AstRecordInit*> getRecords(const AstNode& root);
  * @param the clause
  * @return vector of body literals of the specified type
  */
-// TODO (azreika): add caching
 template <typename T, typename C>
 std::vector<T*> getBodyLiterals(const C& clause) {
     std::vector<T*> res;
@@ -71,6 +73,59 @@ std::vector<T*> getBodyLiterals(const C& clause) {
     }
     return res;
 }
+
+/**
+ * Returns a vector of clauses in the program describing the relation with the given name.
+ *
+ * @param program the program
+ * @param name the name of the relation to search for
+ * @return vector of clauses describing the relation with the given name
+ */
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualifiedName& relationName);
+
+/**
+ * Returns a vector of clauses in the program describing the given relation.
+ *
+ * @param program the program
+ * @param rel the relation to search for
+ * @return vector of clauses describing the given relation
+ */
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation& rel);
+
+/**
+ * Returns the relation with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the relation to search for
+ * @return the relation if it exists; nullptr otherwise
+ */
+AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name);
+
+/**
+ * Returns the type with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the type to search for
+ * @return the type if it exists; nullptr otherwise
+ */
+const AstType* getType(const AstProgram& program, const AstQualifiedName& name);
+
+/**
+ * Returns the functor declaration with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the functor declaration to search for
+ * @return the functor declaration if it exists; nullptr otherwise
+ */
+const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, const std::string& name);
+
+/**
+ * Removes the set of clauses with the given relation name.
+ *
+ * @param program the program
+ * @param name the name of the relation to search for
+ */
+void removeRelationClauses(AstProgram& program, const AstQualifiedName& name);
 
 /**
  * Returns the relation referenced by the given atom.

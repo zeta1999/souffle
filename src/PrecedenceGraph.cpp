@@ -37,11 +37,12 @@ namespace souffle {
 
 void PrecedenceGraph::run(const AstTranslationUnit& translationUnit) {
     /* Get relations */
-    std::vector<AstRelation*> relations = translationUnit.getProgram()->getRelations();
+    const AstProgram& program = *translationUnit.getProgram();
+    std::vector<AstRelation*> relations = program.getRelations();
 
     for (AstRelation* r : relations) {
         backingGraph.insert(r);
-        for (const auto& c : r->getClauses()) {
+        for (const auto& c : getClauses(program, *r)) {
             const std::set<const AstRelation*>& dependencies =
                     getBodyRelations(c, translationUnit.getProgram());
             for (auto source : dependencies) {
@@ -143,7 +144,7 @@ bool RecursiveClauses::computeIsRecursive(
 
     // set up start list
     for (const auto* cur : getBodyLiterals<AstAtom>(clause)) {
-        auto rel = program.getRelation(cur->getQualifiedName());
+        auto rel = getRelation(program, cur->getQualifiedName());
         if (rel == trg) {
             return true;
         }
@@ -167,9 +168,9 @@ bool RecursiveClauses::computeIsRecursive(
         }
 
         // check all atoms in the relations
-        for (const AstClause* cl : cur->getClauses()) {
+        for (const AstClause* cl : getClauses(program, *cur)) {
             for (const AstAtom* at : getBodyLiterals<AstAtom>(*cl)) {
-                auto rel = program.getRelation(at->getQualifiedName());
+                auto rel = getRelation(program, at->getQualifiedName());
                 if (rel == trg) {
                     return true;
                 }

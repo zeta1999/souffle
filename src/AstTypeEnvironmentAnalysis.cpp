@@ -18,6 +18,7 @@
 #include "AstProgram.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
+#include "GraphUtils.h"
 #include "TypeSystem.h"
 #include <cassert>
 #include <iostream>
@@ -104,6 +105,38 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
         } else {
             std::cout << "Unsupported type construct: " << typeid(cur).name() << "\n";
             assert(false && "Unsupported Type Construct!");
+        }
+    }
+
+    // partition unions into numeric or symbolic types
+    Graph<AstQualifiedName> typeDependencyGraph;
+    for (const auto& cur : program.getTypes()) {
+        if (auto type = dynamic_cast<const AstPrimitiveType*>(cur)) {
+            if (type->isNumeric()) {
+                typeDependencyGraph.insert(type->getQualifiedName(), "number");
+            } else {
+                typeDependencyGraph.insert(type->getQualifiedName(), "symbol");
+            }
+        } else if (dynamic_cast<const AstRecordType*>(cur) != nullptr) {
+            // do nothing
+        } else if (auto type = dynamic_cast<const AstUnionType*>(cur)) {
+            for (const auto& subtype : type->getTypes()) {
+                typeDependencyGraph.insert(type->getQualifiedName(), subtype);
+            }
+        } else {
+            std::cout << "Unsupported type construct: " << typeid(cur).name() << "\n";
+            assert(false && "Unsupported Type Construct!");
+        }
+    }
+    for (const auto& cur : program.getTypes()) {
+        if (auto unionType = dynamic_cast<const AstUnionType*>(cur)) {
+            AstQualifiedName unionName = unionType->getQualifiedName();
+            if (typeDependencyGraph.reaches(unionName, "number")) {
+                numericUnions.insert(unionName);
+            }
+            if (typeDependencyGraph.reaches(unionName, "symbol")) {
+                symbolicUnions.insert(unionName);
+            }
         }
     }
 }

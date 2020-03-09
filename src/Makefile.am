@@ -110,7 +110,7 @@ souffle_sources = \
         RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
         InlineRelationsTransformer.cpp            \
         LogStatement.h                            \
-        InterpreterIndex.h            InterpreterIndex.cpp	\
+        InterpreterIndex.h            InterpreterIndex.cpp \
         InterpreterRelation.h         InterpreterRelation.cpp     \
         MagicSet.cpp          MagicSet.h          \
         MinimiseProgramTransformer.cpp            \

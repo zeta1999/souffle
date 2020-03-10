@@ -226,7 +226,7 @@ void negateConstraint(AstConstraint* constraint) {
     } else if (auto* cstr = dynamic_cast<AstBinaryConstraint*>(constraint)) {
         cstr->setOperator(souffle::negatedConstraintOp(cstr->getOperator()));
     } else {
-        assert("Unknown ast-constraint type");
+        assert(false && "Unknown ast-constraint type");
     }
 }
 

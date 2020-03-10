@@ -689,8 +689,8 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
 }
 
 void AstSemanticChecker::checkRelation(ErrorReport& report, const TypeEnvironment& typeEnv,
-        const AstProgram& program, const AstRelation& relation, const RecursiveClauses& recursiveClauses,
-        const IOType& ioTypes) {
+        const AstProgram& program, const AstRelation& relation,
+        const RecursiveClauses& /* recursiveClauses */, const IOType& ioTypes) {
     if (relation.getRepresentation() == RelationRepresentation::EQREL) {
         if (relation.getArity() == 2) {
             const auto& attributes = relation.getAttributes();

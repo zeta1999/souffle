@@ -30,6 +30,7 @@
 
 /* -- Dependencies -- */
 %code requires {
+    #include "AggregateOp.h"
     #include "AstArgument.h"
     #include "AstClause.h"
     #include "AstComponent.h"
@@ -79,8 +80,8 @@
 %token END 0                     "end of file"
 %token <std::string> STRING      "symbol"
 %token <std::string> IDENT       "identifier"
-%token <RamDomain> NUMBER        "number"
-%token <RamFloat> FLOAT          "float"
+%token <std::string> NUMBER      "number"
+%token <std::string> FLOAT       "float"
 %token <std::string> RELOP       "relational operator"
 %token PRAGMA                    "pragma directive"
 %token OUTPUT_QUALIFIER          "relation qualifier output"
@@ -103,7 +104,6 @@
 %token SUM                       "sum aggregator"
 %token TRUE                      "true literal constraint"
 %token FALSE                     "false literal constraint"
-%token STRICT                    "strict marker"
 %token PLAN                      "plan keyword"
 %token IF                        ":-"
 %token DECL                      "relation declaration"
@@ -155,6 +155,9 @@
 %token BW_AND                    "band"
 %token BW_OR                     "bor"
 %token BW_XOR                    "bxor"
+%token BW_SHIFT_L                "bshl"
+%token BW_SHIFT_R                "bshr"
+%token BW_SHIFT_R_UNSIGNED       "bshru"
 %token BW_NOT                    "bnot"
 %token L_AND                     "land"
 %token L_OR                      "lor"
@@ -177,31 +180,30 @@
 %type <AstExecutionPlan *>                  exec_plan_list
 %type <AstClause *>                         fact
 %type <AstFunctorDeclaration *>             functor_decl
-%type <std::string>                         functor_type
+%type <TypeAttribute>                       functor_type
 %type <std::vector<AstAtom *>>              head
 %type <std::vector<std::string>>            identifier
 %type <std::vector<AstIO *>>                io_directive_list
 %type <std::vector<AstIO *>>                io_relation_list
 %type <std::string>                         kvp_value
-%type <std::vector<AstLoad *>>              load_head
+%type <std::vector<AstIO *>>                io_head
 %type <std::vector<AstArgument *>>          non_empty_arg_list
 %type <std::vector<AstAttribute *>>         non_empty_attributes
 %type <AstExecutionOrder *>                 non_empty_exec_order_list
-%type <std::string>                         non_empty_functor_arg_type_list
+%type <std::vector<TypeAttribute>>          non_empty_functor_arg_type_list
 %type <std::vector<std::pair
             <std::string, std::string>>>    non_empty_key_value_pairs
 %type <AstRecordType *>                     non_empty_record_type_list
 %type <AstPragma *>                         pragma
-%type <uint32_t>                            qualifiers
+%type <std::set<RelationTag>>               relation_tags
 %type <std::vector<AstRelation *>>          relation_decl
 %type <std::vector<AstRelation *>>          relation_list
 %type <std::vector<AstClause *>>            rule
 %type <std::vector<AstClause *>>            rule_def
-%type <std::vector<AstStore *>>             store_head
 %type <RuleBody *>                          term
 %type <AstType *>                           type
-%type <std::vector<AstTypeIdentifier>>      type_params
-%type <std::vector<AstTypeIdentifier>>      type_param_list
+%type <std::vector<AstQualifiedName>>      type_params
+%type <std::vector<AstQualifiedName>>      type_param_list
 %type <AstUnionType *>                      union_type_list
 
 /* -- Destructors -- */
@@ -224,7 +226,6 @@
 %destructor { for (auto* cur : $$) { delete cur; } }        head
 %destructor { for (auto* cur : $$) { delete cur; } }        io_directive_list
 %destructor { for (auto* cur : $$) { delete cur; } }        io_relation_list
-%destructor { for (auto* cur : $$) { delete cur; } }        load_head
 %destructor { for (auto* cur : $$) { delete cur; } }        non_empty_arg_list
 %destructor { for (auto* cur : $$) { delete cur; } }        non_empty_attributes
 %destructor { delete $$; }                                  non_empty_exec_order_list
@@ -232,12 +233,12 @@
 %destructor { }                                             non_empty_key_value_pairs
 %destructor { delete $$; }                                  non_empty_record_type_list
 %destructor { delete $$; }                                  pragma
-%destructor { }                                             qualifiers
+%destructor { }                                             relation_tags
 %destructor { for (auto* cur : $$) { delete cur; } }        relation_decl
 %destructor { for (auto* cur : $$) { delete cur; } }        relation_list
 %destructor { for (auto* cur : $$) { delete cur; } }        rule
 %destructor { for (auto* cur : $$) { delete cur; } }        rule_def
-%destructor { for (auto* cur : $$) { delete cur; } }        store_head
+%destructor { for (auto* cur : $$) { delete cur; } }        io_head
 %destructor { delete $$; }                                  term
 %destructor { delete $$; }                                  type
 %destructor { }                                             type_params
@@ -250,6 +251,7 @@
 %left BW_OR
 %left BW_XOR
 %left BW_AND
+%left BW_SHIFT_L BW_SHIFT_R BW_SHIFT_R_UNSIGNED
 %left PLUS MINUS
 %left STAR SLASH PERCENT
 %precedence NEG BW_NOT L_NOT
@@ -279,24 +281,38 @@ unit
     }
   | unit relation_decl {
         for (auto* cur : $relation_decl) {
+            if (cur->hasQualifier(RelationQualifier::INPUT)) {
+                auto load = std::make_unique<AstIO>();
+                load->setSrcLoc(cur->getSrcLoc());
+                load->setType(AstIO::InputIO); 
+                load->setQualifiedName(cur->getQualifiedName());
+                driver.addIO(std::move(load));
+            }
+            if (cur->hasQualifier(RelationQualifier::OUTPUT)) {
+                auto store = std::make_unique<AstIO>();
+                store->setSrcLoc(cur->getSrcLoc());
+                store->setType(AstIO::OutputIO); 
+                store->setQualifiedName(cur->getQualifiedName());
+                driver.addIO(std::move(store));
+            }
+            if (cur->hasQualifier(RelationQualifier::PRINTSIZE)) {
+                auto printSize = std::make_unique<AstIO>();
+                printSize->setSrcLoc(cur->getSrcLoc());
+                printSize->setType(AstIO::PrintsizeIO); 
+                printSize->setQualifiedName(cur->getQualifiedName());
+                driver.addIO(std::move(printSize));
+            }
             driver.addRelation(std::unique_ptr<AstRelation>(cur));
         }
 
         $relation_decl.clear();
     }
-  | unit load_head {
-        for (auto* cur : $load_head) {
-            driver.addLoad(std::unique_ptr<AstLoad>(cur));
+  | unit io_head {
+        for (auto* cur : $io_head) {
+            driver.addIO(std::unique_ptr<AstIO>(cur));
         }
 
-        $load_head.clear();
-    }
-  | unit store_head {
-        for (auto* cur : $store_head) {
-            driver.addStore(std::unique_ptr<AstStore>(cur));
-        }
-
-        $store_head.clear();
+        $io_head.clear();
     }
   | unit fact {
         driver.addClause(std::unique_ptr<AstClause>($fact));
@@ -353,32 +369,32 @@ identifier
 /* Type declarations */
 type
   : NUMBER_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Signed);
+        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Signed);
         $$->setSrcLoc(@$);
     }
   | SYMBOL_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Symbol);
+        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, RamTypeAttribute::Symbol);
+        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS union_type_list {
         $$ = $union_type_list;
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
 
         $union_type_list = nullptr;
     }
   | TYPE IDENT EQUALS LBRACKET RBRACKET {
         $$ = new AstRecordType();
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS LBRACKET non_empty_record_type_list RBRACKET {
         $$ = $non_empty_record_type_list;
-        $$->setName($IDENT);
+        $$->setQualifiedName($IDENT);
         $$->setSrcLoc(@$);
 
         $non_empty_record_type_list = nullptr;
@@ -426,17 +442,33 @@ union_type_list
 
 /* Relation declaration */
 relation_decl
-  : DECL relation_list LPAREN RPAREN qualifiers {
+  : DECL relation_list LPAREN RPAREN relation_tags {
         for (auto* rel : $relation_list) {
-            rel->setQualifier($qualifiers);
+            for (auto tag : $relation_tags) {
+                if (isRelationQualifierTag(tag)) {
+                    rel->addQualifier(getRelationQualifierFromTag(tag));
+                } else if (isRelationRepresentationTag(tag)) {
+                    rel->setRepresentation(getRelationRepresentationFromTag(tag));
+                } else {
+                    assert(false && "unhandled tag");
+                }
+            }
         }
         $$ = $relation_list;
 
         $relation_list.clear();
     }
-  | DECL relation_list LPAREN non_empty_attributes RPAREN qualifiers {
+  | DECL relation_list LPAREN non_empty_attributes RPAREN relation_tags {
         for (auto* rel : $relation_list) {
-            rel->setQualifier($qualifiers);
+            for (auto tag : $relation_tags) {
+                if (isRelationQualifierTag(tag)) {
+                    rel->addQualifier(getRelationQualifierFromTag(tag));
+                } else if (isRelationRepresentationTag(tag)) {
+                    rel->setRepresentation(getRelationRepresentationFromTag(tag));
+                } else {
+                    assert(false && "unhandled tag");
+                }
+            }
             for (auto* attr : $non_empty_attributes) {
                 rel->addAttribute(std::unique_ptr<AstAttribute>(attr->clone()));
             }
@@ -451,14 +483,14 @@ relation_decl
 relation_list
   : IDENT {
         auto* rel = new AstRelation();
-        rel->setName($IDENT);
+        rel->setQualifiedName($IDENT);
         rel->setSrcLoc(@$);
 
         $$.push_back(rel);
     }
   | relation_list[curr_list] COMMA IDENT {
         auto* rel = new AstRelation();
-        rel->setName($IDENT);
+        rel->setQualifiedName($IDENT);
         rel->setSrcLoc(@IDENT);
 
         $$ = $curr_list;
@@ -490,50 +522,67 @@ non_empty_attributes
     }
   ;
 
-/* Relation qualifiers */
-qualifiers
-  : qualifiers OUTPUT_QUALIFIER {
-        if($1 & OUTPUT_RELATION)
+/* Relation tags */
+relation_tags
+  : relation_tags OUTPUT_QUALIFIER {
+        driver.warning(@2, "Deprecated output qualifier used");
+        if ($1.find(RelationTag::OUTPUT) != $1.end())
             driver.error(@2, "output qualifier already set");
-        $$ = $1 | OUTPUT_RELATION;
+        $1.insert(RelationTag::OUTPUT);
+        $$ = $1;
     }
-  | qualifiers INPUT_QUALIFIER {
-        if($1 & INPUT_RELATION)
+  | relation_tags INPUT_QUALIFIER {
+        driver.warning(@2, "Deprecated input qualifier was used");
+        if ($1.find(RelationTag::INPUT) != $1.end())
             driver.error(@2, "input qualifier already set");
-        $$ = $1 | INPUT_RELATION;
+        $1.insert(RelationTag::INPUT);
+        $$ = $1;
     }
-  | qualifiers PRINTSIZE_QUALIFIER {
-        if($1 & PRINTSIZE_RELATION)
+  | relation_tags PRINTSIZE_QUALIFIER {
+        driver.warning(@2, "Deprecated printsize qualifier was used");
+        if ($1.find(RelationTag::PRINTSIZE) != $1.end())
             driver.error(@2, "printsize qualifier already set");
-        $$ = $1 | PRINTSIZE_RELATION;
+        $1.insert(RelationTag::PRINTSIZE);
+        $$ = $1;
     }
-  | qualifiers OVERRIDABLE_QUALIFIER {
-        if($1 & OVERRIDABLE_RELATION)
+  | relation_tags OVERRIDABLE_QUALIFIER {
+        if ($1.find(RelationTag::OVERRIDABLE) != $1.end())
             driver.error(@2, "overridable qualifier already set");
-        $$ = $1 | OVERRIDABLE_RELATION;
+        $1.insert(RelationTag::OVERRIDABLE);
+        $$ = $1;
     }
-  | qualifiers INLINE_QUALIFIER {
-        if($1 & INLINE_RELATION)
+  | relation_tags INLINE_QUALIFIER {
+        if ($1.find(RelationTag::INLINE) != $1.end())
             driver.error(@2, "inline qualifier already set");
-        $$ = $1 | INLINE_RELATION;
+        $1.insert(RelationTag::INLINE);
+        $$ = $1;
     }
-  | qualifiers BRIE_QUALIFIER {
-        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
-            driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $$ = $1 | BRIE_RELATION;
+  | relation_tags BRIE_QUALIFIER {
+        if ($1.find(RelationTag::BRIE) != $1.end() ||
+            $1.find(RelationTag::BTREE) != $1.end() ||
+            $1.find(RelationTag::EQREL) != $1.end())
+                driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $1.insert(RelationTag::BRIE);
+        $$ = $1;
     }
-  | qualifiers BTREE_QUALIFIER {
-        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
-            driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $$ = $1 | BTREE_RELATION;
+  | relation_tags BTREE_QUALIFIER {
+        if ($1.find(RelationTag::BRIE) != $1.end() ||
+            $1.find(RelationTag::BTREE) != $1.end() ||
+            $1.find(RelationTag::EQREL) != $1.end())
+                driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $1.insert(RelationTag::BTREE);
+        $$ = $1;
     }
-  | qualifiers EQREL_QUALIFIER {
-        if($1 & (BRIE_RELATION|BTREE_RELATION|EQREL_RELATION))
-            driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $$ = $1 | EQREL_RELATION;
+  | relation_tags EQREL_QUALIFIER {
+        if ($1.find(RelationTag::BRIE) != $1.end() ||
+            $1.find(RelationTag::BTREE) != $1.end() ||
+            $1.find(RelationTag::EQREL) != $1.end())
+                driver.error(@2, "btree/brie/eqrel qualifier already set");
+        $1.insert(RelationTag::EQREL);
+        $$ = $1;
     }
   | %empty {
-        $$ = 0;
+        $$ = std::set<RelationTag>();
     }
   ;
 
@@ -559,14 +608,6 @@ rule
 
         $rule_def.clear();
     }
-  | rule[nested_rule] STRICT {
-        $$ = $nested_rule;
-        for (auto* rule : $$) {
-            rule->setFixedExecutionPlan();
-        }
-
-        $nested_rule.clear();
-    }
   | rule[nested_rule] exec_plan {
         $$ = $nested_rule;
         for (auto* rule : $$) {
@@ -583,14 +624,11 @@ rule_def
         auto heads = $head;
         auto bodies = $body->toClauseBodies();
 
-        bool generated = heads.size() != 1 || bodies.size() != 1;
-
         for (const auto* head : heads) {
             for (const auto* body : bodies) {
                 AstClause* cur = body->clone();
                 cur->setHead(std::unique_ptr<AstAtom>(head->clone()));
                 cur->setSrcLoc(@$);
-                cur->setGenerated(generated);
                 $$.push_back(cur);
             }
         }
@@ -670,14 +708,14 @@ exec_plan_list
   : NUMBER COLON LPAREN exec_order_list RPAREN {
         $exec_order_list->setSrcLoc(@LPAREN);
         $$ = new AstExecutionPlan();
-        $$->setOrderFor($NUMBER, std::unique_ptr<AstExecutionOrder>($exec_order_list));
+        $$->setOrderFor(stord($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
 
         $exec_order_list = nullptr;
     }
   | exec_plan_list[curr_list] COMMA NUMBER COLON LPAREN exec_order_list RPAREN {
         $exec_order_list->setSrcLoc(@LPAREN);
         $$ = $curr_list;
-        $$->setOrderFor($NUMBER, std::unique_ptr<AstExecutionOrder>($exec_order_list));
+        $$->setOrderFor(stord($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
 
         $curr_list = nullptr;
         $exec_order_list = nullptr;
@@ -698,11 +736,11 @@ exec_order_list
 non_empty_exec_order_list
   : NUMBER {
         $$ = new AstExecutionOrder();
-        $$->appendAtomIndex($NUMBER);
+        $$->appendAtomIndex(stord($NUMBER));
     }
   | non_empty_exec_order_list[curr_list] COMMA NUMBER {
         $$ = $curr_list;
-        $$->appendAtomIndex($NUMBER);
+        $$->appendAtomIndex(stord($NUMBER));
 
         $curr_list = nullptr;
     }
@@ -746,7 +784,7 @@ atom
             $$->addArgument(std::unique_ptr<AstArgument>(arg));
         }
 
-        $$->setName($identifier);
+        $$->setQualifiedName($identifier);
         $$->setSrcLoc(@$);
 
         $identifier.clear();
@@ -754,7 +792,7 @@ atom
     }
   | identifier LPAREN RPAREN {
         $$ = new AstAtom();
-        $$->setName($identifier);
+        $$->setQualifiedName($identifier);
         $$->setSrcLoc(@$);
 
         $identifier.clear();
@@ -851,15 +889,15 @@ non_empty_arg_list
 /* Atom argument */
 arg
   : STRING {
-        $$ = new AstStringConstant(driver.getSymbolTable(), $STRING);
+        $$ = new AstStringConstant($STRING);
         $$->setSrcLoc(@$);
     }
   | FLOAT {
-        $$ = new AstFloatConstant($FLOAT);
+        $$ = new AstNumericConstant($FLOAT, AstNumericConstant::Type::Float);
         $$->setSrcLoc(@$);
     }
   | NUMBER {
-        $$ = new AstNumberConstant($NUMBER);
+        $$ = new AstNumericConstant($NUMBER, AstNumericConstant::Type::Int);
         $$->setSrcLoc(@$);
     }
   | UNDERSCORE {
@@ -903,7 +941,7 @@ arg
         auto record = new AstRecordInit();
 
         for (auto* arg : $non_empty_arg_list) {
-            record->add(std::unique_ptr<AstArgument>(arg));
+            record->addArgument(std::unique_ptr<AstArgument>(arg));
         }
 
         $$ = record;
@@ -914,17 +952,15 @@ arg
 
     /* user-defined functor */
   | AT IDENT LPAREN RPAREN {
-        auto functor = new AstUserDefinedFunctor();
-        functor->setName($IDENT);
+        auto functor = new AstUserDefinedFunctor($IDENT);
         $$ = functor;
         $$->setSrcLoc(@$);
     }
   | AT IDENT LPAREN non_empty_arg_list RPAREN {
-        auto functor = new AstUserDefinedFunctor();
-        functor->setName($IDENT);
+        auto functor = new AstUserDefinedFunctor($IDENT);
 
         for (auto* arg : $non_empty_arg_list) {
-            functor->add(std::unique_ptr<AstArgument>(arg));
+            functor->addArgument(std::unique_ptr<AstArgument>(arg));
         }
 
         $$ = functor;
@@ -936,8 +972,17 @@ arg
     /* -- intrinsic functor -- */
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
-        if (const AstNumberConstant* original = dynamic_cast<const AstNumberConstant*>($nested_arg)) {
-            $$ = new AstNumberConstant(-1 * original->getRamRepresentation());
+        if (const auto* original = dynamic_cast<const AstNumericConstant*>($nested_arg)) {
+            switch (original->getType()) {
+                case AstNumericConstant::Type::Int:
+                    $$ = new AstNumericConstant(std::to_string(-1 * RamDomainFromString(original->getConstant())));
+                    break;
+                case AstNumericConstant::Type::Float:
+                    $$ = new AstNumericConstant(std::to_string(-1 * RamFloatFromString(original->getConstant())), original->getType());
+                    break;
+                case AstNumericConstant::Type::Uint:
+                    assert(false && "We can't parse Uint");
+            }
             $$->setSrcLoc(@nested_arg);
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,
@@ -1087,6 +1132,33 @@ arg
         $left = nullptr;
         $right = nullptr;
     }
+  | arg[left] BW_SHIFT_L arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_L,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] BW_SHIFT_R arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_R,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] BW_SHIFT_R_UNSIGNED arg[right] {
+        $$ = new AstIntrinsicFunctor(FunctorOp::BSHIFT_R_UNSIGNED,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
   | arg[left] BW_OR arg[right] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BOR,
                 std::unique_ptr<AstArgument>($left),
@@ -1192,7 +1264,7 @@ arg
 
     /* -- aggregators -- */
   | COUNT COLON atom {
-        auto aggr = new AstAggregator(AstAggregator::count);
+        auto aggr = new AstAggregator(AggregateOp::count);
 
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
 
@@ -1202,7 +1274,7 @@ arg
         $atom = nullptr;
     }
   | COUNT COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AstAggregator::count);
+        auto aggr = new AstAggregator(AggregateOp::count);
 
         auto bodies = $body->toClauseBodies();
 
@@ -1221,7 +1293,7 @@ arg
     }
 
   | SUM arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AstAggregator::sum);
+        auto aggr = new AstAggregator(AggregateOp::sum);
 
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
@@ -1233,7 +1305,7 @@ arg
         $atom = nullptr;
     }
   | SUM arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AstAggregator::sum);
+        auto aggr = new AstAggregator(AggregateOp::sum);
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
@@ -1255,7 +1327,7 @@ arg
     }
 
   | MIN arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AstAggregator::min);
+        auto aggr = new AstAggregator(AggregateOp::min);
 
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
@@ -1268,7 +1340,7 @@ arg
         $atom = nullptr;
     }
   | MIN arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AstAggregator::min);
+        auto aggr = new AstAggregator(AggregateOp::min);
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
@@ -1290,7 +1362,7 @@ arg
     }
 
   | MAX arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AstAggregator::max);
+        auto aggr = new AstAggregator(AggregateOp::max);
 
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
         aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
@@ -1302,7 +1374,7 @@ arg
         $atom = nullptr;
     }
   | MAX arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AstAggregator::max);
+        auto aggr = new AstAggregator(AggregateOp::max);
         aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
@@ -1382,7 +1454,7 @@ type_params
         $type_param_list.clear();
     }
   | %empty {
-        $$ = std::vector<AstTypeIdentifier>();
+        $$ = std::vector<AstQualifiedName>();
     }
   ;
 
@@ -1411,29 +1483,41 @@ component_body
   | component_body[comp] relation_decl {
         $$ = $comp;
         for (auto* rel : $relation_decl) {
+            if (rel->hasQualifier(RelationQualifier::INPUT)) {
+                auto load = std::make_unique<AstIO>();
+                load->setSrcLoc(rel->getSrcLoc());
+                load->setType(AstIO::InputIO); 
+                load->setQualifiedName(rel->getQualifiedName());
+                driver.addIO(std::move(load));
+            }
+            if (rel->hasQualifier(RelationQualifier::OUTPUT)) {
+                auto store = std::make_unique<AstIO>();
+                store->setSrcLoc(rel->getSrcLoc());
+                store->setType(AstIO::OutputIO); 
+                store->setQualifiedName(rel->getQualifiedName());
+                driver.addIO(std::move(store));
+            }
+            if (rel->hasQualifier(RelationQualifier::PRINTSIZE)) {
+                auto printSize = std::make_unique<AstIO>();
+                printSize->setSrcLoc(rel->getSrcLoc());
+                printSize->setQualifiedName(rel->getQualifiedName());
+                printSize->setType(AstIO::PrintsizeIO); 
+                driver.addIO(std::move(printSize));
+            }
             $$->addRelation(std::unique_ptr<AstRelation>(rel));
         }
 
         $comp = nullptr;
         $relation_decl.clear();
     }
-  | component_body[comp] load_head {
+  | component_body[comp] io_head {
         $$ = $comp;
-        for (auto* io : $load_head) {
-            $$->addLoad(std::unique_ptr<AstLoad>(io));
+        for (auto* io : $io_head) {
+            $$->addIO(std::unique_ptr<AstIO>(io));
         }
 
         $comp = nullptr;
-        $load_head.clear();
-    }
-  | component_body[comp] store_head {
-        $$ = $comp;
-        for (auto* io : $store_head) {
-            $$->addStore(std::unique_ptr<AstStore>(io));
-        }
-
-        $comp = nullptr;
-        $store_head.clear();
+        $io_head.clear();
     }
   | component_body[comp] fact {
         $$ = $comp;
@@ -1495,24 +1579,25 @@ comp_init
 /* Functor declaration */
 functor_decl
   : FUNCTOR IDENT LPAREN RPAREN COLON functor_type {
-        auto typesig = $functor_type;
-        $$ = new AstFunctorDeclaration($IDENT, typesig);
+        $$ = new AstFunctorDeclaration($IDENT, {}, $functor_type);
         $$->setSrcLoc(@$);
     }
   | FUNCTOR IDENT LPAREN non_empty_functor_arg_type_list RPAREN COLON functor_type {
-        auto typesig = $non_empty_functor_arg_type_list + $functor_type;
-        $$ = new AstFunctorDeclaration($IDENT, typesig);
+        auto typesig = $non_empty_functor_arg_type_list;
+        $$ = new AstFunctorDeclaration($IDENT, typesig, $functor_type);
         $$->setSrcLoc(@$);
     }
   ;
 
-/* Functor argument list types */
+/* Functor argument list type */
 non_empty_functor_arg_type_list
   : functor_type {
-        $$ = $functor_type;
+        $$.push_back($functor_type);
     }
   | non_empty_functor_arg_type_list[curr_list] COMMA functor_type {
-        $$ = $curr_list + $functor_type;
+        $$ = $curr_list;
+        $$.push_back($functor_type);
+        $curr_list.clear();
     }
   ;
 
@@ -1520,13 +1605,13 @@ non_empty_functor_arg_type_list
 functor_type
   : IDENT {
         if ($IDENT == "number") {
-            $$ = "N";
+            $$ = TypeAttribute::Signed;
         } else if ($IDENT == "symbol") {
-            $$ = "S";
+            $$ = TypeAttribute::Symbol;
         } else if ($IDENT == "float") {
-            $$ = "F";
+            $$ = TypeAttribute::Float;
         } else if ($IDENT == "unsigned") {
-            $$ = "U";
+            $$ = TypeAttribute::Unsigned;
         } else {
             driver.error(@IDENT, "number or symbol identifier expected");
         }
@@ -1549,25 +1634,27 @@ pragma
     }
   ;
 
-/* Load directives */
-load_head
+/* io directives */
+io_head
   : INPUT_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            $$.push_back(new AstLoad(*io));
+            auto load = new AstIO(*io); 
+            load->setType(AstIO::InputIO); 
+            $$.push_back(load);
         }
     }
-  ;
-
-/* Store directives */
-store_head
-  : OUTPUT_DECL io_directive_list {
+  | OUTPUT_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            $$.push_back(new AstStore(*io));
+            auto store = new AstIO(*io); 
+            store->setType(AstIO::OutputIO); 
+            $$.push_back(store);
         }
     }
   | PRINTSIZE_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            $$.push_back(new AstPrintSize(*io));
+            auto printsize = new AstIO(*io);
+            printsize->setType(AstIO::PrintsizeIO);
+            $$.push_back(printsize);
         }
     }
   ;
@@ -1587,7 +1674,7 @@ io_directive_list
   | io_relation_list LPAREN non_empty_key_value_pairs RPAREN {
         for (auto* io : $io_relation_list) {
             for (const auto& kvp : $non_empty_key_value_pairs) {
-                io->addKVP(kvp.first, kvp.second);
+                io->addDirective(kvp.first, kvp.second);
             }
         }
         $$ = $io_relation_list;
@@ -1601,7 +1688,7 @@ io_directive_list
 io_relation_list
   : identifier {
         auto* io = new AstIO();
-        io->setName($identifier);
+        io->setQualifiedName($identifier);
         io->setSrcLoc(@identifier);
 
         $$.push_back(io);
@@ -1610,7 +1697,7 @@ io_relation_list
     }
   | io_relation_list[curr_list] COMMA identifier {
         auto* io = new AstIO();
-        io->setName($identifier);
+        io->setQualifiedName($identifier);
         io->setSrcLoc(@identifier);
 
         $$ = $curr_list;

@@ -97,7 +97,8 @@ TEST(SymbolTable, Inserts) {
 
     // type for very big number
     using T = unsigned long long;
-    time_point start, end;
+    time_point start;
+    time_point end;
 
     T n = 0;        // counter
     T N = 1000000;  // number of symbols to insert

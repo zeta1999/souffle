@@ -23,48 +23,33 @@
 namespace souffle {
 
 void IOType::run(const AstTranslationUnit& translationUnit) {
-    visitDepthFirst(*translationUnit.getProgram(), [&](const AstLoad& directive) {
-        if (directive.getNames().empty()) {
-            return;
-        }
-
-        auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
+    const AstProgram& program = *translationUnit.getProgram();
+    visitDepthFirst(program, [&](const AstIO& io) {
+        auto* relation = getRelation(program, io.getQualifiedName());
         if (relation == nullptr) {
             return;
         }
-
-        inputRelations.insert(relation);
-    });
-    visitDepthFirst(*translationUnit.getProgram(), [&](const AstStore& directive) {
-        if (directive.getNames().empty()) {
-            return;
+        switch (io.getType()) {
+            case AstIO::InputIO:
+                inputRelations.insert(relation);
+                break;
+            case AstIO::OutputIO:
+                outputRelations.insert(relation);
+                break;
+            case AstIO::PrintsizeIO:
+                printSizeRelations.insert(relation);
+                outputRelations.insert(relation);
+                break;
+            default:
+                assert("Unrecognized I/O operation");
         }
-
-        auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
-        if (relation == nullptr) {
-            return;
-        }
-
-        outputRelations.insert(relation);
-    });
-    visitDepthFirst(*translationUnit.getProgram(), [&](const AstPrintSize& directive) {
-        if (directive.getNames().empty()) {
-            return;
-        }
-
-        auto* relation = translationUnit.getProgram()->getRelation(directive.getName());
-        if (relation == nullptr) {
-            return;
-        }
-
-        printSizeRelations.insert(relation);
     });
 }
 
 void IOType::print(std::ostream& os) const {
     os << "input relations: " << inputRelations << std::endl;
     os << "output relations: " << outputRelations << std::endl;
-    os << "printSize relations: " << printSizeRelations << std::endl;
+    os << "printsize relations: " << printSizeRelations << std::endl;
 }
 
 }  // end of namespace souffle

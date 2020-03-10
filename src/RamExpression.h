@@ -47,7 +47,8 @@ public:
  */
 class RamAbstractOperator : public RamExpression {
 public:
-    RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args) : arguments(std::move(args)) {
+    explicit RamAbstractOperator(std::vector<std::unique_ptr<RamExpression>> args)
+            : arguments(std::move(args)) {
         for (auto const& arg : arguments) {
             assert(arg != nullptr && "argument is null-pointer");
         }
@@ -138,11 +139,15 @@ protected:
  */
 class RamUserDefinedOperator : public RamAbstractOperator {
 public:
-    RamUserDefinedOperator(std::string n, std::string t, std::vector<std::unique_ptr<RamExpression>> args)
-            : RamAbstractOperator(std::move(args)), name(std::move(n)), type(std::move(t)) {}
+    RamUserDefinedOperator(std::string n, std::vector<TypeAttribute> argsTypes, TypeAttribute returnType,
+            std::vector<std::unique_ptr<RamExpression>> args)
+            : RamAbstractOperator(std::move(args)), name(std::move(n)), argsTypes(std::move(argsTypes)),
+              returnType(returnType) {
+        assert(argsTypes.size() == args.size());
+    }
 
     void print(std::ostream& os) const override {
-        os << "@" << name << "_" << type << "(";
+        os << "@" << name << "_" << argsTypes << "(";
         os << join(arguments, ",",
                 [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) { out << *arg; });
         os << ")";
@@ -154,12 +159,17 @@ public:
     }
 
     /** @brief Get types of arguments */
-    const std::string& getType() const {
-        return type;
+    const std::vector<TypeAttribute>& getArgsTypes() const {
+        return argsTypes;
+    }
+
+    /** @brief Get return type */
+    TypeAttribute getReturnType() const {
+        return returnType;
     }
 
     RamUserDefinedOperator* clone() const override {
-        auto* res = new RamUserDefinedOperator(name, type, {});
+        auto* res = new RamUserDefinedOperator(name, argsTypes, returnType, {});
         for (auto& cur : arguments) {
             RamExpression* arg = cur->clone();
             res->arguments.emplace_back(arg);
@@ -170,14 +180,17 @@ public:
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
-        return RamAbstractOperator::equal(node) && name == other.name && type == other.type;
+        return RamAbstractOperator::equal(node) && name == other.name && argsTypes == other.argsTypes &&
+               returnType == other.returnType;
     }
 
     /** Name of user-defined operator */
     const std::string name;
 
     /** Argument types */
-    const std::string type;
+    const std::vector<TypeAttribute> argsTypes;
+
+    const TypeAttribute returnType;
 };
 
 /**
@@ -273,7 +286,7 @@ public:
 
     /** Create clone */
     RamSignedConstant* clone() const override {
-        return new RamSignedConstant(constant);
+        return new RamSignedConstant(getValue());
     }
 };
 
@@ -288,7 +301,7 @@ public:
  */
 class RamUnsignedConstant : public RamConstant {
 public:
-    explicit RamUnsignedConstant(RamDomain val) : RamConstant(val) {}
+    explicit RamUnsignedConstant(RamUnsigned val) : RamConstant(ramBitCast(val)) {}
 
     /** @brief Get value of the constant. */
     RamUnsigned getValue() const {
@@ -301,7 +314,7 @@ public:
 
     /** Create clone */
     RamUnsignedConstant* clone() const override {
-        return new RamUnsignedConstant(constant);
+        return new RamUnsignedConstant(getValue());
     }
 };
 
@@ -316,7 +329,7 @@ public:
  */
 class RamFloatConstant : public RamConstant {
 public:
-    explicit RamFloatConstant(RamDomain val) : RamConstant(val) {}
+    explicit RamFloatConstant(RamFloat val) : RamConstant(ramBitCast(val)) {}
 
     void print(std::ostream& os) const override {
         os << "float(" << getValue() << ")";
@@ -329,7 +342,7 @@ public:
 
     /** Create clone */
     RamFloatConstant* clone() const override {
-        return new RamFloatConstant(constant);
+        return new RamFloatConstant(getValue());
     }
 };
 

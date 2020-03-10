@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AstTransforms.h"
+#include "AggregateOp.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
@@ -22,8 +23,8 @@
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTypeAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
@@ -43,7 +44,7 @@
 
 namespace souffle {
 
-bool NullTransformer::transform(AstTranslationUnit& translationUnit) {
+bool NullTransformer::transform(AstTranslationUnit&) {
     return false;
 }
 
@@ -76,13 +77,7 @@ bool FixpointTransformer::transform(AstTranslationUnit& translationUnit) {
 }
 
 bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& translationUnit) {
-    using alias_map = std::map<AstRelationIdentifier, AstRelationIdentifier>;
-
-    // tests whether something is a variable
-    auto isVar = [&](const AstArgument& arg) { return dynamic_cast<const AstVariable*>(&arg) != nullptr; };
-
-    // tests whether something is a record
-    auto isRec = [&](const AstArgument& arg) { return dynamic_cast<const AstRecordInit*>(&arg) != nullptr; };
+    using alias_map = std::map<AstQualifiedName, AstQualifiedName>;
 
     // collect aliases
     alias_map isDirectAliasOf;
@@ -93,35 +88,46 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
 
     // search for relations only defined by a single rule ..
     for (AstRelation* rel : program.getRelations()) {
-        if (!ioType->isIO(rel) && rel->getClauses().size() == 1u) {
+        const auto& clauses = getClauses(program, *rel);
+        if (!ioType->isIO(rel) && clauses.size() == 1u) {
             // .. of shape r(x,y,..) :- s(x,y,..)
-            AstClause* cl = rel->getClause(0);
-            if (!isFact(*cl) && cl->getBodySize() == 1u && cl->getAtoms().size() == 1u) {
-                AstAtom* atom = cl->getAtoms()[0];
+            AstClause* cl = clauses[0];
+            std::vector<AstAtom*> bodyAtoms = getBodyLiterals<AstAtom>(*cl);
+            if (!isFact(*cl) && cl->getBodyLiterals().size() == 1u && bodyAtoms.size() == 1u) {
+                AstAtom* atom = bodyAtoms[0];
                 if (equal_targets(cl->getHead()->getArguments(), atom->getArguments())) {
-                    // we have a match but have to check that all arguments are either
-                    // variables or records containing variables
-                    bool onlyVars = true;
+                    // Requirements:
+                    // 1) (checked) It is a rule with exactly one body.
+                    // 3) (checked) The body consists of an atom.
+                    // 4) (checked) The atom's arguments must be identical to the rule's head.
+                    // 5) (pending) The rules's head must consist only of either:
+                    //  5a) Variables
+                    //  5b) Records unpacked into variables
+                    // 6) (pending) Each variable must have a distinct name.
+                    bool onlyDistinctHeadVars = true;
+                    std::set<std::string> headVars;
+
                     auto args = cl->getHead()->getArguments();
-                    while (!args.empty()) {
-                        const auto& cur = args.back();
+                    while (onlyDistinctHeadVars && !args.empty()) {
+                        const auto cur = args.back();
                         args.pop_back();
-                        if (!isVar(*cur)) {
-                            if (isRec(*cur)) {
-                                // records are decomposed and their arguments are checked
-                                const auto& rec_args = static_cast<const AstRecordInit&>(*cur).getArguments();
-                                for (auto rec_arg : rec_args) {
-                                    args.push_back(rec_arg);
-                                }
-                            } else {
-                                onlyVars = false;
-                                break;
+
+                        if (auto var = dynamic_cast<const AstVariable*>(cur)) {
+                            onlyDistinctHeadVars &= headVars.insert(var->getName()).second;
+                        } else if (auto init = dynamic_cast<const AstRecordInit*>(cur)) {
+                            // records are decomposed and their arguments are checked
+                            for (auto rec_arg : init->getArguments()) {
+                                args.push_back(rec_arg);
                             }
+                        } else {
+                            onlyDistinctHeadVars = false;
                         }
                     }
-                    if (onlyVars) {
-                        // all arguments are either variables or records containing variables
-                        isDirectAliasOf[cl->getHead()->getName()] = atom->getName();
+
+                    if (onlyDistinctHeadVars) {
+                        // all arguments are either distinct variables or records unpacked into distinct
+                        // variables
+                        isDirectAliasOf[cl->getHead()->getQualifiedName()] = atom->getQualifiedName();
                     }
                 }
             }
@@ -132,12 +138,12 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
     alias_map isAliasOf;
 
     // track any copy cycles; cyclic rules are effectively empty
-    std::set<AstRelationIdentifier> cycle_reps;
+    std::set<AstQualifiedName> cycle_reps;
 
-    for (std::pair<AstRelationIdentifier, AstRelationIdentifier> cur : isDirectAliasOf) {
+    for (std::pair<AstQualifiedName, AstQualifiedName> cur : isDirectAliasOf) {
         // compute replacement
 
-        std::set<AstRelationIdentifier> visited;
+        std::set<AstQualifiedName> visited;
         visited.insert(cur.first);
         visited.insert(cur.second);
 
@@ -159,22 +165,24 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
 
     // replace usage of relations according to alias map
     visitDepthFirst(program, [&](const AstAtom& atom) {
-        auto pos = isAliasOf.find(atom.getName());
+        auto pos = isAliasOf.find(atom.getQualifiedName());
         if (pos != isAliasOf.end()) {
-            const_cast<AstAtom&>(atom).setName(pos->second);
+            const_cast<AstAtom&>(atom).setQualifiedName(pos->second);
         }
     });
 
     // break remaining cycles
     for (const auto& rep : cycle_reps) {
-        auto rel = program.getRelation(rep);
-        rel->removeClause(rel->getClause(0));
+        const auto& rel = *getRelation(program, rep);
+        const auto& clauses = getClauses(program, rel);
+        assert(clauses.size() == 1u && "unexpected number of clauses in relation");
+        program.removeClause(clauses[0]);
     }
 
     // remove unused relations
     for (const auto& cur : isAliasOf) {
         if (cycle_reps.count(cur.first) == 0u) {
-            program.removeRelation(program.getRelation(cur.first)->getName());
+            program.removeRelation(getRelation(program, cur.first)->getQualifiedName());
         }
     }
 
@@ -233,7 +241,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             // -- create a new clause --
 
             auto relName = "__agg_rel_" + toString(counter++);
-            while (program.getRelation(relName) != nullptr) {
+            while (getRelation(program, relName) != nullptr) {
                 relName = "__agg_rel_" + toString(counter++);
             }
             // create the new clause for the materialised thing
@@ -270,7 +278,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             }
 
             auto* head = new AstAtom();
-            head->setName(relName);
+            head->setQualifiedName(relName);
             std::vector<bool> symbolArguments;
 
             // Ensure each variable is only added once
@@ -285,7 +293,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             aggClause->setHead(std::unique_ptr<AstAtom>(head));
 
             // instantiate unnamed variables in count operations
-            if (agg.getOperator() == AstAggregator::count) {
+            if (agg.getOperator() == AggregateOp::count) {
                 int count = 0;
                 for (const auto& cur : aggClause->getBodyLiterals()) {
                     cur->apply(makeLambdaAstMapper(
@@ -312,7 +320,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             // -- build relation --
 
             auto* rel = new AstRelation();
-            rel->setName(relName);
+            rel->setQualifiedName(relName);
             // add attributes
             std::map<const AstArgument*, TypeSet> argTypes =
                     TypeAnalysis::analyseTypes(env, *aggClause, &program);
@@ -321,11 +329,10 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                         toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
             }
 
-            rel->addClause(std::unique_ptr<AstClause>(aggClause));
-            program.appendRelation(std::unique_ptr<AstRelation>(rel));
+            program.addClause(std::unique_ptr<AstClause>(aggClause));
+            program.addRelation(std::unique_ptr<AstRelation>(rel));
 
             // -- update aggregate --
-            AstAtom* aggAtom = head->clone();
 
             // count the usage of variables in the clause
             // outside of aggregates. Note that the visitor
@@ -346,14 +353,18 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                     visitDepthFirst(arg, [&](const AstVariable& var) { varCtr[var.getName()]++; });
                 }
             });
-            for (size_t i = 0; i < aggAtom->getArity(); i++) {
-                if (auto* var = dynamic_cast<AstVariable*>(aggAtom->getArgument(i))) {
+            std::vector<std::unique_ptr<AstArgument>> args;
+            for (auto arg : head->getArguments()) {
+                if (auto* var = dynamic_cast<AstVariable*>(arg)) {
                     // replace local variable by underscore if local
                     if (varCtr[var->getName()] == 0) {
-                        aggAtom->setArgument(i, std::make_unique<AstUnnamedVariable>());
+                        args.emplace_back(new AstUnnamedVariable());
+                        continue;
                     }
                 }
+                args.emplace_back(arg->clone());
             }
+            auto* aggAtom = new AstAtom(head->getQualifiedName(), std::move(args), head->getSrcLoc());
             const_cast<AstAggregator&>(agg).clearBodyLiterals();
             const_cast<AstAggregator&>(agg).addBodyLiteral(std::unique_ptr<AstLiteral>(aggAtom));
         });
@@ -394,7 +405,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& t
     auto* ioTypes = translationUnit.getAnalysis<IOType>();
     bool changed = false;
     for (auto rel : program.getRelations()) {
-        if (rel->clauseSize() > 0 || ioTypes->isInput(rel)) {
+        if (!getClauses(program, *rel).empty() || ioTypes->isInput(rel)) {
             continue;
         }
         changed |= removeEmptyRelationUses(translationUnit, rel);
@@ -411,7 +422,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& t
         });
 
         if (!usedInAggregate && !ioTypes->isOutput(rel)) {
-            program.removeRelation(rel->getName());
+            program.removeRelation(rel->getQualifiedName());
             changed = true;
         }
     }
@@ -463,7 +474,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
             if (rewrite) {
                 // clone clause without negation for empty relations
 
-                auto res = std::unique_ptr<AstClause>(cl->cloneHead());
+                auto res = std::unique_ptr<AstClause>(cloneHead(cl));
 
                 for (AstLiteral* lit : cl->getBodyLiterals()) {
                     if (auto* neg = dynamic_cast<AstNegation*>(lit)) {
@@ -476,7 +487,7 @@ bool RemoveEmptyRelationsTransformer::removeEmptyRelationUses(
                 }
 
                 program.removeClause(cl);
-                program.appendClause(std::move(res));
+                program.addClause(std::move(res));
                 changed = true;
             }
         }
@@ -492,7 +503,7 @@ bool RemoveRedundantRelationsTransformer::transform(AstTranslationUnit& translat
             redundantRelationsAnalysis->getRedundantRelations();
     if (!redundantRelations.empty()) {
         for (auto rel : redundantRelations) {
-            translationUnit.getProgram()->removeRelation(rel->getName());
+            translationUnit.getProgram()->removeRelation(rel->getQualifiedName());
             changed = true;
         }
     }
@@ -504,7 +515,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
     // If any boolean constraints exist, they will be removed
     bool changed = false;
-    visitDepthFirst(program, [&](const AstBooleanConstraint& bc) { changed = true; });
+    visitDepthFirst(program, [&](const AstBooleanConstraint&) { changed = true; });
 
     // Remove true and false constant literals from all aggregators
     struct removeBools : public AstNodeMapper {
@@ -545,16 +556,18 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                         // Empty aggregator body!
                         // Not currently handled, so add in a false literal in the body
                         // E.g. max x : { } =becomes=> max 1 : {0 = 1}
-                        replacementAggregator->setTargetExpression(std::make_unique<AstNumberConstant>(1));
+                        replacementAggregator->setTargetExpression(
+                                std::make_unique<AstNumericConstant>(std::string("1")));
 
                         // Add '0 = 1' if false was found, '1 = 1' otherwise
                         int lhsConstant = containsFalse ? 0 : 1;
-                        replacementAggregator->addBodyLiteral(std::make_unique<AstBinaryConstraint>(
-                                BinaryConstraintOp::EQ, std::make_unique<AstNumberConstant>(lhsConstant),
-                                std::make_unique<AstNumberConstant>(1)));
+                        replacementAggregator->addBodyLiteral(
+                                std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                                        std::make_unique<AstNumericConstant>(std::to_string(lhsConstant)),
+                                        std::make_unique<AstNumericConstant>(std::string("1"))));
                     }
 
-                    return std::move(replacementAggregator);
+                    return replacementAggregator;
                 }
             }
 
@@ -568,7 +581,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
     // Remove true and false constant literals from all clauses
     for (AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             bool containsTrue = false;
             bool containsFalse = false;
 
@@ -580,9 +593,9 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
 
             if (containsFalse) {
                 // Clause will always fail
-                rel->removeClause(clause);
+                program.removeClause(clause);
             } else if (containsTrue) {
-                auto replacementClause = std::unique_ptr<AstClause>(clause->cloneHead());
+                auto replacementClause = std::unique_ptr<AstClause>(cloneHead(clause));
 
                 // Only keep non-'true' literals
                 for (AstLiteral* lit : clause->getBodyLiterals()) {
@@ -591,8 +604,8 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                     }
                 }
 
-                rel->removeClause(clause);
-                rel->addClause(std::move(replacementClause));
+                program.removeClause(clause);
+                program.addClause(std::move(replacementClause));
             }
         }
     }
@@ -718,14 +731,14 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
             static int disconnectedCount = 0;
             std::stringstream nextName;
             nextName << "+disconnected" << disconnectedCount;
-            AstRelationIdentifier newRelationName = nextName.str();
+            AstQualifiedName newRelationName = nextName.str();
             disconnectedCount++;
 
             // Create the extracted relation and clause for the component
             // newrelX() <- disconnectedLiterals(x).
             auto newRelation = std::make_unique<AstRelation>();
-            newRelation->setName(newRelationName);
-            program.appendRelation(std::move(newRelation));
+            newRelation->setQualifiedName(newRelationName);
+            program.addRelation(std::move(newRelation));
 
             auto* disconnectedClause = new AstClause();
             disconnectedClause->setSrcLoc(clause.getSrcLoc());
@@ -785,7 +798,7 @@ bool PartitionBodyLiteralsTransformer::transform(AstTranslationUnit& translation
 
     // Adjust the program
     for (AstClause* newClause : clausesToAdd) {
-        program.appendClause(std::unique_ptr<AstClause>(newClause));
+        program.addClause(std::unique_ptr<AstClause>(newClause));
     }
 
     for (const AstClause* oldClause : clausesToRemove) {
@@ -813,38 +826,38 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     // - An edge (a,b) exists iff a uses b "non-existentially" in one of its *recursive* clauses
     // This way, a relation can be transformed into an existential form
     // if and only if all its predecessors can also be transformed.
-    Graph<AstRelationIdentifier> relationGraph = Graph<AstRelationIdentifier>();
+    Graph<AstQualifiedName> relationGraph = Graph<AstQualifiedName>();
 
     // Add in the nodes
     for (AstRelation* relation : program.getRelations()) {
-        relationGraph.insert(relation->getName());
+        relationGraph.insert(relation->getQualifiedName());
     }
 
     // Keep track of all relations that cannot be transformed
-    std::set<AstRelationIdentifier> minimalIrreducibleRelations;
+    std::set<AstQualifiedName> minimalIrreducibleRelations;
 
     auto* ioType = translationUnit.getAnalysis<IOType>();
 
     for (AstRelation* relation : program.getRelations()) {
         // No I/O relations can be transformed
         if (ioType->isIO(relation)) {
-            minimalIrreducibleRelations.insert(relation->getName());
+            minimalIrreducibleRelations.insert(relation->getQualifiedName());
         }
-        for (AstClause* clause : relation->getClauses()) {
+        for (AstClause* clause : getClauses(program, *relation)) {
             bool recursive = isRecursiveClause(*clause);
             visitDepthFirst(*clause, [&](const AstAtom& atom) {
-                if (atom.getName() == clause->getHead()->getName()) {
+                if (atom.getQualifiedName() == clause->getHead()->getQualifiedName()) {
                     return;
                 }
 
                 if (!isExistentialAtom(atom)) {
                     if (recursive) {
                         // Clause is recursive, so add an edge to the dependency graph
-                        relationGraph.insert(clause->getHead()->getName(), atom.getName());
+                        relationGraph.insert(clause->getHead()->getQualifiedName(), atom.getQualifiedName());
                     } else {
                         // Non-existential apperance in a non-recursive clause, so
                         // it's out of the picture
-                        minimalIrreducibleRelations.insert(atom.getName());
+                        minimalIrreducibleRelations.insert(atom.getQualifiedName());
                     }
                 }
             });
@@ -854,44 +867,46 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
     // TODO (see issue #564): Don't transform relations appearing in aggregators
     //                        due to aggregator issues with unnamed variables.
     visitDepthFirst(program, [&](const AstAggregator& aggr) {
-        visitDepthFirst(
-                aggr, [&](const AstAtom& atom) { minimalIrreducibleRelations.insert(atom.getName()); });
+        visitDepthFirst(aggr,
+                [&](const AstAtom& atom) { minimalIrreducibleRelations.insert(atom.getQualifiedName()); });
     });
 
     // Run a DFS from each 'bad' source
     // A node is reachable in a DFS from an irreducible node if and only if it is
     // also an irreducible node
-    std::set<AstRelationIdentifier> irreducibleRelations;
-    for (AstRelationIdentifier relationName : minimalIrreducibleRelations) {
-        relationGraph.visitDepthFirst(relationName,
-                [&](const AstRelationIdentifier& subRel) { irreducibleRelations.insert(subRel); });
+    std::set<AstQualifiedName> irreducibleRelations;
+    for (AstQualifiedName relationName : minimalIrreducibleRelations) {
+        relationGraph.visitDepthFirst(
+                relationName, [&](const AstQualifiedName& subRel) { irreducibleRelations.insert(subRel); });
     }
 
     // All other relations are necessarily existential
-    std::set<AstRelationIdentifier> existentialRelations;
+    std::set<AstQualifiedName> existentialRelations;
     for (AstRelation* relation : program.getRelations()) {
-        if (!relation->getClauses().empty() && relation->getArity() != 0 &&
-                irreducibleRelations.find(relation->getName()) == irreducibleRelations.end()) {
-            existentialRelations.insert(relation->getName());
+        if (!getClauses(program, *relation).empty() && relation->getArity() != 0 &&
+                irreducibleRelations.find(relation->getQualifiedName()) == irreducibleRelations.end()) {
+            existentialRelations.insert(relation->getQualifiedName());
         }
     }
 
     // Reduce the existential relations
-    for (AstRelationIdentifier relationName : existentialRelations) {
-        AstRelation* originalRelation = program.getRelation(relationName);
+    for (AstQualifiedName relationName : existentialRelations) {
+        AstRelation* originalRelation = getRelation(program, relationName);
 
         std::stringstream newRelationName;
         newRelationName << "+?exists_" << relationName;
 
         auto newRelation = std::make_unique<AstRelation>();
-        newRelation->setName(newRelationName.str());
+        newRelation->setQualifiedName(newRelationName.str());
         newRelation->setSrcLoc(originalRelation->getSrcLoc());
 
         // EqRel relations require two arguments, so remove it from the qualifier
-        newRelation->setQualifier(originalRelation->getQualifier() & ~(EQREL_RELATION));
+        if (newRelation->getRepresentation() == RelationRepresentation::EQREL) {
+            newRelation->setRepresentation(RelationRepresentation::DEFAULT);
+        }
 
         // Keep all non-recursive clauses
-        for (AstClause* clause : originalRelation->getClauses()) {
+        for (AstClause* clause : getClauses(program, *originalRelation)) {
             if (!isRecursiveClause(*clause)) {
                 auto newClause = std::make_unique<AstClause>();
 
@@ -899,38 +914,36 @@ bool ReduceExistentialsTransformer::transform(AstTranslationUnit& translationUni
                 if (const AstExecutionPlan* plan = clause->getExecutionPlan()) {
                     newClause->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(plan->clone()));
                 }
-                newClause->setGenerated(clause->isGenerated());
-                newClause->setFixedExecutionPlan(clause->hasFixedExecutionPlan());
                 newClause->setHead(std::make_unique<AstAtom>(newRelationName.str()));
                 for (AstLiteral* lit : clause->getBodyLiterals()) {
                     newClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
                 }
 
-                newRelation->addClause(std::move(newClause));
+                program.addClause(std::move(newClause));
             }
         }
 
-        program.appendRelation(std::move(newRelation));
+        program.addRelation(std::move(newRelation));
     }
 
     // Mapper that renames the occurrences of marked relations with their existential
     // counterparts
     struct renameExistentials : public AstNodeMapper {
-        const std::set<AstRelationIdentifier>& relations;
+        const std::set<AstQualifiedName>& relations;
 
-        renameExistentials(std::set<AstRelationIdentifier>& relations) : relations(relations) {}
+        renameExistentials(std::set<AstQualifiedName>& relations) : relations(relations) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             if (auto* clause = dynamic_cast<AstClause*>(node.get())) {
-                if (relations.find(clause->getHead()->getName()) != relations.end()) {
+                if (relations.find(clause->getHead()->getQualifiedName()) != relations.end()) {
                     // Clause is going to be removed, so don't rename it
                     return node;
                 }
             } else if (auto* atom = dynamic_cast<AstAtom*>(node.get())) {
-                if (relations.find(atom->getName()) != relations.end()) {
+                if (relations.find(atom->getQualifiedName()) != relations.end()) {
                     // Relation is now existential, so rename it
                     std::stringstream newName;
-                    newName << "+?exists_" << atom->getName();
+                    newName << "+?exists_" << atom->getQualifiedName();
                     return std::make_unique<AstAtom>(newName.str());
                 }
             }
@@ -969,7 +982,7 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
     };
 
     for (AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             std::set<std::string> nonsingletons;
             std::set<std::string> vars;
 
@@ -1039,7 +1052,7 @@ bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationU
 
     AstProgram& program = *translationUnit.getProgram();
     for (AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             nameVariables update;
             clause->apply(update);
             changed |= update.changed;
@@ -1057,22 +1070,22 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
             // Apply to all aggregates of the form
             // sum k : { .. } where k is a constant
             if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
-                if (agg->getOperator() == AstAggregator::Op::sum) {
+                if (agg->getOperator() == AggregateOp::sum) {
                     if (const auto* constant =
-                                    dynamic_cast<const AstNumberConstant*>(agg->getTargetExpression())) {
+                                    dynamic_cast<const AstNumericConstant*>(agg->getTargetExpression())) {
                         changed = true;
                         // Then construct the new thing to replace it with
-                        auto count = std::make_unique<AstAggregator>(AstAggregator::Op::count);
+                        auto count = std::make_unique<AstAggregator>(AggregateOp::count);
                         // Duplicate the body of the aggregate
                         for (const auto& lit : agg->getBodyLiterals()) {
                             count->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));
                         }
-                        auto number = std::unique_ptr<AstNumberConstant>(constant->clone());
+                        auto number = std::unique_ptr<AstNumericConstant>(constant->clone());
                         // Now it's constant * count : { ... }
                         auto result = std::make_unique<AstIntrinsicFunctor>(
                                 FunctorOp::MUL, std::move(number), std::move(count));
 
-                        return std::move(result);
+                        return result;
                     }
                 }
             }
@@ -1136,15 +1149,14 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                         std::unique_ptr<AstArgument>(stringConstant->clone())));
 
                 // update constant to be the variable created
-                return std::move(newVariable);
-            } else if (auto* numberConstant = dynamic_cast<AstNumberConstant*>(node.get())) {
+                return newVariable;
+            } else if (auto* numberConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
                 // number constant found
                 changeCount++;
 
                 // create new variable name (with appropriate suffix)
-                RamDomain constantValue = numberConstant->getRamRepresentation();
                 std::stringstream newVariableName;
-                newVariableName << boundPrefix << changeCount << "_" << constantValue << "_n";
+                newVariableName << boundPrefix << changeCount << "_" << numberConstant->getConstant() << "_n";
 
                 // create new constraint (+abdulX = constant)
                 auto newVariable = std::make_unique<AstVariable>(newVariableName.str());
@@ -1153,7 +1165,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                         std::unique_ptr<AstArgument>(numberConstant->clone())));
 
                 // update constant to be the variable created
-                return std::move(newVariable);
+                return newVariable;
             } else if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
                 // underscore found
                 changeCount++;
@@ -1174,7 +1186,7 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
 
     // apply the change to all clauses in the program
     for (AstRelation* rel : program.getRelations()) {
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             if (isFact(*clause)) {
                 continue;  // don't normalise facts
             }
@@ -1247,13 +1259,13 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
                     // All args must be of the same type.
                     if (all_of(functor->getArguments(), isFloat)) {
                         FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), RamTypeAttribute::Float);
+                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Float);
                         functor->setFunction(convertedFunctor);
                         changed = true;
 
                     } else if (all_of(functor->getArguments(), isUnsigned)) {
                         FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), RamTypeAttribute::Unsigned);
+                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Unsigned);
                         functor->setFunction(convertedFunctor);
                         changed = true;
                     }
@@ -1270,13 +1282,13 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
                     // Both args must be of the same type
                     if (isFloat(leftArg) && isFloat(rightArg)) {
                         BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), RamTypeAttribute::Float);
+                                binaryConstraint->getOperator(), TypeAttribute::Float);
                         binaryConstraint->setOperator(convertedConstraint);
                         changed = true;
 
                     } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
                         BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), RamTypeAttribute::Unsigned);
+                                binaryConstraint->getOperator(), TypeAttribute::Unsigned);
                         binaryConstraint->setOperator(convertedConstraint);
                         changed = true;
                     }
@@ -1288,6 +1300,48 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
     };
     const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
     TypeRewriter update(typeAnalysis, translationUnit.getErrorReport());
+    translationUnit.getProgram()->apply(update);
+    return update.changed;
+}
+
+bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translationUnit) {
+    struct UserFunctorRewriter : public AstNodeMapper {
+        mutable bool changed{false};
+        const AstProgram& program;
+        ErrorReport& report;
+
+        UserFunctorRewriter(const AstProgram& program, ErrorReport& report)
+                : program(program), report(report){};
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            node->apply(*this);
+
+            if (auto* userFunctor = dynamic_cast<AstUserDefinedFunctor*>(node.get())) {
+                const AstFunctorDeclaration* functorDeclaration =
+                        getFunctorDeclaration(program, userFunctor->getName());
+
+                // Check if the functor has been declared
+                if (functorDeclaration == nullptr) {
+                    report.addError("User-defined functor hasn't been declared", userFunctor->getSrcLoc());
+                    return node;
+                }
+
+                // Check arity correctness.
+                if (functorDeclaration->getArity() != userFunctor->getArguments().size()) {
+                    report.addError("Mismatching number of arguments of functor", userFunctor->getSrcLoc());
+                    return node;
+                }
+
+                // Set types of functor instance based on its declaration.
+                userFunctor->setTypes(
+                        functorDeclaration->getArgsTypes(), functorDeclaration->getReturnType());
+
+                changed = true;
+            }
+            return node;
+        }
+    };
+    UserFunctorRewriter update(*translationUnit.getProgram(), translationUnit.getErrorReport());
     translationUnit.getProgram()->apply(update);
     return update.changed;
 }

@@ -17,11 +17,14 @@
 #pragma once
 
 #include "AstArgument.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "AuxArityAnalysis.h"
 #include "RamRelation.h"
-#include "RelationRepresentation.h"
+#include "RecordTable.h"
+#include "RelationTag.h"
+#include "SymbolTable.h"
 #include "Util.h"
+#include "json11.h"
 #include <cassert>
 #include <map>
 #include <memory>
@@ -32,6 +35,8 @@
 
 namespace souffle {
 
+using json11::Json;
+
 // forward declarations
 class AstAtom;
 class AstClause;
@@ -39,7 +44,6 @@ class AstLiteral;
 class AstProgram;
 class AstRelation;
 class AstTranslationUnit;
-class IODirectives;
 class RamCondition;
 class RamTupleElement;
 class RamOperation;
@@ -76,8 +80,14 @@ private:
     /** RAM relations */
     std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
+    /** Record types information - used in Ram for I/O. */
+    Json RamRecordTypes;
+
+    /** Symbol Table **/
+    SymbolTable symbolTable;
+
     /** Auxiliary Arity Analysis */
-    const AuxiliaryArity* auxArityAnalysis;
+    const AuxiliaryArity* auxArityAnalysis = nullptr;
 
     /**
      * Concrete attribute
@@ -238,13 +248,8 @@ private:
 
         bool isAggregator(const int level) const {
             // check for aggregator definitions
-            for (const auto& cur : aggregator_locations) {
-                if (cur.second.identifier == level) {
-                    return true;
-                }
-            }
-            // nothing defined on this location
-            return false;
+            return any_of(aggregator_locations,
+                    [&level](const auto& location) { return location.second.identifier == level; });
         }
 
         bool isSomethingDefinedOn(int level) const {
@@ -279,7 +284,7 @@ private:
     static std::unique_ptr<RamTupleElement> makeRamTupleElement(const Location& loc);
 
     /** determine the auxiliary for relations */
-    const size_t getEvaluationArity(const AstAtom* atom) const;
+    size_t getEvaluationArity(const AstAtom* atom) const;
 
     /**
      * assigns names to unnamed variables such that enclosing
@@ -291,27 +296,25 @@ private:
     void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
 
     /** converts the given relation identifier into a relation name */
-    std::string getRelationName(const AstRelationIdentifier& id) {
-        return toString(join(id.getNames(), "."));
+    std::string getRelationName(const AstQualifiedName& id) {
+        return toString(join(id.getQualifiers(), "."));
     }
 
-    void makeIODirective(IODirectives& ioDirective, const AstRelation* rel, const std::string& filePath,
-            const std::string& fileExt);
+    /** translate AST directives to RAM directives */
+    // TODO (b-scholz): revisit / refactor
+    void translateDirectives(std::map<std::string, std::string>& directives, const AstRelation* rel,
+            const std::string& filePath, const std::string& fileExt);
 
-    std::vector<IODirectives> getInputIODirectives(const AstRelation* rel,
+    // TODO (b-scholz): revisit / refactor so that only one directive is translated
+    std::vector<std::map<std::string, std::string>> getInputDirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
-    std::vector<IODirectives> getOutputIODirectives(const AstRelation* rel,
+    // TODO (b-scholz): revisit / refactor so that only one directive is translated
+    std::vector<std::map<std::string, std::string>> getOutputDirectives(const AstRelation* rel,
             std::string filePath = std::string(), const std::string& fileExt = std::string());
 
     /** create a reference to a RAM relation */
-    std::unique_ptr<RamRelationReference> createRelationReference(const std::string name, const size_t arity,
-            const size_t auxiliaryArity, const std::vector<std::string> attributeNames,
-            const std::vector<std::string> attributeTypeQualifiers, const RelationRepresentation structure);
-
-    /** create a reference to a RAM relation */
-    std::unique_ptr<RamRelationReference> createRelationReference(
-            const std::string name, const size_t arity, const size_t auxiliaryArity);
+    std::unique_ptr<RamRelationReference> createRelationReference(const std::string name);
 
     /** a utility to translate atoms to relations */
     std::unique_ptr<RamRelationReference> translateRelation(const AstAtom* atom);
@@ -383,6 +386,39 @@ private:
     public:
         ProvenanceClauseTranslator(AstTranslator& translator) : ClauseTranslator(translator) {}
     };
+
+    /**
+     * Get ram records types.
+     * If they don't exists - create them.
+     */
+    const Json getRecordsTypes();
+
+    /** Return a symbol table **/
+    SymbolTable& getSymbolTable() {
+        return symbolTable;
+    }
+
+    /**
+     *  Get ram representation of constant.
+     */
+    RamDomain getConstantRamRepresentation(const AstConstant& constant) {
+        if (auto strConstant = dynamic_cast<const AstStringConstant*>(&constant)) {
+            return getSymbolTable().lookup(strConstant->getConstant());
+        } else if (dynamic_cast<const AstNilConstant*>(&constant) != nullptr) {
+            return RecordTable::getNil();
+        } else if (auto* numConstant = dynamic_cast<const AstNumericConstant*>(&constant)) {
+            switch (numConstant->getType()) {
+                case AstNumericConstant::Type::Int:
+                    return RamDomainFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Uint:
+                    return RamUnsignedFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Float:
+                    return RamFloatFromString(numConstant->getConstant());
+            }
+        }
+
+        assert(false && "Unaccounted-for constant");
+    }
 
     /**
      * translate RAM code for the non-recursive clauses of the given relation.

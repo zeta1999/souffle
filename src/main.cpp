@@ -15,14 +15,15 @@
  ***********************************************************************/
 
 #include "AstComponentChecker.h"
-#include "AstPragma.h"
+#include "AstPragmaChecker.h"
 #include "AstSemanticChecker.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstTranslator.h"
 #include "AstTypeAnalysis.h"
-#include "ComponentModel.h"
+#include "ComponentInstantiationTransformer.h"
 #include "DebugReport.h"
+#include "DebugReporter.h"
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
@@ -37,7 +38,6 @@
 #include "RamTransforms.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
-#include "SymbolTable.h"
 #include "Synthesiser.h"
 #include "Util.h"
 #include "config.h"
@@ -69,19 +69,16 @@ void executeBinary(const std::string& binaryFilename) {
     }
 
     // run the executable
-    int exitCode;
-    {
-        if (Global::config().has("library-dir")) {
-            std::string ldPath;
-            for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
-                ldPath += library + ':';
-            }
-            ldPath.back() = ' ';
-            setenv("LD_LIBRARY_PATH", ldPath.c_str(), 1);
+    if (Global::config().has("library-dir")) {
+        std::string ldPath;
+        for (const std::string& library : splitString(Global::config().get("library-dir"), ' ')) {
+            ldPath += library + ':';
         }
-
-        exitCode = system(binaryFilename.c_str());
+        ldPath.back() = ' ';
+        setenv("LD_LIBRARY_PATH", ldPath.c_str(), 1);
     }
+
+    int exitCode = system(binaryFilename.c_str());
 
     if (Global::config().get("dl-program").empty()) {
         remove(binaryFilename.c_str());
@@ -89,7 +86,7 @@ void executeBinary(const std::string& binaryFilename) {
     }
 
     // exit with same code as executable
-    if (exitCode != 0) {
+    if (exitCode != EXIT_SUCCESS) {
         exit(exitCode);
     }
 }
@@ -153,7 +150,7 @@ int main(int argc, char** argv) {
                 {"fact-dir", 'F', "DIR", ".", false, "Specify directory for fact files."},
                 {"include-dir", 'I', "DIR", ".", true, "Specify directory for include files."},
                 {"output-dir", 'D', "DIR", ".", false,
-                        "Specify directory for output files (if <DIR> is -, stdout is used)."},
+                        "Specify directory for output files. If <DIR> is `-` then stdout is used."},
                 {"jobs", 'j', "N", "1", false,
                         "Run interpreter/compiler in parallel using N threads, N=auto for system "
                         "default."},
@@ -162,7 +159,7 @@ int main(int argc, char** argv) {
                         "executable."},
                 {"generate", 'g', "FILE", "", false,
                         "Generate C++ source code for the given Datalog program and write it to "
-                        "<FILE>."},
+                        "<FILE>. If <FILE> is `-` then stdout is used."},
                 {"swig", 's', "LANG", "", false,
                         "Generate SWIG interface for given language. The values <LANG> accepts is java and "
                         "python. "},
@@ -197,6 +194,23 @@ int main(int argc, char** argv) {
         Global::config().processArgs(argc, argv, header.str(), footer.str(), options);
 
         // ------ command line arguments -------------
+
+        // Take in pragma options from the command line
+        if (Global::config().has("pragma")) {
+            std::vector<std::string> configOptions = splitString(Global::config().get("pragma"), ';');
+            for (const std::string& option : configOptions) {
+                size_t splitPoint = option.find(':');
+
+                std::string optionName = option.substr(0, splitPoint);
+                std::string optionValue = (splitPoint == std::string::npos)
+                                                  ? ""
+                                                  : option.substr(splitPoint + 1, option.length());
+
+                if (!Global::config().has(optionName)) {
+                    Global::config().set(optionName, optionValue);
+                }
+            }
+        }
 
         /* for the version option, if given print the version text then exit */
         if (Global::config().has("version")) {
@@ -336,11 +350,10 @@ int main(int argc, char** argv) {
     // ------- parse program -------------
 
     // parse file
-    SymbolTable symTab;
     ErrorReport errReport(Global::config().has("no-warn"));
     DebugReport debugReport;
     std::unique_ptr<AstTranslationUnit> astTranslationUnit =
-            ParserDriver::parseTranslationUnit("<stdin>", in, symTab, errReport, debugReport);
+            ParserDriver::parseTranslationUnit("<stdin>", in, errReport, debugReport);
 
     // close input pipe
     int preprocessor_status = pclose(in);
@@ -406,6 +419,7 @@ int main(int argc, char** argv) {
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(),
+            std::make_unique<AstUserDefinedFunctorsTransformer>(),
             std::make_unique<PolymorphicOperatorsTransformer>(), std::make_unique<AstSemanticChecker>(),
             std::make_unique<RemoveTypecastsTransformer>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
@@ -442,7 +456,7 @@ int main(int argc, char** argv) {
         auto parser_end = std::chrono::high_resolution_clock::now();
         std::string runtimeStr =
                 "(" + std::to_string(std::chrono::duration<double>(parser_end - parser_start).count()) + "s)";
-        DebugReporter::generateDebugReport(*astTranslationUnit, "Parsing", "After Parsing " + runtimeStr);
+        DebugReporter::generateDebugReport(*astTranslationUnit, "", "Parsing", "After Parsing " + runtimeStr);
 
         pipeline->setDebugReport();
     }
@@ -555,14 +569,6 @@ int main(int argc, char** argv) {
             }
         } else {
             // ------- compiler -------------
-
-            std::string compileCmd = ::findTool("souffle-compile", souffleExecutable, ".");
-            /* Fail if a souffle-compile executable is not found */
-            if (!isExecutable(compileCmd)) {
-                throw std::runtime_error("failed to locate souffle-compile");
-            }
-            compileCmd += " ";
-
             std::unique_ptr<Synthesiser> synthesiser = std::make_unique<Synthesiser>(*ramTranslationUnit);
 
             // Find the base filename for code generation and execution
@@ -587,9 +593,13 @@ int main(int argc, char** argv) {
             std::string sourceFilename = baseFilename + ".cpp";
 
             bool withSharedLibrary;
-            std::ofstream os(sourceFilename);
-            synthesiser->generateCode(os, baseIdentifier, withSharedLibrary);
-            os.close();
+            const bool emitToStdOut = Global::config().has("generate", "-");
+            if (emitToStdOut)
+                synthesiser->generateCode(std::cout, baseIdentifier, withSharedLibrary);
+            else {
+                std::ofstream os{sourceFilename};
+                synthesiser->generateCode(os, baseIdentifier, withSharedLibrary);
+            }
 
             if (withSharedLibrary) {
                 if (!Global::config().has("libraries")) {
@@ -600,12 +610,21 @@ int main(int argc, char** argv) {
                 }
             }
 
+            auto findCompileCmd = [&] {
+                auto cmd = ::findTool("souffle-compile", souffleExecutable, ".");
+                /* Fail if a souffle-compile executable is not found */
+                if (!isExecutable(cmd)) {
+                    throw std::runtime_error("failed to locate souffle-compile");
+                }
+                return cmd;
+            };
+
             if (Global::config().has("swig")) {
-                compileCmd += "-s " + Global::config().get("swig") + " ";
+                auto compileCmd = findCompileCmd() + " -s " + Global::config().get("swig") + " ";
                 compileToBinary(compileCmd, sourceFilename);
             } else if (Global::config().has("compile")) {
                 auto start = std::chrono::high_resolution_clock::now();
-                compileToBinary(compileCmd, sourceFilename);
+                compileToBinary(findCompileCmd(), sourceFilename);
                 /* Report overall run-time in verbose mode */
                 if (Global::config().has("verbose")) {
                     auto end = std::chrono::high_resolution_clock::now();

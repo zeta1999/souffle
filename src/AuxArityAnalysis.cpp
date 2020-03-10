@@ -17,20 +17,20 @@
 #include "AuxArityAnalysis.h"
 #include "AstClause.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstUtils.h"
 #include "Global.h"
 #include <string>
 
 namespace souffle {
 
-const size_t AuxiliaryArity::computeArity(const AstRelation* relation) const {
+size_t AuxiliaryArity::computeArity(const AstRelation* relation) const {
     if (Global::config().has("provenance")) {
         if (Global::config().get("provenance") == "subtreeHeights") {
             size_t maxNrOfPremises = 0;
-            for (auto& cur : relation->getClauses()) {
-                size_t numberOfAtoms = cur->getAtoms().size();
+            for (auto& cur : getClauses(*program, *relation)) {
+                size_t numberOfAtoms = getBodyLiterals<AstAtom>(*cur).size();
                 if (numberOfAtoms > maxNrOfPremises) {
                     maxNrOfPremises = numberOfAtoms;
                 }

@@ -14,21 +14,20 @@
  *
  ***********************************************************************/
 
+#include "AggregateOp.h"
 #include "AstArgument.h"
 #include "AstLiteral.h"
 #include "AstProgram.h"
 #include "AstTranslationUnit.h"
 #include "ParserDriver.h"
-#include "SymbolTable.h"
 #include "test.h"
 
 namespace souffle::test {
 
 inline std::unique_ptr<AstTranslationUnit> makeATU(std::string program = ".decl A,B,C(x:number)") {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
-    return ParserDriver::parseTranslationUnit(program, sym, e, d);
+    return ParserDriver::parseTranslationUnit(program, e, d);
 }
 
 inline std::unique_ptr<AstTranslationUnit> makePrintedATU(std::unique_ptr<AstTranslationUnit>& tu) {
@@ -49,28 +48,27 @@ TEST(AstPrint, NilConstant) {
     auto testArgument = std::make_unique<AstNilConstant>();
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
 
 TEST(AstPrint, NumberConstant) {
-    auto testArgument = std::make_unique<AstNumberConstant>(2);
+    auto testArgument = std::make_unique<AstNumericConstant>(std::string("2"));
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
 
 TEST(AstPrint, StringConstant) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
-    auto testArgument = std::make_unique<AstStringConstant>(sym, "test string");
+    auto testArgument = std::make_unique<AstStringConstant>("test string");
 
-    auto tu1 = ParserDriver::parseTranslationUnit(".decl A,B,C(x:number)", sym, e, d);
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    auto tu1 = ParserDriver::parseTranslationUnit(".decl A,B,C(x:number)", e, d);
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -79,7 +77,7 @@ TEST(AstPrint, Variable) {
     auto testArgument = std::make_unique<AstVariable>("testVar");
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -88,7 +86,7 @@ TEST(AstPrint, UnnamedVariable) {
     auto testArgument = std::make_unique<AstUnnamedVariable>();
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -97,7 +95,7 @@ TEST(AstPrint, Counter) {
     auto testArgument = std::make_unique<AstCounter>();
 
     auto tu1 = makeATU();
-    tu1->getProgram()->appendClause(makeClauseA(std::move(testArgument)));
+    tu1->getProgram()->addClause(makeClauseA(std::move(testArgument)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -105,13 +103,13 @@ TEST(AstPrint, Counter) {
 TEST(AstPrint, AggregatorMin) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto min = std::make_unique<AstAggregator>(AstAggregator::min);
+    auto min = std::make_unique<AstAggregator>(AggregateOp::min);
     min->setTargetExpression(std::make_unique<AstVariable>("x"));
     min->addBodyLiteral(std::move(atom));
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
-    prog1->appendClause(makeClauseA(std::move(min)));
+    prog1->addClause(makeClauseA(std::move(min)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -119,13 +117,13 @@ TEST(AstPrint, AggregatorMin) {
 TEST(AstPrint, AggregatorMax) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto max = std::make_unique<AstAggregator>(AstAggregator::max);
+    auto max = std::make_unique<AstAggregator>(AggregateOp::max);
     max->setTargetExpression(std::make_unique<AstVariable>("x"));
     max->addBodyLiteral(std::move(atom));
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
-    prog1->appendClause(makeClauseA(std::move(max)));
+    prog1->addClause(makeClauseA(std::move(max)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -133,12 +131,12 @@ TEST(AstPrint, AggregatorMax) {
 TEST(AstPrint, AggregatorCount) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto count = std::make_unique<AstAggregator>(AstAggregator::count);
+    auto count = std::make_unique<AstAggregator>(AggregateOp::count);
     count->addBodyLiteral(std::move(atom));
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
-    prog1->appendClause(makeClauseA(std::move(count)));
+    prog1->addClause(makeClauseA(std::move(count)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
@@ -146,13 +144,13 @@ TEST(AstPrint, AggregatorCount) {
 TEST(AstPrint, AggregatorSum) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto sum = std::make_unique<AstAggregator>(AstAggregator::sum);
+    auto sum = std::make_unique<AstAggregator>(AggregateOp::sum);
     sum->setTargetExpression(std::make_unique<AstVariable>("x"));
     sum->addBodyLiteral(std::move(atom));
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
-    prog1->appendClause(makeClauseA(std::move(sum)));
+    prog1->addClause(makeClauseA(std::move(sum)));
     auto tu2 = makePrintedATU(tu1);
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }

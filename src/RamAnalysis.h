@@ -40,7 +40,7 @@ public:
     virtual void run(const RamTranslationUnit& translationUnit) = 0;
 
     /** @brief Print the analysis result in HTML format */
-    virtual void print(std::ostream& os) const {}
+    virtual void print(std::ostream& /* os */) const {}
 
     /** @brief define output stream operator */
     friend std::ostream& operator<<(std::ostream& out, const RamAnalysis& other) {

@@ -29,9 +29,6 @@
 
 namespace souffle {
 
-// forward declaration
-class Type;
-
 /**
  *  Intermediate representation of an attribute which stores the name and the type of an attribute
  *
@@ -39,8 +36,7 @@ class Type;
  */
 class AstAttribute : public AstNode {
 public:
-    AstAttribute(std::string n, AstTypeIdentifier t, const Type* /*type*/ = nullptr)
-            : name(std::move(n)), typeName(std::move(t)) {}
+    AstAttribute(std::string n, AstQualifiedName t) : name(std::move(n)), typeName(std::move(t)) {}
 
     void print(std::ostream& os) const override {
         os << name << ":" << typeName;
@@ -52,12 +48,12 @@ public:
     }
 
     /** get type name */
-    const AstTypeIdentifier& getTypeName() const {
+    const AstQualifiedName& getTypeName() const {
         return typeName;
     }
 
     /** set type name */
-    void setTypeName(const AstTypeIdentifier& name) {
+    void setTypeName(const AstQualifiedName& name) {
         typeName = name;
     }
 
@@ -79,7 +75,7 @@ private:
     std::string name;
 
     /** Type name */
-    AstTypeIdentifier typeName;
+    AstQualifiedName typeName;
 };
 
 }  // end of namespace souffle

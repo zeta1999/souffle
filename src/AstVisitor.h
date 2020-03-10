@@ -80,9 +80,7 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(IntrinsicFunctor)
         FORWARD(UserDefinedFunctor)
         FORWARD(Counter)
-        FORWARD(NumberConstant)
-        FORWARD(FloatConstant)
-        FORWARD(UnsignedConstant)
+        FORWARD(NumericConstant)
         FORWARD(StringConstant)
         FORWARD(NilConstant)
         FORWARD(TypeCast)
@@ -106,8 +104,6 @@ struct AstVisitor : public ast_visitor_tag {
         FORWARD(Attribute);
         FORWARD(Clause);
         FORWARD(Relation);
-        FORWARD(Load);
-        FORWARD(Store);
         FORWARD(Program);
         FORWARD(Pragma);
 
@@ -139,9 +135,7 @@ protected:
     LINK(TypeCast, Argument)
     LINK(SubroutineArgument, Argument)
 
-    LINK(NumberConstant, Constant)
-    LINK(FloatConstant, Constant)
-    LINK(UnsignedConstant, Constant)
+    LINK(NumericConstant, Constant)
     LINK(StringConstant, Constant)
     LINK(NilConstant, Constant)
     LINK(Constant, Argument)
@@ -177,8 +171,6 @@ protected:
     LINK(Program, Node);
     LINK(Attribute, Node);
     LINK(Clause, Node);
-    LINK(Load, Node);
-    LINK(Store, Node);
     LINK(Relation, Node);
     LINK(Pragma, Node);
 

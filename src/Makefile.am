@@ -58,6 +58,7 @@ endif
 
 
 souffle_sources = \
+        AggregateOp.h                             \
         AstAbstract.h                             \
         AstAnalysis.h                             \
         AuxArityAnalysis.cpp  AuxArityAnalysis.h  \
@@ -75,11 +76,12 @@ souffle_sources = \
         AstLiteral.h                              \
         AstNode.h                                 \
         AstParserUtils.cpp    AstParserUtils.h    \
-        AstPragma.cpp         AstPragma.h         \
-        AstProgram.cpp        AstProgram.h        \
+        AstPragma.h                               \
+        AstPragmaChecker.cpp  AstPragmaChecker.h  \
+        AstProgram.h                              \
         AstProfileUse.cpp     AstProfileUse.h     \
         AstRelation.h                             \
-        AstRelationIdentifier.h                   \
+        AstQualifiedName.h                        \
         AstSemanticChecker.cpp                    \
         AstSemanticChecker.h                      \
         AstTransformer.cpp    AstTransformer.h    \
@@ -93,19 +95,22 @@ souffle_sources = \
         AstUtils.cpp          AstUtils.h          \
         AstVisitor.h                              \
         BinaryConstraintOps.h                     \
-        ComponentModel.cpp    ComponentModel.h    \
+        ComponentInstantiationTransformer.cpp     \
+        ComponentInstantiationTransformer.h       \
+        ComponentLookupAnalysis.cpp               \
+        ComponentLookupAnalysis.h                 \
         Constraints.h                             \
         DebugReport.cpp       DebugReport.h       \
+        DebugReporter.cpp     DebugReporter.h     \
         EventProcessor.h                          \
         FunctorOps.h                              \
         Global.cpp            Global.h            \
         GraphUtils.h                              \
-        IODirectives.h                            \
         IOSystem.h                                \
         RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
         InlineRelationsTransformer.cpp            \
         LogStatement.h                            \
-        InterpreterIndex.h            InterpreterIndex.cpp	\
+        InterpreterIndex.h            InterpreterIndex.cpp \
         InterpreterRelation.h         InterpreterRelation.cpp     \
         MagicSet.cpp          MagicSet.h          \
         MinimiseProgramTransformer.cpp            \
@@ -139,9 +144,10 @@ souffle_sources = \
         RamVisitor.h                              \
         ReadStream.h                              \
         ReadStreamCSV.h                           \
-        RelationRepresentation.h                  \
+        RelationTag.h                             \
         ReorderLiteralsTransformer.cpp            \
         ResolveAliasesTransformer.cpp             \
+        RWOperation.h                             \
         SignalHandler.h                           \
         SrcLocation.cpp    SrcLocation.h          \
         Synthesiser.cpp       Synthesiser.h       \
@@ -188,7 +194,7 @@ soufflepublic_HEADERS = \
         ExplainProvenanceImpl.h                   \
         ExplainTree.h                             \
         EquivalenceRelation.h                     \
-        IODirectives.h                            \
+        RWOperation.h                             \
         IOSystem.h                                \
         IterUtils.h                               \
         LambdaBTree.h                             \

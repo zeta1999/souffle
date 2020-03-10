@@ -14,22 +14,33 @@
  *
  ***********************************************************************/
 
+#include "AggregateOp.h"
 #include "AstProgram.h"
 #include "AstTranslationUnit.h"
 #include "ParserDriver.h"
-#include "SymbolTable.h"
 #include "test.h"
 
-namespace souffle {
+namespace souffle::test {
 
-namespace test {
+inline std::unique_ptr<AstTranslationUnit> makeATU(std::string program) {
+    ErrorReport e;
+    DebugReport d;
+    return ParserDriver::parseTranslationUnit(program, e, d);
+}
+
+inline std::unique_ptr<AstClause> makeClause(std::string name, std::unique_ptr<AstArgument> headArgument) {
+    auto headAtom = std::make_unique<AstAtom>(name);
+    headAtom->addArgument(std::move(headArgument));
+    auto clause = std::make_unique<AstClause>();
+    clause->setHead(std::move(headAtom));
+    return clause;
+}
 
 TEST(AstProgram, Parse) {
-    SymbolTable sym;
     ErrorReport e;
     DebugReport d;
     // check the empty program
-    std::unique_ptr<AstTranslationUnit> empty = ParserDriver::parseTranslationUnit("", sym, e, d);
+    std::unique_ptr<AstTranslationUnit> empty = ParserDriver::parseTranslationUnit("", e, d);
 
     EXPECT_TRUE(empty->getProgram()->getTypes().empty());
     EXPECT_TRUE(empty->getProgram()->getRelations().empty());
@@ -44,7 +55,7 @@ TEST(AstProgram, Parse) {
                    r(X,Y) :- e(X,Y).
                    r(X,Z) :- r(X,Y), r(Y,Z).
             )",
-            sym, e, d);
+            e, d);
 
     auto* prog = tu->getProgram();
     std::cout << *prog << "\n";
@@ -52,22 +63,21 @@ TEST(AstProgram, Parse) {
     EXPECT_EQ(1, prog->getTypes().size());
     EXPECT_EQ(2, prog->getRelations().size());
 
-    EXPECT_TRUE(prog->getRelation("e"));
-    EXPECT_TRUE(prog->getRelation("r"));
-    EXPECT_FALSE(prog->getRelation("n"));
+    EXPECT_TRUE(getRelation(*prog, "e"));
+    EXPECT_TRUE(getRelation(*prog, "r"));
+    EXPECT_FALSE(getRelation(*prog, "n"));
 }
 
-#define TESTASTCLONEANDEQUAL(SUBTYPE, DL)                                                           \
-    TEST(Ast, CloneAndEqual##SUBTYPE) {                                                             \
-        SymbolTable sym;                                                                            \
-        ErrorReport e;                                                                              \
-        DebugReport d;                                                                              \
-        std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(DL, sym, e, d); \
-        AstProgram& program = *tu->getProgram();                                                    \
-        EXPECT_EQ(program, program);                                                                \
-        std::unique_ptr<AstProgram> clone(program.clone());                                         \
-        EXPECT_NE(clone.get(), &program);                                                           \
-        EXPECT_EQ(*clone, program);                                                                 \
+#define TESTASTCLONEANDEQUAL(SUBTYPE, DL)                                                      \
+    TEST(Ast, CloneAndEqual##SUBTYPE) {                                                        \
+        ErrorReport e;                                                                         \
+        DebugReport d;                                                                         \
+        std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(DL, e, d); \
+        AstProgram& program = *tu->getProgram();                                               \
+        EXPECT_EQ(program, program);                                                           \
+        std::unique_ptr<AstProgram> clone(program.clone());                                    \
+        EXPECT_NE(clone.get(), &program);                                                      \
+        EXPECT_EQ(*clone, program);                                                            \
     }
 
 TESTASTCLONEANDEQUAL(Program,
@@ -84,7 +94,6 @@ TESTASTCLONEANDEQUAL(Record,
         R"(
                  .type N
                  .type R = [ a : N, B : N ]
-
 
                  .decl r ( r : R )
                  .decl s ( r : N )
@@ -166,5 +175,39 @@ TESTASTCLONEANDEQUAL(RelationCopies,
 
             )");
 
-}  // end namespace test
-}  // end namespace souffle
+/** test removeClause, addRelation and removeRelation */
+TEST(AstProgram, RemoveClause) {
+    auto atom = std::make_unique<AstAtom>("B");
+    atom->addArgument(std::make_unique<AstVariable>("x"));
+    auto sum = std::make_unique<AstAggregator>(AggregateOp::sum);
+    sum->setTargetExpression(std::make_unique<AstVariable>("x"));
+    sum->addBodyLiteral(std::move(atom));
+
+    auto tu1 = makeATU(".decl A,B(x:number) \n A(sum x : B(x)).");
+    auto clause = makeClause("A", std::move(sum));
+
+    tu1->getProgram()->removeClause(clause.get());
+    auto tu2 = makeATU(".decl A,B(x:number)");
+    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
+}
+
+TEST(AstProgram, AppendAstRelation) {
+    auto tu1 = makeATU(".decl A,B,C(x:number)");
+    auto* prog1 = tu1->getProgram();
+    auto rel = std::make_unique<AstRelation>();
+    rel->setQualifiedName("D");
+    rel->addAttribute(std::make_unique<AstAttribute>("x", "number"));
+    prog1->addRelation(std::move(rel));
+    auto tu2 = makeATU(".decl A,B,C,D(x:number)");
+    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
+}
+
+TEST(AstProgram, RemoveAstRelation) {
+    auto tu1 = makeATU(".decl A,B,C(x:number)");
+    auto* prog1 = tu1->getProgram();
+    prog1->removeRelation("B");
+    auto tu2 = makeATU(".decl A,C(x:number)");
+    EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
+}
+
+}  // end namespace souffle::test

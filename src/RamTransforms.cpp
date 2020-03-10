@@ -48,13 +48,12 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
                     for (auto& cond : conditionList) {
                         auto tempCond = cond->clone();
                         if (filters.empty()) {
-                            filters.emplace_back(std::make_unique<RamFilter>(
-                                    std::unique_ptr<RamCondition>(std::move(tempCond)),
-                                    std::unique_ptr<RamOperation>(filter->getOperation().clone())));
+                            filters.emplace_back(
+                                    std::make_unique<RamFilter>(std::unique_ptr<RamCondition>(tempCond),
+                                            std::unique_ptr<RamOperation>(filter->getOperation().clone())));
                         } else {
                             filters.emplace_back(std::make_unique<RamFilter>(
-                                    std::unique_ptr<RamCondition>(std::move(tempCond)),
-                                    std::move(filters.back())));
+                                    std::unique_ptr<RamCondition>(tempCond), std::move(filters.back())));
                         }
                     }
                     node = std::move(filters.back());
@@ -75,8 +74,8 @@ bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             if (const RamFilter* filter = dynamic_cast<RamFilter*>(node.get())) {
                 const RamCondition* condition = &filter->getCondition();
-                std::vector<std::unique_ptr<RamCondition>> sortedConds,
-                        condList = toConjunctionList(condition);
+                std::vector<std::unique_ptr<RamCondition>> sortedConds;
+                std::vector<std::unique_ptr<RamCondition>> condList = toConjunctionList(condition);
                 for (auto& cond : condList) {
                     sortedConds.emplace_back(cond->clone());
                 }

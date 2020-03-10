@@ -18,13 +18,13 @@
 
 #include <cassert>
 #include <cstdint>
+#include <iostream>
 #include <limits>
-#include <ostream>
 #include <type_traits>
 
 namespace souffle {
 
-enum class RamTypeAttribute {
+enum class TypeAttribute {
     Symbol,
     Signed,    // Signed number
     Unsigned,  // Unsigned number
@@ -32,64 +32,39 @@ enum class RamTypeAttribute {
     Record,
 };
 
-// Printing of the RamTypeAttribute Enum.
+// Printing of the TypeAttribute Enum.
 // To be utilised in synthesizer.
-inline std::ostream& operator<<(std::ostream& os, RamTypeAttribute T) {
+inline std::ostream& operator<<(std::ostream& os, TypeAttribute T) {
     switch (T) {
-        case RamTypeAttribute::Symbol:
-            os << "RamTypeAttribute::Symbol";
+        case TypeAttribute::Symbol:
+            os << "TypeAttribute::Symbol";
             break;
-        case RamTypeAttribute::Signed:
-            os << "RamTypeAttribute::Signed";
+        case TypeAttribute::Signed:
+            os << "TypeAttribute::Signed";
             break;
-        case RamTypeAttribute::Float:
-            os << "RamTypeAttribute::Float";
+        case TypeAttribute::Float:
+            os << "TypeAttribute::Float";
             break;
-        case RamTypeAttribute::Unsigned:
-            os << "RamTypeAttribute::Unsigned";
+        case TypeAttribute::Unsigned:
+            os << "TypeAttribute::Unsigned";
             break;
-        case RamTypeAttribute::Record:
-            os << "RamTypeAttribute::Record";
+        case TypeAttribute::Record:
+            os << "TypeAttribute::Record";
     }
     return os;
-}
-
-/** Convert a char to RamTypeAttribute */
-inline RamTypeAttribute RamPrimitiveFromChar(char c) {
-    RamTypeAttribute RamType;
-    switch (c) {
-        case 's':
-            RamType = RamTypeAttribute::Symbol;
-            break;
-        case 'i':
-            RamType = RamTypeAttribute::Signed;
-            break;
-        case 'f':
-            RamType = RamTypeAttribute::Float;
-            break;
-        case 'u':
-            RamType = RamTypeAttribute::Unsigned;
-            break;
-        case 'r':
-            RamType = RamTypeAttribute::Record;
-            break;
-        default:
-            assert(false && "Invalid RamTypeAttribute Char");
-    }
-    return RamType;
 }
 
 /**
  * Check if type is numeric.
  */
-inline bool isNumericType(RamTypeAttribute ramType) {
+inline bool isNumericType(TypeAttribute ramType) {
     switch (ramType) {
-        case RamTypeAttribute::Signed:
-        case RamTypeAttribute::Unsigned:
-        case RamTypeAttribute::Float:
+        case TypeAttribute::Signed:
+        case TypeAttribute::Unsigned:
+        case TypeAttribute::Float:
             return true;
-        case RamTypeAttribute::Symbol:
-        case RamTypeAttribute::Record:
+        case TypeAttribute::Symbol:
+        case TypeAttribute::Record:
             return false;
     }
     return false;  // silence warning

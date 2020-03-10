@@ -24,6 +24,8 @@
 #include <chrono>
 #include <condition_variable>
 #include <cstdlib>
+#include <fstream>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -189,6 +191,17 @@ bool contains(const C& container, const typename C::value_type& element) {
 }
 
 /**
+ * Returns the first element in a container that satisfies a given predicate,
+ * nullptr otherwise.
+ */
+template <typename C>
+typename C::value_type getIf(const C& container, std::function<bool(const typename C::value_type)> pred) {
+    auto res = std::find_if(container.begin(), container.end(),
+            [&](const typename C::value_type item) { return pred(item); });
+    return res == container.end() ? nullptr : *res;
+}
+
+/**
  * A utility function enabling the creation of a vector with a fixed set of
  * elements within a single expression. This is the base case covering empty
  * vectors.
@@ -216,85 +229,6 @@ std::vector<T*> toPtrVector(const std::vector<std::unique_ptr<T>>& v) {
     std::vector<T*> res;
     for (auto& e : v) {
         res.push_back(e.get());
-    }
-    return res;
-}
-
-/**
- * A utility function enabling the creation of a vector of pointers.
- */
-template <typename T>
-std::vector<const T*> toConstPtrVector(const std::vector<std::unique_ptr<T>>& v) {
-    std::vector<const T*> res;
-    for (auto& e : v) {
-        res.push_back(e.get());
-    }
-    return res;
-}
-
-/**
- * A utility function enabling the creation of a vector of pointers.
- */
-template <typename T>
-std::vector<T*> toPtrVector(const std::vector<std::shared_ptr<T>>& v) {
-    std::vector<T*> res;
-    for (auto& e : v) {
-        res.push_back(e.get());
-    }
-    return res;
-}
-
-/**
- * A utility function that moves a vector of unique pointers from a source to a destination.
- */
-template <typename X, typename Y>
-void movePtrVector(std::vector<std::unique_ptr<X>>& source, std::vector<std::unique_ptr<Y>>& destination) {
-    for (auto& cur : source) {
-        destination.emplace_back(cur.release());
-    }
-    source.clear();
-}
-
-/**
- * A utility function enabling the creation of a set with a fixed set of
- * elements within a single expression. This is the base case covering empty
- * sets.
- */
-template <typename T>
-std::set<T> toSet() {
-    return std::set<T>();
-}
-
-/**
- * A utility function enabling the creation of a set with a fixed set of
- * elements within a single expression. This is the step case covering sets
- * of arbitrary length.
- */
-template <typename T, typename... R>
-std::set<T> toSet(const T& first, const R&... rest) {
-    return {first, rest...};
-}
-
-/**
- * A utility function enabling the creation of a set of pointers.
- */
-template <typename T>
-std::set<T*> toPtrSet(const std::set<std::unique_ptr<T>>& v) {
-    std::set<T*> res;
-    for (auto& e : v) {
-        res.insert(e.get());
-    }
-    return res;
-}
-
-/**
- * A utility function enabling the creation of a set of pointers.
- */
-template <typename T>
-std::set<T*> toPtrSet(const std::set<std::shared_ptr<T>>& v) {
-    std::set<T*> res;
-    for (auto& e : v) {
-        res.insert(e.get());
     }
     return res;
 }
@@ -393,6 +327,22 @@ range<Iter> make_range(const Iter& a, const Iter& b) {
 // -------------------------------------------------------------------------------
 
 /**
+ * Cast the values, from baseType to toType and compare using ==. (if casting fails -> return false.)
+ *
+ * @tparam baseType, initial Type of values
+ * @tparam toType, type where equality comparison takes place.
+ */
+template <typename toType, typename baseType>
+bool castEq(const baseType* left, const baseType* right) {
+    if (auto castedLeft = dynamic_cast<const toType*>(left)) {
+        if (auto castedRight = dynamic_cast<const toType*>(right)) {
+            return castedLeft == castedRight;
+        }
+    }
+    return false;
+}
+
+/**
  * A functor class supporting the values pointers are pointing to.
  */
 template <typename T>
@@ -409,10 +359,10 @@ struct comp_deref {
 };
 
 /**
- * A function testing whether two vectors are equal (same vector of elements).
+ * A function testing whether two containers are equal with the given Comparator.
  */
-template <typename T, typename Comp = std::equal_to<T>>
-bool equal(const std::vector<T>& a, const std::vector<T>& b, const Comp& comp = Comp()) {
+template <typename Container, typename Comparator>
+bool equal_targets(const Container& a, const Container& b, const Comparator& comp) {
     // check reference
     if (&a == &b) {
         return true;
@@ -424,98 +374,37 @@ bool equal(const std::vector<T>& a, const std::vector<T>& b, const Comp& comp = 
     }
 
     // check content
-    for (std::size_t i = 0; i < a.size(); ++i) {
-        // if there is a difference
-        if (!comp(a[i], b[i])) {
-            return false;
-        }
-    }
-
-    // all the same
-    return true;
+    return std::equal(a.begin(), a.end(), b.begin(), comp);
 }
 
 /**
- * A function testing whether two vector of pointers are referencing to equivalent
+ * A function testing whether two containers of pointers are referencing equivalent
  * targets.
  */
-template <typename T>
-bool equal_targets(const std::vector<T*>& a, const std::vector<T*>& b) {
-    return equal(a, b, comp_deref<T*>());
+template <typename T, template <typename...> class Container>
+bool equal_targets(const Container<T*>& a, const Container<T*>& b) {
+    return equal_targets(a, b, comp_deref<T*>());
 }
 
 /**
- * A function testing whether two vector of pointers are referencing to equivalent
+ * A function testing whether two containers of unique pointers are referencing equivalent
  * targets.
  */
-template <typename T>
-bool equal_targets(const std::vector<std::unique_ptr<T>>& a, const std::vector<std::unique_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::unique_ptr<T>>());
+template <typename T, template <typename...> class Container>
+bool equal_targets(const Container<std::unique_ptr<T>>& a, const Container<std::unique_ptr<T>>& b) {
+    return equal_targets(a, b, comp_deref<std::unique_ptr<T>>());
 }
 
 /**
- * A function testing whether two vector of pointers are referencing to equivalent
+ * A function testing whether two maps of unique pointers are referencing to equivalent
  * targets.
  */
-template <typename T>
-bool equal_targets(const std::vector<std::shared_ptr<T>>& a, const std::vector<std::shared_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::shared_ptr<T>>());
-}
-
-/**
- * A function testing whether two sets are equal (same set of elements).
- */
-template <typename T, typename Comp = std::equal_to<T>>
-bool equal(const std::set<T>& a, const std::set<T>& b, const Comp& comp = Comp()) {
-    // check reference
-    if (&a == &b) {
-        return true;
-    }
-
-    // check size
-    if (a.size() != b.size()) {
-        return false;
-    }
-
-    // check content
-    for (auto it_i = a.begin(); it_i != a.end(); ++it_i) {
-        for (auto it_j = a.begin(); it_j != a.end(); ++it_j) {
-            // if there is a difference
-            if (!comp(*it_i, *it_j)) {
-                return false;
-            }
-        }
-    }
-
-    // all the same
-    return true;
-}
-
-/**
- * A function testing whether two set of pointers are referencing to equivalent
- * targets.
- */
-template <typename T>
-bool equal_targets(const std::set<T*>& a, const std::set<T*>& b) {
-    return equal(a, b, comp_deref<T*>());
-}
-
-/**
- * A function testing whether two set of pointers are referencing to equivalent
- * targets.
- */
-template <typename T>
-bool equal_targets(const std::set<std::unique_ptr<T>>& a, const std::set<std::unique_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::unique_ptr<T>>());
-}
-
-/**
- * A function testing whether two set of pointers are referencing to equivalent
- * targets.
- */
-template <typename T>
-bool equal_targets(const std::set<std::shared_ptr<T>>& a, const std::set<std::shared_ptr<T>>& b) {
-    return equal(a, b, comp_deref<std::shared_ptr<T>>());
+template <typename Key, typename Value>
+bool equal_targets(
+        const std::map<Key, std::unique_ptr<Value>>& a, const std::map<Key, std::unique_ptr<Value>>& b) {
+    auto comp = comp_deref<std::unique_ptr<Value>>();
+    return equal_targets(
+            a, b, [&comp](auto& a, auto& b) { return a.first == b.first && comp(a.second, b.second); });
 }
 
 /**
@@ -524,10 +413,10 @@ bool equal_targets(const std::set<std::shared_ptr<T>>& a, const std::set<std::sh
  */
 template <typename T>
 bool equal_ptr(const T* a, const T* b) {
-    if (!a && !b) {
+    if (a == nullptr && b == nullptr) {
         return true;
     }
-    if (a && b) {
+    if (a != nullptr && b != nullptr) {
         return *a == *b;
     }
     return false;
@@ -539,56 +428,8 @@ bool equal_ptr(const T* a, const T* b) {
  */
 template <typename T>
 bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
-    if (!a && !b) {
-        return true;
-    }
-    if (a && b) {
-        return *a == *b;
-    }
-    return false;
+    return equal_ptr(a.get(), b.get());
 }
-
-// -------------------------------------------------------------------------------
-//                               I/O Utils
-// -------------------------------------------------------------------------------
-
-/**
- * A stream ignoring everything written to it.
- * Note, avoiding the write in the first place may be more efficient.
- */
-class NullStream : public std::ostream {
-public:
-    NullStream() : std::ostream(&buffer) {}
-
-private:
-    struct NullBuffer : public std::streambuf {
-        int overflow(int c) override {
-            return c;
-        }
-    };
-    NullBuffer buffer;
-};
-
-/**
- * A stream copying its input to multiple output streams.
- */
-class SplitStream : public std::ostream, public std::streambuf {
-private:
-    std::vector<std::ostream*> streams;
-
-public:
-    SplitStream(std::vector<std::ostream*> streams) : std::ostream(this), streams(std::move(streams)) {}
-    SplitStream(std::ostream* stream1, std::ostream* stream2) : std::ostream(this) {
-        streams.push_back(stream1);
-        streams.push_back(stream2);
-    }
-    int overflow(int c) override {
-        for (auto stream : streams) {
-            stream->put(static_cast<char>(c));
-        }
-        return c;
-    }
-};
 
 // -------------------------------------------------------------------------------
 //                           General Print Utilities
@@ -833,7 +674,7 @@ typename std::enable_if<detail::is_printable<T>::value, std::string>::type toStr
  * to be printed.
  */
 template <typename T>
-typename std::enable_if<!detail::is_printable<T>::value, std::string>::type toString(const T& value) {
+typename std::enable_if<!detail::is_printable<T>::value, std::string>::type toString(const T&) {
     std::stringstream ss;
     ss << "(print for type ";
     ss << typeid(T).name();
@@ -960,32 +801,6 @@ struct lambda_traits_helper<R (C::*)(Args...) const> : public lambda_traits_help
  */
 template <typename Lambda>
 struct lambda_traits : public detail::lambda_traits_helper<decltype(&Lambda::operator())> {};
-
-// -------------------------------------------------------------------------------
-//                              Functional Wrappers
-// -------------------------------------------------------------------------------
-
-/**
- * A struct wrapping a object and an associated member function pointer into a
- * callable object.
- */
-template <typename Class, typename R, typename... Args>
-struct member_fun {
-    using fun_type = R (Class::*)(Args...);
-    Class& obj;
-    fun_type fun;
-    R operator()(Args... args) const {
-        return (obj.*fun)(args...);
-    }
-};
-
-/**
- * Wraps an object and matching member function pointer into a callable object.
- */
-template <typename C, typename R, typename... Args>
-member_fun<C, R, Args...> mfun(C& obj, R (C::*f)(Args...)) {
-    return member_fun<C, R, Args...>({obj, f});
-}
 
 // -------------------------------------------------------------------------------
 //                              General Algorithms
@@ -1295,6 +1110,22 @@ inline std::string stringify(const std::string& input) {
     return str;
 }
 
+/**
+ * Escape JSON string.
+ */
+inline std::string escapeJSONstring(const std::string& JSONstr) {
+    std::ostringstream destination;
+
+    // Iterate over all characters except first and last
+    for (char c : JSONstr) {
+        if (c == '\"') {
+            destination << "\\";
+        }
+        destination << c;
+    }
+    return destination.str();
+}
+
 /** Valid C++ identifier, note that this does not ensure the uniqueness of identifiers returned. */
 inline std::string identifier(std::string id) {
     for (size_t i = 0; i < id.length(); i++) {
@@ -1304,6 +1135,80 @@ inline std::string identifier(std::string id) {
     }
     return id;
 }
+
+// TODO (b-scholz): tidy up unescape/escape functions
+
+inline std::string unescape(
+        const std::string& inputString, const std::string& needle, const std::string& replacement) {
+    std::string result = inputString;
+    size_t pos = 0;
+    while ((pos = result.find(needle, pos)) != std::string::npos) {
+        result = result.replace(pos, needle.length(), replacement);
+        pos += replacement.length();
+    }
+    return result;
+}
+
+inline std::string unescape(const std::string& inputString) {
+    std::string unescaped = unescape(inputString, "\\\"", "\"");
+    unescaped = unescape(unescaped, "\\t", "\t");
+    unescaped = unescape(unescaped, "\\r", "\r");
+    unescaped = unescape(unescaped, "\\n", "\n");
+    return unescaped;
+}
+
+inline std::string escape(
+        const std::string& inputString, const std::string& needle, const std::string& replacement) {
+    std::string result = inputString;
+    size_t pos = 0;
+    while ((pos = result.find(needle, pos)) != std::string::npos) {
+        result = result.replace(pos, needle.length(), replacement);
+        pos += replacement.length();
+    }
+    return result;
+}
+
+inline std::string escape(const std::string& inputString) {
+    std::string escaped = escape(inputString, "\"", "\\\"");
+    escaped = escape(escaped, "\t", "\\t");
+    escaped = escape(escaped, "\r", "\\r");
+    escaped = escape(escaped, "\n", "\\n");
+    return escaped;
+}
+
+inline std::stringstream execStdOut(char const* cmd) {
+    FILE* in = popen(cmd, "r");
+    std::stringstream data;
+    while (in != nullptr) {
+        char c = fgetc(in);
+        if (feof(in) != 0) {
+            break;
+        }
+        data << c;
+    }
+    pclose(in);
+    return data;
+}
+
+inline std::stringstream execStdOut(std::string const& cmd) {
+    return execStdOut(cmd.c_str());
+}
+
+class TempFileStream : public std::fstream {
+    std::string fileName;
+
+public:
+    TempFileStream(std::string fileName = tempFile())
+            : std::fstream(fileName), fileName(std::move(fileName)) {}
+    ~TempFileStream() override {
+        close();
+        remove(fileName.c_str());
+    }
+
+    std::string const& getFileName() const {
+        return fileName;
+    }
+};
 
 // -------------------------------------------------------------------------------
 //                              Hint / Cache
@@ -1507,7 +1412,7 @@ public:
 
     // --- print support ---
 
-    friend std::ostream& operator<<(std::ostream& out, const LRUCache& cache) {
+    friend std::ostream& operator<<(std::ostream& out, const LRUCache& /* cache */) {
         return out << "-empty-";
     }
 };

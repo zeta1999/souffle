@@ -15,7 +15,10 @@
  ***********************************************************************/
 
 #include "RamTransformer.h"
+#include "DebugReport.h"
+#include "DebugReporter.h"
 #include "RamTranslationUnit.h"
+#include "Util.h"
 
 #include <algorithm>
 
@@ -24,6 +27,9 @@ namespace souffle {
 bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
     // take snapshot of alive analyses before invocation
     std::set<const RamAnalysis*> beforeInvocation = translationUnit.getAliveAnalyses();
+
+    std::stringstream ramProgStrOld;
+    ramProgStrOld << translationUnit.getProgram();
 
     // invoke the transformation
     bool changed = transform(translationUnit);
@@ -38,8 +44,8 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
                 std::stringstream ramAnalysisStr;
                 analysis->print(ramAnalysisStr);
                 if (!ramAnalysisStr.str().empty()) {
-                    translationUnit.getDebugReport().addSection(DebugReporter::getCodeSection(
-                            getName(), "RAM Analysis " + analysis->getName(), ramAnalysisStr.str()));
+                    translationUnit.getDebugReport().addSection(
+                            getName(), "RAM Analysis " + analysis->getName(), ramAnalysisStr.str());
                 }
             }
         }
@@ -47,14 +53,13 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
 
     if (changed) {
         translationUnit.invalidateAnalyses();
-        std::stringstream ramProgStr;
-        ramProgStr << translationUnit.getProgram();
-        translationUnit.getDebugReport().addSection(
-                DebugReporter::getCodeSection(getName(), "RAM Program after " + getName(), ramProgStr.str()));
+
+        translationUnit.getDebugReport().addSection(getName(), "RAM Program after " + getName(),
+                DebugReporter::generateDiff(ramProgStrOld.str(), translationUnit.getProgram()));
 
     } else {
         translationUnit.getDebugReport().addSection(
-                DebugReportSection(getName(), "After " + getName() + " " + " (unchanged)", {}, ""));
+                getName(), "After " + getName() + " " + " (unchanged)", "");
     }
 
     /* Abort evaluation of the program if errors were encountered */

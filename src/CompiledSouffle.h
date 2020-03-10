@@ -19,9 +19,9 @@
 #include "souffle/Brie.h"
 #include "souffle/CompiledIndexUtils.h"
 #include "souffle/CompiledTuple.h"
-#include "souffle/IODirectives.h"
 #include "souffle/IOSystem.h"
 #include "souffle/ParallelUtils.h"
+#include "souffle/RWOperation.h"
 #include "souffle/RamTypes.h"
 #include "souffle/RecordTable.h"
 #include "souffle/SignalHandler.h"
@@ -259,7 +259,7 @@ public:
         }
 
         bool operator==(const iterator& other) const {
-            return other.it == it || *other.it == *it;
+            return other.it == it;
         }
 
         bool operator!=(const iterator& other) const {

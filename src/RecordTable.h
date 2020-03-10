@@ -45,6 +45,31 @@ public:
     explicit RecordMap(size_t arity) : arity(arity), indexToRecord(1) {}  // note: index 0 element left free
 
     /**
+     * Pack the given vector -- create a new reference in necessary.
+     */
+    RamDomain pack(const std::vector<RamDomain>& vector) {
+        RamDomain index;
+#pragma omp critical(record_pack)
+        {
+            auto pos = recordToIndex.find(vector);
+            if (pos != recordToIndex.end()) {
+                index = pos->second;
+            } else {
+#pragma omp critical(record_unpack)
+                {
+                    indexToRecord.push_back(vector);
+                    index = indexToRecord.size() - 1;
+                    recordToIndex[vector] = index;
+
+                    // assert that new index is smaller than the range
+                    assert(index != std::numeric_limits<RamDomain>::max());
+                }
+            }
+        }
+        return index;
+    }
+
+    /**
      * Packs the given tuple -- and may create a new reference if necessary.
      */
     RamDomain pack(const RamDomain* tuple) {
@@ -53,26 +78,7 @@ public:
             tmp[i] = tuple[i];
         }
 
-        RamDomain index;
-#pragma omp critical(record_pack)
-        {
-            auto pos = recordToIndex.find(tmp);
-            if (pos != recordToIndex.end()) {
-                index = pos->second;
-            } else {
-#pragma omp critical(record_unpack)
-                {
-                    indexToRecord.push_back(tmp);
-                    index = indexToRecord.size() - 1;
-                    recordToIndex[tmp] = index;
-
-                    // assert that new index is smaller than the range
-                    assert(index != std::numeric_limits<RamDomain>::max());
-                }
-            }
-        }
-
-        return index;
+        return pack(tmp);
     }
 
     /**
@@ -82,7 +88,16 @@ public:
         RamDomain* res;
 
 #pragma omp critical(record_unpack)
-        res = &(indexToRecord[index][0]);
+        res = indexToRecord[index].data();
+
+        return res;
+    }
+
+    const RamDomain* unpack(RamDomain index) const {
+        const RamDomain* res;
+
+#pragma omp critical(record_unpack)
+        res = indexToRecord[index].data();
 
         return res;
     }
@@ -101,6 +116,13 @@ public:
     }
 
     /**
+     * A function packing a vector into a reference.
+     */
+    RamDomain pack(const std::vector<RamDomain>& vector) {
+        return getForArity(vector.size()).pack(vector);
+    }
+
+    /**
      * A function packing a tuple of the given arity into a reference.
      */
     template <typename Domain, std::size_t Arity>
@@ -112,7 +134,20 @@ public:
      * A function obtaining a pointer to the tuple addressed by the given reference.
      */
     RamDomain* unpack(RamDomain ref, size_t arity) {
-        return getForArity(arity).unpack(ref);
+        auto iter = maps.find(arity);
+        assert(iter != maps.end() && "Attempting to unpack non-existing record");
+
+        return (iter->second).unpack(ref);
+    }
+
+    /**
+     * A function obtaining a pointer to the tuple addressed by the given reference.
+     */
+    const RamDomain* unpack(RamDomain ref, size_t arity) const {
+        auto iter = maps.find(arity);
+        assert(iter != maps.end() && "Attempting to unpack non-existing record");
+
+        return (iter->second).unpack(ref);
     }
 
     /**
@@ -133,8 +168,12 @@ public:
      * Determines whether the given reference is the nil reference encoding
      * the absence of any nested record.
      */
-    bool isNil(RamDomain ref) {
-        return ref == 0;
+    bool isNil(RamDomain ref) const {
+        return ref == getNil();
+    }
+
+    static constexpr RamDomain getNil() {
+        return 0;
     }
 
 private:

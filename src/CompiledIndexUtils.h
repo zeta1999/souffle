@@ -102,15 +102,15 @@ struct comparator<First, Rest...> {
 template <>
 struct comparator<> {
     template <typename T>
-    int operator()(const T& a, const T& b) const {
+    int operator()(const T&, const T&) const {
         return 0;
     }
     template <typename T>
-    bool less(const T& a, const T& b) const {
+    bool less(const T&, const T&) const {
         return false;
     }
     template <typename T>
-    bool equal(const T& a, const T& b) const {
+    bool equal(const T&, const T&) const {
         return true;
     }
 };
@@ -191,7 +191,7 @@ struct index {
     static constexpr size_t size = sizeof...(Columns);
 
     // enables instances of this class to be printed (for printing relation-structure descriptions)
-    friend std::ostream& operator<<(std::ostream& out, const index& index) {
+    friend std::ostream& operator<<(std::ostream& out, const index&) {
         return out << "<" << index_utils::print<Columns...>() << ">";
     }
 };

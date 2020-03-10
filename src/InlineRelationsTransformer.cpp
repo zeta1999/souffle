@@ -14,15 +14,17 @@
  *
  ***********************************************************************/
 
+#include "AggregateOp.h"
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
@@ -68,15 +70,15 @@ void normaliseInlinedHeads(AstProgram& program) {
 
     // Go through the clauses of all inlined relations
     for (AstRelation* rel : program.getRelations()) {
-        if (!rel->isInline()) {
+        if (!rel->hasQualifier(RelationQualifier::INLINE)) {
             continue;
         }
 
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             // Set up the new clause with an empty body and no arguments in the head
             auto newClause = std::make_unique<AstClause>();
             newClause->setSrcLoc(clause->getSrcLoc());
-            auto clauseHead = std::make_unique<AstAtom>(clause->getHead()->getName());
+            auto clauseHead = std::make_unique<AstAtom>(clause->getHead()->getQualifiedName());
 
             // Add in everything in the original body
             for (AstLiteral* lit : clause->getBodyLiterals()) {
@@ -104,7 +106,7 @@ void normaliseInlinedHeads(AstProgram& program) {
             newClause->setHead(std::move(clauseHead));
 
             // Replace the old clause with this one
-            rel->addClause(std::move(newClause));
+            program.addClause(std::move(newClause));
             program.removeClause(clause);
         }
     }
@@ -115,10 +117,10 @@ void normaliseInlinedHeads(AstProgram& program) {
  */
 void nameInlinedUnderscores(AstProgram& program) {
     struct M : public AstNodeMapper {
-        const std::set<AstRelationIdentifier> inlinedRelations;
+        const std::set<AstQualifiedName> inlinedRelations;
         bool replaceUnderscores;
 
-        M(std::set<AstRelationIdentifier> inlinedRelations, bool replaceUnderscores)
+        M(std::set<AstQualifiedName> inlinedRelations, bool replaceUnderscores)
                 : inlinedRelations(std::move(inlinedRelations)), replaceUnderscores(replaceUnderscores) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
@@ -127,7 +129,7 @@ void nameInlinedUnderscores(AstProgram& program) {
             if (!replaceUnderscores) {
                 // Check if we should start replacing underscores for this node's subnodes
                 if (auto* atom = dynamic_cast<AstAtom*>(node.get())) {
-                    if (inlinedRelations.find(atom->getName()) != inlinedRelations.end()) {
+                    if (inlinedRelations.find(atom->getQualifiedName()) != inlinedRelations.end()) {
                         // Atom associated with an inlined relation, so replace the underscores
                         // in all of its subnodes with named variables.
                         M replace(inlinedRelations, true);
@@ -150,10 +152,10 @@ void nameInlinedUnderscores(AstProgram& program) {
     };
 
     // Store the names of all relations to be inlined
-    std::set<AstRelationIdentifier> inlinedRelations;
+    std::set<AstQualifiedName> inlinedRelations;
     for (AstRelation* rel : program.getRelations()) {
-        if (rel->isInline()) {
-            inlinedRelations.insert(rel->getName());
+        if (rel->hasQualifier(RelationQualifier::INLINE)) {
+            inlinedRelations.insert(rel->getQualifiedName());
         }
     }
 
@@ -169,8 +171,8 @@ bool containsInlinedAtom(const AstProgram& program, const AstClause& clause) {
     bool foundInlinedAtom = false;
 
     visitDepthFirst(clause, [&](const AstAtom& atom) {
-        AstRelation* rel = program.getRelation(atom.getName());
-        if (rel->isInline()) {
+        AstRelation* rel = getRelation(program, atom.getQualifiedName());
+        if (rel->hasQualifier(RelationQualifier::INLINE)) {
             foundInlinedAtom = true;
         }
     });
@@ -293,7 +295,7 @@ std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inline
                 std::stringstream newName;
                 newName << "<inlined_" << var->getName() << "_" << varnum << ">";
                 newVar->setName(newName.str());
-                return std::move(newVar);
+                return newVar;
             }
             node->apply(*this);
             return node;
@@ -417,7 +419,7 @@ std::vector<std::vector<AstLiteral*>> formNegatedLiterals(AstProgram& program, A
     std::vector<std::vector<AstBinaryConstraint*>> addedConstraints;
 
     // Go through every possible clause associated with the given atom
-    for (AstClause* inClause : program.getRelation(atom->getName())->getClauses()) {
+    for (AstClause* inClause : getClauses(program, *getRelation(program, atom->getQualifiedName()))) {
         // Form the replacement clause by inlining based on the current clause
         std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inlineResult =
                 inlineBodyLiterals(atom, inClause);
@@ -478,7 +480,7 @@ void renameVariables(AstArgument* arg) {
                 std::stringstream newName;
                 newName << var->getName() << "-v" << varnum;
                 newVar->setName(newName.str());
-                return std::move(newVar);
+                return newVar;
             }
             node->apply(*this);
             return node;
@@ -559,7 +561,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // Literal can be inlined!
                     changed = true;
 
-                    AstAggregator::Op op = aggr->getOperator();
+                    AggregateOp op = aggr->getOperator();
 
                     // Create an aggregator (with the same operation) for each possible body
                     std::vector<AstAggregator*> aggrVersions;
@@ -587,16 +589,16 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     }
 
                     // Create the actual overall aggregator that ties the replacement aggregators together.
-                    if (op == AstAggregator::min) {
+                    if (op == AggregateOp::min) {
                         // min x : { a(x) }. <=> min ( min x : { a1(x) }, min x : { a2(x) }, ... )
                         versions.push_back(combineAggregators(aggrVersions, FunctorOp::MIN));
-                    } else if (op == AstAggregator::max) {
+                    } else if (op == AggregateOp::max) {
                         // max x : { a(x) }. <=> max ( max x : { a1(x) }, max x : { a2(x) }, ... )
                         versions.push_back(combineAggregators(aggrVersions, FunctorOp::MAX));
-                    } else if (op == AstAggregator::count) {
+                    } else if (op == AggregateOp::count) {
                         // count : { a(x) }. <=> sum ( count : { a1(x) }, count : { a2(x) }, ... )
                         versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
-                    } else if (op == AstAggregator::sum) {
+                    } else if (op == AggregateOp::sum) {
                         // sum x : { a(x) }. <=> sum ( sum x : { a1(x) }, sum x : { a2(x) }, ... )
                         versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
                     } else {
@@ -610,41 +612,42 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                 }
             }
         }
-    } else if (dynamic_cast<const AstFunctor*>(arg) != nullptr) {
-        if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
-            for (size_t i = 0; i < functor->getArity(); i++) {
-                // TODO (azreika): use unique pointers
-                // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions =
-                        getInlinedArgument(program, functor->getArg(i));
-                if (argumentVersions.isValid()) {
-                    changed = true;
-                    for (AstArgument* newArgVersion : argumentVersions.getVector()) {
-                        // same functor but with new argument version
-                        AstIntrinsicFunctor* newFunctor = functor->clone();
-                        newFunctor->setArg(i, std::unique_ptr<AstArgument>(newArgVersion));
+    } else if (const auto* functor = dynamic_cast<const AstFunctor*>(arg)) {
+        size_t i = 0;
+        for (auto funArg : functor->getArguments()) {
+            // TODO (azreika): use unique pointers
+            // try inlining each argument from left to right
+            NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, funArg);
+            if (argumentVersions.isValid()) {
+                changed = true;
+                for (AstArgument* newArgVersion : argumentVersions.getVector()) {
+                    // same functor but with new argument version
+                    std::vector<std::unique_ptr<AstArgument>> argsCopy;
+                    size_t j = 0;
+                    for (auto& functorArg : functor->getArguments()) {
+                        if (j == i) {
+                            argsCopy.emplace_back(newArgVersion);
+                        } else {
+                            argsCopy.emplace_back(functorArg->clone());
+                        }
+                        ++j;
+                    }
+                    if (const auto* intrFunc = dynamic_cast<const AstIntrinsicFunctor*>(arg)) {
+                        auto* newFunctor =
+                                new AstIntrinsicFunctor(intrFunc->getFunction(), std::move(argsCopy));
+                        newFunctor->setSrcLoc(functor->getSrcLoc());
+                        versions.push_back(newFunctor);
+                    } else if (const auto* userFunc = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
+                        auto* newFunctor =
+                                new AstUserDefinedFunctor(userFunc->getName(), std::move(argsCopy));
+                        newFunctor->setSrcLoc(userFunc->getSrcLoc());
                         versions.push_back(newFunctor);
                     }
-                    // only one step at a time
-                    break;
                 }
+                // only one step at a time
+                break;
             }
-        } else if (const auto* udf = dynamic_cast<const AstUserDefinedFunctor*>(arg)) {
-            for (size_t i = 0; i < udf->getArity(); i++) {
-                // try inlining each argument from left to right
-                NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, udf->getArg(i));
-                if (argumentVersions.isValid()) {
-                    changed = true;
-                    for (AstArgument* newArgVersion : argumentVersions.getVector()) {
-                        // same functor but with new argument version
-                        AstUserDefinedFunctor* newFunctor = udf->clone();
-                        newFunctor->setArg(i, std::unique_ptr<AstArgument>(newArgVersion));
-                        versions.push_back(newFunctor);
-                    }
-                    // only one step at a time
-                    break;
-                }
-            }
+            ++i;
         }
     } else if (const auto* cast = dynamic_cast<const AstTypeCast*>(arg)) {
         NullableVector<AstArgument*> argumentVersions = getInlinedArgument(program, cast->getValue());
@@ -667,9 +670,10 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     auto* newRecordArg = new AstRecordInit();
                     for (size_t j = 0; j < recordArguments.size(); j++) {
                         if (i == j) {
-                            newRecordArg->add(std::unique_ptr<AstArgument>(newArgumentVersion));
+                            newRecordArg->addArgument(std::unique_ptr<AstArgument>(newArgumentVersion));
                         } else {
-                            newRecordArg->add(std::unique_ptr<AstArgument>(recordArguments[j]->clone()));
+                            newRecordArg->addArgument(
+                                    std::unique_ptr<AstArgument>(recordArguments[j]->clone()));
                         }
                     }
                     versions.push_back(newRecordArg);
@@ -713,8 +717,16 @@ NullableVector<AstAtom*> getInlinedAtom(AstProgram& program, AstAtom& atom) {
 
             // Create a new atom per new version of the argument
             for (AstArgument* newArgument : argumentVersions.getVector()) {
-                AstAtom* newAtom = atom.clone();
-                newAtom->setArgument(i, std::unique_ptr<AstArgument>(newArgument));
+                auto args = atom.getArguments();
+                std::vector<std::unique_ptr<AstArgument>> newArgs;
+                for (size_t j = 0; j < args.size(); j++) {
+                    if (j == i) {
+                        newArgs.emplace_back(newArgument);
+                    } else {
+                        newArgs.emplace_back(args[j]->clone());
+                    }
+                }
+                auto* newAtom = new AstAtom(atom.getQualifiedName(), std::move(newArgs), atom.getSrcLoc());
                 versions.push_back(newAtom);
             }
         }
@@ -753,16 +765,16 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
 
     if (auto* atom = dynamic_cast<AstAtom*>(lit)) {
         // Check if this atom is meant to be inlined
-        AstRelation* rel = program.getRelation(atom->getName());
+        AstRelation* rel = getRelation(program, atom->getQualifiedName());
 
-        if (rel->isInline()) {
+        if (rel->hasQualifier(RelationQualifier::INLINE)) {
             // We found an atom in the clause that needs to be inlined!
             // The clause needs to be replaced
             inlined = true;
 
             // N new clauses should be formed, where N is the number of clauses
             // associated with the inlined relation
-            for (AstClause* inClause : rel->getClauses()) {
+            for (AstClause* inClause : getClauses(program, *rel)) {
                 // Form the replacement clause
                 std::pair<NullableVector<AstLiteral*>, std::vector<AstBinaryConstraint*>> inlineResult =
                         inlineBodyLiterals(atom, inClause);
@@ -795,7 +807,7 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
                 }
             }
         }
-    } else if (auto* neg = dynamic_cast<AstNegation*>(lit)) {
+    } else if (auto neg = dynamic_cast<AstNegation*>(lit)) {
         // For negations, check the corresponding atom
         AstAtom* atom = neg->getAtom();
         NullableVector<std::vector<AstLiteral*>> atomVersions = getInlinedLiteral(program, atom);
@@ -809,7 +821,8 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
                 std::vector<AstLiteral*> trueBody;
                 // TODO: change this to AstBoolean
                 trueBody.push_back(new AstBinaryConstraint(BinaryConstraintOp::EQ,
-                        std::make_unique<AstNumberConstant>(1), std::make_unique<AstNumberConstant>(1)));
+                        std::make_unique<AstNumericConstant>(std::string("1")),
+                        std::make_unique<AstNumericConstant>(std::string("1"))));
                 addedBodyLiterals.push_back(trueBody);
             } else {
                 // Suppose an atom a(x) is inlined and has the following rules:
@@ -823,9 +836,11 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
                 addedBodyLiterals = formNegatedLiterals(program, atom);
             }
         }
-        for (const auto& curVec : atomVersions.getVector()) {
-            for (auto* cur : curVec) {
-                delete cur;
+        if (atomVersions.isValid()) {
+            for (const auto& curVec : atomVersions.getVector()) {
+                for (auto* cur : curVec) {
+                    delete cur;
+                }
             }
         }
     } else if (auto* constraint = dynamic_cast<AstBinaryConstraint*>(lit)) {
@@ -927,7 +942,7 @@ std::vector<AstClause*> getInlinedClause(AstProgram& program, const AstClause& c
                 std::vector<std::vector<AstLiteral*>> bodyVersions = litVersions.getVector();
 
                 // Create the base clause with the current literal removed
-                auto baseClause = std::unique_ptr<AstClause>(clause.cloneHead());
+                auto baseClause = std::unique_ptr<AstClause>(cloneHead(&clause));
                 for (AstLiteral* oldLit : bodyLiterals) {
                     if (currLit != oldLit) {
                         baseClause->addToBody(std::unique_ptr<AstLiteral>(oldLit->clone()));
@@ -987,12 +1002,12 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
         // Go through each relation in the program and check if we need to inline any of its clauses
         for (AstRelation* rel : program.getRelations()) {
             // Skip if the relation is going to be inlined
-            if (rel->isInline()) {
+            if (rel->hasQualifier(RelationQualifier::INLINE)) {
                 continue;
             }
 
             // Go through the relation's clauses and try inlining them
-            for (AstClause* clause : rel->getClauses()) {
+            for (AstClause* clause : getClauses(program, *rel)) {
                 if (containsInlinedAtom(program, *clause)) {
                     // Generate the inlined versions of this clause - the clause will be replaced by these
                     std::vector<AstClause*> newClauses = getInlinedClause(program, *clause);
@@ -1000,7 +1015,7 @@ bool InlineRelationsTransformer::transform(AstTranslationUnit& translationUnit) 
                     // Replace the clause with these equivalent versions
                     clausesToDelete.insert(clause);
                     for (AstClause* replacementClause : newClauses) {
-                        program.appendClause(std::unique_ptr<AstClause>(replacementClause));
+                        program.addClause(std::unique_ptr<AstClause>(replacementClause));
                     }
 
                     // We've changed the program this iteration

@@ -40,8 +40,8 @@ public:
      * @param atom the atom to report on
      * @return number of auxiliary attributes
      */
-    const size_t getArity(const AstAtom* atom) const {
-        return computeArity(program->getRelation(atom->getName()));
+    size_t getArity(const AstAtom* atom) const {
+        return computeArity(getRelation(*program, atom->getQualifiedName()));
     }
 
     /**
@@ -49,7 +49,7 @@ public:
      * @param relation the relation to report on
      * @return number of auxiliary attributes
      */
-    const size_t getArity(const AstRelation* relation) const {
+    size_t getArity(const AstRelation* relation) const {
         return computeArity(relation);
     }
 
@@ -59,9 +59,9 @@ private:
      * @param relation the relation to report on
      * @return number of auxiliary attributes
      */
-    const size_t computeArity(const AstRelation* relation) const;
+    size_t computeArity(const AstRelation* relation) const;
 
-    const AstProgram* program;
+    const AstProgram* program = nullptr;
 };
 
 }  // end of namespace souffle

@@ -19,7 +19,7 @@
 
 #include "AstAbstract.h"
 #include "AstNode.h"
-#include "AstRelationIdentifier.h"
+#include "AstQualifiedName.h"
 #include "BinaryConstraintOps.h"
 #include "Util.h"
 
@@ -47,10 +47,15 @@ class AstAtom;
  */
 class AstAtom : public AstLiteral {
 public:
-    AstAtom(AstRelationIdentifier name = AstRelationIdentifier()) : name(std::move(name)) {}
+    AstAtom(AstQualifiedName name = AstQualifiedName()) : name(std::move(name)) {}
+
+    AstAtom(AstQualifiedName name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
+            : name(std::move(name)), arguments(std::move(args)) {
+        setSrcLoc(srcLoc);
+    }
 
     /** Return the name of this atom */
-    const AstRelationIdentifier& getName() const {
+    const AstQualifiedName& getQualifiedName() const {
         return name;
     }
 
@@ -60,13 +65,8 @@ public:
     }
 
     /** Set atom name */
-    void setName(const AstRelationIdentifier& n) {
+    void setQualifiedName(const AstQualifiedName& n) {
         name = n;
-    }
-
-    /** Returns this class as the referenced atom */
-    const AstAtom* getAtom() const override {
-        return this;
     }
 
     /** Add argument to the atom */
@@ -74,28 +74,13 @@ public:
         arguments.push_back(std::move(arg));
     }
 
-    /** Return the i-th argument of the atom */
-    AstArgument* getArgument(size_t idx) const {
-        return arguments[idx].get();
-    }
-
-    /** Replace the argument at the given index with the given argument */
-    void setArgument(size_t idx, std::unique_ptr<AstArgument> newArg) {
-        arguments[idx].swap(newArg);
-    }
-
     /** Provides access to the list of arguments of this atom */
     std::vector<AstArgument*> getArguments() const {
         return toPtrVector(arguments);
     }
 
-    /** Return the number of arguments */
-    size_t argSize() const {
-        return arguments.size();
-    }
-
     void print(std::ostream& os) const override {
-        os << getName() << "(";
+        os << getQualifiedName() << "(";
 
         for (size_t i = 0; i < arguments.size(); ++i) {
             if (i != 0) {
@@ -141,7 +126,7 @@ protected:
     }
 
     /** Name of the atom */
-    AstRelationIdentifier name;
+    AstQualifiedName name;
 
     /** Arguments of the atom */
     std::vector<std::unique_ptr<AstArgument>> arguments;
@@ -156,34 +141,26 @@ public:
     AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     /** Returns the nested atom as the referenced atom */
-    const AstAtom* getAtom() const override {
+    // TODO (azreika): change to const AstAtom*
+    AstAtom* getAtom() const {
         return atom.get();
     }
 
-    /** Return the negated atom */
-    AstAtom* getAtom() {
-        return atom.get();
-    }
-
-    /** Output to a given stream */
     void print(std::ostream& os) const override {
         os << "!";
         atom->print(os);
     }
 
-    /** Creates a clone of this AST sub-structure */
     AstNegation* clone() const override {
         auto* res = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
-    /** Mutates this node */
     void apply(const AstNodeMapper& map) override {
         atom = map(std::move(atom));
     }
 
-    /** Obtains a list of all embedded child nodes */
     std::vector<const AstNode*> getChildNodes() const override {
         return {atom.get()};
     }
@@ -210,12 +187,7 @@ public:
     AstProvenanceNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
 
     /** Returns the nested atom as the referenced atom */
-    const AstAtom* getAtom() const override {
-        return atom.get();
-    }
-
-    /** Return the negated atom */
-    AstAtom* getAtom() {
+    const AstAtom* getAtom() const {
         return atom.get();
     }
 
@@ -254,11 +226,6 @@ protected:
  */
 class AstConstraint : public AstLiteral {
 public:
-    const AstAtom* getAtom() const override {
-        // This kind of literal has no nested atom
-        return nullptr;
-    }
-
     /** Negates the constraint */
     virtual void negate() = 0;
 

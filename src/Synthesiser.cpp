@@ -15,10 +15,11 @@
  ***********************************************************************/
 
 #include "Synthesiser.h"
+#include "AggregateOp.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
-#include "IODirectives.h"
+#include "RWOperation.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
 #include "RamIndexAnalysis.h"
@@ -30,10 +31,11 @@
 #include "RamTypes.h"
 #include "RamUtils.h"
 #include "RamVisitor.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
 #include "Util.h"
+#include "json11.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
@@ -46,6 +48,8 @@
 #include <vector>
 
 namespace souffle {
+
+using json11::Json;
 
 /** Lookup frequency counter */
 unsigned Synthesiser::lookupFreqIdx(const std::string& txt) {
@@ -197,59 +201,61 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- relation statements --
 
-        void visitLoad(const RamLoad& load, std::ostream& out) override {
+        void visitIO(const RamIO& io, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
+
+            // print directives as C++ initializers
+            auto printDirectives = [&](const std::map<std::string, std::string>& registry) {
+                auto cur = registry.begin();
+                if (cur == registry.end()) {
+                    return;
+                }
+                out << "{{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
+                ++cur;
+                for (; cur != registry.end(); ++cur) {
+                    out << ",{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
+                }
+                out << '}';
+            };
+
+            const auto& directives = io.getDirectives();
+            const std::string& op = io.get("operation");
             out << "if (performIO) {\n";
 
-            std::vector<RamTypeAttribute> symbolMask;
-            for (auto& cur : load.getRelation().getAttributeTypes()) {
-                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-            }
             // get some table details
-            for (IODirectives ioDirectives : load.getIODirectives()) {
+            if (op == "input") {
                 out << "try {";
                 out << "std::map<std::string, std::string> directiveMap(";
-                out << ioDirectives << ");\n";
+                printDirectives(directives);
+                out << ");\n";
                 out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
                 out << "directiveMap[\"filename\"].front() != '/') {";
                 out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
-                out << "IODirectives ioDirectives(directiveMap);\n";
+                out << "RWOperation rwOperation(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
-                out << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
-                out << ", symTable, ioDirectives";
-                out << ", " << load.getRelation().getAuxiliaryArity();
-                out << ")->readAll(*" << synthesiser.getRelationName(load.getRelation());
+                out << "rwOperation, symTable, recordTable";
+                out << ")->readAll(*" << synthesiser.getRelationName(io.getRelation());
                 out << ");\n";
-                out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+                out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() "
+                       "<< "
                        "'\\n';}\n";
-            }
-            out << "}\n";
-            PRINT_END_COMMENT(out);
-        }
-
-        void visitStore(const RamStore& store, std::ostream& out) override {
-            PRINT_BEGIN_COMMENT(out);
-            out << "if (performIO) {\n";
-
-            std::vector<RamTypeAttribute> symbolMask;
-            for (auto& cur : store.getRelation().getAttributeTypes()) {
-                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-            }
-            for (IODirectives ioDirectives : store.getIODirectives()) {
+            } else if (op == "output" || op == "printsize") {
                 out << "try {";
-                out << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
+                out << "std::map<std::string, std::string> directiveMap(";
+                printDirectives(directives);
+                out << ");\n";
                 out << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
                 out << "directiveMap[\"filename\"].front() != '/') {";
                 out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
-                out << "IODirectives ioDirectives(directiveMap);\n";
+                out << "RWOperation rwOperation(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
-                out << ", symTable, ioDirectives";
-                out << ", " << store.getRelation().getAuxiliaryArity();
-                out << ")->writeAll(*" << synthesiser.getRelationName(store.getRelation()) << ");\n";
+                out << "rwOperation, symTable, recordTable";
+                out << ")->writeAll(*" << synthesiser.getRelationName(io.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+            } else {
+                assert("Wrong i/o operation");
             }
             out << "}\n";
             PRINT_END_COMMENT(out);
@@ -853,7 +859,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = isa->getSearchSignature(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == souffle::COUNT && keys == 0 &&
+            if (aggregate.getFunction() == AggregateOp::count && keys == 0 &&
                     isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -866,16 +872,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case souffle::MIN:
+                case AggregateOp::min:
                     init = "MAX_RAM_DOMAIN";
                     break;
-                case souffle::MAX:
+                case AggregateOp::max:
                     init = "MIN_RAM_DOMAIN";
                     break;
-                case souffle::COUNT:
+                case AggregateOp::count:
                     init = "0";
                     break;
-                case souffle::SUM:
+                case AggregateOp::sum:
                     init = "0";
                     break;
                 default:
@@ -920,21 +926,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << ") {\n";
 
             switch (aggregate.getFunction()) {
-                case souffle::MIN:
+                case AggregateOp::min:
                     out << "res" << identifier << " = std::min (res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
-                case souffle::MAX:
+                case AggregateOp::max:
                     out << "res" << identifier << " = std::max (res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
-                case souffle::COUNT:
+                case AggregateOp::count:
                     // count is easy
                     out << "++res" << identifier << "\n;";
                     break;
-                case souffle::SUM:
+                case AggregateOp::sum:
                     out << "res" << identifier << " += ";
                     visit(aggregate.getExpression(), out);
                     out << ";\n";
@@ -951,7 +957,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // write result into environment tuple
             out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
-            if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
+            if (aggregate.getFunction() == AggregateOp::min || aggregate.getFunction() == AggregateOp::max) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
                 visitTupleOperation(aggregate, out);
@@ -975,7 +981,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == souffle::COUNT && isRamTrue(&aggregate.getCondition())) {
+            if (aggregate.getFunction() == AggregateOp::count && isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -987,16 +993,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case souffle::MIN:
+                case AggregateOp::min:
                     init = "MAX_RAM_DOMAIN";
                     break;
-                case souffle::MAX:
+                case AggregateOp::max:
                     init = "MIN_RAM_DOMAIN";
                     break;
-                case souffle::COUNT:
+                case AggregateOp::count:
                     init = "0";
                     break;
-                case souffle::SUM:
+                case AggregateOp::sum:
                     init = "0";
                     break;
                 default:
@@ -1015,20 +1021,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // pick function
             switch (aggregate.getFunction()) {
-                case souffle::MIN:
+                case AggregateOp::min:
                     out << "res" << identifier << " = std::min(res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
-                case souffle::MAX:
+                case AggregateOp::max:
                     out << "res" << identifier << " = std::max(res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
-                case souffle::COUNT:
+                case AggregateOp::count:
                     out << "++res" << identifier << "\n;";
                     break;
-                case souffle::SUM:
+                case AggregateOp::sum:
                     out << "res" << identifier << " += ";
                     visit(aggregate.getExpression(), out);
                     out << ";\n";
@@ -1045,7 +1051,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // write result into environment tuple
             out << "env" << identifier << "[0] = res" << identifier << ";\n";
 
-            if (aggregate.getFunction() == souffle::MIN || aggregate.getFunction() == souffle::MAX) {
+            if (aggregate.getFunction() == AggregateOp::min || aggregate.getFunction() == AggregateOp::max) {
                 // check whether there exists a min/max first before next loop
                 out << "if(res" << identifier << " != " << init << "){\n";
                 visitTupleOperation(aggregate, out);
@@ -1527,6 +1533,35 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
+                // TODO: clamp/limit RHS to prevent UB?
+                case FunctorOp::UBSHIFT_L:
+                case FunctorOp::BSHIFT_L: {
+                    out << "(";
+                    visit(args[0], out);
+                    out << ") << (";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK)";
+                    break;
+                }
+                case FunctorOp::UBSHIFT_R:
+                case FunctorOp::BSHIFT_R:
+                case FunctorOp::UBSHIFT_R_UNSIGNED: {
+                    out << "(";
+                    visit(args[0], out);
+                    out << ") >> (";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK)";
+                    break;
+                }
+                case FunctorOp::BSHIFT_R_UNSIGNED: {
+                    static_assert(std::is_signed<RamDomain>::value);
+                    out << "ramBitCast<RamSigned>(ramBitCast<RamUnsigned>(";
+                    visit(args[0], out);
+                    out << ") >> ramBitCast<RamUnsigned>(";
+                    visit(args[1], out);
+                    out << " & RAM_BIT_SHIFT_MASK))";
+                    break;
+                }
                 case FunctorOp::ULAND:
                 case FunctorOp::LAND: {
                     out << "(";
@@ -1607,31 +1642,46 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {
             const std::string& name = op.getName();
-            const std::string& type = op.getType();
-            size_t arity = type.length() - 1;
+
+            const std::vector<TypeAttribute>& argTypes = op.getArgsTypes();
             auto args = op.getArguments();
 
-            if (type[arity] == 'S') {
+            if (op.getReturnType() == TypeAttribute::Symbol) {
                 out << "symTable.lookup(";
             }
             out << name << "(";
 
-            for (size_t i = 0; i < arity; i++) {
+            for (size_t i = 0; i < args.size(); i++) {
                 if (i > 0) {
                     out << ",";
                 }
-                if (type[i] == 'N') {
-                    out << "((RamDomain)";
-                    visit(args[i], out);
-                    out << ")";
-                } else {
-                    out << "symTable.resolve((RamDomain)";
-                    visit(args[i], out);
-                    out << ").c_str()";
+                switch (argTypes[i]) {
+                    case TypeAttribute::Signed:
+                        out << "((RamDomain)";
+                        visit(args[i], out);
+                        out << ")";
+                        break;
+                    case TypeAttribute::Unsigned:
+                        out << "((RamUnsigned)";
+                        visit(args[i], out);
+                        out << ")";
+                        break;
+                    case TypeAttribute::Float:
+                        out << "((RamFloat)";
+                        visit(args[i], out);
+                        out << ")";
+                        break;
+                    case TypeAttribute::Symbol:
+                        out << "symTable.resolve((RamDomain)";
+                        visit(args[i], out);
+                        out << ").c_str()";
+                        break;
+                    case TypeAttribute::Record:
+                        assert(false);
                 }
             }
             out << ")";
-            if (type[arity] == 'S') {
+            if (op.getReturnType() == TypeAttribute::Symbol) {
                 out << ")";
             }
         }
@@ -1670,7 +1720,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- safety net --
 
-        void visitUndefValue(const RamUndefValue& undef, std::ostream& /*out*/) override {
+        void visitUndefValue(const RamUndefValue&, std::ostream& /*out*/) override {
             assert(false && "Compilation error");
         }
 
@@ -1713,30 +1763,57 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
     os << "\n";
     // produce external definitions for user-defined functors
-    std::map<std::string, std::string> functors;
+    std::map<std::string, std::pair<TypeAttribute, std::vector<TypeAttribute>>> functors;
     visitDepthFirst(prog, [&](const RamUserDefinedOperator& op) {
         if (functors.find(op.getName()) == functors.end()) {
-            functors.insert(std::make_pair(op.getName(), op.getType()));
+            functors[op.getName()] = std::make_pair(op.getReturnType(), op.getArgsTypes());
         }
         withSharedLibrary = true;
     });
     os << "extern \"C\" {\n";
     for (const auto& f : functors) {
-        size_t arity = f.second.length() - 1;
-        const std::string& type = f.second;
+        //        size_t arity = f.second.length() - 1;
         const std::string& name = f.first;
-        if (type[arity] == 'N') {
-            os << "souffle::RamDomain ";
-        } else if (type[arity] == 'S') {
-            os << "const char * ";
+
+        const auto& functorTypes = f.second;
+        const auto& returnType = functorTypes.first;
+        const auto& argsTypes = functorTypes.second;
+
+        switch (returnType) {
+            case TypeAttribute::Signed:
+                os << "souffle::RamSigned ";
+                break;
+            case TypeAttribute::Unsigned:
+                os << "souffle::RamUnsigned ";
+                break;
+            case TypeAttribute::Float:
+                os << "souffle::RamFloat ";
+                break;
+            case TypeAttribute::Symbol:
+                os << "const char * ";
+                break;
+            case TypeAttribute::Record:
+                abort();
         }
+
         os << name << "(";
         std::vector<std::string> args;
-        for (size_t i = 0; i < arity; i++) {
-            if (type[i] == 'N') {
-                args.push_back("souffle::RamDomain");
-            } else {
-                args.push_back("const char *");
+        for (const TypeAttribute typeAttribute : argsTypes) {
+            switch (typeAttribute) {
+                case TypeAttribute::Signed:
+                    args.push_back("souffle::RamDomain");
+                    break;
+                case TypeAttribute::Unsigned:
+                    args.push_back("souffle::RamUnsigned");
+                    break;
+                case TypeAttribute::Float:
+                    args.push_back("souffle::RamFloat");
+                    break;
+                case TypeAttribute::Symbol:
+                    args.push_back("const char *");
+                    break;
+                case TypeAttribute::Record:
+                    abort();
             }
         }
         os << join(args, ",");
@@ -1746,6 +1823,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "\n";
     os << "namespace souffle {\n";
     os << "using namespace ram;\n";
+    os << "static const RamDomain RAM_BIT_SHIFT_MASK = RAM_DOMAIN_SIZE - 1;\n";
 
     // synthesise data-structures for relations
     for (auto rel : prog.getRelations()) {
@@ -1820,7 +1898,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
-        visitDepthFirst(prog.getMain(), [&](const RamStatement& node) { numFreq++; });
+        visitDepthFirst(prog.getMain(), [&](const RamStatement&) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
         for (auto rel : prog.getRelations()) {
@@ -1837,10 +1915,22 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     int relCtr = 0;
     std::set<std::string> storeRelations;
     std::set<std::string> loadRelations;
-    visitDepthFirst(prog.getMain(),
-            [&](const RamStore& store) { storeRelations.insert(store.getRelation().getName()); });
-    visitDepthFirst(
-            prog.getMain(), [&](const RamLoad& load) { loadRelations.insert(load.getRelation().getName()); });
+    std::set<const RamIO*> loadIOs;
+    std::set<const RamIO*> storeIOs;
+
+    // collect load/store operations/relations
+    visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
+        auto op = io.get("operation");
+        if (op == "input") {
+            loadRelations.insert(io.getRelation().getName());
+            loadIOs.insert(&io);
+        } else if (op == "printsize" || op == "output") {
+            storeRelations.insert(io.getRelation().getName());
+            storeIOs.insert(&io);
+        } else {
+            assert("wrong I/O operation");
+        }
+    });
 
     for (auto rel : prog.getRelations()) {
         // get some table details
@@ -1849,8 +1939,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         const std::string& datalogName = rel->getName();
         const std::string& cppName = getRelationName(*rel);
 
-        // TODO(b-scholz): we need a qualifier for info relations used by the provenance system
-        // this would permit a more efficient storage of relations (no indexes!!)
         bool isProvInfo = rel->getRepresentation() == RelationRepresentation::INFO;
         auto relationType = SynthesiserRelation::getSynthesiserRelation(
                 *rel, idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
@@ -1938,7 +2026,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "SignalHandler::instance()->enableLogging();\n";
     }
     bool hasIncrement = false;
-    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement& inc) { hasIncrement = true; });
+    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement&) { hasIncrement = true; });
     // initialize counter
     if (hasIncrement) {
         os << "// -- initialize counter --\n";
@@ -2013,29 +2101,37 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "public:\n";
     os << "void printAll(std::string outputDirectory = \".\") override {\n";
 
-    visitDepthFirst(prog.getMain(), [&](const RamStatement& node) {
-        if (auto store = dynamic_cast<const RamStore*>(&node)) {
-            std::vector<RamTypeAttribute> symbolMask;
-            for (auto& cur : store->getRelation().getAttributeTypes()) {
-                symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-            }
-            for (IODirectives ioDirectives : store->getIODirectives()) {
-                os << "try {";
-                os << "std::map<std::string, std::string> directiveMap(" << ioDirectives << ");\n";
-                os << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-                os << "directiveMap[\"filename\"].front() != '/') {";
-                os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
-                os << "}\n";
-                os << "IODirectives ioDirectives(directiveMap);\n";
-                os << "IOSystem::getInstance().getWriter(";
-                os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
-                os << ", symTable, ioDirectives, " << store->getRelation().getAuxiliaryArity();
-                os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
-
-                os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
-            }
+    // print directives as C++ initializers
+    auto printDirectives = [&](const std::map<std::string, std::string>& registry) {
+        auto cur = registry.begin();
+        if (cur == registry.end()) {
+            return;
         }
-    });
+        os << "{{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
+        ++cur;
+        for (; cur != registry.end(); ++cur) {
+            os << ",{\"" << cur->first << "\",\"" << escape(cur->second) << "\"}";
+        }
+        os << '}';
+    };
+
+    for (auto store : storeIOs) {
+        auto const& directive = store->getDirectives();
+        os << "try {";
+        os << "std::map<std::string, std::string> directiveMap(";
+        printDirectives(directive);
+        os << ");\n";
+        os << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+        os << "directiveMap[\"filename\"].front() != '/') {";
+        os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
+        os << "}\n";
+        os << "RWOperation rwOperation(directiveMap);\n";
+        os << "IOSystem::getInstance().getWriter(";
+        os << "rwOperation, symTable, recordTable";
+        os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
+
+        os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
+    }
     os << "}\n";  // end of printAll() method
 
     // dumpFreqs method
@@ -2056,51 +2152,46 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
 
-    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) {
-        // get some table details
-        std::vector<RamTypeAttribute> symbolMask;
-        for (auto& cur : load.getRelation().getAttributeTypes()) {
-            symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-        }
-        for (IODirectives ioDirectives : load.getIODirectives()) {
-            os << "try {";
-            os << "std::map<std::string, std::string> directiveMap(";
-            os << ioDirectives << ");\n";
-            os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-            os << "directiveMap[\"filename\"].front() != '/') {";
-            os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
-            os << "}\n";
-            os << "IODirectives ioDirectives(directiveMap);\n";
-            os << "IOSystem::getInstance().getReader(";
-            os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
-            os << ", symTable, ioDirectives";
-            os << ", " << load.getRelation().getAuxiliaryArity();
-            os << ")->readAll(*" << getRelationName(load.getRelation());
-            os << ");\n";
-            os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
-                  "'\\n';}\n";
-        }
-    });
+    for (auto load : loadIOs) {
+        os << "try {";
+        os << "std::map<std::string, std::string> directiveMap(";
+        printDirectives(load->getDirectives());
+        os << ");\n";
+        os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
+        os << "directiveMap[\"filename\"].front() != '/') {";
+        os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+        os << "}\n";
+        os << "RWOperation rwOperation(directiveMap);\n";
+        os << "IOSystem::getInstance().getReader(";
+        os << "rwOperation, symTable, recordTable";
+        os << ")->readAll(*" << getRelationName(load->getRelation());
+        os << ");\n";
+        os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
+              "'\\n';}\n";
+    }
+
     os << "}\n";  // end of loadAll() method
     // issue dump methods
     auto dumpRelation = [&](const RamRelation& ramRelation) {
         const auto& relName = getRelationName(ramRelation);
         const auto& name = ramRelation.getName();
-        auto& mask = ramRelation.getAttributeTypes();
-        size_t auxiliaryArity = ramRelation.getAuxiliaryArity();
+        const auto& attributesTypes = ramRelation.getAttributeTypes();
 
-        std::vector<RamTypeAttribute> symbolMask;
-        for (auto& cur : mask) {
-            symbolMask.push_back(RamPrimitiveFromChar(cur[0]));
-        }
+        Json relJson = Json::object{{"arity", static_cast<long long>(attributesTypes.size())},
+                {"auxArity", static_cast<long long>(0)},
+                {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
+
+        Json types = Json::object{{name, relJson}};
 
         os << "try {";
-        os << "IODirectives ioDirectives;\n";
-        os << "ioDirectives.setIOType(\"stdout\");\n";
-        os << "ioDirectives.setRelationName(\"" << name << "\");\n";
+        os << "RWOperation rwOperation;\n";
+        os << "rwOperation.set(\"IO\", \"stdout\");\n";
+        os << R"(rwOperation.set("name", ")" << name << "\");\n";
+        os << "rwOperation.set(\"types\",";
+        os << "\"" << escapeJSONstring(types.dump()) << "\"";
+        os << ");\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << "std::vector<RamTypeAttribute>({" << join(symbolMask) << "})";
-        os << ", symTable, ioDirectives, " << auxiliaryArity;
+        os << "rwOperation, symTable, recordTable";
         os << ")->writeAll(*" << relName << ");\n";
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
     };
@@ -2108,13 +2199,17 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // dump inputs
     os << "public:\n";
     os << "void dumpInputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(prog.getMain(), [&](const RamLoad& load) { dumpRelation(load.getRelation()); });
+    for (auto load : loadIOs) {
+        dumpRelation(load->getRelation());
+    }
     os << "}\n";  // end of dumpInputs() method
 
     // dump outputs
     os << "public:\n";
     os << "void dumpOutputs(std::ostream& out = std::cout) override {\n";
-    visitDepthFirst(prog.getMain(), [&](const RamStore& store) { dumpRelation(store.getRelation()); });
+    for (auto store : storeIOs) {
+        dumpRelation(store->getRelation());
+    }
     os << "}\n";  // end of dumpOutputs() method
 
     os << "public:\n";

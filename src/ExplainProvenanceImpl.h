@@ -136,8 +136,7 @@ public:
 
             // check whether the current atom is a constraint
             assert(bodyRel.size() > 0 && "body of a relation should have positive length");
-            bool isConstraint = std::find(constraintList.begin(), constraintList.end(),
-                                        splitString(bodyRel, ',')[0]) != constraintList.end();
+            bool isConstraint = contains(constraintList, bodyRel);
 
             // handle negated atom names
             auto bodyRelAtomName = bodyRel;
@@ -177,7 +176,7 @@ public:
             }
 
             // for a negation, display the corresponding tuple and do not recurse
-            if (bodyRel[0] == '!') {
+            if (bodyRel[0] == '!' && bodyRel != "!=") {
                 std::stringstream joinedTuple;
                 joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple), ", ");
                 auto joinedTupleStr = joinedTuple.str();
@@ -207,7 +206,7 @@ public:
             tupleCurInd = tupleEnd;
         }
 
-        return std::move(internalNode);
+        return internalNode;
     }
 
     std::unique_ptr<TreeNode> explain(
@@ -282,10 +281,7 @@ public:
         auto headVariables = splitString(atoms[0], ',');
 
         auto isVariable = [&](std::string arg) {
-            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
-                return false;
-            }
-            return true;
+            return !(isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_");
         };
 
         // check that head variable bindings make sense, i.e. for a head like a(x, x), make sure both x are
@@ -344,10 +340,7 @@ public:
         uniqueVariables.insert(uniqueVariables.end(), headVariables.begin(), headVariables.end());
 
         auto isVariable = [&](std::string arg) {
-            if (isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_") {
-                return false;
-            }
-            return true;
+            return !(isNumber(arg.c_str()) || arg[0] == '\"' || arg == "_");
         };
 
         // get body variables
@@ -432,10 +425,10 @@ public:
         // traverse return vector and construct child nodes
         // making sure we display existent and non-existent tuples correctly
         int literalCounter = 1;
-        for (size_t returnCounter = 0; returnCounter < ret.size(); returnCounter++) {
+        for (RamDomain returnCounter : ret) {
             // check what the next contained atom is
             bool atomExists = true;
-            if (ret[returnCounter] == 0) {
+            if (returnCounter == 0) {
                 atomExists = false;
             }
 
@@ -444,8 +437,7 @@ public:
             std::string bodyRel = atomRepresentation[0];
 
             // check whether the current atom is a constraint
-            bool isConstraint =
-                    std::find(constraintList.begin(), constraintList.end(), bodyRel) != constraintList.end();
+            bool isConstraint = contains(constraintList, bodyRel);
 
             // handle negated atom names
             auto bodyRelAtomName = bodyRel;
@@ -489,7 +481,7 @@ public:
             literalCounter++;
         }
 
-        return std::move(internalNode);
+        return internalNode;
     }
 
     std::string getRule(std::string relName, size_t ruleNum) override {
@@ -549,7 +541,7 @@ public:
                 if (*rel->getAttrType(i) == 's') {
                     std::string s;
                     tuple >> s;
-                    n = symTable.lookupExisting(s.c_str());
+                    n = symTable.lookupExisting(s);
                 } else {
                     tuple >> n;
                 }
@@ -742,6 +734,8 @@ private:
             return std::make_tuple(-1, -1, std::vector<RamDomain>());
         }
 
+        // TODO (darth_tytus): update to reflect new types.
+
         // find correct tuple
         for (auto& tuple : *rel) {
             bool match = true;
@@ -786,13 +780,6 @@ private:
 
         // if no tuple exists
         return std::make_tuple(-1, -1, std::vector<RamDomain>());
-    }
-
-    void printRelationOutput(const std::vector<RamTypeAttribute>& symbolMask, const IODirectives& ioDir,
-            const Relation& rel) override {
-        WriteCoutCSVFactory()
-                .getWriter(symbolMask, prog.getSymbolTable(), ioDir, rel.getAuxiliaryArity())
-                ->writeAll(rel);
     }
 
     /*

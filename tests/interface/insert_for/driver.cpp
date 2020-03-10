@@ -58,7 +58,8 @@ int main(int argc, char** argv) {
             if (Relation* path = prog->getRelation("path")) {
                 // iterate over output relation
                 for (auto& output : *path) {
-                    std::string src, dest;
+                    std::string src;
+                    std::string dest;
 
                     // retrieve elements from tuple
                     output >> src >> dest;

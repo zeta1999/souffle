@@ -19,7 +19,8 @@
 #include "AstArgument.h"
 #include "AstTransformer.h"
 #include "AstTranslationUnit.h"
-#include "DebugReport.h"
+#include "AstUtils.h"
+#include "DebugReporter.h"
 #include "Util.h"
 #include <functional>
 #include <memory>
@@ -565,6 +566,20 @@ class PolymorphicOperatorsTransformer : public AstTransformer {
 public:
     std::string getName() const override {
         return "PolymorphicOperatorsTransformer";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+};
+
+/**
+ * Transformation that passes the type information from user functors
+ * declaration to functors instances
+ */
+class AstUserDefinedFunctorsTransformer : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "AstUserDefinedFunctorsTransformer";
     }
 
 private:

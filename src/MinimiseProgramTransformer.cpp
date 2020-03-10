@@ -20,12 +20,13 @@
 #include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
+#include "Util.h"
 #include <map>
 #include <memory>
 #include <stack>
@@ -140,21 +141,23 @@ bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, 
 
     // handle the case where one of the indices refers to the head
     if (leftIdx == 0 && rightIdx == 0) {
-        const AstAtom* leftHead = left->getHead()->getAtom();
-        const AstAtom* rightHead = right->getHead()->getAtom();
-        return leftHead->getName() == rightHead->getName();
+        const AstAtom* leftHead = left->getHead();
+        const AstAtom* rightHead = right->getHead();
+        return leftHead->getQualifiedName() == rightHead->getQualifiedName();
     } else if (leftIdx == 0 || rightIdx == 0) {
         return false;
     }
 
     // both must hence be body atoms
     int leftBodyAtomIdx = leftIdx - 1;
-    const AstAtom* leftAtom = left->getBodyLiteral(leftBodyAtomIdx)->getAtom();
+    const AstAtom* leftAtom = dynamic_cast<AstAtom*>(left->getBodyLiterals()[leftBodyAtomIdx]);
+    assert(leftAtom != nullptr && "expected atom");
 
     int rightBodyAtomIdx = rightIdx - 1;
-    const AstAtom* rightAtom = right->getBodyLiteral(rightBodyAtomIdx)->getAtom();
+    const AstAtom* rightAtom = dynamic_cast<AstAtom*>(right->getBodyLiterals()[rightBodyAtomIdx]);
+    assert(rightAtom != nullptr && "expected atom");
 
-    return leftAtom->getName() == rightAtom->getName();
+    return leftAtom->getQualifiedName() == rightAtom->getQualifiedName();
 }
 
 /**
@@ -183,7 +186,7 @@ bool isValidPermutation(
     }
 
     // perform the permutation
-    reorderedLeft->reorderAtoms(reorderedPermutation);
+    reorderedLeft.reset(reorderAtoms(reorderedLeft.get(), reorderedPermutation));
 
     // --- check if a valid variable exists corresponding to this permutation ---
 
@@ -199,19 +202,15 @@ bool isValidPermutation(
     rightAtoms.push_back(right->getHead());
 
     // check if a valid variable mapping exists
-    auto isVariable = [&](const AstArgument* arg) {
-        return dynamic_cast<const AstVariable*>(arg) != nullptr;
-    };
-
-    auto isConstant = [&](const AstArgument* arg) {
-        return dynamic_cast<const AstConstant*>(arg) != nullptr;
-    };
+    auto isVariable = [](const AstArgument* arg) { return dynamic_cast<const AstVariable*>(arg) != nullptr; };
 
     bool validMapping = true;
     for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
         // match arguments
-        std::vector<AstArgument*> leftArgs = leftAtoms[i]->getAtom()->getArguments();
-        std::vector<AstArgument*> rightArgs = rightAtoms[i]->getAtom()->getArguments();
+        assert(dynamic_cast<AstAtom*>(leftAtoms[i]) != nullptr && "expected atom");
+        assert(dynamic_cast<AstAtom*>(rightAtoms[i]) != nullptr && "expected atom");
+        std::vector<AstArgument*> leftArgs = dynamic_cast<AstAtom*>(leftAtoms[i])->getArguments();
+        std::vector<AstArgument*> rightArgs = dynamic_cast<AstAtom*>(rightAtoms[i])->getArguments();
 
         for (size_t j = 0; j < leftArgs.size(); j++) {
             AstArgument* leftArg = leftArgs[j];
@@ -231,16 +230,12 @@ bool isValidPermutation(
                     validMapping = false;
                     break;
                 }
-            } else if (isConstant(leftArg) && isConstant(rightArg)) {
-                // check if its the same constant
-                auto leftCst = dynamic_cast<AstConstant*>(leftArg)->getRamRepresentation();
-                auto rightCst = dynamic_cast<AstConstant*>(rightArg)->getRamRepresentation();
-
-                if (leftCst != rightCst) {
-                    // constants don't match, failed!
-                    validMapping = false;
-                    break;
-                }
+            } else if (castEq<AstStringConstant>(leftArg, rightArg)) {
+                validMapping = true;
+            } else if (castEq<AstNumericConstant>(leftArg, rightArg)) {
+                validMapping = true;
+            } else if (dynamic_cast<AstNilConstant*>(leftArg) != nullptr) {
+                validMapping = dynamic_cast<AstNilConstant*>(rightArg) != nullptr;
             } else {
                 // not the same type, failed!
                 validMapping = false;
@@ -341,7 +336,7 @@ bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
     for (AstRelation* rel : program.getRelations()) {
         std::vector<std::vector<AstClause*>> equivalenceClasses;
 
-        for (AstClause* clause : rel->getClauses()) {
+        for (AstClause* clause : getClauses(program, *rel)) {
             bool added = false;
 
             for (std::vector<AstClause*>& eqClass : equivalenceClasses) {
@@ -388,8 +383,8 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Find all singleton relations to consider
     std::vector<AstClause*> singletonRelationClauses;
     for (AstRelation* rel : program.getRelations()) {
-        if (!ioTypes->isIO(rel) && rel->getClauses().size() == 1) {
-            AstClause* clause = rel->getClauses()[0];
+        if (!ioTypes->isIO(rel) && getClauses(program, *rel).size() == 1) {
+            AstClause* clause = getClauses(program, *rel)[0];
             singletonRelationClauses.push_back(clause);
         }
     }
@@ -398,7 +393,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     std::set<AstClause*> redundantClauses;
 
     // Keep track of canonical relation name for each redundant clause
-    std::map<AstRelationIdentifier, AstRelationIdentifier> canonicalName;
+    std::map<AstQualifiedName, AstQualifiedName> canonicalName;
 
     // Check pairwise equivalence of each singleton relation
     for (size_t i = 0; i < singletonRelationClauses.size(); i++) {
@@ -413,8 +408,8 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
 
             // Note: Bijective-equivalence check does not care about the head relation name
             if (areBijectivelyEquivalent(first, second)) {
-                AstRelationIdentifier firstName = first->getHead()->getName();
-                AstRelationIdentifier secondName = second->getHead()->getName();
+                AstQualifiedName firstName = first->getHead()->getQualifiedName();
+                AstQualifiedName secondName = second->getHead()->getQualifiedName();
                 redundantClauses.insert(second);
                 canonicalName.insert(std::pair(secondName, firstName));
             }
@@ -423,8 +418,8 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
 
     // Remove redundant relation definitions
     for (AstClause* clause : redundantClauses) {
-        auto relName = clause->getHead()->getName();
-        AstRelation* rel = program.getRelation(relName);
+        auto relName = clause->getHead()->getQualifiedName();
+        AstRelation* rel = getRelation(program, relName);
         assert(rel != nullptr && "relation does not exist in program");
         program.removeClause(clause);
         program.removeRelation(relName);
@@ -432,9 +427,9 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
 
     // Replace each redundant relation appearance with its canonical name
     struct replaceRedundantRelations : public AstNodeMapper {
-        const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName;
+        const std::map<AstQualifiedName, AstQualifiedName>& canonicalName;
 
-        replaceRedundantRelations(const std::map<AstRelationIdentifier, AstRelationIdentifier>& canonicalName)
+        replaceRedundantRelations(const std::map<AstQualifiedName, AstQualifiedName>& canonicalName)
                 : canonicalName(canonicalName) {}
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
@@ -442,11 +437,11 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
             node->apply(*this);
 
             if (auto* atom = dynamic_cast<AstAtom*>(node.get())) {
-                auto pos = canonicalName.find(atom->getName());
+                auto pos = canonicalName.find(atom->getQualifiedName());
                 if (pos != canonicalName.end()) {
                     auto newAtom = std::unique_ptr<AstAtom>(atom->clone());
-                    newAtom->setName(pos->second);
-                    return std::move(newAtom);
+                    newAtom->setQualifiedName(pos->second);
+                    return newAtom;
                 }
             }
 

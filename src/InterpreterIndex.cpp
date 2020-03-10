@@ -94,7 +94,7 @@ class NullaryIndex : public InterpreterIndex {
 
     public:
         Source(bool present) : present(present) {}
-        int load(TupleRef* buffer, int max) override {
+        int load(TupleRef* buffer, int /* max */) override {
             if (!present) {
                 return 0;
             }
@@ -103,7 +103,7 @@ class NullaryIndex : public InterpreterIndex {
             return 1;
         }
 
-        int reload(TupleRef* buffer, int max) override {
+        int reload(TupleRef* buffer, int /* max */) override {
             if (!present) {
                 return 0;
             }
@@ -184,17 +184,17 @@ public:
     PartitionedStream partitionScan(int) const override {
         std::vector<Stream> res;
         res.push_back(scan());
-        return std::move(res);
+        return res;
     }
 
-    Stream range(const TupleRef& low, const TupleRef& high) const override {
+    Stream range(const TupleRef& /* low */, const TupleRef& /* high */) const override {
         return scan();
     }
 
     PartitionedStream partitionRange(const TupleRef& low, const TupleRef& high, int) const override {
         std::vector<Stream> res;
         res.push_back(range(low, high));
-        return std::move(res);
+        return res;
     }
 
     void clear() override {
@@ -363,7 +363,7 @@ public:
         for (const auto& cur : chunks) {
             res.push_back(std::make_unique<Source>(order, cur.begin(), cur.end()));
         }
-        return std::move(res);
+        return res;
     }
 
     Stream range(const TupleRef& low, const TupleRef& high) const override {
@@ -379,7 +379,7 @@ public:
         for (const auto& cur : range.partition(partitionCount)) {
             res.push_back(std::make_unique<Source>(order, cur.begin(), cur.end()));
         }
-        return std::move(res);
+        return res;
     }
 
     void clear() override {
@@ -481,7 +481,7 @@ public:
             return index.set.contains(tuple, hints);
         }
 
-        bool contains(const TupleRef& low, const TupleRef& high) const override {
+        bool contains(const TupleRef& /* low */, const TupleRef& /* high */) const override {
             assert(false && "Not implemented!");
             return false;
         }
@@ -542,7 +542,7 @@ public:
         assert(false && "Does only produce a single subset!");
         std::vector<Stream> res;
         res.push_back(scan());
-        return std::move(res);
+        return res;
     }
 
     Stream range(const TupleRef& low, const TupleRef& high) const override {
@@ -553,7 +553,7 @@ public:
         assert(false && "Does only produce a single subset!");
         std::vector<Stream> res;
         res.push_back(range(low, high));
-        return std::move(res);
+        return res;
     }
 
     void clear() override {
@@ -637,7 +637,8 @@ public:
     }
 
 protected:
-    souffle::range<iter> bounds(const TupleRef& low, const TupleRef& high, Hints& hints) const override {
+    souffle::range<iter> bounds(
+            const TupleRef& low, const TupleRef& /* high */, Hints& hints) const override {
         Entry a = order.encode(low.asTuple<Arity>());
         return {data.lower_bound(a, hints), data.end()};
     }

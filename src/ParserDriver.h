@@ -28,15 +28,13 @@ class AstClause;
 class AstComponent;
 class AstComponentInit;
 class AstFunctorDeclaration;
-class AstLoad;
 class AstPragma;
 class AstRelation;
-class AstStore;
+class AstIO;
 class AstTranslationUnit;
 class AstType;
 class DebugReport;
 class ErrorReport;
-class SymbolTable;
 
 using yyscan_t = void*;
 
@@ -56,27 +54,25 @@ public:
 
     void addRelation(std::unique_ptr<AstRelation> r);
     void addFunctorDeclaration(std::unique_ptr<AstFunctorDeclaration> f);
-    void addStore(std::unique_ptr<AstStore> d);
-    void addLoad(std::unique_ptr<AstLoad> d);
+    void addIO(std::unique_ptr<AstIO> d);
     void addType(std::unique_ptr<AstType> type);
     void addClause(std::unique_ptr<AstClause> c);
     void addComponent(std::unique_ptr<AstComponent> c);
     void addInstantiation(std::unique_ptr<AstComponentInit> ci);
     void addPragma(std::unique_ptr<AstPragma> p);
 
-    souffle::SymbolTable& getSymbolTable();
-
     bool trace_scanning = false;
 
-    std::unique_ptr<AstTranslationUnit> parse(const std::string& filename, FILE* in, SymbolTable& symbolTable,
-            ErrorReport& errorReport, DebugReport& debugReport);
-    std::unique_ptr<AstTranslationUnit> parse(const std::string& code, SymbolTable& symbolTable,
-            ErrorReport& errorReport, DebugReport& debugReport);
-    static std::unique_ptr<AstTranslationUnit> parseTranslationUnit(const std::string& filename, FILE* in,
-            SymbolTable& symbolTable, ErrorReport& errorReport, DebugReport& debugReport);
-    static std::unique_ptr<AstTranslationUnit> parseTranslationUnit(const std::string& code,
-            SymbolTable& symbolTable, ErrorReport& errorReport, DebugReport& debugReport);
+    std::unique_ptr<AstTranslationUnit> parse(
+            const std::string& filename, FILE* in, ErrorReport& errorReport, DebugReport& debugReport);
+    std::unique_ptr<AstTranslationUnit> parse(
+            const std::string& code, ErrorReport& errorReport, DebugReport& debugReport);
+    static std::unique_ptr<AstTranslationUnit> parseTranslationUnit(
+            const std::string& filename, FILE* in, ErrorReport& errorReport, DebugReport& debugReport);
+    static std::unique_ptr<AstTranslationUnit> parseTranslationUnit(
+            const std::string& code, ErrorReport& errorReport, DebugReport& debugReport);
 
+    void warning(const SrcLocation& loc, const std::string& msg);
     void error(const SrcLocation& loc, const std::string& msg);
     void error(const std::string& msg);
 };

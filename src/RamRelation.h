@@ -17,7 +17,7 @@
 
 #include "RamNode.h"
 #include "RamTypes.h"
-#include "RelationRepresentation.h"
+#include "RelationTag.h"
 
 #include <string>
 #include <utility>
@@ -31,9 +31,9 @@ namespace souffle {
  */
 class RamRelation : public RamNode {
 public:
-    RamRelation(const std::string name, const size_t arity, const size_t auxiliaryArity,
-            const std::vector<std::string> attributeNames, const std::vector<std::string> attributeTypes,
-            const RelationRepresentation representation)
+    RamRelation(std::string name, size_t arity, size_t auxiliaryArity,
+            std::vector<std::string> attributeNames, std::vector<std::string> attributeTypes,
+            RelationRepresentation representation)
             : representation(representation), name(std::move(name)), arity(arity),
               auxiliaryArity(auxiliaryArity), attributeNames(std::move(attributeNames)),
               attributeTypes(std::move(attributeTypes)) {
@@ -61,17 +61,17 @@ public:
     }
 
     /** @brief Is nullary relation */
-    const bool isNullary() const {
+    bool isNullary() const {
         return arity == 0;
     }
 
     /** @brief Relation representation type */
-    const RelationRepresentation getRepresentation() const {
+    RelationRepresentation getRepresentation() const {
         return representation;
     }
 
     /** @brief Is temporary relation (for semi-naive evaluation) */
-    const bool isTemp() const {
+    bool isTemp() const {
         return name.at(0) == '@';
     }
 

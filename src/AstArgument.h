@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include "AggregateOp.h"
 #include "AstAbstract.h"
 #include "AstNode.h"
 #include "AstType.h"
@@ -27,6 +28,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
@@ -39,7 +41,7 @@ namespace souffle {
  */
 class AstVariable : public AstArgument {
 public:
-    AstVariable(std::string name) : name(name) {}
+    AstVariable(std::string name) : name(std::move(name)) {}
 
     void print(std::ostream& os) const override {
         os << name;
@@ -108,26 +110,23 @@ public:
  * Abstract Constant
  */
 class AstConstant : public AstArgument {
-protected:
-    AstConstant(RamDomain i) : ramRepresentation(i) {}
-
 public:
-    /** @return Return the ram representation of this constant */
-    RamDomain getRamRepresentation() const {
-        return ramRepresentation;
+    AstConstant* clone() const override = 0;
+
+    /** @return String representation of Constant */
+    const std::string& getConstant() const {
+        return constant;
+    }
+
+    void print(std::ostream& os) const override {
+        os << getConstant();
     }
 
 protected:
-    bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstConstant*>(&node));
-        const auto& other = static_cast<const AstConstant&>(node);
-        return ramRepresentation == other.ramRepresentation;
-    }
+    AstConstant(std::string value) : constant(std::move(value)){};
 
-    /** Constant represented as RamDomain value.
-     * In the case of a string this is the entry in symbol table.
-     * In the case of a float/unsigned this is the bit cast of the value. */
-    RamDomain ramRepresentation;
+private:
+    const std::string constant;
 };
 
 /**
@@ -135,72 +134,71 @@ protected:
  */
 class AstStringConstant : public AstConstant {
 public:
-    AstStringConstant(SymbolTable& symTable, const std::string& c)
-            : AstConstant(symTable.lookup(c)), symTable(symTable) {}
+    explicit AstStringConstant(std::string value) : AstConstant(std::move(value)) {}
 
     void print(std::ostream& os) const override {
         os << "\"" << getConstant() << "\"";
     }
 
-    /** @return String representation of this Constant */
-    const std::string& getConstant() const {
-        return symTable.resolve(ramRepresentation);
-    }
-
     AstStringConstant* clone() const override {
-        auto* res = new AstStringConstant(symTable, ramRepresentation);
+        auto* res = new AstStringConstant(getConstant());
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
-private:
-    // TODO (b-scholz): Remove Symbol Table / store as string / change hierarchy
-    // Don't use numbers to store strings in AST
-    AstStringConstant(SymbolTable& symTable, size_t index) : AstConstant(index), symTable(symTable) {}
+    bool operator==(const AstStringConstant& other) const {
+        return getConstant() == other.getConstant();
+    }
 
-    /** Symbol table */
-    SymbolTable& symTable;
+protected:
+    bool equal(const AstNode& node) const override {
+        assert(nullptr != dynamic_cast<const AstStringConstant*>(&node));
+        const auto& other = static_cast<const AstStringConstant&>(node);
+        return getConstant() == other.getConstant();
+    }
 };
 
 /**
  * Numeric Constant
  */
-template <typename numericType>  // numericType ⲉ {RamSigned, RamUnsigned, RamFloat}
 class AstNumericConstant : public AstConstant {
 public:
-    AstNumericConstant(numericType value) : AstConstant(ramBitCast(value)) {}
+    enum class Type { Int, Uint, Float };
 
-    void print(std::ostream& os) const override {
-        os << getConstant();
-    }
+    AstNumericConstant(std::string constant, Type type = Type::Int)
+            : AstConstant(std::move(constant)), type(type) {}
 
-    /** Get the value of the constant. */
-    numericType getConstant() const {
-        return ramBitCast<numericType>(ramRepresentation);
-    }
-
-    AstNumericConstant<numericType>* clone() const override {
-        auto* copy = new AstNumericConstant<numericType>(getConstant());
+    AstNumericConstant* clone() const override {
+        auto* copy = new AstNumericConstant(getConstant(), type);
         copy->setSrcLoc(getSrcLoc());
         return copy;
     }
-};
 
-// This definitions are used by AstVisitor.
-using AstNumberConstant = AstNumericConstant<RamSigned>;
-using AstFloatConstant = AstNumericConstant<RamFloat>;
-using AstUnsignedConstant = AstNumericConstant<RamUnsigned>;
+    Type getType() const {
+        return type;
+    }
+
+    bool operator==(const AstNumericConstant& other) const {
+        return type == other.type && getConstant() == other.getConstant();
+    }
+
+protected:
+    bool equal(const AstNode& node) const override {
+        assert(nullptr != dynamic_cast<const AstNumericConstant*>(&node));
+        const auto& other = static_cast<const AstNumericConstant&>(node);
+        return getConstant() == other.getConstant() && type == other.type;
+    }
+
+private:
+    const Type type;
+};
 
 /**
  * Nil Constant
  */
 class AstNilConstant : public AstConstant {
 public:
-    AstNilConstant() : AstConstant(0) {}
-
-    void print(std::ostream& os) const override {
-        os << "nil";
-    }
+    AstNilConstant() : AstConstant("nil"){};
 
     AstNilConstant* clone() const override {
         auto* res = new AstNilConstant();
@@ -223,25 +221,8 @@ public:
         return toPtrVector(args);
     }
 
-    /** get number of arguments */
-    size_t getArity() const {
-        return args.size();
-    }
-
-    /** get argument at idx */
-    AstArgument* getArg(const size_t idx) const {
-        assert(idx < args.size() && "argument index out of bounds");
-        return args[idx].get();
-    }
-
-    /** set argument */
-    void setArg(const size_t idx, std::unique_ptr<AstArgument> arg) {
-        assert(idx < args.size() && "argument index out of bounds");
-        args[idx] = std::move(arg);
-    }
-
     /** add argument to argument list */
-    void add(std::unique_ptr<AstArgument> arg) {
+    void addArgument(std::unique_ptr<AstArgument> arg) {
         args.push_back(std::move(arg));
     }
 
@@ -275,9 +256,13 @@ protected:
  */
 
 class AstFunctor : public AstTerm {
+public:
+    virtual TypeAttribute getReturnType() const = 0;
+    virtual TypeAttribute getArgType(const size_t arg) const = 0;
+
 protected:
     AstFunctor() = default;
-    AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
+    explicit AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
 };
 
 /**
@@ -289,7 +274,7 @@ public:
     AstIntrinsicFunctor(FunctorOp function, Operands... operands) : function(function) {
         std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
         for (auto& cur : tmp) {
-            add(std::move(cur));
+            addArgument(std::move(cur));
         }
         assert(isValidFunctorOpArity(function, args.size()) && "invalid number of arguments for functor");
     }
@@ -323,12 +308,12 @@ public:
     }
 
     /** get the return type of the functor. */
-    RamTypeAttribute getReturnType() const {
+    TypeAttribute getReturnType() const override {
         return functorReturnType(function);
     }
 
     /** get type of the functor argument*/
-    RamTypeAttribute getArgType(const size_t arg) const {
+    TypeAttribute getArgType(const size_t arg) const override {
         return functorOpArgType(arg, function);
     }
 
@@ -359,7 +344,7 @@ protected:
  */
 class AstUserDefinedFunctor : public AstFunctor {
 public:
-    AstUserDefinedFunctor() = default;
+    explicit AstUserDefinedFunctor(std::string name) : AstFunctor(), name(std::move(name)){};
     AstUserDefinedFunctor(std::string name, std::vector<std::unique_ptr<AstArgument>> args)
             : AstFunctor(std::move(args)), name(std::move(name)){};
 
@@ -373,18 +358,37 @@ public:
         return name;
     }
 
-    /** set name */
-    void setName(const std::string& name) {
-        this->name = name;
+    /** get type of the functor argument*/
+    TypeAttribute getArgType(const size_t arg) const override {
+        return argTypes->at(arg);
+    }
+
+    /** get type of the functor argument*/
+    TypeAttribute getReturnType() const override {
+        return returnType.value();
+    }
+
+    void setTypes(std::vector<TypeAttribute> argumentsTypes, TypeAttribute retType) {
+        assert(argumentsTypes.size() == args.size() && "Size of types must match size of arguments");
+        argTypes = argumentsTypes;
+        returnType = retType;
+    }
+
+    const std::vector<TypeAttribute>& getArgsTypes() const {
+        return argTypes.value();
     }
 
     AstUserDefinedFunctor* clone() const override {
-        auto res = new AstUserDefinedFunctor();
-        for (auto& cur : args) {
-            res->args.emplace_back(cur->clone());
+        auto res = new AstUserDefinedFunctor(name);
+        // Set args
+        for (auto& arg : args) {
+            res->args.emplace_back(arg->clone());
+        }
+        // Only copy types if they have already been set.
+        if (returnType.has_value()) {
+            res->setTypes(argTypes.value(), returnType.value());
         }
         res->setSrcLoc(getSrcLoc());
-        res->setName(getName());
         return res;
     }
 
@@ -395,8 +399,11 @@ protected:
         return name == other.name && AstFunctor::equal(node);
     }
 
+    std::optional<std::vector<TypeAttribute>> argTypes;
+    std::optional<TypeAttribute> returnType;
+
     /** name of user-defined functor */
-    std::string name;
+    const std::string name;
 };
 
 /**
@@ -423,7 +430,7 @@ public:
  */
 class AstTypeCast : public AstArgument {
 public:
-    AstTypeCast(std::unique_ptr<AstArgument> value, AstTypeIdentifier type)
+    AstTypeCast(std::unique_ptr<AstArgument> value, AstQualifiedName type)
             : value(std::move(value)), type(std::move(type)) {}
 
     void print(std::ostream& os) const override {
@@ -436,12 +443,12 @@ public:
     }
 
     /** Get type */
-    const AstTypeIdentifier& getType() const {
+    const AstQualifiedName& getType() const {
         return type;
     }
 
     /** Set type */
-    void setType(const AstTypeIdentifier& type) {
+    void setType(const AstQualifiedName& type) {
         this->type = type;
     }
 
@@ -472,7 +479,7 @@ protected:
     std::unique_ptr<AstArgument> value;
 
     /** The target type name */
-    AstTypeIdentifier type;
+    AstQualifiedName type;
 };
 
 /**
@@ -482,28 +489,21 @@ protected:
  */
 class AstAggregator : public AstArgument {
 public:
-    /**
-     * The kind of utilised aggregation operator.
-     * Note: lower-case is utilized due to a collision with
-     *  constants in the parser.
-     */
-    enum Op { min, max, count, sum };
-
     /** Creates a new aggregation node */
-    AstAggregator(Op fun) : fun(fun), expression(nullptr) {}
+    AstAggregator(AggregateOp fun) : fun(fun), expression(nullptr) {}
 
     void print(std::ostream& os) const override {
         switch (fun) {
-            case sum:
+            case AggregateOp::sum:
                 os << "sum";
                 break;
-            case min:
+            case AggregateOp::min:
                 os << "min";
                 break;
-            case max:
+            case AggregateOp::max:
                 os << "max";
                 break;
-            case count:
+            case AggregateOp::count:
                 os << "count";
                 break;
             default:
@@ -523,7 +523,7 @@ public:
     }
 
     /** Get aggregate operator */
-    Op getOperator() const {
+    AggregateOp getOperator() const {
         return fun;
     }
 
@@ -591,7 +591,7 @@ protected:
 
 private:
     /** The aggregation operator of this aggregation step */
-    Op fun;
+    AggregateOp fun;
 
     /** The expression to be aggregated */
     std::unique_ptr<AstArgument> expression;

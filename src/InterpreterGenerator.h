@@ -397,16 +397,10 @@ public:
         return std::make_unique<InterpreterNode>(I_LogSize, &size, NodePtrVec{}, rel);
     }
 
-    NodePtr visitLoad(const RamLoad& load) override {
-        size_t relId = encodeRelation(load.getRelation());
+    NodePtr visitIO(const RamIO& io) override {
+        size_t relId = encodeRelation(io.getRelation());
         auto rel = relations[relId].get();
-        return std::make_unique<InterpreterNode>(I_Load, &load, NodePtrVec{}, rel);
-    }
-
-    NodePtr visitStore(const RamStore& store) override {
-        size_t relId = encodeRelation(store.getRelation());
-        auto rel = relations[relId].get();
-        return std::make_unique<InterpreterNode>(I_Store, &store, NodePtrVec{}, rel);
+        return std::make_unique<InterpreterNode>(I_IO, &io, NodePtrVec{}, rel);
     }
 
     NodePtr visitQuery(const RamQuery& query) override {
@@ -433,7 +427,7 @@ public:
                     }
                 });
 
-                if (needView == true) {
+                if (needView) {
                     preamble->addViewOperationForFilter(visit(*cur));
                 } else {
                     preamble->addViewFreeOperationForFilter(visit(*cur));
@@ -442,13 +436,13 @@ public:
         }
 
         visitDepthFirst(*next, [&](const RamNode& node) {
-            if (requireView(&node) == true) {
+            if (requireView(&node)) {
                 const auto& rel = getRelationRefForView(&node);
                 preamble->addViewInfoForNested(encodeRelation(rel), indexTable[&node], encodeView(&node));
             };
         });
 
-        visitDepthFirst(*next, [&](const RamAbstractParallel& node) { preamble->isParallel = true; });
+        visitDepthFirst(*next, [&](const RamAbstractParallel&) { preamble->isParallel = true; });
 
         NodePtrVec children;
         children.push_back(visit(*next));
@@ -472,7 +466,7 @@ public:
         return std::make_unique<InterpreterNode>(I_Swap, &swap, NodePtrVec{}, nullptr, std::move(data));
     }
 
-    NodePtr visitUndefValue(const RamUndefValue& undef) override {
+    NodePtr visitUndefValue(const RamUndefValue&) override {
         return nullptr;
     }
 
@@ -574,7 +568,7 @@ private:
     NodePtrVec findAllViews(const RamNode& node) {
         NodePtrVec res;
         visitDepthFirst(node, [&](const RamNode& node) {
-            if (requireView(&node) == true) {
+            if (requireView(&node)) {
                 res.push_back(visit(node));
             };
         });

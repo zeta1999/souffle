@@ -21,8 +21,8 @@
 #include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
-#include "AstRelationIdentifier.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
@@ -37,12 +37,12 @@ namespace souffle {
 
 void PrecedenceGraph::run(const AstTranslationUnit& translationUnit) {
     /* Get relations */
-    std::vector<AstRelation*> relations = translationUnit.getProgram()->getRelations();
+    const AstProgram& program = *translationUnit.getProgram();
+    std::vector<AstRelation*> relations = program.getRelations();
 
     for (AstRelation* r : relations) {
         backingGraph.insert(r);
-        for (size_t i = 0; i < r->clauseSize(); i++) {
-            AstClause* c = r->getClause(i);
+        for (const auto& c : getClauses(program, *r)) {
             const std::set<const AstRelation*>& dependencies =
                     getBodyRelations(c, translationUnit.getProgram());
             for (auto source : dependencies) {
@@ -58,14 +58,16 @@ void PrecedenceGraph::print(std::ostream& os) const {
     /* Print node of dependence graph */
     for (const AstRelation* rel : backingGraph.vertices()) {
         if (rel != nullptr) {
-            os << "\t\"" << rel->getName() << "\" [label = \"" << rel->getName() << "\"];\n";
+            os << "\t\"" << rel->getQualifiedName() << "\" [label = \"" << rel->getQualifiedName()
+               << "\"];\n";
         }
     }
     for (const AstRelation* rel : backingGraph.vertices()) {
         if (rel != nullptr) {
             for (const AstRelation* adjRel : backingGraph.successors(rel)) {
                 if (adjRel != nullptr) {
-                    os << "\t\"" << rel->getName() << "\" -> \"" << adjRel->getName() << "\";\n";
+                    os << "\t\"" << rel->getQualifiedName() << "\" -> \"" << adjRel->getQualifiedName()
+                       << "\";\n";
                 }
             }
         }
@@ -141,8 +143,8 @@ bool RecursiveClauses::computeIsRecursive(
     std::vector<const AstRelation*> worklist;
 
     // set up start list
-    for (const AstAtom* cur : clause.getAtoms()) {
-        auto rel = program.getRelation(cur->getName());
+    for (const auto* cur : getBodyLiterals<AstAtom>(clause)) {
+        auto rel = getRelation(program, cur->getQualifiedName());
         if (rel == trg) {
             return true;
         }
@@ -166,9 +168,9 @@ bool RecursiveClauses::computeIsRecursive(
         }
 
         // check all atoms in the relations
-        for (const AstClause* cl : cur->getClauses()) {
-            for (const AstAtom* at : cl->getAtoms()) {
-                auto rel = program.getRelation(at->getName());
+        for (const AstClause* cl : getClauses(program, *cur)) {
+            for (const AstAtom* at : getBodyLiterals<AstAtom>(*cl)) {
+                auto rel = getRelation(program, at->getQualifiedName());
                 if (rel == trg) {
                     return true;
                 }
@@ -193,7 +195,8 @@ void SCCGraph::run(const AstTranslationUnit& translationUnit) {
     std::vector<AstRelation*> relations = translationUnit.getProgram()->getRelations();
     size_t counter = 0;
     size_t numSCCs = 0;
-    std::stack<const AstRelation*> S, P;
+    std::stack<const AstRelation*> S;
+    std::stack<const AstRelation*> P;
     std::map<const AstRelation*, size_t> preOrder;  // Pre-order number of a node (for Gabow's Algo)
     for (const AstRelation* relation : relations) {
         relationToScc[relation] = preOrder[relation] = (size_t)-1;
@@ -267,7 +270,7 @@ void SCCGraph::print(std::ostream& os) const {
     for (size_t scc = 0; scc < getNumberOfSCCs(); scc++) {
         os << "\t" << name << "_" << scc << "[label = \"";
         os << join(getInternalRelations(scc), ",\\n",
-                [](std::ostream& out, const AstRelation* rel) { out << rel->getName(); });
+                [](std::ostream& out, const AstRelation* rel) { out << rel->getQualifiedName(); });
         os << "\" ];" << std::endl;
     }
     for (size_t scc = 0; scc < getNumberOfSCCs(); scc++) {
@@ -317,7 +320,9 @@ int TopologicallySortedSCCGraph::topologicalOrderingCost(const std::vector<size_
 
 void TopologicallySortedSCCGraph::computeTopologicalOrdering(size_t scc, std::vector<bool>& visited) {
     // create a flag to indicate that a successor was visited (by default it hasn't been)
-    bool found = false, hasUnvisitedSuccessor = false, hasUnvisitedPredecessor = false;
+    bool found = false;
+    bool hasUnvisitedSuccessor = false;
+    bool hasUnvisitedPredecessor = false;
     // for each successor of the input scc
     const auto& successorsToVisit = sccGraph->getSuccessorSCCs(scc);
     for (const auto scc_i : successorsToVisit) {
@@ -413,7 +418,7 @@ void TopologicallySortedSCCGraph::print(std::ostream& os) const {
     for (size_t i = 0; i < sccOrder.size(); i++) {
         os << i << ": [";
         os << join(sccGraph->getInternalRelations(sccOrder[i]), ", ",
-                [](std::ostream& out, const AstRelation* rel) { out << rel->getName(); });
+                [](std::ostream& out, const AstRelation* rel) { out << rel->getQualifiedName(); });
         os << "]" << std::endl;
     }
     os << std::endl;
@@ -424,11 +429,11 @@ void TopologicallySortedSCCGraph::print(std::ostream& os) const {
 void RelationScheduleStep::print(std::ostream& os) const {
     os << "computed: ";
     for (const AstRelation* compRel : computed()) {
-        os << compRel->getName() << ", ";
+        os << compRel->getQualifiedName() << ", ";
     }
     os << "\nexpired: ";
     for (const AstRelation* compRel : expired()) {
-        os << compRel->getName() << ", ";
+        os << compRel->getQualifiedName() << ", ";
     }
     os << "\n";
     if (recursive()) {
@@ -501,11 +506,11 @@ void RelationSchedule::print(std::ostream& os) const {
         os << step;
         os << "computed: ";
         for (const AstRelation* compRel : step.computed()) {
-            os << compRel->getName() << ", ";
+            os << compRel->getQualifiedName() << ", ";
         }
         os << "\nexpired: ";
         for (const AstRelation* compRel : step.expired()) {
-            os << compRel->getName() << ", ";
+            os << compRel->getQualifiedName() << ", ";
         }
         os << "\n";
         if (step.recursive()) {

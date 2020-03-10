@@ -25,10 +25,13 @@ namespace souffle {
 // some forward declarations
 class AstAtom;
 class AstClause;
+class AstFunctorDeclaration;
 class AstLiteral;
 class AstNode;
 class AstProgram;
+class AstQualifiedName;
 class AstRelation;
+class AstType;
 class AstVariable;
 class AstRecordInit;
 
@@ -46,15 +49,6 @@ class AstRecordInit;
 std::vector<const AstVariable*> getVariables(const AstNode& root);
 
 /**
- * Obtains a list of all variables referenced within the AST rooted
- * by the given root node.
- *
- * @param root the root of the AST to be searched
- * @return a list of all variables referenced within
- */
-std::vector<const AstVariable*> getVariables(const AstNode* root);
-
-/**
  * Obtains a list of all records referenced within the AST rooted
  * by the given root node.
  *
@@ -64,13 +58,74 @@ std::vector<const AstVariable*> getVariables(const AstNode* root);
 std::vector<const AstRecordInit*> getRecords(const AstNode& root);
 
 /**
- * Obtains a list of all records referenced within the AST rooted
- * by the given root node.
+ * Returns literals of a particular type in the body of a clause.
  *
- * @param root the root of the AST to be searched
- * @return a list of all records referenced within
+ * @param the clause
+ * @return vector of body literals of the specified type
  */
-std::vector<const AstRecordInit*> getRecords(const AstNode* root);
+template <typename T, typename C>
+std::vector<T*> getBodyLiterals(const C& clause) {
+    std::vector<T*> res;
+    for (auto& lit : clause.getBodyLiterals()) {
+        if (T* t = dynamic_cast<T*>(lit)) {
+            res.push_back(t);
+        }
+    }
+    return res;
+}
+
+/**
+ * Returns a vector of clauses in the program describing the relation with the given name.
+ *
+ * @param program the program
+ * @param name the name of the relation to search for
+ * @return vector of clauses describing the relation with the given name
+ */
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstQualifiedName& relationName);
+
+/**
+ * Returns a vector of clauses in the program describing the given relation.
+ *
+ * @param program the program
+ * @param rel the relation to search for
+ * @return vector of clauses describing the given relation
+ */
+std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation& rel);
+
+/**
+ * Returns the relation with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the relation to search for
+ * @return the relation if it exists; nullptr otherwise
+ */
+AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name);
+
+/**
+ * Returns the type with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the type to search for
+ * @return the type if it exists; nullptr otherwise
+ */
+const AstType* getType(const AstProgram& program, const AstQualifiedName& name);
+
+/**
+ * Returns the functor declaration with the given name in the program.
+ *
+ * @param program the program
+ * @param name the name of the functor declaration to search for
+ * @return the functor declaration if it exists; nullptr otherwise
+ */
+const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, const std::string& name);
+
+/**
+ * Removes the set of clauses with the given relation name.
+ *
+ * @param program the program
+ * @param name the name of the relation to search for
+ */
+void removeRelationClauses(AstProgram& program, const AstQualifiedName& name);
 
 /**
  * Returns the relation referenced by the given atom.
@@ -95,6 +150,15 @@ const AstRelation* getHeadRelation(const AstClause* clause, const AstProgram* pr
  * @return relation referenced in the clause body
  */
 std::set<const AstRelation*> getBodyRelations(const AstClause* clause, const AstProgram* program);
+
+/**
+ * Returns the index of a clause within its relation, ignoring facts.
+ * Used in provenance as a unique ID for clauses within their relations.
+ * @param program the program
+ * @param clause the clause to get the index of
+ * @return the index of the clause ignoring facts; 0 for facts
+ */
+size_t getClauseNum(const AstProgram* program, const AstClause* clause);
 
 /**
  * Returns whether the given relation has any clauses which contain a negation of a specific relation.
@@ -135,4 +199,23 @@ bool isFact(const AstClause& clause);
  * @return true iff the clause is a rule
  */
 bool isRule(const AstClause& clause);
+
+/**
+ * Returns a clause which contains head of the given clause
+ * @param clause the clause which head to be cloned
+ * @return pointer to clause which has head cloned from given clause
+ */
+AstClause* cloneHead(const AstClause* clause);
+
+/**
+ * Reorders the atoms of a clause to be in the given order.
+ * Remaining body literals remain in the same order.
+ *
+ * E.g. if atoms are [a,b,c] and given order is [1,2,0], then
+ * the final atom order will be [b,c,a].
+ *
+ * @param clause clause to reorder atoms in
+ * @param newOrder new order of atoms; atoms[i] = atoms[newOrder[i]]
+ */
+AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>& newOrder);
 }  // end of namespace souffle

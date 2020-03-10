@@ -74,37 +74,37 @@ inline bool isOverloaded(const BinaryConstraintOp constraintOp) {
  * Example: constraintOp = LT, toType = Float -> FLT (less-than working on floats).
  */
 inline BinaryConstraintOp convertOverloadedConstraint(
-        const BinaryConstraintOp constraintOp, const RamTypeAttribute toType) {
+        const BinaryConstraintOp constraintOp, const TypeAttribute toType) {
     switch (constraintOp) {
         case BinaryConstraintOp::LT:
-            if (toType == RamTypeAttribute::Unsigned) {
+            if (toType == TypeAttribute::Unsigned) {
                 return BinaryConstraintOp::ULT;
             }
-            if (toType == RamTypeAttribute::Float) {
+            if (toType == TypeAttribute::Float) {
                 return BinaryConstraintOp::FLT;
             }
             break;
         case BinaryConstraintOp::LE:
-            if (toType == RamTypeAttribute::Unsigned) {
+            if (toType == TypeAttribute::Unsigned) {
                 return BinaryConstraintOp::ULE;
             }
-            if (toType == RamTypeAttribute::Float) {
+            if (toType == TypeAttribute::Float) {
                 return BinaryConstraintOp::FLE;
             }
             break;
         case BinaryConstraintOp::GT:
-            if (toType == RamTypeAttribute::Unsigned) {
+            if (toType == TypeAttribute::Unsigned) {
                 return BinaryConstraintOp::UGT;
             }
-            if (toType == RamTypeAttribute::Float) {
+            if (toType == TypeAttribute::Float) {
                 return BinaryConstraintOp::FGT;
             }
             break;
         case BinaryConstraintOp::GE:
-            if (toType == RamTypeAttribute::Unsigned) {
+            if (toType == TypeAttribute::Unsigned) {
                 return BinaryConstraintOp::UGE;
             }
-            if (toType == RamTypeAttribute::Float) {
+            if (toType == TypeAttribute::Float) {
                 return BinaryConstraintOp::FGE;
             }
             break;

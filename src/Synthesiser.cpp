@@ -1485,7 +1485,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
-                case FunctorOp::FEXP:
+                case FunctorOp::FEXP: {
+                    out << "static_cast<RamFloat>(std::pow(";
+                    visit(args[0], out);
+                    out << ",";
+                    visit(args[1], out);
+                    out << "))";
+                    break;
+                }
                 case FunctorOp::UEXP:
                 case FunctorOp::EXP: {
                     out << "static_cast<RamDomain>(static_cast<int64_t>(std::pow(";

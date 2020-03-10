@@ -1405,7 +1405,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 case FunctorOp::ULNOT:
                 case FunctorOp::LNOT: {
-                    out << "(!(";
+                    out << "static_cast<RamDomain>(!(";
                     visit(args[0], out);
                     out << "))";
                     break;
@@ -1568,20 +1568,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 case FunctorOp::ULAND:
                 case FunctorOp::LAND: {
-                    out << "(";
+                    out << "static_cast<RamDomain>((";
                     visit(args[0], out);
                     out << ") && (";
                     visit(args[1], out);
-                    out << ")";
+                    out << "))";
                     break;
                 }
                 case FunctorOp::ULOR:
                 case FunctorOp::LOR: {
-                    out << "(";
+                    out << "static_cast<RamDomain>((";
                     visit(args[0], out);
                     out << ") || (";
                     visit(args[1], out);
-                    out << ")";
+                    out << "))";
                     break;
                 }
                 case FunctorOp::FMAX:

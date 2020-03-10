@@ -129,10 +129,6 @@ inline To ramBitCast(From RamElement) {
     return Union.destination;
 }
 
-inline RamDomain ramBitCast(bool RamElement) {
-    return static_cast<RamDomain>(RamElement);
-}
-
 /** lower and upper boundaries for the ram domain **/
 #define MIN_RAM_DOMAIN (std::numeric_limits<RamDomain>::min())
 #define MAX_RAM_DOMAIN (std::numeric_limits<RamDomain>::max())

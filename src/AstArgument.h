@@ -190,7 +190,7 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstNumericConstant*>(&node));
         const auto& other = static_cast<const AstNumericConstant&>(node);
-        return getConstant() == other.getConstant() && type == other.type;
+        return getConstant() == other.getConstant() && getType() == other.getType();
     }
 
 private:

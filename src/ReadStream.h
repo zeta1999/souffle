@@ -113,7 +113,7 @@ protected:
                     recordValues[i] = readStringInRecord(source, pos, &consumed);
                     break;
                 case 'i':
-                    recordValues[i] = RamDomainFromString(source.substr(pos), &consumed);
+                    recordValues[i] = RamSignedFromString(source.substr(pos), &consumed);
                     break;
                 case 'u':
                     recordValues[i] = ramBitCast(RamUnsignedFromString(source.substr(pos), &consumed));

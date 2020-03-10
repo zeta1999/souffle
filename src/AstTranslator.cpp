@@ -298,7 +298,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             switch (*c.getType()) {
                 case AstNumericConstant::Type::Int:
                     return std::make_unique<RamSignedConstant>(
-                            RamDomainFromString(c.getConstant(), nullptr, 0));
+                            RamSignedFromString(c.getConstant(), nullptr, 0));
                 case AstNumericConstant::Type::Uint:
                     return std::make_unique<RamUnsignedConstant>(
                             RamUnsignedFromString(c.getConstant(), nullptr, 0));

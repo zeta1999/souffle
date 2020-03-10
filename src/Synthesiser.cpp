@@ -1866,7 +1866,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "private:\n";
     os << "static inline RamDomain wrapper_tonumber(const std::string& str) {\n";
     os << "   RamDomain result=0; \n";
-    os << "   try { result = RamDomainFromString(str); } catch(...) { \n";
+    os << "   try { result = RamSignedFromString(str); } catch(...) { \n";
     os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
     os << R"(     std::cerr << str << "\") )";
     os << "functor.\\n\";\n";

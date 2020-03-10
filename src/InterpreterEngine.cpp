@@ -295,7 +295,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 case FunctorOp::TONUMBER: {
                     RamDomain result = 0;
                     try {
-                        result = RamDomainFromString(
+                        result = RamSignedFromString(
                                 getSymbolTable().resolve(execute(node->getChild(0), ctxt)));
                     } catch (...) {
                         std::cerr << "error: wrong string provided by to_number(\"";

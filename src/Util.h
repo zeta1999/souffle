@@ -117,19 +117,19 @@ inline bool isPrefix(const std::string& prefix, const std::string& element);
  * It tries to imitate their behavior.
  *
  * The procedure accepts prefixes 0b (if base = 2) and 0x (if base = 16)
- * If base = 0, the procedure will try to infer the base from prefix.
+ * If base = 0, the procedure will try to infer the base from prefix (same as stoi).
  */
-inline RamDomain RamDomainFromString(
+inline RamSigned RamSignedFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
-    RamDomain val;
+    RamSigned val;
 
     if (base == 0) {
         if (isPrefix("-0b", str) || isPrefix("0b", str)) {
-            return RamDomainFromString(str, position, 2);
+            return RamSignedFromString(str, position, 2);
         } else if (isPrefix("-0x", str) || isPrefix("0x", str)) {
-            return RamDomainFromString(str, position, 16);
+            return RamSignedFromString(str, position, 16);
         } else {
-            return RamDomainFromString(str, position);
+            return RamSignedFromString(str, position);
         }
     }
     std::string binaryNumber;
@@ -155,7 +155,7 @@ inline RamDomain RamDomainFromString(
         *position += 2;
     }
 
-    return static_cast<RamDomain>(val);
+    return val;
 }
 
 /**
@@ -215,7 +215,7 @@ inline RamUnsigned RamUnsignedFromString(
         *position += 2;
     }
 
-    // check if it's safe to cast (stoul return unsigned long)
+    // check if it's safe to cast (stoul returns unsigned long)
     if (val > std::numeric_limits<RamUnsigned>::max()) {
         throw std::invalid_argument("Unsigned number of of bounds");
     }
@@ -228,19 +228,13 @@ inline RamUnsigned RamUnsignedFromString(
  *
  * Souffle (parser, not fact file readers) accepts: hex, binary and base 10.
  * Integer can be negative, in all 3 formats this means that it
- * starts with minus (which can be slightly unintuitive for binary/hex but this is c++ default semantics).
+ * starts with minus (c++ default semantics).
  */
 inline bool canBeParsedAsRamSigned(const std::string& string) {
     size_t charactersRead = 0;
 
     try {
-        if (isPrefix("-0b", string) || isPrefix("0b", string)) {
-            RamDomainFromString(string, &charactersRead, 2);
-        } else if (isPrefix("-0x", string) || isPrefix("0x", string)) {
-            RamDomainFromString(string, &charactersRead, 16);
-        } else {
-            RamDomainFromString(string, &charactersRead);
-        }
+        RamSignedFromString(string, &charactersRead, 0);
     } catch (...) {
         return false;
     }
@@ -256,13 +250,7 @@ inline bool canBeParsedAsRamSigned(const std::string& string) {
 inline bool canBeParsedAsRamUnsigned(const std::string& string) {
     size_t charactersRead = 0;
     try {
-        if (isPrefix("0b", string)) {
-            RamUnsignedFromString(string, &charactersRead, 2);
-        } else if (isPrefix("0x", string)) {
-            RamUnsignedFromString(string, &charactersRead, 16);
-        } else {
-            RamUnsignedFromString(string, &charactersRead);
-        }
+        RamUnsignedFromString(string, &charactersRead, 0);
     } catch (...) {
         return false;
     }

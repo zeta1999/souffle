@@ -95,7 +95,7 @@ protected:
                                 readRecord(element, typeAttributes[inputMap[column]], 0, &charactersRead);
                         break;
                     case 'i':
-                        tuple[inputMap[column]] = RamDomainFromString(element, &charactersRead);
+                        tuple[inputMap[column]] = RamSignedFromString(element, &charactersRead);
                         break;
                     case 'u':
                         tuple[inputMap[column]] = ramBitCast(readRamUnsigned(element, charactersRead));

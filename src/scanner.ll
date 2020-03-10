@@ -168,30 +168,9 @@
                                         }
                                       }
 [0-9]+[.][0-9]+                       { return yy::parser::make_FLOAT(yytext, yylloc); }
-0b[0-1]+                              {
-                                        try {
-                                          return yy::parser::make_NUMBER(std::to_string(souffle::stord(yytext+2, nullptr, 2)), yylloc);
-                                        } catch(...) {
-                                          driver.error(yylloc, "bool out of range");
-                                          return yy::parser::make_NUMBER("0", yylloc);
-                                        }
-                                      }
-0x[a-fA-F0-9]+                        {
-                                        try {
-                                          return yy::parser::make_NUMBER(std::to_string(souffle::stord(yytext, nullptr, 16)), yylloc);
-                                        } catch(...) {
-                                          driver.error(yylloc, "hex out of range");
-                                          return yy::parser::make_NUMBER("0", yylloc);
-                                        }
-                                      }
-0|([1-9][0-9]*)                       {
-                                        try {
-                                          return yy::parser::make_NUMBER(std::to_string(souffle::stord(yytext, nullptr, 10)), yylloc);
-                                        } catch (...) {
-                                          driver.error(yylloc, "int out of range");
-                                          return yy::parser::make_NUMBER("0", yylloc);
-                                        }
-                                      }
+0b[0-1]+                              { return yy::parser::make_NUMBER(yytext, yylloc); }
+0x[a-fA-F0-9]+                        { return yy::parser::make_NUMBER(yytext, yylloc); }
+0|([1-9][0-9]*)                       { return yy::parser::make_NUMBER(yytext, yylloc); }
 [\?a-zA-Z]|[_\?a-zA-Z][_\?a-zA-Z0-9]+ {
                                         return yy::parser::make_IDENT(yytext, yylloc);
                                       }

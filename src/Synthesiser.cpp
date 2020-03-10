@@ -1559,7 +1559,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 }
                 case FunctorOp::BSHIFT_R_UNSIGNED: {
-                    static_assert(std::is_signed<RamDomain>::value);
                     out << "ramBitCast<RamSigned>(ramBitCast<RamUnsigned>(";
                     visit(args[0], out);
                     out << ") >> ramBitCast<RamUnsigned>(";

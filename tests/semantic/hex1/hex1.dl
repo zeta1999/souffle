@@ -5,15 +5,13 @@
 // - <souffle root>/licenses/SOUFFLE-UPL.txt
 
 // Test allowed range of hexadecimal integers
-.decl Hexadecimal (n:number)
+.decl Hexadecimal (n:unsigned)
 .output Hexadecimal
 
 Hexadecimal(0x1).
 
 #if RAM_DOMAIN_SIZE == 32
-Hexadecimal(0x00000000).
-Hexadecimal(0xFFFFFFFF).
+Hexadecimal(0xFFFFFFFF + 1).
 #elif RAM_DOMAIN_SIZE == 64
-Hexadecimal(0x0000000000000000).
-Hexadecimal(0xFFFFFFFFFFFFFFFF).
+Hexadecimal(0xFFFFFFFFFFFFFFFF + 1).
 #endif

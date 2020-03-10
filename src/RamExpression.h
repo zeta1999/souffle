@@ -18,24 +18,16 @@
 
 #include "FunctorOps.h"
 #include "RamNode.h"
-#include "RamRelation.h"
-#include "SymbolTable.h"
-#include "utility/CacheUtil.h"
+#include "RamTypes.h"
 #include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
-
-#include <algorithm>
-#include <array>
+#include <cassert>
+#include <cstdlib>
+#include <memory>
 #include <sstream>
 #include <string>
-
-#include <cstdlib>
 #include <utility>
+#include <vector>
 
 namespace souffle {
 

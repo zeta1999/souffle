@@ -14,8 +14,14 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "GraphUtils.h"
-#include "test.h"
+#include "utility/StringUtil.h"
+#include <functional>
+#include <map>
+#include <set>
+#include <string>
 
 namespace souffle {
 

@@ -16,20 +16,14 @@
 
 #pragma once
 
+#include "AstAbstract.h"
 #include "AstAnalysis.h"
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
 #include "AstQualifiedName.h"
 #include "AstVisitor.h"
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
 #include <cstddef>
 #include <map>
 #include <memory>

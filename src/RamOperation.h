@@ -21,21 +21,17 @@
 #include "RamExpression.h"
 #include "RamNode.h"
 #include "RamRelation.h"
-#include "RamTypes.h"
 #include "RamUtils.h"
-#include "utility/CacheUtil.h"
 #include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
 #include <cassert>
 #include <cstddef>
 #include <iosfwd>
 #include <memory>
+#include <ostream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -939,8 +935,8 @@ inline std::ostream& operator<<(std::ostream& os, RamNestedIntrinsicOp e) {
         case RamNestedIntrinsicOp::RANGE: return os << "RANGE";
         case RamNestedIntrinsicOp::URANGE: return os << "URANGE";
         case RamNestedIntrinsicOp::FRANGE: return os << "FRANGE";
+        default: fatal("invalid Operation");
     }
-    abort();
 }
 
 /**

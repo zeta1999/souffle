@@ -18,7 +18,10 @@
 
 #include "RamCondition.h"
 #include "RamExpression.h"
+#include <algorithm>
 #include <memory>
+#include <queue>
+#include <utility>
 #include <vector>
 
 namespace souffle {

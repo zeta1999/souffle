@@ -16,34 +16,8 @@
 
 #pragma once
 
-#include "../RamTypes.h"
-
 #include <algorithm>
-#include <array>
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <ostream>
-#include <set>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
-
-#include <cassert>
-#include <cctype>
-#include <cerrno>
-#include <climits>
-#include <cstdarg>
-#include <cstdlib>
-#include <cstring>
-#include <sys/stat.h>
+#include <functional>
 
 namespace souffle {
 

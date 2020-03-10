@@ -16,17 +16,21 @@
 
 #include "RamTypes.h"
 #include "ReadStream.h"
-#include "RecordTable.h"
 #include "SymbolTable.h"
+#include "utility/MiscUtil.h"
+#include "utility/StringUtil.h"
+#include <cassert>
+#include <cstdint>
 #include <fstream>
+#include <map>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
-
+#include <vector>
 #include <sqlite3.h>
 
 namespace souffle {
+class RecordTable;
 
 class ReadStreamSQLite : public ReadStream {
 public:

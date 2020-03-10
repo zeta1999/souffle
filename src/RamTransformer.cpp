@@ -17,18 +17,14 @@
 #include "RamTransformer.h"
 #include "DebugReport.h"
 #include "DebugReporter.h"
+#include "ErrorReport.h"
+#include "Global.h"
+#include "RamNode.h"
 #include "RamProgram.h"
 #include "RamTranslationUnit.h"
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
-#include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
-
-#include <algorithm>
+#include <chrono>
+#include <cstdlib>
+#include <iostream>
 #include <sstream>
 
 namespace souffle {

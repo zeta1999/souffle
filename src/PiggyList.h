@@ -5,7 +5,7 @@
 #include <atomic>
 #include <cstring>
 #include <iostream>
-#include <list>
+#include <iterator>
 
 #ifdef _WIN32
 /**

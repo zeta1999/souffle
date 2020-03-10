@@ -16,38 +16,15 @@
 
 #pragma once
 
-#include "../RamTypes.h"
 #include <algorithm>
-#include <array>
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdlib>
-#include <fstream>
 #include <functional>
-#include <iostream>
+#include <iterator>
 #include <map>
 #include <memory>
-#include <mutex>
-#include <ostream>
 #include <set>
-#include <sstream>
-#include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
-#include <cassert>
-#include <cctype>
-#include <cerrno>
-#include <climits>
-#include <cstdarg>
-#include <cstdlib>
-#include <cstring>
-#include <functional>
-#include <map>
-#include <memory>
-#include <set>
-#include <vector>
-#include <sys/stat.h>
 
 namespace souffle {
 
@@ -130,7 +107,7 @@ template <typename T>
 std::vector<T> toVector() {
     return std::vector<T>();
 }
- 
+
 /**
  * Get value for a given key; if not found, return default value.
  */

@@ -16,18 +16,24 @@
 
 #pragma once
 
-#include "ExplainTree.h"
 #include "RamTypes.h"
 #include "SouffleInterface.h"
-#include "Util.h"
-#include "WriteStreamCSV.h"
+#include "SymbolTable.h"
+#include "tinyformat.h"
+#include "utility/MiscUtil.h"
+#include "utility/StringUtil.h"
 #include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace souffle {
+class TreeNode;
 
 /** Equivalence class for variables in query command */
 class Equivalence {

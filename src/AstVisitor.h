@@ -20,18 +20,26 @@
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstComponent.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
+#include "AstPragma.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstType.h"
-
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include <cstddef>
 #include <functional>
 #include <memory>
-#include <utility>
+#include <type_traits>
+#include <typeinfo>
 #include <vector>
 
 namespace souffle {
+class AstArgument;
+class AstConstraint;
+class AstLiteral;
 
 /** A tag type required for the is_ast_visitor type trait to identify AstVisitors */
 struct ast_visitor_tag {};

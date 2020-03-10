@@ -17,22 +17,17 @@
 #pragma once
 
 #include "AstAbstract.h"
-#include "AstArgument.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
-#include "utility/CacheUtil.h"
+#include "SrcLocation.h"
 #include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
-#include <cassert>
-#include <cstddef>
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <ostream>
+#include <string>
 #include <utility>
 #include <vector>
 

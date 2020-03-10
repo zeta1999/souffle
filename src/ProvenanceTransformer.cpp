@@ -14,6 +14,7 @@
  *
  ***********************************************************************/
 
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
@@ -24,24 +25,19 @@
 #include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
-#include "AstType.h"
 #include "AstUtils.h"
-#include "AstVisitor.h"
 #include "AuxArityAnalysis.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
 #include "RelationTag.h"
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
+#include "tinyformat.h"
 #include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iosfwd>
 #include <memory>
 #include <string>
@@ -107,9 +103,15 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             constName << *constant;
             return constName.str();
         }
-        if (nullptr != dynamic_cast<AstUnnamedVariable*>(arg)) return "_";
-        if (nullptr != dynamic_cast<AstFunctor*>(arg)) return format("functor_%d", functorNumber++);
-        if (nullptr != dynamic_cast<AstAggregator*>(arg)) return format("agg_%d", aggregateNumber++);
+        if (nullptr != dynamic_cast<AstUnnamedVariable*>(arg)) {
+            return "_";
+        }
+        if (nullptr != dynamic_cast<AstFunctor*>(arg)) {
+            return tfm::format("functor_%d", functorNumber++);
+        }
+        if (nullptr != dynamic_cast<AstAggregator*>(arg)) {
+            return tfm::format("agg_%d", aggregateNumber++);
+        }
 
         fatal("Unhandled argument type");
     };

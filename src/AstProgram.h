@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include "AstClause.h"
 #include "AstComponent.h"
 #include "AstFunctorDeclaration.h"
 #include "AstIO.h"
@@ -26,28 +27,17 @@
 #include "AstRelation.h"
 #include "AstType.h"
 #include "AstUtils.h"
-#include "utility/CacheUtil.h"
 #include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
+#include <algorithm>
 #include <cassert>
-#include <cstddef>
 #include <iosfwd>
-#include <map>
 #include <memory>
-#include <string>
+#include <ostream>
 #include <utility>
 #include <vector>
 
 namespace souffle {
-
-class AstClause;
-class AstRelation;
-class AstIO;
 
 /**
  *  Intermediate representation of a datalog program

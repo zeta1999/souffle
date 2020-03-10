@@ -19,12 +19,12 @@
 
 #include "CompiledTuple.h"
 #include "RamTypes.h"
-#include "utility/ParallelUtil.h"
 #include <cassert>
-#include <iostream>
+#include <cstddef>
 #include <limits>
-#include <map>
+#include <memory>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace souffle {

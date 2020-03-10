@@ -14,33 +14,32 @@
  *
  ***********************************************************************/
 
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
-#include "AstIO.h"
 #include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
+#include "AstNode.h"
 #include "AstProgram.h"
 #include "AstQualifiedName.h"
-#include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
-#include "utility/CacheUtil.h"
 #include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
-#include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <map>
 #include <memory>
+#include <set>
 #include <stack>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {
+class AstRelation;
 
 /**
  * Extract valid permutations from a given permutation matrix of valid moves.

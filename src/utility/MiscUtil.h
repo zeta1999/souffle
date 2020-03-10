@@ -16,38 +16,15 @@
 
 #pragma once
 
-#include "../RamTypes.h"
 #include "../tinyformat.h"
-#include <algorithm>
-#include <array>
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstdlib>
-#include <fstream>
-#include <iostream>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <ostream>
-#include <set>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
 #include <cassert>
-#include <cctype>
-#include <cerrno>
-#include <climits>
-#include <cstdarg>
+#include <chrono>
 #include <cstdlib>
-#include <cstring>
-#include <sys/stat.h>
+#include <iostream>
+#include <memory>
+#include <utility>
 
-#ifndef _WIN32
-#include <libgen.h>
-#include <unistd.h>
-#else
+#ifdef _WIN32
 #include <fcntl.h>
 #include <io.h>
 #include <stdlib.h>
@@ -137,11 +114,10 @@ auto clone(const std::pair<A, B>& p) {
 // -------------------------------------------------------------------------------
 //                               Error Utilities
 // -------------------------------------------------------------------------------
-using tfm::format;
 
 template <typename... Args>
-[[noreturn]] void fatal(const char* fmt, const Args&... args) {
-    format(std::cerr, fmt, args...);
+[[noreturn]] void fatal(const char* format, const Args&... args) {
+    tfm::format(std::cerr, format, args...);
     std::cerr << "\n";
     assert(false && "fatal error; see std err");
     abort();

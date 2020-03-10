@@ -14,8 +14,13 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
+#include "RamTypes.h"
 #include "TypeSystem.h"
-#include "test.h"
+#include "utility/StringUtil.h"
+#include <string>
+#include <vector>
 
 namespace souffle::test {
 

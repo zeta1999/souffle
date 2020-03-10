@@ -16,15 +16,9 @@
 
 #include "RamTypes.h"
 #include "ReadStream.h"
-#include "RecordTable.h"
 #include "SymbolTable.h"
-#include "utility/CacheUtil.h"
 #include "utility/ContainerUtil.h"
 #include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
-#include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
 
 #ifdef USE_LIBZ
@@ -33,13 +27,20 @@
 #include <fstream>
 #endif
 
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace souffle {
+class RecordTable;
 
 class ReadStreamCSV : public ReadStream {
 public:

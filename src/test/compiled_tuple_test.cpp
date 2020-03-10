@@ -14,10 +14,12 @@
  *
  ***********************************************************************/
 
-#include "CompiledTuple.h"
-#include "test.h"
+#include "test/test.h"
 
+#include "CompiledTuple.h"
+#include <cstdint>
 #include <iostream>
+#include <string>
 
 namespace souffle {
 

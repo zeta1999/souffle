@@ -21,13 +21,16 @@
 #include "AstAnalysis.h"
 #include "AstProgram.h"
 #include "DebugReport.h"
-#include "ErrorReport.h"
+#include "Global.h"
 #include "PrecedenceGraph.h"
-#include "SymbolTable.h"
+#include <iosfwd>
 #include <map>
 #include <memory>
+#include <string>
+#include <utility>
 
 namespace souffle {
+class ErrorReport;
 
 /**
  * AstTranslationUnit class

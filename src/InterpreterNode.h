@@ -23,11 +23,16 @@
 
 #pragma once
 
-#include "InterpreterPreamble.h"
-#include "InterpreterRelation.h"
-#include "RamNode.h"
+#include <cassert>
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <vector>
 
 namespace souffle {
+class InterpreterPreamble;
+class InterpreterRelation;
+class RamNode;
 
 enum InterpreterNodeType {
     I_Constant,

@@ -18,15 +18,13 @@
 
 #include "AstNode.h"
 #include "RamTypes.h"
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
+#include "SrcLocation.h"
+#include "tinyformat.h"
 #include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
-#include <algorithm>
+#include <cassert>
+#include <cstdlib>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -84,7 +82,8 @@ protected:
             UNREACHABLE_BAD_CASE_ANALYSIS
         };
 
-        format(out, ".declfun %s(%s): %s\n", name, join(map(argsTypes, convert), ","), convert(returnType));
+        tfm::format(
+                out, ".declfun %s(%s): %s\n", name, join(map(argsTypes, convert), ","), convert(returnType));
     }
 
     bool equal(const AstNode& node) const override {

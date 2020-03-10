@@ -20,10 +20,14 @@
 #include "AstNode.h"
 #include "AstQualifiedName.h"
 #include "RamTypes.h"
-#include "Util.h"
-
+#include "SrcLocation.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include <algorithm>
+#include <cstddef>
 #include <iostream>
-#include <set>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>

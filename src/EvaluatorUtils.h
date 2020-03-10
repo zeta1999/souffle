@@ -18,7 +18,6 @@
 
 #include "CompiledTuple.h"
 #include "RamTypes.h"
-#include "Util.h"
 
 namespace souffle::evaluator {
 

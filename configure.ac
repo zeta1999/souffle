@@ -26,7 +26,7 @@ AC_CANONICAL_HOST   # host_cpu, host_vendor, and host_os
 
 AM_INIT_AUTOMAKE([foreign subdir-objects 1.9 tar-pax])
 AM_MAINTAINER_MODE
-AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_MACRO_DIRS([m4])
 AC_CONFIG_MACRO_DIR([m4])
 
@@ -344,7 +344,6 @@ AC_CONFIG_LINKS([include/souffle/profile/htmlJsChartistPlugin.h:src/profile/html
 AC_CONFIG_LINKS([include/souffle/profile/htmlJsTableSort.h:src/profile/htmlJsTableSort.h])
 AC_CONFIG_LINKS([include/souffle/profile/htmlMain.h:src/profile/htmlMain.h])
 AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.h:src/swig/SwigInterface.h])
-AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.cpp:src/swig/SwigInterface.cpp])
 AC_CONFIG_LINKS([include/souffle/swig/SwigInterface.i:src/swig/SwigInterface.i])
 AC_CONFIG_LINKS([utilities/bash-completion/completions/souffle:debian/souffle.bash-completion])
 

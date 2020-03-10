@@ -16,20 +16,24 @@
 
 #include "RamTypes.h"
 #include "SymbolTable.h"
-#include "Util.h"
 #include "WriteStream.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
 #include "utility/ParallelUtil.h"
 #ifdef USE_LIBZ
 #include "gzfstream.h"
 #endif
 
-#include <cassert>
-#include <fstream>
-#include <memory>
+#include <cstddef>
+#include <iostream>
+#include <map>
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace souffle {
+
+class RecordTable;
 
 class WriteStreamCSV : public WriteStream {
 protected:

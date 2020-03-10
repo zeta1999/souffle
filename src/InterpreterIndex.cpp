@@ -15,18 +15,17 @@
  ***********************************************************************/
 
 #include "InterpreterIndex.h"
+#include "BTree.h"
 #include "Brie.h"
 #include "CompiledIndexUtils.h"
 #include "EquivalenceRelation.h"
-#include "utility/CacheUtil.h"
+#include "PiggyList.h"
 #include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
+#include <algorithm>
 #include <atomic>
+#include <ostream>
 
 namespace souffle {
 

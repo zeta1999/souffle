@@ -15,7 +15,9 @@
  ***********************************************************************/
 
 #include "AstComponentChecker.h"
+#include "AstNode.h"
 #include "AstPragmaChecker.h"
+#include "AstProgram.h"
 #include "AstSemanticChecker.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
@@ -23,7 +25,6 @@
 #include "AstTypeAnalysis.h"
 #include "ComponentInstantiationTransformer.h"
 #include "DebugReport.h"
-#include "DebugReporter.h"
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
@@ -31,8 +32,7 @@
 #include "InterpreterProgInterface.h"
 #include "ParserDriver.h"
 #include "PrecedenceGraph.h"
-#include "RamIndexAnalysis.h"
-#include "RamLevelAnalysis.h"
+#include "RamNode.h"
 #include "RamProgram.h"
 #include "RamTransformer.h"
 #include "RamTransforms.h"
@@ -41,22 +41,18 @@
 #include "Synthesiser.h"
 #include "config.h"
 #include "profile/Tui.h"
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
 #include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
 #include <cassert>
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>
+#include <ctime>
 #include <iostream>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <thread>

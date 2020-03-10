@@ -14,9 +14,11 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "RamTypes.h"
-#include "test.h"
 #include <random>
+#include <string>
 
 namespace souffle::test {
 

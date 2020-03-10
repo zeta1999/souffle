@@ -22,6 +22,7 @@
 namespace souffle {
 
 class RamNode;
+class RamTranslationUnit;
 
 /**
  * @class RamComplexityAnalysis

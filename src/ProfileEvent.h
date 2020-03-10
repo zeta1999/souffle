@@ -18,28 +18,17 @@
 
 #include "EventProcessor.h"
 #include "ProfileDatabase.h"
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
-#include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
 #include <atomic>
-#include <cassert>
 #include <chrono>
+#include <condition_variable>
+#include <cstdint>
 #include <ctime>
-#include <functional>
-#include <iomanip>
 #include <iostream>
-#include <list>
 #include <mutex>
 #include <sstream>
 #include <string>
 #include <thread>
-#include <unordered_map>
-#include <vector>
 #include <sys/resource.h>
 #include <sys/time.h>
 

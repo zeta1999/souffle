@@ -23,7 +23,6 @@
 #include "souffle/EvaluatorUtils.h"
 #include "souffle/IOSystem.h"
 #include "souffle/IterUtils.h"
-#include "souffle/ParallelUtils.h"
 #include "souffle/RamTypes.h"
 #include "souffle/RecordTable.h"
 #include "souffle/SignalHandler.h"
@@ -52,6 +51,7 @@
 #include <cstdlib>
 #include <exception>
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <regex>
 #include <string>

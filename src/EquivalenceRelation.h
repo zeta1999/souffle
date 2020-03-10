@@ -19,22 +19,23 @@
 #pragma once
 
 #include "LambdaBTree.h"
+#include "PiggyList.h"
+#include "RamTypes.h"
 #include "UnionFind.h"
-#include "utility/CacheUtil.h"
 #include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
 #include "utility/ParallelUtil.h"
-#include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
-#include <algorithm>
-#include <exception>
-#include <mutex>
+#include <atomic>
+#include <cassert>
+#include <cstddef>
+#include <functional>
+#include <iostream>
+#include <iterator>
 #include <set>
 #include <shared_mutex>
-#include <unordered_map>
+#include <stdexcept>
+#include <tuple>
 #include <utility>
+#include <vector>
 
 namespace souffle {
 template <typename TupleType>

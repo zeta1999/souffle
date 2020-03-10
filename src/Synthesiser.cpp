@@ -26,6 +26,7 @@
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
+#include "RamStatement.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RamUtils.h"
@@ -34,21 +35,18 @@
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
 #include "json11.h"
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
+#include "tinyformat.h"
 #include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
-#include <cstdlib>
 #include <functional>
-#include <iostream>
+#include <map>
 #include <sstream>
+#include <type_traits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -1619,7 +1617,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
 
             auto emitHelper = [&](auto&& func) {
-                format(out, "%s(%s, [&](auto&& env%d) {\n", func,
+                tfm::format(out, "%s(%s, [&](auto&& env%d) {\n", func,
                         join(op.getArguments(), ",", [&](auto& os, auto* arg) { return visit(arg, os); }),
                         op.getTupleId());
                 visitTupleOperation(op, out);
@@ -1629,7 +1627,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             };
 
             auto emitRange = [&](char const* ty) {
-                return emitHelper(format("souffle::evaluator::runRange<%s>", ty));
+                return emitHelper(tfm::format("souffle::evaluator::runRange<%s>", ty));
             };
 
             switch (op.getFunction()) {
@@ -1800,7 +1798,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             UNREACHABLE_BAD_CASE_ANALYSIS
         };
 
-        format(os, "%s %s(%s);\n", cppTypeDecl(returnType), name, join(map(argsTypes, cppTypeDecl), ","));
+        tfm::format(
+                os, "%s %s(%s);\n", cppTypeDecl(returnType), name, join(map(argsTypes, cppTypeDecl), ","));
     }
     os << "}\n";
     os << "\n";

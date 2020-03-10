@@ -17,25 +17,12 @@
 
 #pragma once
 
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
-#include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
-
+#include <cstdio>
 #include <iostream>
 #include <string>
-
 #include <getopt.h>
+#include <stdlib.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace souffle {
 

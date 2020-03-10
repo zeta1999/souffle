@@ -40,7 +40,6 @@ souffle_profile_sources = \
 
 souffle_swig_sources = \
         swig/SwigInterface.h                      \
-        swig/SwigInterface.cpp                    \
         swig/SwigInterface.i
 
 DIR := ${CURDIR}

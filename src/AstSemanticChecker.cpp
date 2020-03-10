@@ -15,12 +15,14 @@
  ***********************************************************************/
 
 #include "AstSemanticChecker.h"
+#include "AggregateOp.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
-#include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
 #include "AstIO.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -37,22 +39,22 @@
 #include "FunctorOps.h"
 #include "Global.h"
 #include "GraphUtils.h"
+#include "IterUtils.h"
 #include "PrecedenceGraph.h"
 #include "RamTypes.h"
 #include "RelationTag.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
-#include "utility/CacheUtil.h"
+#include "tinyformat.h"
 #include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>

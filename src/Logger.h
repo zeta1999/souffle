@@ -18,11 +18,12 @@
 #pragma once
 
 #include "ProfileEvent.h"
-
-#include <chrono>
+#include "utility/MiscUtil.h"
+#include <cstddef>
 #include <functional>
-#include <iostream>
+#include <string>
 #include <utility>
+#include <sys/resource.h>
 
 namespace souffle {
 

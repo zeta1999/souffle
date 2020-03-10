@@ -16,20 +16,10 @@
 
 #pragma once
 
-#include "AstArgument.h"
 #include "AstTransformer.h"
-#include "AstTranslationUnit.h"
-#include "AstUtils.h"
 #include "DebugReporter.h"
-#include "utility/CacheUtil.h"
-#include "utility/ContainerUtil.h"
-#include "utility/FileUtil.h"
-#include "utility/FunctionalUtil.h"
-#include "utility/MiscUtil.h"
-#include "utility/ParallelUtil.h"
-#include "utility/StreamUtil.h"
-#include "utility/StringUtil.h"
 #include <functional>
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -38,10 +28,14 @@
 
 namespace souffle {
 
+class AstAggregator;
+class AstBinaryConstraint;
 class AstClause;
+class AstLiteral;
 class AstProgram;
+class AstRecordInit;
 class AstRelation;
-class TypeAnalysis;
+class AstTranslationUnit;
 
 /**
  * Transformation pass to eliminate grounded aliases.

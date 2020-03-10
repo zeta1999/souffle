@@ -63,7 +63,7 @@ public:
     }
 
     /** get I/O type */
-    const AstIOType getType() const {
+    AstIOType getType() const {
         return type;
     }
 

@@ -170,7 +170,7 @@ public:
     AstNumericConstant(RamSigned value) : AstConstant(std::to_string(value)), type(Type::Int) {}
 
     AstNumericConstant(std::string constant, std::optional<Type> type = std::nullopt)
-            : AstConstant(std::move(constant)), type(std::move(type)) {}
+            : AstConstant(std::move(constant)), type(type) {}
 
     AstNumericConstant* clone() const override {
         auto* copy = new AstNumericConstant(getConstant(), getType());

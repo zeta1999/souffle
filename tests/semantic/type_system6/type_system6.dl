@@ -15,10 +15,5 @@
 FloatConv(1.0).
 FloatConv(1 + 1.0) :- true.
 
-// 2147483648 is interpreted as unsigned.
-.decl ToLargeForInt(x: number)
-ToLargeForInt(2147483648).
-ToLargeForInt(-2147483648). // This should be fine.
 
-
-.output FloatConv, ToLargeForInt
+.output FloatConv

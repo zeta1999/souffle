@@ -708,14 +708,14 @@ exec_plan_list
   : NUMBER COLON LPAREN exec_order_list RPAREN {
         $exec_order_list->setSrcLoc(@LPAREN);
         $$ = new AstExecutionPlan();
-        $$->setOrderFor(stord($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
+        $$->setOrderFor(RamDomainFromString($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
 
         $exec_order_list = nullptr;
     }
   | exec_plan_list[curr_list] COMMA NUMBER COLON LPAREN exec_order_list RPAREN {
         $exec_order_list->setSrcLoc(@LPAREN);
         $$ = $curr_list;
-        $$->setOrderFor(stord($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
+        $$->setOrderFor(RamDomainFromString($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
 
         $curr_list = nullptr;
         $exec_order_list = nullptr;
@@ -736,11 +736,11 @@ exec_order_list
 non_empty_exec_order_list
   : NUMBER {
         $$ = new AstExecutionOrder();
-        $$->appendAtomIndex(stord($NUMBER));
+        $$->appendAtomIndex(RamDomainFromString($NUMBER));
     }
   | non_empty_exec_order_list[curr_list] COMMA NUMBER {
         $$ = $curr_list;
-        $$->appendAtomIndex(stord($NUMBER));
+        $$->appendAtomIndex(RamDomainFromString($NUMBER));
 
         $curr_list = nullptr;
     }

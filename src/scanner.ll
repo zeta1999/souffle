@@ -127,14 +127,17 @@
 "$"                                   { return yy::parser::make_DOLLAR(yylloc); }
 "+"                                   { return yy::parser::make_PLUS(yylloc); }
 "-"                                   { return yy::parser::make_MINUS(yylloc); }
-"!"                                   { return yy::parser::make_EXCLAMATION(yylloc); }
 "("                                   { return yy::parser::make_LPAREN(yylloc); }
 ")"                                   { return yy::parser::make_RPAREN(yylloc); }
 ","                                   { return yy::parser::make_COMMA(yylloc); }
 ":"                                   { return yy::parser::make_COLON(yylloc); }
 ";"                                   { return yy::parser::make_SEMICOLON(yylloc); }
 "."                                   { return yy::parser::make_DOT(yylloc); }
+"<="                                  { return yy::parser::make_LE(yylloc); }
+">="                                  { return yy::parser::make_GE(yylloc); }
+"!="                                  { return yy::parser::make_NE(yylloc); }
 "="                                   { return yy::parser::make_EQUALS(yylloc); }
+"!"                                   { return yy::parser::make_EXCLAMATION(yylloc); }
 "*"                                   { return yy::parser::make_STAR(yylloc); }
 "@"                                   { return yy::parser::make_AT(yylloc); }
 "/"                                   { return yy::parser::make_SLASH(yylloc); }
@@ -145,7 +148,6 @@
 "<"                                   { return yy::parser::make_LT(yylloc); }
 ">"                                   { return yy::parser::make_GT(yylloc); }
 ":-"                                  { return yy::parser::make_IF(yylloc); }
-(!=|>=|<=)                            { return yy::parser::make_RELOP(yytext, yylloc); }
 [0-9]+"."[0-9]+"."[0-9]+"."[0-9]+     {
                                         try {
                                         char *token = std::strtok(yytext, ".");

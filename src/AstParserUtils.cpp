@@ -17,6 +17,7 @@
 #include "AstParserUtils.h"
 #include "AstClause.h"
 #include "AstNode.h"
+#include "AstUtils.h"
 #include "Util.h"
 #include <memory>
 #include <ostream>
@@ -92,7 +93,7 @@ std::vector<AstClause*> RuleBody::toClauseBodies() const {
                     base = new AstNegation(std::unique_ptr<AstAtom>(atom));
                     base->setSrcLoc(atom->getSrcLoc());
                 } else if (auto* cstr = dynamic_cast<AstConstraint*>(base)) {
-                    cstr->negate();
+                    negateConstraint(cstr);
                 }
             }
 

@@ -231,44 +231,35 @@ inline BinaryConstraintOp toBinaryConstraintOp(const std::string& symbol) {
 }
 
 /**
- * Determines whether arguments of constraint are numeric
- */
-inline bool isNumericBinaryConstraintOp(const BinaryConstraintOp op) {
+ * Get type binary constraint operates on.
+ *
+ * This function shouldn't be called on EQ/NE, as this operate on all types.
+ **/
+inline TypeAttribute getBinaryConstraintType(const BinaryConstraintOp op) {
     switch (op) {
-        case BinaryConstraintOp::EQ:
-        case BinaryConstraintOp::NE:
         case BinaryConstraintOp::LT:
-        case BinaryConstraintOp::ULT:
-        case BinaryConstraintOp::FLT:
         case BinaryConstraintOp::LE:
-        case BinaryConstraintOp::ULE:
-        case BinaryConstraintOp::FLE:
         case BinaryConstraintOp::GE:
-        case BinaryConstraintOp::UGE:
-        case BinaryConstraintOp::FGE:
         case BinaryConstraintOp::GT:
+            return TypeAttribute::Signed;
+        case BinaryConstraintOp::ULT:
+        case BinaryConstraintOp::ULE:
+        case BinaryConstraintOp::UGE:
         case BinaryConstraintOp::UGT:
+            return TypeAttribute::Unsigned;
+        case BinaryConstraintOp::FLT:
+        case BinaryConstraintOp::FLE:
+        case BinaryConstraintOp::FGE:
         case BinaryConstraintOp::FGT:
-            return true;
-
+            return TypeAttribute::Float;
         case BinaryConstraintOp::MATCH:
         case BinaryConstraintOp::NOT_MATCH:
         case BinaryConstraintOp::CONTAINS:
         case BinaryConstraintOp::NOT_CONTAINS:
-            return false;
-
-        case BinaryConstraintOp::__UNDEFINED__:
-            break;
+            return TypeAttribute::Symbol;
+        default:
+            assert(false && "Invalid argument");
     }
-    assert(false && "Uncovered case!");
-    return false;
-}
-
-/**
- * Determines whether arguments of constraint are numeric
- */
-inline bool isSymbolicBinaryConstraintOp(const BinaryConstraintOp op) {
-    return !isNumericBinaryConstraintOp(op);
 }
 
 }  // end of namespace souffle

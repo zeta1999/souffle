@@ -186,7 +186,9 @@ public:
             } else if (isConstraint) {
                 std::stringstream joinedConstraint;
 
-                if (isNumericBinaryConstraintOp(toBinaryConstraintOp(bodyRel))) {
+                BinaryConstraintOp binOp = toBinaryConstraintOp(bodyRel);
+                bool isEq = binOp == BinaryConstraintOp::EQ || binOp == BinaryConstraintOp::NE;
+                if (isEq || getBinaryConstraintType(binOp) == TypeAttribute::Signed) {
                     joinedConstraint << subproofTuple[0] << " " << bodyRel << " " << subproofTuple[1];
                 } else {
                     joinedConstraint << bodyRel << "(\"" << symTable.resolve(subproofTuple[0]) << "\", \""

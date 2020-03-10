@@ -310,16 +310,6 @@ public:
         setOperator(souffle::negatedConstraintOp(operation));
     }
 
-    /** Check whether constraint is a numeric constraint */
-    bool isNumerical() const {
-        return isNumericBinaryConstraintOp(operation);
-    }
-
-    /** Check whether constraint is a symbolic constraint */
-    bool isSymbolic() const {
-        return isSymbolicBinaryConstraintOp(operation);
-    }
-
     void print(std::ostream& os) const override {
         lhs->print(os);
         os << " " << toBinaryConstraintSymbol(operation) << " ";

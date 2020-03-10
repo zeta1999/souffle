@@ -80,7 +80,7 @@ struct ComponentContent {
         relations.push_back(std::move(rel));
     }
 
-    void add(std::unique_ptr<AstClause>& clause, ErrorReport& report) {
+    void add(std::unique_ptr<AstClause>& clause, ErrorReport& /* report */) {
         clauses.push_back(std::move(clause));
     }
 

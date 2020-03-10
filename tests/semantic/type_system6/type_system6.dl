@@ -5,14 +5,20 @@
 // - <souffle root>/licenses/SOUFFLE-UPL.txt
 
 //
-// Type System 5
+// Type System 6
 //
-// Check if implicit float conversion fails
+// Check if implicit conversion fails, where expected
 //
 
-
+// float can't be promoted to a number.
 .decl FloatConv(x: number)
 FloatConv(1.0).
 FloatConv(1 + 1.0) :- true.
 
-.output FloatConv
+// 2147483648 is interpreted as unsigned.
+.decl ToLargeForInt(x: number)
+ToLargeForInt(2147483648).
+ToLargeForInt(-2147483648). // This should be fine.
+
+
+.output FloatConv, ToLargeForInt

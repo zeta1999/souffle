@@ -1251,66 +1251,72 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
             // rewrite sub-expressions first
             node->apply(*this);
 
-            // Handle numeric constant
-            if (auto* numericConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
-                // Check if there is no value yet.
-                if (!numericConstant->getType().has_value()) {
-                    TypeSet types = typeAnalysis.getTypes(numericConstant);
+            // It's possible that at this stage we get undeclared clause.
+            // In this case types can't be assign to it, and the procedure getTypes can fail
+            try {
+                // Handle numeric constant
+                if (auto* numericConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
+                    // Check if there is no value yet.
+                    if (!numericConstant->getType().has_value()) {
+                        TypeSet types = typeAnalysis.getTypes(numericConstant);
 
-                    if (hasSignedType(types)) {
-                        numericConstant->setType(AstNumericConstant::Type::Int);
-                        changed = true;
-                    } else if (hasUnsignedType(types)) {
-                        numericConstant->setType(AstNumericConstant::Type::Uint);
-                        changed = true;
-                    } else if (hasFloatType(types)) {
-                        numericConstant->setType(AstNumericConstant::Type::Float);
-                        changed = true;
+                        if (hasSignedType(types)) {
+                            numericConstant->setType(AstNumericConstant::Type::Int);
+                            changed = true;
+                        } else if (hasUnsignedType(types)) {
+                            numericConstant->setType(AstNumericConstant::Type::Uint);
+                            changed = true;
+                        } else if (hasFloatType(types)) {
+                            numericConstant->setType(AstNumericConstant::Type::Float);
+                            changed = true;
+                        }
                     }
                 }
-            }
 
-            // Handle functor
-            if (auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
-                if (isOverloadedFunctor(functor->getFunction())) {
-                    // All args must be of the same type.
-                    if (all_of(functor->getArguments(), isFloat)) {
-                        FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Float);
-                        functor->setFunction(convertedFunctor);
-                        changed = true;
+                // Handle functor
+                if (auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
+                    if (isOverloadedFunctor(functor->getFunction())) {
+                        // All args must be of the same type.
+                        if (all_of(functor->getArguments(), isFloat)) {
+                            FunctorOp convertedFunctor =
+                                    convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Float);
+                            functor->setFunction(convertedFunctor);
+                            changed = true;
 
-                    } else if (all_of(functor->getArguments(), isUnsigned)) {
-                        FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Unsigned);
-                        functor->setFunction(convertedFunctor);
-                        changed = true;
+                        } else if (all_of(functor->getArguments(), isUnsigned)) {
+                            FunctorOp convertedFunctor =
+                                    convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Unsigned);
+                            functor->setFunction(convertedFunctor);
+                            changed = true;
+                        }
                     }
                 }
-            }
 
-            // Handle binary constraint
-            if (auto* binaryConstraint = dynamic_cast<AstBinaryConstraint*>(node.get())) {
-                if (isOverloaded(binaryConstraint->getOperator())) {
-                    // Get arguments
-                    auto* leftArg = binaryConstraint->getLHS();
-                    auto* rightArg = binaryConstraint->getRHS();
+                // Handle binary constraint
+                if (auto* binaryConstraint = dynamic_cast<AstBinaryConstraint*>(node.get())) {
+                    if (isOverloaded(binaryConstraint->getOperator())) {
+                        // Get arguments
+                        auto* leftArg = binaryConstraint->getLHS();
+                        auto* rightArg = binaryConstraint->getRHS();
 
-                    // Both args must be of the same type
-                    if (isFloat(leftArg) && isFloat(rightArg)) {
-                        BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), TypeAttribute::Float);
-                        binaryConstraint->setOperator(convertedConstraint);
-                        changed = true;
+                        // Both args must be of the same type
+                        if (isFloat(leftArg) && isFloat(rightArg)) {
+                            BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
+                                    binaryConstraint->getOperator(), TypeAttribute::Float);
+                            binaryConstraint->setOperator(convertedConstraint);
+                            changed = true;
 
-                    } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
-                        BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), TypeAttribute::Unsigned);
-                        binaryConstraint->setOperator(convertedConstraint);
-                        changed = true;
+                        } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
+                            BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
+                                    binaryConstraint->getOperator(), TypeAttribute::Unsigned);
+                            binaryConstraint->setOperator(convertedConstraint);
+                            changed = true;
+                        }
                     }
                 }
+            } catch (std::out_of_range&) {
             }
+
             // otherwise, return the original node
             return node;
         }

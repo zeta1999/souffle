@@ -566,11 +566,9 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
         void visitNumericConstant(const AstNumericConstant& constant) override {
             TypeSet possibleTypes;
 
-            std::optional<AstNumericConstant::Type> maybeType = constant.getType();
-
             // Check if the type is given.
-            if (maybeType.has_value()) {
-                switch (*maybeType) {
+            if (constant.getType().has_value()) {
+                switch (*constant.getType()) {
                     // Insert a type, but only after checking that parsing is possible.
                     case AstNumericConstant::Type::Int:
                         if (canBeParsedAsRamSigned(constant.getConstant())) {

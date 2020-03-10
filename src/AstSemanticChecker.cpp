@@ -165,17 +165,17 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // If constant has a declared type it must have this type.
-    // Otherwise there must exist at least one type that it can have.
+    // TODO (darth_tytus): Improve error messages.
+    // At this stage each constant should have a type (assigned by a transformer)
     visitDepthFirst(nodes, [&](const AstNumericConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
 
+        // No type could be assigned.
         if (!constant.getType().has_value()) {
             report.addError("Ambiguous constant (unable to deduce type)", constant.getSrcLoc());
             return;
         }
 
-        // TODO (darth_tytus): tell when everything else is good, but parsing of the constant failed.
         switch (*constant.getType()) {
             case AstNumericConstant::Type::Int:
                 if (!hasSignedType(types)) {

@@ -1230,7 +1230,7 @@ bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) 
     return update.changed;
 }
 
-bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationUnit) {
+bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUnit) {
     struct TypeRewriter : public AstNodeMapper {
         mutable bool changed{false};
         const TypeAnalysis& typeAnalysis;
@@ -1251,6 +1251,7 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
             // rewrite sub-expressions first
             node->apply(*this);
 
+            // Handle numeric constant
             if (auto* numericConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
                 // Check if there is no value yet.
                 if (!numericConstant->getType().has_value()) {

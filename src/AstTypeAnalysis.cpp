@@ -145,7 +145,7 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
 
 /**
  * A constraint factory ensuring that all the types associated to the variable
- * are subtypes of some values of set domain
+ * are subtypes of some type in the provided set (values)
  *
  * Values can't be all.
  */

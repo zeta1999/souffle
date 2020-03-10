@@ -53,7 +53,6 @@ TEST(AstPrint, NilConstant) {
     EXPECT_EQ(*tu1->getProgram(), *tu2->getProgram());
 }
 
-// TODO: fix this.
 TEST(AstPrint, NumberConstant) {
     auto testArgument = std::make_unique<AstNumericConstant>("2");
 

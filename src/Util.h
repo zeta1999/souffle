@@ -113,6 +113,11 @@ inline bool isPrefix(const std::string& prefix, const std::string& element);
 /**
  * Converts a string to a RamDomain
  *
+ * This procedure is a wrapper for stoi/stoll.
+ * It tries to imitate their behavior.
+ *
+ * The procedure accepts prefixes 0b (if base = 2) and 0x (if base = 16)
+ * If base = 0, the procedure will try to infer the base from prefix.
  */
 inline RamDomain RamDomainFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
@@ -128,16 +133,14 @@ inline RamDomain RamDomainFromString(
         }
     }
     std::string binaryNumber;
-    bool parsingBinary = false;
+    bool parsingBinary = base == 2;
 
     // Stoi/stoll can't handle base 2 prefix by default.
-    if (base == 2) {
+    if (parsingBinary) {
         if (isPrefix("-0b", str)) {
             binaryNumber = "-" + str.substr(3);
-            parsingBinary = true;
         } else if (isPrefix("0b", str)) {
             binaryNumber = str.substr(2);
-            parsingBinary = true;
         }
     }
     const std::string& tmp = parsingBinary ? binaryNumber : str;
@@ -167,13 +170,17 @@ inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position
 #endif
     return static_cast<RamFloat>(val);
 }
-
 /**
  * Converts a string to a RamUnsigned
+ *
+ * This procedure is a wrapper for stoul/stoull.
+ *
+ * The procedure accepts prefixes 0b (if base = 2) and 0x (if base = 16)
+ * If base = 0, the procedure will try to infer the base from prefix.
  */
 inline RamUnsigned RamUnsignedFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
-    // Be default C++ allows unsigned numbers starting with "-".
+    // Be default C++ (stoul) allows unsigned numbers starting with "-".
     if (isPrefix("-", str)) {
         throw std::invalid_argument("Unsigned number can't start with minus.");
     }
@@ -206,6 +213,11 @@ inline RamUnsigned RamUnsignedFromString(
 
     if (parsingBinary && position) {
         *position += 2;
+    }
+
+    // check if it's safe to cast (stoul return unsigned long)
+    if (val > std::numeric_limits<RamUnsigned>::max()) {
+        throw std::invalid_argument("Unsigned number of of bounds");
     }
 
     return static_cast<RamUnsigned>(val);

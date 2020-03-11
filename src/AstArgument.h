@@ -165,8 +165,6 @@ class AstNumericConstant : public AstConstant {
 public:
     enum class Type { Int, Uint, Float };
 
-    AstNumericConstant(std::string constant, Type type) : AstConstant(std::move(constant)), type(type) {}
-
     AstNumericConstant(RamSigned value) : AstConstant(std::to_string(value)), type(Type::Int) {}
 
     AstNumericConstant(std::string constant, std::optional<Type> type = std::nullopt)

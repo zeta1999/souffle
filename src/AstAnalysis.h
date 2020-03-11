@@ -30,7 +30,7 @@ public:
     virtual ~AstAnalysis() = default;
 
     /** run analysis for a Ast translation unit */
-    virtual void run(const AstTranslationUnit&) = 0;
+    virtual void run(const AstTranslationUnit& /*translationUnit*/) = 0;
 
     /** print the analysis result in HTML format */
     virtual void print(std::ostream&) const {}

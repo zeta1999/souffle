@@ -111,13 +111,12 @@ namespace souffle {
 inline bool isPrefix(const std::string& prefix, const std::string& element);
 
 /**
- * Converts a string to a RamDomain
+ * Converts a string to a RamSigned
  *
- * This procedure is a wrapper for stoi/stoll.
- * It tries to imitate their behavior.
+ * This procedure has similar behaviour to std::stoi/stoll.
  *
  * The procedure accepts prefixes 0b (if base = 2) and 0x (if base = 16)
- * If base = 0, the procedure will try to infer the base from prefix (same as stoi).
+ * If base = 0, the procedure will try to infer the base from the prefix, if present.
  */
 inline RamSigned RamSignedFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
@@ -135,7 +134,7 @@ inline RamSigned RamSignedFromString(
     std::string binaryNumber;
     bool parsingBinary = base == 2;
 
-    // Stoi/stoll can't handle base 2 prefix by default.
+    // stoi/stoll can't handle base 2 prefix by default.
     if (parsingBinary) {
         if (isPrefix("-0b", str)) {
             binaryNumber = "-" + str.substr(3);
@@ -151,7 +150,7 @@ inline RamSigned RamSignedFromString(
     val = std::stoi(tmp, position, base);
 #endif
 
-    if (parsingBinary && position) {
+    if (parsingBinary && position != nullptr) {
         *position += 2;
     }
 
@@ -173,10 +172,10 @@ inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position
 /**
  * Converts a string to a RamUnsigned
  *
- * This procedure is a wrapper for stoul/stoull.
+ * This procedure has similar behaviour to std::stoul/stoull.
  *
  * The procedure accepts prefixes 0b (if base = 2) and 0x (if base = 16)
- * If base = 0, the procedure will try to infer the base from prefix.
+ * If base = 0, the procedure will try to infer the base from the prefix, if present.
  */
 inline RamUnsigned RamUnsignedFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
@@ -206,12 +205,12 @@ inline RamUnsigned RamUnsignedFromString(
 
     RamUnsigned val;
 #if RAM_DOMAIN_SIZE == 64
-    val = std::stoul(tmp, position, base);
-#else
     val = std::stoull(tmp, position, base);
+#else
+    val = std::stoul(tmp, position, base);
 #endif
 
-    if (parsingBinary && position) {
+    if (parsingBinary && position != nullptr) {
         *position += 2;
     }
 

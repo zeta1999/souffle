@@ -1251,8 +1251,8 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
             // rewrite sub-expressions first
             node->apply(*this);
 
-            // It's possible that at this stage we get undeclared clause.
-            // In this case types can't be assign to it, and the procedure getTypes can fail
+            // It's possible that at this stage we get an undeclared clause.
+            // In this case types can't be assigned to it, and the procedure getTypes can fail
             try {
                 // Handle numeric constant
                 if (auto* numericConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
@@ -1305,7 +1305,6 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                                     binaryConstraint->getOperator(), TypeAttribute::Float);
                             binaryConstraint->setOperator(convertedConstraint);
                             changed = true;
-
                         } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
                             BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
                                     binaryConstraint->getOperator(), TypeAttribute::Unsigned);
@@ -1315,9 +1314,9 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                     }
                 }
             } catch (std::out_of_range&) {
+                // No types to convert in undeclared clauses
             }
 
-            // otherwise, return the original node
             return node;
         }
     };

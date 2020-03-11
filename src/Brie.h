@@ -1121,7 +1121,19 @@ public:
         if (!unsynced.root) return end();
 
         // check boundaries
-        if (!inBoundaries(i)) return end();
+        if (!inBoundaries(i)) {
+            // if it is on the lower end, return minimum result
+            if (i < unsynced.offset) {
+                const auto& value = unsynced.first->cell[0].value;
+                auto res = iterator(unsynced.first, std::make_pair(unsynced.offset, value));
+                if (value == value_type()) {
+                    ++res;
+                }
+                return res;
+            }
+            // otherwise it is on the high end, return end iterator
+            return end();
+        }
 
         // navigate to value
         Node* node = unsynced.root;
@@ -1160,6 +1172,26 @@ public:
                 node = next;
             }
         }
+    }
+
+    /**
+     * An operation obtaining the smallest non-default element such that it's index is greater
+     * the given index.
+     */
+    iterator upperBound(index_type i) const {
+        op_context ctxt;
+        return upperBound(i, ctxt);
+    }
+
+    /**
+     * An operation obtaining the smallest non-default element such that it's index is greater
+     * the given index. A operation context can be provided for exploiting temporal locality.
+     */
+    iterator upperBound(index_type i, op_context& ctxt) const {
+        if (i == std::numeric_limits<index_type>::max()) {
+            return end();
+        }
+        return lowerBound(i + 1, ctxt);
     }
 
 private:
@@ -1749,7 +1781,9 @@ public:
         }
 
         // there are bits left, use least significant bit of those
-        mask &= ((~uint64_t(0)) << (i & LEAF_INDEX_MASK));  // remove all bits before pos i
+        if (it->first == i >> LEAF_INDEX_WIDTH) {
+            mask &= ((~uint64_t(0)) << (i & LEAF_INDEX_MASK));  // remove all bits before pos i
+        }
 
         // compute value represented by least significant bit
         index_type pos = __builtin_ctzll(mask);
@@ -1758,9 +1792,19 @@ public:
         mask = mask & ~(1ull << pos);
 
         // construct value of this located bit
-        index_type val = i & ~LEAF_INDEX_MASK;
-        val |= pos;
+        index_type val = (it->first << LEAF_INDEX_WIDTH) | pos;
         return iterator(it, mask, val);
+    }
+
+    /**
+     * Locates an iterator to the first element in this sparse bit map than is greater
+     * than the given index.
+     */
+    iterator upper_bound(index_type i) const {
+        if (i == std::numeric_limits<index_type>::max()) {
+            return end();
+        }
+        return lower_bound(i + 1);
     }
 
     /**
@@ -1837,6 +1881,9 @@ public:
 
         template <unsigned Pos, unsigned Dimensions>
         friend struct fix_lower_bound;
+
+        template <unsigned Pos, unsigned Dimensions>
+        friend struct fix_upper_bound;
 
         template <unsigned Pos, unsigned Dimensions>
         friend struct fix_first;
@@ -2116,6 +2163,71 @@ struct fix_lower_bound {
 
         // attempt to fix the rest
         if (!fix_lower_bound<Pos + 1, Dim>()(cur->second->getStore(), iter, entry)) {
+            // if it does not work, since there are no matching elements in this branch, go to next
+            entry_type sub = entry;
+            sub[Pos] += 1;
+            for (size_t i = Pos + 1; i < Dim; ++i) {
+                sub[i] = 0;
+            }
+            return (*this)(store, iter, sub);
+        }
+
+        // remember result
+        get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
+
+        // update iterator value
+        iter.value[Pos] = cur->first;
+
+        // done!
+        return true;
+    }
+};
+
+/**
+ * A functor initializing an iterator upon creation to reference the first element
+ * within a given Trie being greater than a given value .
+ */
+template <unsigned Pos, unsigned Dim>
+struct fix_upper_bound {
+    template <unsigned bits, typename iterator, typename entry_type>
+    bool operator()(const SparseBitMap<bits>& store, iterator& iter, const entry_type& entry) const {
+        // search in current level
+        auto cur = store.upper_bound(entry[Pos]);
+
+        if (cur == store.end()) {
+            return false;
+        }
+
+        get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
+
+        assert(entry[Pos] <= RamDomain(*cur));
+        iter.value[Pos] = *cur;
+
+        // no more remaining levels to fix
+        return true;
+    }
+
+    template <typename Store, typename iterator, typename entry_type>
+    bool operator()(const Store& store, iterator& iter, const entry_type& entry) const {
+        // search in current level (if it is not the last level, we need a lower bound)
+        auto cur = store.lowerBound(entry[Pos]);
+
+        // if no lower boundary is found, be done
+        if (cur == store.end()) {
+            return false;
+        }
+        assert(RamDomain(cur->first) >= entry[Pos]);
+
+        // if the lower bound is higher than the requested value, go to first in subtree
+        if (RamDomain(cur->first) > entry[Pos]) {
+            get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
+            iter.value[Pos] = cur->first;
+            fix_first<Pos + 1, Dim>()(cur->second->getStore(), iter);
+            return true;
+        }
+
+        // attempt to fix the rest
+        if (!fix_upper_bound<Pos + 1, Dim>()(cur->second->getStore(), iter, entry)) {
             // if it does not work, since there are no matching elements in this branch, go to next
             entry_type sub = entry;
             sub[Pos] += 1;
@@ -2523,6 +2635,37 @@ public:
     iterator lower_bound(const entry_type& entry) const {
         op_context ctxt;
         return lower_bound(entry, ctxt);
+    }
+
+    /**
+     * Obtains an iterator to the first element greater than the given entry value, or end if there is no such
+     * element.
+     *
+     * @param entry the upper bound for this search
+     * @param ctxt the operation context to be utilized
+     * @return an iterator addressing the first element in this structure greater than the given value
+     */
+    iterator upper_bound(const entry_type& entry, op_context& /* ctxt */) const {
+        // start with a default-initialized iterator
+        iterator res;
+
+        // adapt it level by level
+        bool found = detail::fix_upper_bound<0, Dim>()(store, res, entry);
+
+        // use the result
+        return found ? res : end();
+    }
+
+    /**
+     * Obtains an iterator to the first element greater than the given entry value, or end if there is no such
+     * element.
+     *
+     * @param entry the upper bound for this search
+     * @return an iterator addressing the first element in this structure greater than the given value
+     */
+    iterator upper_bound(const entry_type& entry) const {
+        op_context ctxt;
+        return upper_bound(entry, ctxt);
     }
 
     /**
@@ -3169,6 +3312,15 @@ public:
     iterator lower_bound(const entry_type& entry) const {
         op_context ctxt;
         return lower_bound(entry, ctxt);
+    }
+
+    iterator upper_bound(const entry_type& entry, op_context&) const {
+        return iterator(map.upper_bound(entry[0]));
+    }
+
+    iterator upper_bound(const entry_type& entry) const {
+        op_context ctxt;
+        return upper_bound(entry, ctxt);
     }
 
     /**

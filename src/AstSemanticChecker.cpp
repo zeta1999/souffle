@@ -206,13 +206,20 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // record initializations have the same size as their types
     visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        if (isRecordType(types)) {
-            for (const Type& type : types) {
-                if (constant.getArguments().size() !=
-                        dynamic_cast<const RecordType*>(&type)->getFields().size()) {
-                    report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
-                }
-            }
+
+        if (!isRecordType(types)) {
+            return;
+        }
+
+        if (types.size() != 1) {
+            report.addError("Ambiguous records", constant.getSrcLoc());
+        }
+
+        // At this point we know that there is exactly one type in set, so we can take it.
+        const RecordType* recordType = dynamic_cast<const RecordType*>(&(*types.begin()));
+
+        if (recordType->getFields().size() != constant.getArguments().size()) {
+            report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
         }
     });
 

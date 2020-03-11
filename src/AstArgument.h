@@ -146,10 +146,6 @@ public:
         return res;
     }
 
-    bool operator==(const AstStringConstant& other) const {
-        return getConstant() == other.getConstant();
-    }
-
 protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstStringConstant*>(&node));
@@ -160,37 +156,43 @@ protected:
 
 /**
  * Numeric Constant
+ *
+ * The constant can be initialized with type.
+ * If this is the case, the typesystem will be forced to use it.
+ * Otherwise the type is inferred from context.
  */
 class AstNumericConstant : public AstConstant {
 public:
     enum class Type { Int, Uint, Float };
 
-    AstNumericConstant(std::string constant, Type type = Type::Int)
+    AstNumericConstant(RamSigned value) : AstConstant(std::to_string(value)), type(Type::Int) {}
+
+    AstNumericConstant(std::string constant, std::optional<Type> type = std::nullopt)
             : AstConstant(std::move(constant)), type(type) {}
 
     AstNumericConstant* clone() const override {
-        auto* copy = new AstNumericConstant(getConstant(), type);
+        auto* copy = new AstNumericConstant(getConstant(), getType());
         copy->setSrcLoc(getSrcLoc());
         return copy;
     }
 
-    Type getType() const {
+    const std::optional<Type>& getType() const {
         return type;
     }
 
-    bool operator==(const AstNumericConstant& other) const {
-        return type == other.type && getConstant() == other.getConstant();
+    void setType(Type newType) {
+        type = newType;
     }
 
 protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstNumericConstant*>(&node));
         const auto& other = static_cast<const AstNumericConstant&>(node);
-        return getConstant() == other.getConstant() && type == other.type;
+        return getConstant() == other.getConstant() && getType() == other.getType();
     }
 
 private:
-    const Type type;
+    std::optional<Type> type;
 };
 
 /**

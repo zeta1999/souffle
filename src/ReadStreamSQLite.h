@@ -74,7 +74,7 @@ protected:
                     case 'u':
                     case 'f':
                     case 'r':
-                        tuple[column] = RamDomainFromString(element);
+                        tuple[column] = RamSignedFromString(element);
                         break;
                     default:
                         assert(false && "Invalid type attribute");

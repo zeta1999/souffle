@@ -33,6 +33,14 @@ public:
 };
 
 /**
+ * Logical constraint
+ */
+class AstConstraint : public AstLiteral {
+public:
+    AstConstraint* clone() const override = 0;
+};
+
+/**
  * Argument
  */
 class AstArgument : public AstNode {

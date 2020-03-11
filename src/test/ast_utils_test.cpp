@@ -25,9 +25,7 @@
 #include "ParserDriver.h"
 #include "test.h"
 
-namespace souffle {
-
-namespace test {
+namespace souffle::test {
 
 TEST(AstUtils, Grounded) {
     // create an example clause:
@@ -83,7 +81,6 @@ TEST(AstUtils, GroundedRecords) {
             R"(
                  .type N
                  .type R = [ a : N, B : N ]
-
 
                  .decl r ( r : R )
                  .decl s ( r : N )
@@ -506,5 +503,4 @@ TEST(AstUtils, ReorderClauseAtoms) {
             toString(*reorderedClause1));
 }
 
-}  // end namespace test
-}  // end namespace souffle
+}  // end namespace souffle::test

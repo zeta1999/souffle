@@ -556,15 +556,13 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                         // Empty aggregator body!
                         // Not currently handled, so add in a false literal in the body
                         // E.g. max x : { } =becomes=> max 1 : {0 = 1}
-                        replacementAggregator->setTargetExpression(
-                                std::make_unique<AstNumericConstant>(std::string("1")));
+                        replacementAggregator->setTargetExpression(std::make_unique<AstNumericConstant>(1));
 
                         // Add '0 = 1' if false was found, '1 = 1' otherwise
                         int lhsConstant = containsFalse ? 0 : 1;
-                        replacementAggregator->addBodyLiteral(
-                                std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
-                                        std::make_unique<AstNumericConstant>(std::to_string(lhsConstant)),
-                                        std::make_unique<AstNumericConstant>(std::string("1"))));
+                        replacementAggregator->addBodyLiteral(std::make_unique<AstBinaryConstraint>(
+                                BinaryConstraintOp::EQ, std::make_unique<AstNumericConstant>(lhsConstant),
+                                std::make_unique<AstNumericConstant>(1)));
                     }
 
                     return replacementAggregator;
@@ -1232,7 +1230,7 @@ bool RemoveTypecastsTransformer::transform(AstTranslationUnit& translationUnit) 
     return update.changed;
 }
 
-bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationUnit) {
+bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUnit) {
     struct TypeRewriter : public AstNodeMapper {
         mutable bool changed{false};
         const TypeAnalysis& typeAnalysis;
@@ -1253,48 +1251,72 @@ bool PolymorphicOperatorsTransformer::transform(AstTranslationUnit& translationU
             // rewrite sub-expressions first
             node->apply(*this);
 
-            // Handle functor
-            if (auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
-                if (isOverloadedFunctor(functor->getFunction())) {
-                    // All args must be of the same type.
-                    if (all_of(functor->getArguments(), isFloat)) {
-                        FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Float);
-                        functor->setFunction(convertedFunctor);
-                        changed = true;
+            // It's possible that at this stage we get an undeclared clause.
+            // In this case types can't be assigned to it, and the procedure getTypes can fail
+            try {
+                // Handle numeric constant
+                if (auto* numericConstant = dynamic_cast<AstNumericConstant*>(node.get())) {
+                    // Check if there is no value yet.
+                    if (!numericConstant->getType().has_value()) {
+                        TypeSet types = typeAnalysis.getTypes(numericConstant);
 
-                    } else if (all_of(functor->getArguments(), isUnsigned)) {
-                        FunctorOp convertedFunctor =
-                                convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Unsigned);
-                        functor->setFunction(convertedFunctor);
-                        changed = true;
+                        if (hasSignedType(types)) {
+                            numericConstant->setType(AstNumericConstant::Type::Int);
+                            changed = true;
+                        } else if (hasUnsignedType(types)) {
+                            numericConstant->setType(AstNumericConstant::Type::Uint);
+                            changed = true;
+                        } else if (hasFloatType(types)) {
+                            numericConstant->setType(AstNumericConstant::Type::Float);
+                            changed = true;
+                        }
                     }
                 }
-            }
 
-            // Handle binary constraint
-            if (auto* binaryConstraint = dynamic_cast<AstBinaryConstraint*>(node.get())) {
-                if (isOverloaded(binaryConstraint->getOperator())) {
-                    // Get arguments
-                    auto* leftArg = binaryConstraint->getLHS();
-                    auto* rightArg = binaryConstraint->getRHS();
+                // Handle functor
+                if (auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
+                    if (isOverloadedFunctor(functor->getFunction())) {
+                        // All args must be of the same type.
+                        if (all_of(functor->getArguments(), isFloat)) {
+                            FunctorOp convertedFunctor =
+                                    convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Float);
+                            functor->setFunction(convertedFunctor);
+                            changed = true;
 
-                    // Both args must be of the same type
-                    if (isFloat(leftArg) && isFloat(rightArg)) {
-                        BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), TypeAttribute::Float);
-                        binaryConstraint->setOperator(convertedConstraint);
-                        changed = true;
-
-                    } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
-                        BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                binaryConstraint->getOperator(), TypeAttribute::Unsigned);
-                        binaryConstraint->setOperator(convertedConstraint);
-                        changed = true;
+                        } else if (all_of(functor->getArguments(), isUnsigned)) {
+                            FunctorOp convertedFunctor =
+                                    convertOverloadedFunctor(functor->getFunction(), TypeAttribute::Unsigned);
+                            functor->setFunction(convertedFunctor);
+                            changed = true;
+                        }
                     }
                 }
+
+                // Handle binary constraint
+                if (auto* binaryConstraint = dynamic_cast<AstBinaryConstraint*>(node.get())) {
+                    if (isOverloaded(binaryConstraint->getOperator())) {
+                        // Get arguments
+                        auto* leftArg = binaryConstraint->getLHS();
+                        auto* rightArg = binaryConstraint->getRHS();
+
+                        // Both args must be of the same type
+                        if (isFloat(leftArg) && isFloat(rightArg)) {
+                            BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
+                                    binaryConstraint->getOperator(), TypeAttribute::Float);
+                            binaryConstraint->setOperator(convertedConstraint);
+                            changed = true;
+                        } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
+                            BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
+                                    binaryConstraint->getOperator(), TypeAttribute::Unsigned);
+                            binaryConstraint->setOperator(convertedConstraint);
+                            changed = true;
+                        }
+                    }
+                }
+            } catch (std::out_of_range&) {
+                // No types to convert in undeclared clauses
             }
-            // otherwise, return the original node
+
             return node;
         }
     };

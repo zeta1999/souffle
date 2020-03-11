@@ -49,55 +49,29 @@ class AstIO;
 class AstProgram : public AstNode {
 public:
     void print(std::ostream& os) const override {
-        for (const auto& cur : types) {
-            os << *cur << "\n";
+        if (!pragmaDirectives.empty()) {
+            os << join(pragmaDirectives, "\n\n", print_deref<std::unique_ptr<AstPragma>>()) << "\n";
         }
         if (!components.empty()) {
-            for (const auto& cur : components) {
-                os << *cur << "\n";
-            }
+            os << join(components, "\n", print_deref<std::unique_ptr<AstComponent>>()) << "\n";
         }
         if (!instantiations.empty()) {
-            os << "\n";
-            for (const auto& cur : instantiations) {
-                os << *cur << "\n";
-            }
+            os << join(instantiations, "\n", print_deref<std::unique_ptr<AstComponentInit>>()) << "\n";
         }
-
-        for (const auto& f : functors) {
-            os << "\n\n// -- " << f->getName() << " --\n";
-            f->print(os);
-            os << "\n";
+        if (!types.empty()) {
+            os << join(types, "\n", print_deref<std::unique_ptr<AstType>>()) << "\n";
         }
-
-        // print declared relations and their corresponding clauses
-        std::set<AstQualifiedName> declaredRelations;
-        for (const auto& rel : relations) {
-            declaredRelations.insert(rel->getQualifiedName());
-            os << "\n\n// -- " << rel->getQualifiedName() << " --\n";
-            os << *rel << "\n\n";
-            for (const auto& clause : clauses) {
-                if (clause->getHead()->getQualifiedName() == rel->getQualifiedName()) {
-                    os << *clause << "\n\n";
-                }
-            }
+        if (!functors.empty()) {
+            os << join(functors, "\n", print_deref<std::unique_ptr<AstFunctorDeclaration>>()) << "\n";
         }
-
-        // print clauses without a corresponding relation declaration
-        for (const auto& clause : clauses) {
-            if (!contains(declaredRelations, clause->getHead()->getQualifiedName())) {
-                os << *clause << "\n\n";
-            }
+        if (!relations.empty()) {
+            os << join(relations, "\n", print_deref<std::unique_ptr<AstRelation>>()) << "\n";
         }
-
+        if (!clauses.empty()) {
+            os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
+        }
         if (!ios.empty()) {
             os << join(ios, "\n\n", print_deref<std::unique_ptr<AstIO>>()) << "\n";
-        }
-
-        if (!pragmaDirectives.empty()) {
-            for (const auto& cur : pragmaDirectives) {
-                os << *cur << "\n";
-            }
         }
     }
 

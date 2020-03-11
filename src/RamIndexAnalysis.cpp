@@ -346,11 +346,10 @@ SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
     SearchSignature keys = 0;
     assert(std::distance(bgn, end) <= MAX_SEARCH_KEYS && "too many patterns for index signature");
 
-    for (auto cur = bgn; cur != end; ++cur) {
-        keys <<= 1;
-
+    size_t i = 0;
+    for (auto cur = bgn; cur != end; ++cur, ++i) {
         if (!isRamUndefValue(*cur)) {
-            keys |= 1;
+            keys |= SearchSignature(i) << i;
         }
     }
     return keys;

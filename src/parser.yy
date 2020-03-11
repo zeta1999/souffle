@@ -708,14 +708,14 @@ exec_plan_list
   : NUMBER COLON LPAREN exec_order_list RPAREN {
         $exec_order_list->setSrcLoc(@LPAREN);
         $$ = new AstExecutionPlan();
-        $$->setOrderFor(stord($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
+        $$->setOrderFor(RamSignedFromString($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
 
         $exec_order_list = nullptr;
     }
   | exec_plan_list[curr_list] COMMA NUMBER COLON LPAREN exec_order_list RPAREN {
         $exec_order_list->setSrcLoc(@LPAREN);
         $$ = $curr_list;
-        $$->setOrderFor(stord($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
+        $$->setOrderFor(RamSignedFromString($NUMBER), std::unique_ptr<AstExecutionOrder>($exec_order_list));
 
         $curr_list = nullptr;
         $exec_order_list = nullptr;
@@ -736,11 +736,11 @@ exec_order_list
 non_empty_exec_order_list
   : NUMBER {
         $$ = new AstExecutionOrder();
-        $$->appendAtomIndex(stord($NUMBER));
+        $$->appendAtomIndex(RamSignedFromString($NUMBER));
     }
   | non_empty_exec_order_list[curr_list] COMMA NUMBER {
         $$ = $curr_list;
-        $$->appendAtomIndex(stord($NUMBER));
+        $$->appendAtomIndex(RamSignedFromString($NUMBER));
 
         $curr_list = nullptr;
     }
@@ -897,7 +897,7 @@ arg
         $$->setSrcLoc(@$);
     }
   | NUMBER {
-        $$ = new AstNumericConstant($NUMBER, AstNumericConstant::Type::Int);
+        $$ = new AstNumericConstant($NUMBER);
         $$->setSrcLoc(@$);
     }
   | UNDERSCORE {
@@ -972,25 +972,20 @@ arg
     /* -- intrinsic functor -- */
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
-        if (const auto* original = dynamic_cast<const AstNumericConstant*>($nested_arg)) {
-            switch (original->getType()) {
-                case AstNumericConstant::Type::Int:
-                    $$ = new AstNumericConstant(std::to_string(-1 * RamDomainFromString(original->getConstant())));
-                    break;
-                case AstNumericConstant::Type::Float:
-                    $$ = new AstNumericConstant(std::to_string(-1 * RamFloatFromString(original->getConstant())), original->getType());
-                    break;
-                case AstNumericConstant::Type::Uint:
-                    assert(false && "We can't parse Uint");
-            }
+
+        // If we have a constant, that is not already negated we create a new constant.
+        const auto* asNumeric = dynamic_cast<const AstNumericConstant*>($nested_arg);
+        if (asNumeric && !isPrefix("-", asNumeric->getConstant())) {
+            $$ = new AstNumericConstant("-" + asNumeric->getConstant(), asNumeric->getType());
             $$->setSrcLoc(@nested_arg);
+
+        // Otherwise, create a functor.
         } else {
             $$ = new AstIntrinsicFunctor(FunctorOp::NEG,
                 std::unique_ptr<AstArgument>($nested_arg));
             $nested_arg = nullptr;
             $$->setSrcLoc(@$);
         }
-
     }
   | BW_NOT arg[nested_arg] {
         $$ = new AstIntrinsicFunctor(FunctorOp::BNOT,

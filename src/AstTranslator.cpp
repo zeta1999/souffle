@@ -26,6 +26,7 @@
 #include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
+#include "AstTypeAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
@@ -57,6 +58,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <typeinfo>
 #include <utility>
@@ -291,11 +293,15 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitNumericConstant(const AstNumericConstant& c) override {
-            switch (c.getType()) {
+            assert(c.getType().has_value() && "At this points all constants should have type.");
+
+            switch (*c.getType()) {
                 case AstNumericConstant::Type::Int:
-                    return std::make_unique<RamSignedConstant>(RamDomainFromString(c.getConstant()));
+                    return std::make_unique<RamSignedConstant>(
+                            RamSignedFromString(c.getConstant(), nullptr, 0));
                 case AstNumericConstant::Type::Uint:
-                    return std::make_unique<RamUnsignedConstant>(RamUnsignedFromString(c.getConstant()));
+                    return std::make_unique<RamUnsignedConstant>(
+                            RamUnsignedFromString(c.getConstant(), nullptr, 0));
                 case AstNumericConstant::Type::Float:
                     return std::make_unique<RamFloatConstant>(RamFloatFromString(c.getConstant()));
                 default:
@@ -1688,6 +1694,7 @@ const Json AstTranslator::getRecordsTypes(void) {
 std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationUnit& tu) {
     auto ram_start = std::chrono::high_resolution_clock::now();
     program = tu.getProgram();
+
     translateProgram(tu);
     SymbolTable& symTab = getSymbolTable();
     ErrorReport& errReport = tu.getErrorReport();

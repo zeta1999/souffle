@@ -165,27 +165,36 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all signed constants are used as numbers
+    // TODO (darth_tytus): Improve error messages.
+    // At this stage each constant should have a type (assigned by a transformer)
     visitDepthFirst(nodes, [&](const AstNumericConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        switch (constant.getType()) {
+
+        // No type could be assigned.
+        if (!constant.getType().has_value()) {
+            report.addError("Ambiguous constant (unable to deduce type)", constant.getSrcLoc());
+            return;
+        }
+
+        switch (*constant.getType()) {
             case AstNumericConstant::Type::Int:
-                if (!isNumberType(types)) {
+                if (!hasSignedType(types)) {
                     report.addError("Number constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
             case AstNumericConstant::Type::Uint:
-                if (!isUnsignedType(types)) {
+                if (!hasUnsignedType(types)) {
                     report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
             case AstNumericConstant::Type::Float:
-                if (!isFloatType(types)) {
+                if (!hasFloatType(types)) {
                     report.addError("Float constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
         }
     });
+
     // all nil constants are used as records
     visitDepthFirst(nodes, [&](const AstNilConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);

@@ -95,7 +95,7 @@ protected:
                                 readRecord(element, typeAttributes[inputMap[column]], 0, &charactersRead);
                         break;
                     case 'i':
-                        tuple[inputMap[column]] = RamDomainFromString(element, &charactersRead);
+                        tuple[inputMap[column]] = RamSignedFromString(element, &charactersRead);
                         break;
                     case 'u':
                         tuple[inputMap[column]] = ramBitCast(readRamUnsigned(element, charactersRead));
@@ -134,30 +134,13 @@ protected:
 
         // Check prefix and parse the input.
         if (isPrefix("0b", element)) {
-            // Default C++ parsing function don't recognize this prefix. Thus we take a substr.
-            value = RamUnsignedFromString(element.substr(2), &charactersRead, 2);
-            charactersRead += 2;
+            value = RamUnsignedFromString(element, &charactersRead, 2);
         } else if (isPrefix("0x", element)) {
             value = RamUnsignedFromString(element, &charactersRead, 16);
         } else {
             value = RamUnsignedFromString(element, &charactersRead);
         }
         return value;
-    }
-
-    bool isPrefix(const std::string& prefix, const std::string& element) {
-        auto itPrefix = prefix.begin();
-        auto itElement = element.begin();
-
-        while (itPrefix != prefix.end() && itElement != element.end()) {
-            if (*itPrefix != *itElement) {
-                break;
-            }
-            ++itPrefix;
-            ++itElement;
-        }
-
-        return itPrefix == prefix.end();
     }
 
     std::string nextElement(const std::string& line, size_t& start, size_t& end) {

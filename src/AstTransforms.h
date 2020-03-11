@@ -557,15 +557,14 @@ private:
 };
 
 /**
- * Transformation pass to determine operator types for polymorphic
- * operators.
- * Operators = Functors (plus, minus...) ∪ binary constraints (>, ≥ ...)
+ * Transformation pass to determine instances of polymorphic object
+ * objects = Functors (plus, minus...) ∪ binary constraints (>, ≥ ...) ∪ numeric constants (int, uint, float)
  */
 
-class PolymorphicOperatorsTransformer : public AstTransformer {
+class PolymorphicObjectsTransformer : public AstTransformer {
 public:
     std::string getName() const override {
-        return "PolymorphicOperatorsTransformer";
+        return "PolymorphicObjectsTransformer";
     }
 
 private:

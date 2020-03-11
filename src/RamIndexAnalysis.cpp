@@ -347,11 +347,11 @@ SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
     assert(std::distance(bgn, end) <= MAX_SEARCH_KEYS && "too many patterns for index signature");
 
     for (auto cur = bgn; cur != end; ++cur) {
+        keys <<= 1;
+
         if (!isRamUndefValue(*cur)) {
             keys |= 1;
         }
-
-        keys <<= 1;
     }
     return keys;
 }
@@ -381,7 +381,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* ex
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) const {
-    assert(ramRel->getArity() < MAX_SEARCH_KEYS && "relation is too big to fit in search key");
+    assert(ramRel->getArity() <= MAX_SEARCH_KEYS && "relation is too big to fit in search key");
     return (SearchSignature(1) << ramRel->getArity()) - 1;
 }
 

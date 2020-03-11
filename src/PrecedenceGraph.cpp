@@ -77,6 +77,12 @@ std::string toBase64(const std::string& data) {
 }
 
 std::string convertDotToSVG(const std::string& dotSpec) {
+    // Check if dot is present
+    std::string cmd = which("dot");
+    if (!isExecutable(cmd)) {
+        return "";
+    }
+
     TempFileStream dotFile;
     dotFile << dotSpec;
     dotFile.flush();
@@ -89,14 +95,10 @@ void printHTMLGraph(std::ostream& out, const std::string& dotSpec, const std::st
     if (data.find("<svg") != std::string::npos) {
         out << "<img alt='graph image' src='data:image/svg+xml;base64," << toBase64(data) << "'><br/>\n";
     } else {
-        out << "<p>(error: unable to generate dot graph image)</p>";
+        out << "<div class='" << id << "-source"
+            << "'>\n<pre>" << dotSpec << "</pre>\n";
+        out << "</div>\n";
     }
-    out << "<a href=\"javascript:toggleVisibility('" << id << "-source"
-        << "')\">(show dot source)</a>\n";
-    out << "<div id='" << id << "-source"
-        << "' style='display:none'>\n";
-    out << "<pre>" << dotSpec << "</pre>\n";
-    out << "</div>\n";
 }
 
 }  // namespace
@@ -140,7 +142,7 @@ void PrecedenceGraph::print(std::ostream& os) const {
         }
     }
     ss << "}\n";
-    printHTMLGraph(os, ss.str(), name);
+    printHTMLGraph(os, ss.str(), getName());
 }
 
 void RedundantRelations::run(const AstTranslationUnit& translationUnit) {
@@ -348,7 +350,7 @@ void SCCGraph::print(std::ostream& os) const {
         }
     }
     ss << "}";
-    printHTMLGraph(os, ss.str(), name);
+    printHTMLGraph(os, ss.str(), getName());
 }
 
 int TopologicallySortedSCCGraph::topologicalOrderingCost(const std::vector<size_t>& permutationOfSCCs) const {

@@ -535,7 +535,7 @@ TEST(LambdaBTreeTest, Insert) {
     // now lets insert something that already exists (the anterior is all that matters)
     TestPair alreadyExistsPair = {55, 12313123};
     EXPECT_EQ(t.insert(alreadyExistsPair,
-                      [&](TestPair& tp) {
+                      [&](TestPair&) {
                           EXPECT_TRUE(false &&
                                       "newly inserted function called for an element that already exists!");
                           // some dummy value

@@ -339,45 +339,50 @@ void RamIndexAnalysis::print(std::ostream& os) const {
     }
 }
 
-SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {
+namespace {
+constexpr int MAX_SEARCH_KEYS = int(sizeof(SearchSignature) * CHAR_BIT);
+template <typename Iter>
+SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
     SearchSignature keys = 0;
-    std::vector<RamExpression*> rangePattern = search->getRangePattern();
-    for (int i = 0; i < (int)rangePattern.size(); i++) {
-        if (!isRamUndefValue(rangePattern[i])) {
-            keys |= (1 << i);
+    assert(std::distance(bgn, end) <= MAX_SEARCH_KEYS && "too many patterns for index signature");
+
+    for (auto cur = bgn; cur != end; ++cur) {
+        if (!isRamUndefValue(*cur)) {
+            keys |= 1;
         }
+
+        keys <<= 1;
     }
     return keys;
+}
+
+template <typename Seq>
+SearchSignature searchSignature(Seq const& xs) {
+    return searchSignature(xs.begin(), xs.end());
+}
+}  // namespace
+
+SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {
+    return searchSignature(search->getRangePattern());
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(
         const RamProvenanceExistenceCheck* provExistCheck) const {
     const auto values = provExistCheck->getValues();
-    SearchSignature res = 0;
     auto auxiliaryArity = provExistCheck->getRelation().getAuxiliaryArity();
+
     // values.size() - auxiliaryArity because we discard the height annotations
-    for (size_t i = 0; i < values.size() - auxiliaryArity; i++) {
-        if (!isRamUndefValue(values[i])) {
-            res |= (1 << i);
-        }
-    }
-    return res;
+    auto const numSig = values.size() - auxiliaryArity;
+    return searchSignature(values.begin(), values.end() + numSig);
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {
-    const auto values = existCheck->getValues();
-    SearchSignature res = 0;
-    for (int i = 0; i < (int)values.size(); i++) {
-        if (!isRamUndefValue(values[i])) {
-            res |= (1 << i);
-        }
-    }
-    return res;
+    return searchSignature(existCheck->getValues());
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) const {
-    SearchSignature res = (1 << ramRel->getArity()) - 1;
-    return res;
+    assert(ramRel->getArity() < MAX_SEARCH_KEYS && "relation is too big to fit in search key");
+    return (SearchSignature(1) << ramRel->getArity()) - 1;
 }
 
 bool RamIndexAnalysis::isTotalSignature(const RamAbstractExistenceCheck* existCheck) const {

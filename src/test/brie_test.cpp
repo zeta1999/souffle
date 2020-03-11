@@ -317,11 +317,11 @@ TEST(SparseArray, LowerBound) {
 }
 
 TEST(SparseArray, LowerBound2) {
-    for (int m = 0; m < 256; ++m) {
-        SparseArray<int> a;
-        std::set<int> r;
+    for (uint32_t m = 0; m < 256; ++m) {
+        SparseArray<uint32_t> a;
+        std::set<uint32_t> r;
 
-        for (int i = 0; i < 8; i++) {
+        for (uint32_t i = 0; i < 8; i++) {
             if (!(m & (1 << i))) {
                 continue;
             }
@@ -329,7 +329,7 @@ TEST(SparseArray, LowerBound2) {
             r.insert(i * 100);
         }
 
-        for (int i = 0; i < 10; i++) {
+        for (uint32_t i = 0; i < 10; i++) {
             auto a_res = a.lowerBound(i * 100);
             auto r_res = r.lower_bound(i * 100);
 
@@ -397,11 +397,11 @@ TEST(SparseArray, UpperBound) {
 }
 
 TEST(SparseArray, UpperBound2) {
-    for (int m = 0; m < 256; ++m) {
-        SparseArray<int> a;
-        std::set<int> r;
+    for (uint32_t m = 0; m < 256; ++m) {
+        SparseArray<uint32_t> a;
+        std::set<uint32_t> r;
 
-        for (int i = 0; i < 8; i++) {
+        for (uint32_t i = 0; i < 8; i++) {
             if (!(m & (1 << i))) {
                 continue;
             }
@@ -409,7 +409,7 @@ TEST(SparseArray, UpperBound2) {
             r.insert(i * 100);
         }
 
-        for (int i = 0; i < 10; i++) {
+        for (uint32_t i = 0; i < 10; i++) {
             auto a_res = a.upperBound(i * 100);
             auto r_res = r.upper_bound(i * 100);
 

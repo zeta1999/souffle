@@ -134,11 +134,6 @@ std::vector<std::vector<unsigned int>> extractPermutations(
  * NOTE: index 0 refers to the head atom, index 1 to the first body atom, and so on.
  */
 bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, size_t rightIdx) {
-    // invalid indices
-    if (leftIdx < 0 || rightIdx < 0) {
-        return false;
-    }
-
     // handle the case where one of the indices refers to the head
     if (leftIdx == 0 && rightIdx == 0) {
         const AstAtom* leftHead = left->getHead();

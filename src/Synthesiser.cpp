@@ -1631,11 +1631,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")))";
                     break;
                 }
-
-                /** Undefined */
-                case FunctorOp::__UNDEFINED__:
-                    assert(false && "Unsupported Operation!");
-                    break;
             }
             PRINT_END_COMMENT(out);
         }

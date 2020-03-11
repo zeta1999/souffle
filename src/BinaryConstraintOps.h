@@ -31,25 +31,24 @@ namespace souffle {
 // Investigate a better way.
 
 enum class BinaryConstraintOp {
-    __UNDEFINED__,  // undefined operator
-    EQ,             // equivalence of two values
-    NE,             // whether two values are different
-    LT,             // signed <
-    ULT,            // Unsigned <
-    FLT,            // Float <
-    LE,             // signed ≤
-    ULE,            // Unsigned ≤
-    FLE,            // Float ≤
-    GT,             // signed >
-    UGT,            // unsigned >
-    FGT,            // float >
-    GE,             // signed ≥
-    UGE,            // Unsigned ≥
-    FGE,            // Float ≥
-    MATCH,          // matching string
-    CONTAINS,       // whether a sub-string is contained in a string
-    NOT_MATCH,      // not matching string
-    NOT_CONTAINS    // whether a sub-string is not contained in a string
+    EQ,           // equivalence of two values
+    NE,           // whether two values are different
+    LT,           // signed <
+    ULT,          // Unsigned <
+    FLT,          // Float <
+    LE,           // signed ≤
+    ULE,          // Unsigned ≤
+    FLE,          // Float ≤
+    GT,           // signed >
+    UGT,          // unsigned >
+    FGT,          // float >
+    GE,           // signed ≥
+    UGE,          // Unsigned ≥
+    FGE,          // Float ≥
+    MATCH,        // matching string
+    CONTAINS,     // whether a sub-string is contained in a string
+    NOT_MATCH,    // not matching string
+    NOT_CONTAINS  // whether a sub-string is not contained in a string
 };
 
 /**
@@ -109,10 +108,8 @@ inline BinaryConstraintOp convertOverloadedConstraint(
             }
             break;
         default:
-            break;
+            assert(false && "Invalid constraint conversion");
     }
-    assert(false && "Invalid constraint conversion");
-    return BinaryConstraintOp::__UNDEFINED__;
 }
 
 /**
@@ -163,9 +160,6 @@ inline BinaryConstraintOp negatedConstraintOp(const BinaryConstraintOp op) {
             return BinaryConstraintOp::NOT_CONTAINS;
         case BinaryConstraintOp::NOT_CONTAINS:
             return BinaryConstraintOp::CONTAINS;
-
-        case BinaryConstraintOp::__UNDEFINED__:
-            break;
     }
     assert(false && "Unsupported Operator!");
     return op;
@@ -204,8 +198,6 @@ inline std::string toBinaryConstraintSymbol(const BinaryConstraintOp op) {
             return "not_match";
         case BinaryConstraintOp::NOT_CONTAINS:
             return "not_contains";
-        case BinaryConstraintOp::__UNDEFINED__:
-            break;
     }
     assert(false && "Unsupported Operator!");
     return "?";
@@ -227,13 +219,13 @@ inline BinaryConstraintOp toBinaryConstraintOp(const std::string& symbol) {
     if (symbol == "not_contains") return BinaryConstraintOp::NOT_CONTAINS;
     std::cout << "Unrecognised operator: " << symbol << "\n";
     assert(false && "Unsupported Operator!");
-    return BinaryConstraintOp::__UNDEFINED__;
+    return BinaryConstraintOp::EQ;  // Silence warning.
 }
 
 /**
  * Get type binary constraint operates on.
  *
- * This function shouldn't be called on EQ/NE, as this operate on all types.
+ * This function shouldn't be called on EQ/NE, as they operate on all types.
  **/
 inline TypeAttribute getBinaryConstraintType(const BinaryConstraintOp op) {
     switch (op) {

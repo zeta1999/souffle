@@ -116,7 +116,12 @@ public:
                     out << ", ";
                 }
                 firstAdded = false;
-                out << neg->getAtom()->getQualifiedName() << "{" << arg.bodyAdornment[currpos++] << "}";
+                if (currpos < arg.bodyAdornment.size()) {
+                    out << neg->getAtom()->getQualifiedName() << "{" << arg.bodyAdornment[currpos++] << "}";
+                } else {
+                    out << neg->getAtom()->getQualifiedName() << "{__}";
+                    ++currpos;
+                }
             }
         }
         out << ". [order: " << arg.ordering << "]";

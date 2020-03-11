@@ -25,6 +25,7 @@ namespace souffle {
 // some forward declarations
 class AstAtom;
 class AstClause;
+class AstConstraint;
 class AstFunctorDeclaration;
 class AstLiteral;
 class AstNode;
@@ -218,4 +219,12 @@ AstClause* cloneHead(const AstClause* clause);
  * @param newOrder new order of atoms; atoms[i] = atoms[newOrder[i]]
  */
 AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>& newOrder);
+
+/**
+ * Negate an ast constraint
+ *
+ * @param constraint constraint that will be negated
+ */
+void negateConstraint(AstConstraint* constraint);
+
 }  // end of namespace souffle

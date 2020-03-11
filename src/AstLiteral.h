@@ -281,10 +281,6 @@ public:
             BinaryConstraintOp o, std::unique_ptr<AstArgument> ls, std::unique_ptr<AstArgument> rs)
             : operation(o), lhs(std::move(ls)), rhs(std::move(rs)) {}
 
-    AstBinaryConstraint(
-            const std::string& op, std::unique_ptr<AstArgument> ls, std::unique_ptr<AstArgument> rs)
-            : operation(toBinaryConstraintOp(op)), lhs(std::move(ls)), rhs(std::move(rs)) {}
-
     /** Return LHS argument */
     AstArgument* getLHS() const {
         return lhs.get();

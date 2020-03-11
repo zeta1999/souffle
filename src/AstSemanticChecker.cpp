@@ -301,7 +301,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     assert(false && "Invalid operand type");
             }
         }
-
+        // Right
         if (!eqTypeTypeAttribute(binaryOpType, typeAnalysis.getTypes(right))) {
             switch (getBinaryConstraintType(constraint.getOperator())) {
                 case TypeAttribute::Signed:

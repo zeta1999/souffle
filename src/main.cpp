@@ -538,7 +538,7 @@ int main(int argc, char** argv) {
                     // job count of 0 means all cores are used.
                     []() -> bool { return std::stoi(Global::config().get("jobs")) != 1; },
                     std::make_unique<ParallelTransformer>()),
-            std::make_unique<ReportIndexTransfomer>());
+            std::make_unique<ReportIndexTransformer>());
 
     ramTransform->apply(*ramTranslationUnit);
     if (ramTranslationUnit->getErrorReport().getNumIssues() != 0) {

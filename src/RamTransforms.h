@@ -669,10 +669,10 @@ protected:
  *        if the debug-report flag is enabled.
  *
  */
-class ReportIndexTransfomer : public RamTransformer {
+class ReportIndexTransformer : public RamTransformer {
 public:
     std::string getName() const override {
-        return "ReportIndexTransfomer";
+        return "ReportIndexTransformer";
     }
 
 protected:

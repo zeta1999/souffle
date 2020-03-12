@@ -619,13 +619,6 @@ public:
         assert(otherIndex != nullptr && "Can only extend to EqrelIndex");
         this->data.extend(otherIndex->data);
     }
-
-protected:
-    souffle::range<iter> bounds(
-            const TupleRef& low, const TupleRef& /* high */, Hints& hints) const override {
-        Entry a = order.encode(low.asTuple<Arity>());
-        return {data.lower_bound(a, hints), data.end()};
-    }
 };
 
 std::unique_ptr<InterpreterIndex> createBTreeIndex(const Order& order) {

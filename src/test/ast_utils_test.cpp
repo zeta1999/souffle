@@ -21,12 +21,11 @@
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
+#include "BinaryConstraintOps.h"
 #include "ParserDriver.h"
 #include "test.h"
 
-namespace souffle {
-
-namespace test {
+namespace souffle::test {
 
 TEST(AstUtils, Grounded) {
     // create an example clause:
@@ -48,7 +47,8 @@ TEST(AstUtils, Grounded) {
     clause->addToBody(std::unique_ptr<AstLiteral>(a));
 
     // X = Y
-    AstLiteral* e1 = new AstBinaryConstraint("=", std::unique_ptr<AstArgument>(new AstVariable("X")),
+    AstLiteral* e1 = new AstBinaryConstraint(BinaryConstraintOp::EQ,
+            std::unique_ptr<AstArgument>(new AstVariable("X")),
             std::unique_ptr<AstArgument>(new AstVariable("Y")));
     clause->addToBody(std::unique_ptr<AstLiteral>(e1));
 
@@ -81,7 +81,6 @@ TEST(AstUtils, GroundedRecords) {
             R"(
                  .type N
                  .type R = [ a : N, B : N ]
-
 
                  .decl r ( r : R )
                  .decl s ( r : N )
@@ -504,5 +503,4 @@ TEST(AstUtils, ReorderClauseAtoms) {
             toString(*reorderedClause1));
 }
 
-}  // end namespace test
-}  // end namespace souffle
+}  // end namespace souffle::test

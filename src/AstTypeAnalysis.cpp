@@ -36,6 +36,7 @@
 #include <cassert>
 #include <map>
 #include <memory>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -140,6 +141,54 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
     };
 
     return std::make_shared<C>(a, b);
+}
+
+/**
+ * A constraint factory ensuring that all the types associated to the variable
+ * are subtypes of some type in the provided set (values)
+ *
+ * Values can't be all.
+ */
+TypeConstraint hasSuperTypeInSet(const TypeVar& var, TypeSet values) {
+    struct C : public Constraint<TypeVar> {
+        TypeVar var;
+        TypeSet values;
+
+        C(TypeVar var, TypeSet values) : var(std::move(var)), values(std::move(values)) {}
+
+        bool update(Assignment<TypeVar>& assigment) const override {
+            // get current value of variable a
+            TypeSet& assigments = assigment[var];
+
+            // remove all types that are not sub-types of b
+            if (assigments.isAll()) {
+                assigments = values;
+                return true;
+            }
+
+            TypeSet newAssigments;
+            for (const Type& type : assigments) {
+                bool existsSuperTypeInValues = any_of(values.begin(), values.end(),
+                        [&type](const Type& value) { return isSubtypeOf(type, value); });
+                if (existsSuperTypeInValues) {
+                    newAssigments.insert(type);
+                }
+            }
+
+            // check whether there was a change
+            if (newAssigments == assigments) {
+                return false;
+            }
+            assigments = newAssigments;
+            return true;
+        }
+
+        void print(std::ostream& out) const override {
+            out << "∃ t ∈ " << values << ": " << var << " <: t";
+        }
+    };
+
+    return std::make_shared<C>(var, values);
 }
 
 /**
@@ -510,23 +559,49 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // symbol
         void visitStringConstant(const AstStringConstant& cnst) override {
-            // this type has to be a sub-type of symbol
             addConstraint(isSubtypeOf(getVar(cnst), env.getSymbolType()));
         }
 
-        // int
+        // Numeric constant
         void visitNumericConstant(const AstNumericConstant& constant) override {
-            switch (constant.getType()) {
-                case AstNumericConstant::Type::Int:
-                    addConstraint(isSubtypeOf(getVar(constant), env.getNumberType()));
-                    break;
-                case AstNumericConstant::Type::Uint:
-                    addConstraint(isSubtypeOf(getVar(constant), env.getUnsignedType()));
-                    break;
-                case AstNumericConstant::Type::Float:
-                    addConstraint(isSubtypeOf(getVar(constant), env.getFloatType()));
-                    break;
+            TypeSet possibleTypes;
+
+            // Check if the type is given.
+            if (constant.getType().has_value()) {
+                switch (*constant.getType()) {
+                    // Insert a type, but only after checking that parsing is possible.
+                    case AstNumericConstant::Type::Int:
+                        if (canBeParsedAsRamSigned(constant.getConstant())) {
+                            possibleTypes.insert(env.getNumberType());
+                        }
+                        break;
+                    case AstNumericConstant::Type::Uint:
+                        if (canBeParsedAsRamUnsigned(constant.getConstant())) {
+                            possibleTypes.insert(env.getUnsignedType());
+                        }
+                        break;
+                    case AstNumericConstant::Type::Float:
+                        if (canBeParsedAsRamFloat(constant.getConstant())) {
+                            possibleTypes.insert(env.getFloatType());
+                        }
+                        break;
+                }
+                // Else: all numeric types that can be parsed are valid.
+            } else {
+                if (canBeParsedAsRamSigned(constant.getConstant())) {
+                    possibleTypes.insert(env.getNumberType());
+                }
+
+                if (canBeParsedAsRamUnsigned(constant.getConstant())) {
+                    possibleTypes.insert(env.getUnsignedType());
+                }
+
+                if (canBeParsedAsRamFloat(constant.getConstant())) {
+                    possibleTypes.insert(env.getFloatType());
+                }
             }
+
+            addConstraint(hasSuperTypeInSet(getVar(constant), possibleTypes));
         }
 
         // binary constraint

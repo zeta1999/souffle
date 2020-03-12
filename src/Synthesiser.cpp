@@ -1093,8 +1093,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (project.getValues().empty()) {
                 out << "Tuple<RamDomain," << arity << "> tuple{{}};\n";
             } else {
-                out << "Tuple<RamDomain," << arity << "> tuple{{static_cast<RamDomain>("
-                    << join(project.getValues(), "),static_cast<RamDomain>(", rec) << ")}};\n";
+                out << "Tuple<RamDomain," << arity << "> tuple{{ramBitCast("
+                    << join(project.getValues(), "),ramBitCast(", rec) << ")}};\n";
             }
 
             // insert tuple
@@ -1405,7 +1405,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 case FunctorOp::ULNOT:
                 case FunctorOp::LNOT: {
-                    out << "(!(";
+                    out << "static_cast<RamDomain>(!(";
                     visit(args[0], out);
                     out << "))";
                     break;
@@ -1485,16 +1485,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")";
                     break;
                 }
-                case FunctorOp::FEXP:
-                case FunctorOp::UEXP:
-                case FunctorOp::EXP: {
-                    // Cast as int64, then back to RamDomain of int32 to avoid wrapping to negative
-                    // when using int32 RamDomains
-                    out << "static_cast<int64_t>(std::pow(";
+                case FunctorOp::FEXP: {
+                    out << "static_cast<RamFloat>(std::pow(";
                     visit(args[0], out);
                     out << ",";
                     visit(args[1], out);
                     out << "))";
+                    break;
+                }
+                case FunctorOp::UEXP:
+                case FunctorOp::EXP: {
+                    out << "static_cast<RamDomain>(static_cast<int64_t>(std::pow(";
+                    visit(args[0], out);
+                    out << ",";
+                    visit(args[1], out);
+                    out << ")))";
                     break;
                 }
                 case FunctorOp::UMOD:
@@ -1554,7 +1559,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 }
                 case FunctorOp::BSHIFT_R_UNSIGNED: {
-                    static_assert(std::is_signed<RamDomain>::value);
                     out << "ramBitCast<RamSigned>(ramBitCast<RamUnsigned>(";
                     visit(args[0], out);
                     out << ") >> ramBitCast<RamUnsigned>(";
@@ -1564,20 +1568,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
                 case FunctorOp::ULAND:
                 case FunctorOp::LAND: {
-                    out << "(";
+                    out << "static_cast<RamDomain>((";
                     visit(args[0], out);
                     out << ") && (";
                     visit(args[1], out);
-                    out << ")";
+                    out << "))";
                     break;
                 }
                 case FunctorOp::ULOR:
                 case FunctorOp::LOR: {
-                    out << "(";
+                    out << "static_cast<RamDomain>((";
                     visit(args[0], out);
                     out << ") || (";
                     visit(args[1], out);
-                    out << ")";
+                    out << "))";
                     break;
                 }
                 case FunctorOp::FMAX:
@@ -1631,11 +1635,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")))";
                     break;
                 }
-
-                /** Undefined */
-                case FunctorOp::__UNDEFINED__:
-                    assert(false && "Unsupported Operation!");
-                    break;
             }
             PRINT_END_COMMENT(out);
         }
@@ -1862,7 +1861,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "private:\n";
     os << "static inline RamDomain wrapper_tonumber(const std::string& str) {\n";
     os << "   RamDomain result=0; \n";
-    os << "   try { result = stord(str); } catch(...) { \n";
+    os << "   try { result = RamSignedFromString(str); } catch(...) { \n";
     os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
     os << R"(     std::cerr << str << "\") )";
     os << "functor.\\n\";\n";

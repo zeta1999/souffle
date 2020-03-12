@@ -21,7 +21,6 @@
 
 using namespace souffle;
 
-
 TEST(SparseArray, Basic) {
     SparseArray<int> map;
 
@@ -318,34 +317,32 @@ TEST(SparseArray, LowerBound) {
 }
 
 TEST(SparseArray, LowerBound2) {
+    for (uint32_t m = 0; m < 256; ++m) {
+        SparseArray<uint32_t> a;
+        std::set<uint32_t> r;
 
-	for (int m=0; m<256; ++m) {
+        for (uint32_t i = 0; i < 8; i++) {
+            if (!(m & (1 << i))) {
+                continue;
+            }
+            a.update(i * 100, 10);
+            r.insert(i * 100);
+        }
 
-		SparseArray<int> a;
-		std::set<int> r;
+        for (uint32_t i = 0; i < 10; i++) {
+            auto a_res = a.lowerBound(i * 100);
+            auto r_res = r.lower_bound(i * 100);
 
-		for (int i=0; i<8; i++) {
-			if (!(m & (1<<i))) continue;
-			a.update(i*100, 10);
-			r.insert(i*100);
-		}
+            EXPECT_EQ(a_res == a.end(), r_res == r.end()) << "\nm=" << std::bitset<8>(m) << "\ni=" << i;
 
-		for (int i = 0; i < 10; i++) {
-			auto a_res = a.lowerBound(i*100);
-			auto r_res = r.lower_bound(i*100);
+            if (a_res == a.end()) {
+                continue;
+            }
 
-			EXPECT_EQ(a_res == a.end(), r_res == r.end()) << "\nm=" << std::bitset<8>(m) << "\ni=" << i;
-
-			if (a_res == a.end())
-				continue;
-
-			EXPECT_EQ(a_res->first, *r_res) << "\nm=" << std::bitset<8>(m) << "\ni=" << i;
-		}
-
-	}
-
+            EXPECT_EQ(a_res->first, *r_res) << "\nm=" << std::bitset<8>(m) << "\ni=" << i;
+        }
+    }
 }
-
 
 TEST(SparseArray, UpperBound) {
     SparseArray<int> m;
@@ -400,32 +397,31 @@ TEST(SparseArray, UpperBound) {
 }
 
 TEST(SparseArray, UpperBound2) {
+    for (uint32_t m = 0; m < 256; ++m) {
+        SparseArray<uint32_t> a;
+        std::set<uint32_t> r;
 
-	for (int m=0; m<256; ++m) {
+        for (uint32_t i = 0; i < 8; i++) {
+            if (!(m & (1 << i))) {
+                continue;
+            }
+            a.update(i * 100, 10);
+            r.insert(i * 100);
+        }
 
-		SparseArray<int> a;
-		std::set<int> r;
+        for (uint32_t i = 0; i < 10; i++) {
+            auto a_res = a.upperBound(i * 100);
+            auto r_res = r.upper_bound(i * 100);
 
-		for (int i=0; i<8; i++) {
-			if (!(m & (1<<i))) continue;
-			a.update(i*100, 10);
-			r.insert(i*100);
-		}
+            EXPECT_EQ(a_res == a.end(), r_res == r.end()) << "\nm=" << std::bitset<8>(m) << "\ni=" << i;
 
-		for (int i = 0; i < 10; i++) {
-			auto a_res = a.upperBound(i*100);
-			auto r_res = r.upper_bound(i*100);
+            if (a_res == a.end()) {
+                continue;
+            }
 
-			EXPECT_EQ(a_res == a.end(), r_res == r.end()) << "\nm=" << std::bitset<8>(m) << "\ni=" << i;
-
-			if (a_res == a.end())
-				continue;
-
-			EXPECT_EQ(a_res->first, *r_res) << "\nm=" << std::bitset<8>(m) << "\ni=" << i;
-		}
-
-	}
-
+            EXPECT_EQ(a_res->first, *r_res) << "\nm=" << std::bitset<8>(m) << "\ni=" << i;
+        }
+    }
 }
 
 TEST(SparseArray, MemoryUsage) {
@@ -929,14 +925,13 @@ TEST(Trie, BoundaryTest_1D) {
     EXPECT_EQ(++a, b);
 }
 
-
 TEST(Trie, BoundaryTest_1D_2) {
     using test_set = Trie<1>;
 
     test_set t;
 
     for (int i = 0; i < 10; i++) {
-        t.insert(i*100);
+        t.insert(i * 100);
     }
 
     auto a = t.lower_bound({500});
@@ -963,7 +958,7 @@ TEST(Trie, BoundaryTest_1D_2) {
 }
 
 TEST(Trie, BoundaryTest_1D_Stress) {
-	using value_type = typename Trie<1>::element_type;
+    using value_type = typename Trie<1>::element_type;
     using test_set = Trie<1>;
     using ref_set = std::set<value_type>;
 
@@ -971,34 +966,34 @@ TEST(Trie, BoundaryTest_1D_Stress) {
     ref_set r;
 
     for (int i = 5; i < 10; i++) {
-		t.insert(i*100);
-		r.insert({i*100});
+        t.insert(i * 100);
+        r.insert({i * 100});
     }
 
     // Check various lookup points
     for (int i = 0; i < 30; i++) {
-		value_type key { i*50 };
+        value_type key{i * 50};
 
-		auto t_lb = t.lower_bound(key);
-		auto r_lb = r.lower_bound(key);
+        auto t_lb = t.lower_bound(key);
+        auto r_lb = r.lower_bound(key);
 
-		EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
-		if (t_lb != t.end() && r_lb != r.end()) {
-			EXPECT_EQ(*t_lb, *r_lb);
-		}
+        EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
+        if (t_lb != t.end() && r_lb != r.end()) {
+            EXPECT_EQ(*t_lb, *r_lb);
+        }
 
-		auto t_ub = t.upper_bound(key);
-		auto r_ub = r.upper_bound(key);
+        auto t_ub = t.upper_bound(key);
+        auto r_ub = r.upper_bound(key);
 
-		EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
-		if (t_ub != t.end() && r_ub != r.end()) {
-			EXPECT_EQ(*t_ub, *r_ub);
-		}
+        EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
+        if (t_ub != t.end() && r_ub != r.end()) {
+            EXPECT_EQ(*t_ub, *r_ub);
+        }
     }
 }
 
 TEST(Trie, BoundaryTest_1D_Stress_Dense) {
-	using value_type = typename Trie<1>::element_type;
+    using value_type = typename Trie<1>::element_type;
     using test_set = Trie<1>;
     using ref_set = std::set<value_type>;
 
@@ -1006,29 +1001,29 @@ TEST(Trie, BoundaryTest_1D_Stress_Dense) {
     ref_set r;
 
     for (int i = 100; i < 2000; i++) {
-		t.insert(i);
-		r.insert({i});
+        t.insert(i);
+        r.insert({i});
     }
 
     // Check various lookup points
     for (int i = 0; i < 2500; i++) {
-		value_type key { i };
+        value_type key{i};
 
-		auto t_lb = t.lower_bound(key);
-		auto r_lb = r.lower_bound(key);
+        auto t_lb = t.lower_bound(key);
+        auto r_lb = r.lower_bound(key);
 
-		EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
-		if (t_lb != t.end() && r_lb != r.end()) {
-			EXPECT_EQ(*t_lb, *r_lb);
-		}
+        EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
+        if (t_lb != t.end() && r_lb != r.end()) {
+            EXPECT_EQ(*t_lb, *r_lb);
+        }
 
-		auto t_ub = t.upper_bound(key);
-		auto r_ub = r.upper_bound(key);
+        auto t_ub = t.upper_bound(key);
+        auto r_ub = r.upper_bound(key);
 
-		EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
-		if (t_ub != t.end() && r_ub != r.end()) {
-			EXPECT_EQ(*t_ub, *r_ub);
-		}
+        EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
+        if (t_ub != t.end() && r_ub != r.end()) {
+            EXPECT_EQ(*t_ub, *r_ub);
+        }
     }
 }
 
@@ -1038,31 +1033,31 @@ TEST(Trie, BoundaryTest_2D) {
     test_set t;
 
     for (int i = 0; i < 10; i++) {
-    	for (int j = 0; j < 10; j++) {
-    		t.insert(i,j);
-    	}
+        for (int j = 0; j < 10; j++) {
+            t.insert(i, j);
+        }
     }
 
-    auto a = t.lower_bound({5,5});
+    auto a = t.lower_bound({5, 5});
     EXPECT_EQ(5, (*a)[0]);
     EXPECT_EQ(5, (*a)[1]);
 
-    auto b = t.upper_bound({5,5});
+    auto b = t.upper_bound({5, 5});
     EXPECT_EQ(5, (*b)[0]);
     EXPECT_EQ(6, (*b)[1]);
 
     // add duplicates
 
-    t.insert(5,5);
-    t.insert(5,5);
-    t.insert(5,5);
+    t.insert(5, 5);
+    t.insert(5, 5);
+    t.insert(5, 5);
 
     // test again ..
-    a = t.lower_bound({5,5});
+    a = t.lower_bound({5, 5});
     EXPECT_EQ(5, (*a)[0]);
     EXPECT_EQ(5, (*a)[1]);
 
-    b = t.upper_bound({5,5});
+    b = t.upper_bound({5, 5});
     EXPECT_EQ(5, (*b)[0]);
     EXPECT_EQ(6, (*b)[1]);
 
@@ -1070,23 +1065,22 @@ TEST(Trie, BoundaryTest_2D) {
     EXPECT_EQ(++a, b);
 }
 
-
 TEST(Trie, BoundaryTest_2D_2) {
     using test_set = Trie<2>;
 
     test_set t;
 
     for (int i = 0; i < 10; i++) {
-    	for (int j = 0; j < 10; j++) {
-    		t.insert(i*100, j*100);
-    	}
+        for (int j = 0; j < 10; j++) {
+            t.insert(i * 100, j * 100);
+        }
     }
 
-    auto a = t.lower_bound({500,500});
+    auto a = t.lower_bound({500, 500});
     EXPECT_EQ(500, (*a)[0]);
     EXPECT_EQ(500, (*a)[1]);
 
-    auto b = t.upper_bound({500,500});
+    auto b = t.upper_bound({500, 500});
     EXPECT_EQ(500, (*b)[0]);
     EXPECT_EQ(600, (*b)[1]);
 
@@ -1099,18 +1093,18 @@ TEST(Trie, BoundaryTest_2D_2) {
     // test again ..
     a = t.lower_bound({500, 500});
     EXPECT_EQ(500, (*a)[0]);
-	EXPECT_EQ(500, (*a)[1]);
+    EXPECT_EQ(500, (*a)[1]);
 
     b = t.upper_bound({500, 500});
     EXPECT_EQ(500, (*b)[0]);
-	EXPECT_EQ(600, (*b)[1]);
+    EXPECT_EQ(600, (*b)[1]);
 
     // check the distance
     EXPECT_EQ(++a, b);
 }
 
 TEST(Trie, BoundaryTest_2D_Stress) {
-	using value_type = typename Trie<2>::element_type;
+    using value_type = typename Trie<2>::element_type;
     using test_set = Trie<2>;
     using ref_set = std::set<value_type>;
 
@@ -1118,38 +1112,38 @@ TEST(Trie, BoundaryTest_2D_Stress) {
     ref_set r;
 
     for (int i = 5; i < 10; i++) {
-    	for (int j = 5; j < 10; j++) {
-			t.insert(i*100, j*100);
-			r.insert({i*100, j*100});
-    	}
+        for (int j = 5; j < 10; j++) {
+            t.insert(i * 100, j * 100);
+            r.insert({i * 100, j * 100});
+        }
     }
 
     // Check various lookup points
     for (int i = 0; i < 30; i++) {
-    	for (int j = 0; j < 30; j++) {
-			value_type key { i*50, j*50 };
+        for (int j = 0; j < 30; j++) {
+            value_type key{i * 50, j * 50};
 
-			auto t_lb = t.lower_bound(key);
-			auto r_lb = r.lower_bound(key);
+            auto t_lb = t.lower_bound(key);
+            auto r_lb = r.lower_bound(key);
 
-			EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
-			if (t_lb != t.end() && r_lb != r.end()) {
-				EXPECT_EQ(*t_lb, *r_lb);
-			}
+            EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
+            if (t_lb != t.end() && r_lb != r.end()) {
+                EXPECT_EQ(*t_lb, *r_lb);
+            }
 
-			auto t_ub = t.upper_bound(key);
-			auto r_ub = r.upper_bound(key);
+            auto t_ub = t.upper_bound(key);
+            auto r_ub = r.upper_bound(key);
 
-			EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
-			if (t_ub != t.end() && r_ub != r.end()) {
-				EXPECT_EQ(*t_ub, *r_ub);
-			}
-    	}
+            EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
+            if (t_ub != t.end() && r_ub != r.end()) {
+                EXPECT_EQ(*t_ub, *r_ub);
+            }
+        }
     }
 }
 
 TEST(Trie, BoundaryTest_2D_Stress_Dense) {
-	using value_type = typename Trie<2>::element_type;
+    using value_type = typename Trie<2>::element_type;
     using test_set = Trie<2>;
     using ref_set = std::set<value_type>;
 
@@ -1157,33 +1151,33 @@ TEST(Trie, BoundaryTest_2D_Stress_Dense) {
     ref_set r;
 
     for (int i = 100; i < 200; i++) {
-    	for (int j = 50; j < 250; j++) {
-			t.insert(i,j);
-			r.insert({i, j});
-    	}
+        for (int j = 50; j < 250; j++) {
+            t.insert(i, j);
+            r.insert({i, j});
+        }
     }
 
     // Check various lookup points
     for (int i = 0; i < 250; i++) {
-		for (int j = 0; j < 300; j++) {
-			value_type key { i, j };
+        for (int j = 0; j < 300; j++) {
+            value_type key{i, j};
 
-			auto t_lb = t.lower_bound(key);
-			auto r_lb = r.lower_bound(key);
+            auto t_lb = t.lower_bound(key);
+            auto r_lb = r.lower_bound(key);
 
-			EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
-			if (t_lb != t.end() && r_lb != r.end()) {
-				EXPECT_EQ(*t_lb, *r_lb);
-			}
+            EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
+            if (t_lb != t.end() && r_lb != r.end()) {
+                EXPECT_EQ(*t_lb, *r_lb);
+            }
 
-			auto t_ub = t.upper_bound(key);
-			auto r_ub = r.upper_bound(key);
+            auto t_ub = t.upper_bound(key);
+            auto r_ub = r.upper_bound(key);
 
-			EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
-			if (t_ub != t.end() && r_ub != r.end()) {
-				EXPECT_EQ(*t_ub, *r_ub);
-			}
-    	}
+            EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
+            if (t_ub != t.end() && r_ub != r.end()) {
+                EXPECT_EQ(*t_ub, *r_ub);
+            }
+        }
     }
 }
 
@@ -1193,19 +1187,19 @@ TEST(Trie, BoundaryTest_3D) {
     test_set t;
 
     for (int i = 0; i < 10; i++) {
-    	for (int j = 0; j < 10; j++) {
-    		for (int k = 0; k < 10; k++) {
-    			t.insert(i,j,k);
-    		}
-    	}
+        for (int j = 0; j < 10; j++) {
+            for (int k = 0; k < 10; k++) {
+                t.insert(i, j, k);
+            }
+        }
     }
 
-    auto a = t.lower_bound({5,5,5});
+    auto a = t.lower_bound({5, 5, 5});
     EXPECT_EQ(5, (*a)[0]);
     EXPECT_EQ(5, (*a)[1]);
     EXPECT_EQ(5, (*a)[2]);
 
-    auto b = t.upper_bound({5,5,5});
+    auto b = t.upper_bound({5, 5, 5});
     EXPECT_EQ(5, (*b)[0]);
     EXPECT_EQ(5, (*b)[1]);
     EXPECT_EQ(6, (*b)[2]);
@@ -1220,19 +1214,19 @@ TEST(Trie, BoundaryTest_3D_2) {
     test_set t;
 
     for (int i = 0; i < 10; i++) {
-    	for (int j = 0; j < 10; j++) {
-    		for (int k = 0; k < 10; k++) {
-    			t.insert(i*100, j*100, k*100);
-    		}
-    	}
+        for (int j = 0; j < 10; j++) {
+            for (int k = 0; k < 10; k++) {
+                t.insert(i * 100, j * 100, k * 100);
+            }
+        }
     }
 
-    auto a = t.lower_bound({500,500,500});
+    auto a = t.lower_bound({500, 500, 500});
     EXPECT_EQ(500, (*a)[0]);
     EXPECT_EQ(500, (*a)[1]);
     EXPECT_EQ(500, (*a)[2]);
 
-    auto b = t.upper_bound({500,500,500});
+    auto b = t.upper_bound({500, 500, 500});
     EXPECT_EQ(500, (*b)[0]);
     EXPECT_EQ(500, (*b)[1]);
     EXPECT_EQ(600, (*b)[2]);
@@ -1242,7 +1236,7 @@ TEST(Trie, BoundaryTest_3D_2) {
 }
 
 TEST(Trie, BoundaryTest_3D_Stress) {
-	using value_type = typename Trie<3>::element_type;
+    using value_type = typename Trie<3>::element_type;
     using test_set = Trie<3>;
     using ref_set = std::set<value_type>;
 
@@ -1250,37 +1244,37 @@ TEST(Trie, BoundaryTest_3D_Stress) {
     ref_set r;
 
     for (int i = 5; i < 10; i++) {
-    	for (int j = 5; j < 10; j++) {
-    		for (int k = 5; k < 10; k++) {
-    			t.insert(i*100, j*100, k*100);
-    			r.insert({i*100, j*100, k*100});
-    		}
-    	}
+        for (int j = 5; j < 10; j++) {
+            for (int k = 5; k < 10; k++) {
+                t.insert(i * 100, j * 100, k * 100);
+                r.insert({i * 100, j * 100, k * 100});
+            }
+        }
     }
 
     // Check various lookup points
     for (int i = 0; i < 30; i++) {
-    	for (int j = 0; j < 30; j++) {
-    		for (int k = 0; k < 30; k++) {
-    			value_type key { i*50, j*50, k*50 };
+        for (int j = 0; j < 30; j++) {
+            for (int k = 0; k < 30; k++) {
+                value_type key{i * 50, j * 50, k * 50};
 
-    			auto t_lb = t.lower_bound(key);
-    			auto r_lb = r.lower_bound(key);
+                auto t_lb = t.lower_bound(key);
+                auto r_lb = r.lower_bound(key);
 
-    			EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
-    			if (t_lb != t.end() && r_lb != r.end()) {
-    				EXPECT_EQ(*t_lb, *r_lb);
-    			}
+                EXPECT_EQ(t_lb == t.end(), r_lb == r.end());
+                if (t_lb != t.end() && r_lb != r.end()) {
+                    EXPECT_EQ(*t_lb, *r_lb);
+                }
 
-    			auto t_ub = t.upper_bound(key);
-				auto r_ub = r.upper_bound(key);
+                auto t_ub = t.upper_bound(key);
+                auto r_ub = r.upper_bound(key);
 
-				EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
-				if (t_ub != t.end() && r_ub != r.end()) {
-					EXPECT_EQ(*t_ub, *r_ub);
-				}
-    		}
-    	}
+                EXPECT_EQ(t_ub == t.end(), r_ub == r.end());
+                if (t_ub != t.end() && r_ub != r.end()) {
+                    EXPECT_EQ(*t_ub, *r_ub);
+                }
+            }
+        }
     }
 }
 

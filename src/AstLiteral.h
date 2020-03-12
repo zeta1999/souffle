@@ -81,17 +81,7 @@ public:
 
     void print(std::ostream& os) const override {
         os << getQualifiedName() << "(";
-
-        for (size_t i = 0; i < arguments.size(); ++i) {
-            if (i != 0) {
-                os << ",";
-            }
-            if (arguments[i] != nullptr) {
-                arguments[i]->print(os);
-            } else {
-                os << "_";
-            }
-        }
+        os << join(arguments, ",", print_deref<std::unique_ptr<AstArgument>>());
         os << ")";
     }
 
@@ -222,17 +212,6 @@ protected:
 };
 
 /**
- * Subclass of Literal that represents a logical constraint
- */
-class AstConstraint : public AstLiteral {
-public:
-    /** Negates the constraint */
-    virtual void negate() = 0;
-
-    AstConstraint* clone() const override = 0;
-};
-
-/**
  * Subclass of Constraint that represents a constant 'true'
  * or 'false' value.
  *
@@ -246,8 +225,8 @@ public:
         return truthValue;
     }
 
-    void negate() override {
-        truthValue = !truthValue;
+    void set(bool value) {
+        truthValue = value;
     }
 
     void print(std::ostream& os) const override {
@@ -281,10 +260,6 @@ public:
             BinaryConstraintOp o, std::unique_ptr<AstArgument> ls, std::unique_ptr<AstArgument> rs)
             : operation(o), lhs(std::move(ls)), rhs(std::move(rs)) {}
 
-    AstBinaryConstraint(
-            const std::string& op, std::unique_ptr<AstArgument> ls, std::unique_ptr<AstArgument> rs)
-            : operation(toBinaryConstraintOp(op)), lhs(std::move(ls)), rhs(std::move(rs)) {}
-
     /** Return LHS argument */
     AstArgument* getLHS() const {
         return lhs.get();
@@ -303,21 +278,6 @@ public:
     /** Update the binary operator */
     void setOperator(BinaryConstraintOp op) {
         operation = op;
-    }
-
-    /** Negates the constraint */
-    void negate() override {
-        setOperator(souffle::negatedConstraintOp(operation));
-    }
-
-    /** Check whether constraint is a numeric constraint */
-    bool isNumerical() const {
-        return isNumericBinaryConstraintOp(operation);
-    }
-
-    /** Check whether constraint is a symbolic constraint */
-    bool isSymbolic() const {
-        return isSymbolicBinaryConstraintOp(operation);
     }
 
     void print(std::ostream& os) const override {

@@ -107,18 +107,54 @@ inline unsigned long __builtin_ctzll(unsigned long long value) {
 
 namespace souffle {
 
+// Forward declaration
+inline bool isPrefix(const std::string& prefix, const std::string& element);
+
 /**
- * Converts a string to a RamDomain
+ * Converts a string to a RamSigned
+ *
+ * This procedure has similar behaviour to std::stoi/stoll.
+ *
+ * The procedure accepts prefixes 0b (if base = 2) and 0x (if base = 16)
+ * If base = 0, the procedure will try to infer the base from the prefix, if present.
  */
-inline RamDomain RamDomainFromString(
+inline RamSigned RamSignedFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
-    RamDomain val;
+    RamSigned val;
+
+    if (base == 0) {
+        if (isPrefix("-0b", str) || isPrefix("0b", str)) {
+            return RamSignedFromString(str, position, 2);
+        } else if (isPrefix("-0x", str) || isPrefix("0x", str)) {
+            return RamSignedFromString(str, position, 16);
+        } else {
+            return RamSignedFromString(str, position);
+        }
+    }
+    std::string binaryNumber;
+    bool parsingBinary = base == 2;
+
+    // stoi/stoll can't handle base 2 prefix by default.
+    if (parsingBinary) {
+        if (isPrefix("-0b", str)) {
+            binaryNumber = "-" + str.substr(3);
+        } else if (isPrefix("0b", str)) {
+            binaryNumber = str.substr(2);
+        }
+    }
+    const std::string& tmp = parsingBinary ? binaryNumber : str;
+
 #if RAM_DOMAIN_SIZE == 64
-    val = std::stoll(str, position, base);
+    val = std::stoll(tmp, position, base);
 #else
-    val = std::stoi(str, position, base);
+    val = std::stoi(tmp, position, base);
 #endif
-    return static_cast<RamDomain>(val);
+
+    if (parsingBinary && position != nullptr) {
+        *position += 2;
+    }
+
+    return val;
 }
 
 /**
@@ -133,32 +169,105 @@ inline RamFloat RamFloatFromString(const std::string& str, std::size_t* position
 #endif
     return static_cast<RamFloat>(val);
 }
-
 /**
  * Converts a string to a RamUnsigned
+ *
+ * This procedure has similar behaviour to std::stoul/stoull.
+ *
+ * The procedure accepts prefixes 0b (if base = 2) and 0x (if base = 16)
+ * If base = 0, the procedure will try to infer the base from the prefix, if present.
  */
 inline RamUnsigned RamUnsignedFromString(
         const std::string& str, std::size_t* position = nullptr, const int base = 10) {
+    // Be default C++ (stoul) allows unsigned numbers starting with "-".
+    if (isPrefix("-", str)) {
+        throw std::invalid_argument("Unsigned number can't start with minus.");
+    }
+
+    if (base == 0) {
+        if (isPrefix("0b", str)) {
+            return RamUnsignedFromString(str, position, 2);
+        } else if (isPrefix("0x", str)) {
+            return RamUnsignedFromString(str, position, 16);
+        } else {
+            return RamUnsignedFromString(str, position);
+        }
+    }
+
+    // stoul/stoull can't handle binary prefix by default.
+    std::string binaryNumber;
+    bool parsingBinary = false;
+    if (base == 2 && isPrefix("0b", str)) {
+        binaryNumber = str.substr(2);
+        parsingBinary = true;
+    }
+    const std::string& tmp = parsingBinary ? binaryNumber : str;
+
     RamUnsigned val;
 #if RAM_DOMAIN_SIZE == 64
-    val = std::stoul(str, position, base);
+    val = std::stoull(tmp, position, base);
 #else
-    val = std::stoull(str, position, base);
+    val = std::stoul(tmp, position, base);
 #endif
+
+    if (parsingBinary && position != nullptr) {
+        *position += 2;
+    }
+
+    // check if it's safe to cast (stoul returns unsigned long)
+    if (val > std::numeric_limits<RamUnsigned>::max()) {
+        throw std::invalid_argument("Unsigned number of of bounds");
+    }
+
     return static_cast<RamUnsigned>(val);
 }
 
-#if RAM_DOMAIN_SIZE == 64
-inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
-    return static_cast<RamDomain>(std::stoull(str, pos, base));
+/**
+ * Can a string be parsed as RamSigned.
+ *
+ * Souffle (parser, not fact file readers) accepts: hex, binary and base 10.
+ * Integer can be negative, in all 3 formats this means that it
+ * starts with minus (c++ default semantics).
+ */
+inline bool canBeParsedAsRamSigned(const std::string& string) {
+    size_t charactersRead = 0;
+
+    try {
+        RamSignedFromString(string, &charactersRead, 0);
+    } catch (...) {
+        return false;
+    }
+
+    return charactersRead == string.size();
 }
-#elif RAM_DOMAIN_SIZE == 32
-inline RamDomain stord(const std::string& str, std::size_t* pos = nullptr, int base = 10) {
-    return static_cast<RamDomain>(std::stoul(str, pos, base));
+
+/**
+ * Can a string be parsed as RamUnsigned.
+ *
+ * Souffle accepts: hex, binary and base 10.
+ */
+inline bool canBeParsedAsRamUnsigned(const std::string& string) {
+    size_t charactersRead = 0;
+    try {
+        RamUnsignedFromString(string, &charactersRead, 0);
+    } catch (...) {
+        return false;
+    }
+    return charactersRead == string.size();
 }
-#else
-#error RAM Domain is neither 32bit nor 64bit
-#endif
+
+/**
+ * Can a string be parsed as RamFloat.
+ */
+inline bool canBeParsedAsRamFloat(const std::string& string) {
+    size_t charactersRead = 0;
+    try {
+        RamFloatFromString(string, &charactersRead);
+    } catch (...) {
+        return false;
+    }
+    return charactersRead == string.size();
+}
 
 /**
  * Check whether a string is a sequence of digits
@@ -713,6 +822,24 @@ detail::multiplying_printer<T> times(const T& value, unsigned num) {
 // -------------------------------------------------------------------------------
 //                              String Utils
 // -------------------------------------------------------------------------------
+
+/**
+ * Determine if one string is a prefix of another
+ */
+inline bool isPrefix(const std::string& prefix, const std::string& element) {
+    auto itPrefix = prefix.begin();
+    auto itElement = element.begin();
+
+    while (itPrefix != prefix.end() && itElement != element.end()) {
+        if (*itPrefix != *itElement) {
+            break;
+        }
+        ++itPrefix;
+        ++itElement;
+    }
+
+    return itPrefix == prefix.end();
+}
 
 /**
  * Determines whether the given value string ends with the given

@@ -1120,19 +1120,19 @@ public:
         // check whether it is empty
         if (!unsynced.root) return end();
 
-		// check boundaries
+        // check boundaries
         if (!inBoundaries(i)) {
-        	// if it is on the lower end, return minimum result
-        	if (i < unsynced.offset) {
-        		const auto& value = unsynced.first->cell[0].value;
-				auto res = iterator(unsynced.first, std::make_pair(unsynced.offset,value));
-        		if (value == value_type()) {
-        			++res;
-        		}
-        		return res;
-        	}
-        	// otherwise it is on the high end, return end iterator
-			return end();
+            // if it is on the lower end, return minimum result
+            if (i < unsynced.offset) {
+                const auto& value = unsynced.first->cell[0].value;
+                auto res = iterator(unsynced.first, std::make_pair(unsynced.offset, value));
+                if (value == value_type()) {
+                    ++res;
+                }
+                return res;
+            }
+            // otherwise it is on the high end, return end iterator
+            return end();
         }
 
         // navigate to value
@@ -1175,22 +1175,24 @@ public:
     }
 
     /**
-	 * An operation obtaining the smallest non-default element such that it's index is greater
-	 * the given index.
-	 */
-	iterator upperBound(index_type i) const {
-		op_context ctxt;
-		return upperBound(i, ctxt);
-	}
+     * An operation obtaining the smallest non-default element such that it's index is greater
+     * the given index.
+     */
+    iterator upperBound(index_type i) const {
+        op_context ctxt;
+        return upperBound(i, ctxt);
+    }
 
-	/**
-	 * An operation obtaining the smallest non-default element such that it's index is greater
-	 * the given index. A operation context can be provided for exploiting temporal locality.
-	 */
-	iterator upperBound(index_type i, op_context& ctxt) const {
-		if (i == std::numeric_limits<index_type>::max()) return end();
-		return lowerBound(i+1, ctxt);
-	}
+    /**
+     * An operation obtaining the smallest non-default element such that it's index is greater
+     * the given index. A operation context can be provided for exploiting temporal locality.
+     */
+    iterator upperBound(index_type i, op_context& ctxt) const {
+        if (i == std::numeric_limits<index_type>::max()) {
+            return end();
+        }
+        return lowerBound(i + 1, ctxt);
+    }
 
 private:
     /**
@@ -1780,7 +1782,7 @@ public:
 
         // there are bits left, use least significant bit of those
         if (it->first == i >> LEAF_INDEX_WIDTH) {
-        	mask &= ((~uint64_t(0)) << (i & LEAF_INDEX_MASK));  // remove all bits before pos i
+            mask &= ((~uint64_t(0)) << (i & LEAF_INDEX_MASK));  // remove all bits before pos i
         }
 
         // compute value represented by least significant bit
@@ -1795,12 +1797,14 @@ public:
     }
 
     /**
-	 * Locates an iterator to the first element in this sparse bit map than is greater
-	 * than the given index.
-	 */
+     * Locates an iterator to the first element in this sparse bit map than is greater
+     * than the given index.
+     */
     iterator upper_bound(index_type i) const {
-    	if (i == std::numeric_limits<index_type>::max()) return end();
-    	return lower_bound(i+1);
+        if (i == std::numeric_limits<index_type>::max()) {
+            return end();
+        }
+        return lower_bound(i + 1);
     }
 
     /**
@@ -2190,7 +2194,9 @@ struct fix_upper_bound {
         // search in current level
         auto cur = store.upper_bound(entry[Pos]);
 
-        if (cur == store.end()) return false;
+        if (cur == store.end()) {
+            return false;
+        }
 
         get_nested_iter_core<Pos>()(iter.iter_core).setIterator(cur);
 
@@ -2207,7 +2213,9 @@ struct fix_upper_bound {
         auto cur = store.lowerBound(entry[Pos]);
 
         // if no lower boundary is found, be done
-        if (cur == store.end()) return false;
+        if (cur == store.end()) {
+            return false;
+        }
         assert(RamDomain(cur->first) >= entry[Pos]);
 
         // if the lower bound is higher than the requested value, go to first in subtree
@@ -2630,7 +2638,8 @@ public:
     }
 
     /**
-     * Obtains an iterator to the first element greater than the given entry value, or end if there is no such element.
+     * Obtains an iterator to the first element greater than the given entry value, or end if there is no such
+     * element.
      *
      * @param entry the upper bound for this search
      * @param ctxt the operation context to be utilized
@@ -2648,7 +2657,8 @@ public:
     }
 
     /**
-     * Obtains an iterator to the first element greater than the given entry value, or end if there is no such element.
+     * Obtains an iterator to the first element greater than the given entry value, or end if there is no such
+     * element.
      *
      * @param entry the upper bound for this search
      * @return an iterator addressing the first element in this structure greater than the given value

@@ -313,6 +313,18 @@ std::string getTypeQualifier(const Type& type) {
     return visitor().visit(type);
 }
 
+bool hasSignedType(const TypeSet& types) {
+    return types.isAll() || any_of(types, (bool (*)(const Type&)) & isNumberType);
+}
+
+bool hasUnsignedType(const TypeSet& types) {
+    return types.isAll() || any_of(types, (bool (*)(const Type&)) & isUnsignedType);
+}
+
+bool hasFloatType(const TypeSet& types) {
+    return types.isAll() || any_of(types, (bool (*)(const Type&)) & isFloatType);
+}
+
 bool isFloatType(const Type& type) {
     return isOfRootType(type, type.getTypeEnvironment().getFloatType());
 }

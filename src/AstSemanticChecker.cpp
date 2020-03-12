@@ -165,27 +165,36 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
-    // all signed constants are used as numbers
+    // TODO (darth_tytus): Improve error messages.
+    // At this stage each constant should have a type (assigned by a transformer)
     visitDepthFirst(nodes, [&](const AstNumericConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        switch (constant.getType()) {
+
+        // No type could be assigned.
+        if (!constant.getType().has_value()) {
+            report.addError("Ambiguous constant (unable to deduce type)", constant.getSrcLoc());
+            return;
+        }
+
+        switch (*constant.getType()) {
             case AstNumericConstant::Type::Int:
-                if (!isNumberType(types)) {
+                if (!hasSignedType(types)) {
                     report.addError("Number constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
             case AstNumericConstant::Type::Uint:
-                if (!isUnsignedType(types)) {
+                if (!hasUnsignedType(types)) {
                     report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
             case AstNumericConstant::Type::Float:
-                if (!isFloatType(types)) {
+                if (!hasFloatType(types)) {
                     report.addError("Float constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
         }
     });
+
     // all nil constants are used as records
     visitDepthFirst(nodes, [&](const AstNilConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
@@ -278,24 +287,46 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
 
         // get left and right side
-        auto lhs = constraint.getLHS();
-        auto rhs = constraint.getRHS();
+        auto left = constraint.getLHS();
+        auto right = constraint.getRHS();
 
-        if (constraint.isNumerical()) {
-            // check numeric type
-            if (!isNumericType(typeAnalysis.getTypes(lhs))) {
-                report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
+        TypeAttribute binaryOpType = getBinaryConstraintType(constraint.getOperator());
+        // Left
+        if (!eqTypeTypeAttribute(binaryOpType, typeAnalysis.getTypes(left))) {
+            switch (getBinaryConstraintType(constraint.getOperator())) {
+                case TypeAttribute::Signed:
+                    report.addError("Non-numerical operand for comparison", left->getSrcLoc());
+                    break;
+                case TypeAttribute::Symbol:
+                    report.addError("Non-symbolic operand for comparison", left->getSrcLoc());
+                    break;
+                case TypeAttribute::Unsigned:
+                    report.addError("Non-unsigned operand for comparison", left->getSrcLoc());
+                    break;
+                case TypeAttribute::Float:
+                    report.addError("Non-float operand for comparison", left->getSrcLoc());
+                    break;
+                case TypeAttribute::Record:
+                    assert(false && "Invalid operand type");
             }
-            if (!isNumericType(typeAnalysis.getTypes(rhs))) {
-                report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
-            }
-        } else if (constraint.isSymbolic()) {
-            // check symbolic type
-            if (!isSymbolType(typeAnalysis.getTypes(lhs))) {
-                report.addError("Non-string operand for operation", lhs->getSrcLoc());
-            }
-            if (!isSymbolType(typeAnalysis.getTypes(rhs))) {
-                report.addError("Non-string operand for operation", rhs->getSrcLoc());
+        }
+        // Right
+        if (!eqTypeTypeAttribute(binaryOpType, typeAnalysis.getTypes(right))) {
+            switch (getBinaryConstraintType(constraint.getOperator())) {
+                case TypeAttribute::Signed:
+                    report.addError("Non-numerical operand for comparison", right->getSrcLoc());
+                    break;
+                case TypeAttribute::Symbol:
+                    report.addError("Non-symbolic operand for comparison", right->getSrcLoc());
+                    break;
+                case TypeAttribute::Unsigned:
+                    report.addError("Non-unsigned operand for comparison", right->getSrcLoc());
+                    break;
+                case TypeAttribute::Float:
+                    report.addError("Non-float operand for comparison", right->getSrcLoc());
+                    break;
+                case TypeAttribute::Record:
+                    assert(false && "Invalid operand type");
             }
         }
     });

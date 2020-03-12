@@ -344,7 +344,7 @@ AstLiteral* negateLiteral(AstLiteral* lit) {
         return atom;
     } else if (auto* cons = dynamic_cast<AstConstraint*>(lit)) {
         AstConstraint* newCons = cons->clone();
-        newCons->negate();
+        negateConstraint(newCons);
         return newCons;
     } else {
         assert(false && "Unsupported literal type!");
@@ -821,8 +821,7 @@ NullableVector<std::vector<AstLiteral*>> getInlinedLiteral(AstProgram& program, 
                 std::vector<AstLiteral*> trueBody;
                 // TODO: change this to AstBoolean
                 trueBody.push_back(new AstBinaryConstraint(BinaryConstraintOp::EQ,
-                        std::make_unique<AstNumericConstant>(std::string("1")),
-                        std::make_unique<AstNumericConstant>(std::string("1"))));
+                        std::make_unique<AstNumericConstant>(1), std::make_unique<AstNumericConstant>(1)));
                 addedBodyLiterals.push_back(trueBody);
             } else {
                 // Suppose an atom a(x) is inlined and has the following rules:

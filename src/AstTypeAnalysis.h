@@ -44,9 +44,7 @@ public:
      * Get the computed types for the given argument.
      */
     TypeSet getTypes(const AstArgument* argument) const {
-        auto found = argumentTypes.find(argument);
-        assert(found != argumentTypes.end());
-        return found->second;
+        return argumentTypes.at(argument);
     }
 
     /**

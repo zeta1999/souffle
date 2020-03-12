@@ -20,10 +20,23 @@ namespace souffle {
 
 /** Types of aggregation functions */
 enum class AggregateOp {
+    // int
     max,
     min,
     count,
     sum,
+
+    // uint
+    fmax,
+    fmin,
+    fcount,
+    fsum,
+
+    // float
+    umax,
+    umin,
+    ucount,
+    usum,
 };
 
 }  // namespace souffle

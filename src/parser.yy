@@ -82,7 +82,6 @@
 %token <std::string> IDENT       "identifier"
 %token <std::string> NUMBER      "number"
 %token <std::string> FLOAT       "float"
-%token <std::string> RELOP       "relational operator"
 %token PRAGMA                    "pragma directive"
 %token OUTPUT_QUALIFIER          "relation qualifier output"
 %token INPUT_QUALIFIER           "relation qualifier input"
@@ -152,6 +151,9 @@
 %token RBRACE                    "}"
 %token LT                        "<"
 %token GT                        ">"
+%token LE                        "<="
+%token GE                        ">="
+%token NE                        "!="
 %token BW_AND                    "band"
 %token BW_OR                     "bor"
 %token BW_XOR                    "bxor"
@@ -802,16 +804,7 @@ atom
 /* Rule literal constraints */
 constraint
     /* binary infix constraints */
-  : arg[left] RELOP arg[right] {
-        $$ = new AstBinaryConstraint($RELOP,
-                std::unique_ptr<AstArgument>($left),
-                std::unique_ptr<AstArgument>($right));
-        $$->setSrcLoc(@$);
-
-        $left = nullptr;
-        $right = nullptr;
-    }
-  | arg[left] LT arg[right] {
+  : arg[left] LT arg[right] {
         $$ = new AstBinaryConstraint(BinaryConstraintOp::LT,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
@@ -829,8 +822,35 @@ constraint
         $left = nullptr;
         $right = nullptr;
     }
+  | arg[left] LE arg[right] {
+        $$ = new AstBinaryConstraint(BinaryConstraintOp::LE,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] GE arg[right] {
+        $$ = new AstBinaryConstraint(BinaryConstraintOp::GE,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
   | arg[left] EQUALS arg[right] {
         $$ = new AstBinaryConstraint(BinaryConstraintOp::EQ,
+                std::unique_ptr<AstArgument>($left),
+                std::unique_ptr<AstArgument>($right));
+        $$->setSrcLoc(@$);
+
+        $left = nullptr;
+        $right = nullptr;
+    }
+  | arg[left] NE arg[right] {
+        $$ = new AstBinaryConstraint(BinaryConstraintOp::NE,
                 std::unique_ptr<AstArgument>($left),
                 std::unique_ptr<AstArgument>($right));
         $$->setSrcLoc(@$);

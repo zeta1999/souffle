@@ -112,7 +112,7 @@ public:
      * Same as check() except in case of a condition that evaluates to false, the method
      * aborts the test.
      */
-    std::ostream& fatal(bool condition, const std::string& txt, const std::string& loc) {
+    std::ostream& fatal(bool condition, const std::string& /* txt */, const std::string& /* loc */) {
         if (!condition) {
             std::cerr << "Tests failed.\n";
             exit(99);
@@ -208,7 +208,7 @@ public:
 /**
  * Main program of a unit test
  */
-int main(int argc, char** argv) {
+int main(int /* argc */, char** /* argv */) {
     // add all groups to a set
     std::set<std::string> groups;
     for (TestCase* p = base; p != nullptr; p = p->nextTestCase()) {

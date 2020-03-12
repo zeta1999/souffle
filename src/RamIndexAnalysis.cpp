@@ -349,7 +349,7 @@ SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
     size_t i = 0;
     for (auto cur = bgn; cur != end; ++cur, ++i) {
         if (!isRamUndefValue(*cur)) {
-            keys |= SearchSignature(i) << i;
+            keys |= SearchSignature(1) << i;
         }
     }
     return keys;
@@ -372,7 +372,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
 
     // values.size() - auxiliaryArity because we discard the height annotations
     auto const numSig = values.size() - auxiliaryArity;
-    return searchSignature(values.begin(), values.end() + numSig);
+    return searchSignature(values.begin(), values.begin() + numSig);
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {

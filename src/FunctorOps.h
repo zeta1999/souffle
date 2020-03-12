@@ -88,9 +88,6 @@ enum class FunctorOp {
 
     /** Ternary Functor Operators */
     SUBSTR,  // substring
-
-    /** Undefined */
-    __UNDEFINED__,  // undefined operator
 };
 
 /**
@@ -166,10 +163,6 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
         case FunctorOp::FMIN:
         case FunctorOp::CAT:
             return arity >= 2;
-
-        /** Undefined */
-        case FunctorOp::__UNDEFINED__:
-            break;
     }
 
     assert(false && "unsupported operator");
@@ -274,10 +267,6 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
         /** Ternary Functor Operators */
         case FunctorOp::SUBSTR:
             return "substr";
-
-        /** Undefined */
-        case FunctorOp::__UNDEFINED__:
-            break;
     }
 
     assert(false && "unsupported operator");
@@ -351,8 +340,6 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::CAT:
         case FunctorOp::SUBSTR:
             return TypeAttribute::Symbol;
-        case FunctorOp::__UNDEFINED__:
-            break;
     }
     assert(false && "Bad functor return type query");
     exit(EXIT_FAILURE);
@@ -447,9 +434,6 @@ inline TypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
             return TypeAttribute::Float;
         case FunctorOp::CAT:
             return TypeAttribute::Symbol;
-
-        case FunctorOp::__UNDEFINED__:
-            break;
     }
     assert(false && "unsupported operator");
     exit(EXIT_FAILURE);
@@ -587,12 +571,8 @@ inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const TypeAtt
             assert(toType == TypeAttribute::Unsigned && "Invalid functor conversion");
             return FunctorOp::UMOD;
         default:
-            break;
+            assert(false && "Invalid functor");
     }
-
-    assert(false && "Invalid functor");
-    exit(EXIT_FAILURE);
-    return FunctorOp::__UNDEFINED__;
 }
 
 /**

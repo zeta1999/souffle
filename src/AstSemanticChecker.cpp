@@ -287,24 +287,46 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
 
         // get left and right side
-        auto lhs = constraint.getLHS();
-        auto rhs = constraint.getRHS();
+        auto left = constraint.getLHS();
+        auto right = constraint.getRHS();
 
-        if (constraint.isNumerical()) {
-            // check numeric type
-            if (!isNumericType(typeAnalysis.getTypes(lhs))) {
-                report.addError("Non-numerical operand for comparison", lhs->getSrcLoc());
+        TypeAttribute binaryOpType = getBinaryConstraintType(constraint.getOperator());
+        // Left
+        if (!eqTypeTypeAttribute(binaryOpType, typeAnalysis.getTypes(left))) {
+            switch (getBinaryConstraintType(constraint.getOperator())) {
+                case TypeAttribute::Signed:
+                    report.addError("Non-numerical operand for comparison", left->getSrcLoc());
+                    break;
+                case TypeAttribute::Symbol:
+                    report.addError("Non-symbolic operand for comparison", left->getSrcLoc());
+                    break;
+                case TypeAttribute::Unsigned:
+                    report.addError("Non-unsigned operand for comparison", left->getSrcLoc());
+                    break;
+                case TypeAttribute::Float:
+                    report.addError("Non-float operand for comparison", left->getSrcLoc());
+                    break;
+                case TypeAttribute::Record:
+                    assert(false && "Invalid operand type");
             }
-            if (!isNumericType(typeAnalysis.getTypes(rhs))) {
-                report.addError("Non-numerical operand for comparison", rhs->getSrcLoc());
-            }
-        } else if (constraint.isSymbolic()) {
-            // check symbolic type
-            if (!isSymbolType(typeAnalysis.getTypes(lhs))) {
-                report.addError("Non-string operand for operation", lhs->getSrcLoc());
-            }
-            if (!isSymbolType(typeAnalysis.getTypes(rhs))) {
-                report.addError("Non-string operand for operation", rhs->getSrcLoc());
+        }
+        // Right
+        if (!eqTypeTypeAttribute(binaryOpType, typeAnalysis.getTypes(right))) {
+            switch (getBinaryConstraintType(constraint.getOperator())) {
+                case TypeAttribute::Signed:
+                    report.addError("Non-numerical operand for comparison", right->getSrcLoc());
+                    break;
+                case TypeAttribute::Symbol:
+                    report.addError("Non-symbolic operand for comparison", right->getSrcLoc());
+                    break;
+                case TypeAttribute::Unsigned:
+                    report.addError("Non-unsigned operand for comparison", right->getSrcLoc());
+                    break;
+                case TypeAttribute::Float:
+                    report.addError("Non-float operand for comparison", right->getSrcLoc());
+                    break;
+                case TypeAttribute::Record:
+                    assert(false && "Invalid operand type");
             }
         }
     });

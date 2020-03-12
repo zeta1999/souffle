@@ -42,8 +42,8 @@ public:
 
     // write into screen buffer at a specific location
     void write(uint32_t x, uint32_t y, const std::string& s) {
-        assert(x >= 0 && x < width && "wrong x dimension");
-        assert(y >= 0 && y < height && "wrong y dimension");
+        assert(x < width && "wrong x dimension");
+        assert(y < height && "wrong y dimension");
         assert(x + s.length() <= width && "string too long");
         for (size_t i = 0; i < s.length(); i++) {
             buffer[y * width + x + i] = s[i];

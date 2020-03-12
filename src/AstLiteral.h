@@ -260,10 +260,6 @@ public:
             BinaryConstraintOp o, std::unique_ptr<AstArgument> ls, std::unique_ptr<AstArgument> rs)
             : operation(o), lhs(std::move(ls)), rhs(std::move(rs)) {}
 
-    AstBinaryConstraint(
-            const std::string& op, std::unique_ptr<AstArgument> ls, std::unique_ptr<AstArgument> rs)
-            : operation(toBinaryConstraintOp(op)), lhs(std::move(ls)), rhs(std::move(rs)) {}
-
     /** Return LHS argument */
     AstArgument* getLHS() const {
         return lhs.get();
@@ -282,16 +278,6 @@ public:
     /** Update the binary operator */
     void setOperator(BinaryConstraintOp op) {
         operation = op;
-    }
-
-    /** Check whether constraint is a numeric constraint */
-    bool isNumerical() const {
-        return isNumericBinaryConstraintOp(operation);
-    }
-
-    /** Check whether constraint is a symbolic constraint */
-    bool isSymbolic() const {
-        return isSymbolicBinaryConstraintOp(operation);
     }
 
     void print(std::ostream& os) const override {

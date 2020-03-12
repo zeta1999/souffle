@@ -21,6 +21,7 @@
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
+#include "BinaryConstraintOps.h"
 #include "ParserDriver.h"
 #include "test.h"
 
@@ -46,7 +47,8 @@ TEST(AstUtils, Grounded) {
     clause->addToBody(std::unique_ptr<AstLiteral>(a));
 
     // X = Y
-    AstLiteral* e1 = new AstBinaryConstraint("=", std::unique_ptr<AstArgument>(new AstVariable("X")),
+    AstLiteral* e1 = new AstBinaryConstraint(BinaryConstraintOp::EQ,
+            std::unique_ptr<AstArgument>(new AstVariable("X")),
             std::unique_ptr<AstArgument>(new AstVariable("Y")));
     clause->addToBody(std::unique_ptr<AstLiteral>(e1));
 

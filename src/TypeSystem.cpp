@@ -75,7 +75,7 @@ void TypeEnvironment::clear() {
     createType<PredefinedType>("unsigned");
 }
 
-bool TypeEnvironment::isType(const identifier& ident) const {
+bool TypeEnvironment::isType(const AstQualifiedName& ident) const {
     return types.find(ident) != types.end();
 }
 
@@ -84,12 +84,12 @@ bool TypeEnvironment::isType(const Type& type) const {
     return t == type;
 }
 
-Type* TypeEnvironment::getModifiableType(const identifier& name) {
+Type* TypeEnvironment::getModifiableType(const AstQualifiedName& name) {
     auto pos = types.find(name);
     return (pos == types.end()) ? nullptr : pos->second;
 }
 
-const Type& TypeEnvironment::getType(const identifier& ident) const {
+const Type& TypeEnvironment::getType(const AstQualifiedName& ident) const {
     assert(isType(ident));
     return *(types.find(ident)->second);
 }
@@ -103,7 +103,7 @@ TypeSet TypeEnvironment::getAllTypes() const {
 }
 
 void TypeEnvironment::addType(Type& type) {
-    const identifier& name = type.getName();
+    const AstQualifiedName& name = type.getName();
     assert(types.find(name) == types.end() && "Error: registering present type!");
     types[name] = &type;
 }

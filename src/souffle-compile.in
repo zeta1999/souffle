@@ -164,7 +164,7 @@ fi
 # Compile
 rm -f $dir/$exe
 CCERR=$(mktemp)
-# HACK: don't exit if the compile files, we need to report the error
+# HACK: don't exit if the compile fails, we need to report the error
 ( $CXX $CXXFLAGS $CPPFLAGS -o$dir/$exe $1 -I$HEADER_DIR $OMP_FLAG $LDFLAGS $LIBS 2> $CCERR ) || true
 
 if test -f $dir/$exe

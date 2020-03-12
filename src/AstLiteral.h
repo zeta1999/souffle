@@ -79,12 +79,6 @@ public:
         return toPtrVector(arguments);
     }
 
-    void print(std::ostream& os) const override {
-        os << getQualifiedName() << "(";
-        os << join(arguments, ",", print_deref<std::unique_ptr<AstArgument>>());
-        os << ")";
-    }
-
     AstAtom* clone() const override {
         auto res = new AstAtom(name);
         res->setSrcLoc(getSrcLoc());
@@ -109,6 +103,12 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << getQualifiedName() << "(";
+        os << join(arguments, ",", print_deref<std::unique_ptr<AstArgument>>());
+        os << ")";
+    }
+
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstAtom*>(&node));
         const auto& other = static_cast<const AstAtom&>(node);
@@ -136,11 +136,6 @@ public:
         return atom.get();
     }
 
-    void print(std::ostream& os) const override {
-        os << "!";
-        atom->print(os);
-    }
-
     AstNegation* clone() const override {
         auto* res = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
         res->setSrcLoc(getSrcLoc());
@@ -156,6 +151,10 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "!" << *atom;
+    }
+
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstNegation*>(&node));
         const auto& other = static_cast<const AstNegation&>(node);
@@ -181,11 +180,6 @@ public:
         return atom.get();
     }
 
-    void print(std::ostream& os) const override {
-        os << "prov!";
-        atom->print(os);
-    }
-
     AstProvenanceNegation* clone() const override {
         auto* res = new AstProvenanceNegation(std::unique_ptr<AstAtom>(atom->clone()));
         res->setSrcLoc(getSrcLoc());
@@ -201,6 +195,10 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "prov!" << *atom;
+    }
+
     bool equal(const AstNode& node) const override {
         assert(dynamic_cast<const AstProvenanceNegation*>(&node));
         const auto& other = static_cast<const AstProvenanceNegation&>(node);
@@ -229,10 +227,6 @@ public:
         truthValue = value;
     }
 
-    void print(std::ostream& os) const override {
-        os << (truthValue ? "true" : "false");
-    }
-
     AstBooleanConstraint* clone() const override {
         auto* res = new AstBooleanConstraint(truthValue);
         res->setSrcLoc(getSrcLoc());
@@ -240,6 +234,10 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << (truthValue ? "true" : "false");
+    }
+
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstBooleanConstraint*>(&node));
         const auto& other = static_cast<const AstBooleanConstraint&>(node);
@@ -280,12 +278,6 @@ public:
         operation = op;
     }
 
-    void print(std::ostream& os) const override {
-        lhs->print(os);
-        os << " " << toBinaryConstraintSymbol(operation) << " ";
-        rhs->print(os);
-    }
-
     AstBinaryConstraint* clone() const override {
         auto* res = new AstBinaryConstraint(operation, std::unique_ptr<AstArgument>(lhs->clone()),
                 std::unique_ptr<AstArgument>(rhs->clone()));
@@ -303,6 +295,12 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << *lhs;
+        os << " " << toBinaryConstraintSymbol(operation) << " ";
+        os << *rhs;
+    }
+
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstBinaryConstraint*>(&node));
         const auto& other = static_cast<const AstBinaryConstraint&>(node);

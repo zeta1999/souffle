@@ -332,9 +332,6 @@ private:
  */
 class TypeEnvironment {
 public:
-    /** The type utilized for identifying types */
-    using identifier = AstQualifiedName;
-
     // -- constructors / destructores --
     TypeEnvironment();
 
@@ -345,43 +342,43 @@ public:
     // -- create types in this environment --
 
     template <typename T, typename... Args>
-    T& createType(const identifier& name, const Args&... args) {
+    T& createType(const AstQualifiedName& name, const Args&... args) {
         auto* res = new T(*this, name, args...);
         addType(*res);
         return *res;
     }
 
-    PrimitiveType& createNumericType(const identifier& name) {
+    PrimitiveType& createNumericType(const AstQualifiedName& name) {
         return createType<PrimitiveType>(name, getNumberType());
     }
 
-    PrimitiveType& createFloatType(const identifier& name) {
+    PrimitiveType& createFloatType(const AstQualifiedName& name) {
         return createType<PrimitiveType>(name, getFloatType());
     }
 
-    PrimitiveType& createUnsignedType(const identifier& name) {
+    PrimitiveType& createUnsignedType(const AstQualifiedName& name) {
         return createType<PrimitiveType>(name, getUnsignedType());
     }
 
-    PrimitiveType& createSymbolType(const identifier& name) {
+    PrimitiveType& createSymbolType(const AstQualifiedName& name) {
         return createType<PrimitiveType>(name, getSymbolType());
     }
 
-    UnionType& createUnionType(const identifier& name) {
+    UnionType& createUnionType(const AstQualifiedName& name) {
         return createType<UnionType>(name);
     }
 
-    RecordType& createRecordType(const identifier& name) {
+    RecordType& createRecordType(const AstQualifiedName& name) {
         return createType<RecordType>(name);
     }
 
     // -- query type information --
 
-    bool isType(const identifier& ident) const;
+    bool isType(const AstQualifiedName&) const;
 
     bool isType(const Type& type) const;
 
-    const Type& getType(const identifier& ident) const;
+    const Type& getType(const AstQualifiedName&) const;
 
     const Type& getNumberType() const {
         return getType("number");
@@ -399,9 +396,25 @@ public:
         return getType("symbol");
     }
 
+    TypeSet predefinedTypes() const {
+        return TypeSet(getType("number"), getType("unsigned"), getType("float"), getType("symbol"));
+    }
+
+    bool isPredefinedType(const AstQualifiedName& identifier) const {
+        if (isType(identifier)) {
+            return isPredefinedType(getType(identifier));
+        } else {
+            return false;
+        }
+    }
+
+    bool isPredefinedType(const Type& typeName) const {
+        return predefinedTypes().contains(typeName);
+    }
+
     TypeSet getAllTypes() const;
 
-    Type* getModifiableType(const identifier& name);
+    Type* getModifiableType(const AstQualifiedName& name);
 
     void clear();
 
@@ -418,7 +431,7 @@ public:
 
 private:
     /** The list of covered types */
-    std::map<identifier, Type*> types;
+    std::map<AstQualifiedName, Type*> types;
 
     /** Register types created by one of the factory functions */
     void addType(Type& type);

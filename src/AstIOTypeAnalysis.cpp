@@ -47,9 +47,18 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
 }
 
 void IOType::print(std::ostream& os) const {
-    os << "input relations: " << inputRelations << std::endl;
-    os << "output relations: " << outputRelations << std::endl;
-    os << "printsize relations: " << printSizeRelations << std::endl;
+    os << "input relations: {";
+    os << join(inputRelations, ", ",
+            [](std::ostream& out, const AstRelation* r) { out << r->getQualifiedName(); });
+    os << "}\n";
+    os << "output relations: {";
+    os << join(outputRelations, ", ",
+            [](std::ostream& out, const AstRelation* r) { out << r->getQualifiedName(); });
+    os << "}\n";
+    os << "printsize relations: {";
+    os << join(printSizeRelations, ", ",
+            [](std::ostream& out, const AstRelation* r) { out << r->getQualifiedName(); });
+    os << "}\n";
 }
 
 }  // end of namespace souffle

@@ -29,6 +29,8 @@ class TypeEnvironmentAnalysis : public AstAnalysis {
 public:
     static constexpr const char* name = "type-environment";
 
+    TypeEnvironmentAnalysis() : AstAnalysis(name) {}
+
     void run(const AstTranslationUnit& translationUnit) override;
 
     void print(std::ostream& os) const override;

@@ -31,6 +31,8 @@ class AuxiliaryArity : public AstAnalysis {
 public:
     static constexpr const char* name = "auxiliary-arity";
 
+    AuxiliaryArity() : AstAnalysis(name) {}
+
     void run(const AstTranslationUnit& translationUnit) override {
         program = translationUnit.getProgram();
     }

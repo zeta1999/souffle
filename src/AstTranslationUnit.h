@@ -22,8 +22,8 @@
 #include "AstProgram.h"
 #include "DebugReport.h"
 #include "ErrorReport.h"
+#include "PrecedenceGraph.h"
 #include "SymbolTable.h"
-
 #include <map>
 #include <memory>
 
@@ -43,12 +43,24 @@ public:
     /** get analysis: analysis is generated on the fly if not present */
     template <class Analysis>
     Analysis* getAnalysis() const {
+        static const bool debug = Global::config().has("debug-report");
         std::string name = Analysis::name;
         auto it = analyses.find(name);
         if (it == analyses.end()) {
             // analysis does not exist yet, create instance and run it.
             analyses[name] = std::make_unique<Analysis>();
             analyses[name]->run(*this);
+            if (debug) {
+                std::stringstream ss;
+                analyses[name]->print(ss);
+                if (nullptr == dynamic_cast<PrecedenceGraph*>(analyses[name].get()) &&
+                        nullptr == dynamic_cast<SCCGraph*>(analyses[name].get())) {
+                    debugReport.addSection(name, "Ast Analysis [" + name + "]", ss.str());
+                } else {
+                    debugReport.addSection(
+                            DebugReportSection(name, "Ast Analysis [" + name + "]", {}, ss.str()));
+                }
+            }
         }
         return dynamic_cast<Analysis*>(analyses[name].get());
     }

@@ -17,6 +17,8 @@
 #pragma once
 
 #include <ostream>
+#include <string>
+#include <utility>
 
 namespace souffle {
 
@@ -27,6 +29,7 @@ class AstTranslationUnit;
  */
 class AstAnalysis {
 public:
+    AstAnalysis(std::string identifier) : identifier(std::move(identifier)) {}
     virtual ~AstAnalysis() = default;
 
     /** run analysis for a Ast translation unit */
@@ -35,11 +38,19 @@ public:
     /** print the analysis result in HTML format */
     virtual void print(std::ostream&) const {}
 
+    /** @brief get name of the analysis */
+    virtual const std::string& getName() const {
+        return identifier;
+    }
+
     /** define output stream operator */
     friend std::ostream& operator<<(std::ostream& out, const AstAnalysis& other) {
         other.print(out);
         return out;
     }
+
+protected:
+    const std::string identifier;
 };
 
 }  // end of namespace souffle

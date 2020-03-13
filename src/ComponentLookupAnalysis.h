@@ -75,6 +75,8 @@ class ComponentLookup : public AstAnalysis {
 public:
     static constexpr const char* name = "component-lookup";
 
+    ComponentLookup() : AstAnalysis(name) {}
+
     void run(const AstTranslationUnit& translationUnit) override;
 
     /**

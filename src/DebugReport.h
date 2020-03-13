@@ -22,6 +22,7 @@
 #include <ostream>
 #include <set>
 #include <sstream>
+#include <stack>
 #include <string>
 #include <utility>
 #include <vector>
@@ -84,6 +85,9 @@ private:
 class DebugReport {
 public:
     ~DebugReport() {
+        while (!currentSubsections.empty()) {
+            endSection("forced-closed", "Forcing end of unknown section");
+        }
         if (!empty()) {
             std::ofstream debugReportStream(Global::config().get("debug-report"));
             debugReportStream << *this;
@@ -93,8 +97,12 @@ public:
         return sections.empty();
     }
 
-    void addSection(DebugReportSection section) {
-        sections.emplace_back(std::move(section));
+    void addSection(const DebugReportSection& section) {
+        if (!currentSubsections.empty()) {
+            currentSubsections.top().emplace_back(section);
+        } else {
+            sections.emplace_back(section);
+        }
     }
 
     void addSection(std::string id, std::string title, std::string code) {
@@ -108,7 +116,21 @@ public:
             escapedCode.replace(i, 1, "&lt;");
         }
         codeHTML << "<pre>" << escapedCode << "</pre>\n";
-        sections.emplace_back(DebugReportSection(std::move(id), std::move(title), {}, codeHTML.str()));
+        if (!currentSubsections.empty()) {
+            currentSubsections.top().emplace_back(std::move(id), std::move(title), codeHTML.str());
+        } else {
+            sections.emplace_back(std::move(id), std::move(title), codeHTML.str());
+        }
+    }
+
+    void startSection() {
+        currentSubsections.emplace();
+    }
+
+    void endSection(std::string currentSectionName, std::string currentSectionTitle) {
+        auto subsections = currentSubsections.top();
+        currentSubsections.pop();
+        addSection(DebugReportSection(currentSectionName, currentSectionTitle, subsections, ""));
     }
 
     /**
@@ -130,6 +152,7 @@ public:
 
 private:
     std::vector<DebugReportSection> sections;
+    std::stack<std::vector<DebugReportSection>> currentSubsections;
 };
 
 }  // end of namespace souffle

@@ -60,16 +60,6 @@ public:
     }
 
     /**
-     * Generate a debug report section for the current state of the given translation unit
-     * with the given id and title, and add the section to the translation unit's debug report.
-     * @param translationUnit translation unit to generate and add debug report section
-     * @param id the unique id of the generated section
-     * @param title the text to display as the heading of the section
-     */
-    static void generateDebugReport(AstTranslationUnit& translationUnit,
-            const std::string& preTransformDatalog, const std::string& id, std::string title);
-
-    /**
      * Generate a full-content diff between two sources.
      * Both arguments are passed into a `std::ostream` so you may exploit stream implementations.
      */
@@ -88,16 +78,12 @@ public:
         return execStdOut(diff_cmd + in_prev.getFileName() + " " + in_curr.getFileName()).str();
     }
 
-    /**
-     * Generated a debug report section for a dot graph specification, with the given id and title.
-     */
-    static DebugReportSection getDotGraphSection(
-            std::string id, std::string title, const std::string& dotSpec);
-
 private:
     std::unique_ptr<AstTransformer> wrappedTransformer;
 
     bool transform(AstTranslationUnit& translationUnit) override;
+
+    void generateDebugReport(AstTranslationUnit& tu, const std::string& preTransformDatalog);
 };
 
 }  // end of namespace souffle

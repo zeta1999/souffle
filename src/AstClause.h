@@ -10,8 +10,7 @@
  *
  * @file AstClause.h
  *
- * Defines class Clause that represents rules including facts, predicates, and
- * queries in a Datalog program.
+ * Defines AST Clauses
  *
  ***********************************************************************/
 
@@ -230,13 +229,13 @@ protected:
                equal_ptr(plan, other.plan);
     }
 
-    /** The head of the clause */
+    /** head of the clause */
     std::unique_ptr<AstAtom> head;
 
-    /** The literals in the body of this clause */
+    /** body literals of clause */
     std::vector<std::unique_ptr<AstLiteral>> bodyLiterals;
 
-    /** The user defined execution plan -- if any */
+    /** user defined execution plan (if not defined, plan is null) */
     std::unique_ptr<AstExecutionPlan> plan;
 };
 

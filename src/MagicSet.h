@@ -116,7 +116,12 @@ public:
                     out << ", ";
                 }
                 firstAdded = false;
-                out << neg->getAtom()->getQualifiedName() << "{" << arg.bodyAdornment[currpos++] << "}";
+                if (currpos < arg.bodyAdornment.size()) {
+                    out << neg->getAtom()->getQualifiedName() << "{" << arg.bodyAdornment[currpos++] << "}";
+                } else {
+                    out << neg->getAtom()->getQualifiedName() << "{__}";
+                    ++currpos;
+                }
             }
         }
         out << ". [order: " << arg.ordering << "]";
@@ -159,17 +164,10 @@ public:
 };
 
 class Adornment : public AstAnalysis {
-private:
-    std::vector<std::vector<AdornedClause>> adornmentClauses;
-    std::vector<AstQualifiedName> adornmentRelations;
-    std::set<AstQualifiedName> adornmentEdb;
-    std::set<AstQualifiedName> adornmentIdb;
-    std::set<AstQualifiedName> negatedAtoms;
-    std::set<AstQualifiedName> ignoredAtoms;
-    BindingStore bindings;
-
 public:
     static constexpr const char* name = "adorned-clauses";
+
+    Adornment() : AstAnalysis(name) {}
 
     ~Adornment() override = default;
 
@@ -204,5 +202,14 @@ public:
     const BindingStore& getBindings() const {
         return bindings;
     }
+
+private:
+    std::vector<std::vector<AdornedClause>> adornmentClauses;
+    std::vector<AstQualifiedName> adornmentRelations;
+    std::set<AstQualifiedName> adornmentEdb;
+    std::set<AstQualifiedName> adornmentIdb;
+    std::set<AstQualifiedName> negatedAtoms;
+    std::set<AstQualifiedName> ignoredAtoms;
+    BindingStore bindings;
 };
 }  // namespace souffle

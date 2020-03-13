@@ -63,10 +63,10 @@ void DebugReportSection::printContent(std::ostream& out) const {
 
 void DebugReport::print(std::ostream& out) const {
     out << "<!DOCTYPE html>\n";
-    out << "<html>\n";
+    out << "<html lang='en-AU'>\n";
     out << "<head>\n";
     out << "<meta charset=\"UTF-8\">\n";
-    out << "<title>Souffle Debug Report</title>\n";
+    out << "<title>Souffle Debug Report (" << Global::config().get("") << ")</title>\n";
     out << "<style>\n";
     out << "ul { list-style-type: none; }\n";
     out << "ul > li.leaf { display: inline-block; padding: 0em 1em; }\n";
@@ -80,7 +80,7 @@ void DebugReport::print(std::ostream& out) const {
     out << ".headerdiv h1 { display:inline; }\n";
     out << ".headerdiv a { float:right; }\n";
     out << "</style>\n";
-    out << "<script type=\"text/javascript\">\n";
+    out << "<script>\n";
     out << "function toggleVisibility(id) {\n";
     out << "  var element = document.getElementById(id);\n";
     out << "  if (element.style.display == 'none') {\n";
@@ -92,7 +92,8 @@ void DebugReport::print(std::ostream& out) const {
     out << "</script>\n";
     out << "</head>\n";
     out << "<body>\n";
-    out << "<div class='headerdiv'><h1>Souffle Debug Report</h1></div>\n";
+    out << "<div class='headerdiv'><h1>Souffle Debug Report (" << Global::config().get("")
+        << ")</h1></div>\n";
     for (const DebugReportSection& section : sections) {
         section.printIndex(out);
     }

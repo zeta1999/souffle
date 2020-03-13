@@ -24,10 +24,21 @@
 namespace souffle {
 
 bool AstTransformer::apply(AstTranslationUnit& translationUnit) {
+    // invoke the transformation
     bool changed = transform(translationUnit);
+
     if (changed) {
         translationUnit.invalidateAnalyses();
     }
+
+    /* Abort evaluation of the program if errors were encountered */
+    if (translationUnit.getErrorReport().getNumErrors() != 0) {
+        std::cerr << translationUnit.getErrorReport();
+        std::cerr << std::to_string(translationUnit.getErrorReport().getNumErrors());
+        std::cerr << " errors generated, evaluation aborted" << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
     return changed;
 }
 

@@ -30,15 +30,12 @@ namespace souffle {
  * AstAnalysis that loads profile data and has a profile query interface.
  */
 class AstProfileUse : public AstAnalysis {
-private:
-    /** performance model of profile run */
-    std::shared_ptr<profile::ProgramRun> programRun;
-
 public:
     /** Name of analysis */
     static constexpr const char* name = "profile-use";
 
-    AstProfileUse() : programRun(std::make_shared<profile::ProgramRun>(profile::ProgramRun())) {}
+    AstProfileUse()
+            : AstAnalysis(name), programRun(std::make_shared<profile::ProgramRun>(profile::ProgramRun())) {}
 
     /** Run analysis */
     void run(const AstTranslationUnit& translationUnit) override;
@@ -51,6 +48,10 @@ public:
 
     /** Return size of relation in the profile */
     size_t getRelationSize(const AstQualifiedName& rel);
+
+private:
+    /** performance model of profile run */
+    std::shared_ptr<profile::ProgramRun> programRun;
 };
 
 }  // end of namespace souffle

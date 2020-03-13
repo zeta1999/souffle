@@ -139,13 +139,13 @@ F(x,y) :- F(x,y),  x > y.
 Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 57
 F(x,y) :- F(x,y),  x > y.
 --------------^-----------
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 57
+Error: Constraint requires an operand of type `number` in file rule_typecompat.dl at line 57
 F(x,y) :- F(x,y),  x > y.
 -------------------^------
 Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 57
 F(x,y) :- F(x,y),  x > y.
 -------------------^------
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 57
+Error: Constraint requires an operand of type `number` in file rule_typecompat.dl at line 57
 F(x,y) :- F(x,y),  x > y.
 -----------------------^--
 Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 57
@@ -157,34 +157,28 @@ F(x,y) :- F(x,v), F(w,y), w != v.
 Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 59
 F(x,y) :- F(x,v), F(w,y), w != v.
 --------------------^-------------
+Error: Constraint requires an operand of type `number` or `unsigned` or `float` or `symbol` or record in file rule_typecompat.dl at line 59
+F(x,y) :- F(x,v), F(w,y), w != v.
+--------------------------^-------
 Error: Unable to deduce type for variable w in file rule_typecompat.dl at line 59
 F(x,y) :- F(x,v), F(w,y), w != v.
 --------------------------^-------
+Error: Constraint requires an operand of type `number` or `unsigned` or `float` or `symbol` or record in file rule_typecompat.dl at line 59
+F(x,y) :- F(x,v), F(w,y), w != v.
+-------------------------------^--
 Error: Unable to deduce type for variable v in file rule_typecompat.dl at line 59
 F(x,y) :- F(x,v), F(w,y), w != v.
 -------------------------------^--
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 62
-F(x,y) :- F(x,y),  x > t.
--------------------^------
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 62
-F(x,y) :- F(x,y),  x > t.
------------------------^--
 Error: Ungrounded variable t in file rule_typecompat.dl at line 62
 F(x,y) :- F(x,y),  x > t.
 -----------------------^--
 Warning: Variable t only occurs once in file rule_typecompat.dl at line 62
 F(x,y) :- F(x,y),  x > t.
 -----------------------^--
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 63
-F(x,y) :- F(x,y),  t < x.
--------------------^------
 Error: Ungrounded variable t in file rule_typecompat.dl at line 63
 F(x,y) :- F(x,y),  t < x.
 -------------------^------
 Warning: Variable t only occurs once in file rule_typecompat.dl at line 63
 F(x,y) :- F(x,y),  t < x.
 -------------------^------
-Error: Non-numerical operand for comparison in file rule_typecompat.dl at line 63
-F(x,y) :- F(x,y),  t < x.
------------------------^--
-46 errors generated, evaluation aborted
+44 errors generated, evaluation aborted

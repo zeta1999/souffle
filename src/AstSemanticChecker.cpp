@@ -206,13 +206,20 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // record initializations have the same size as their types
     visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        if (isRecordType(types)) {
-            for (const Type& type : types) {
-                if (constant.getArguments().size() !=
-                        dynamic_cast<const RecordType*>(&type)->getFields().size()) {
-                    report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
-                }
-            }
+
+        if (!isRecordType(types)) {
+            return;
+        }
+
+        if (types.size() != 1) {
+            report.addError("Ambiguous record", constant.getSrcLoc());
+        }
+
+        // At this point we know that there is exactly one type in set, so we can take it.
+        const RecordType* recordType = dynamic_cast<const RecordType*>(&(*types.begin()));
+
+        if (recordType->getFields().size() != constant.getArguments().size()) {
+            report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
         }
     });
 
@@ -682,7 +689,7 @@ void AstSemanticChecker::checkClause(ErrorReport& report, const AstProgram& prog
     }
 }
 
-void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const TypeEnvironment& /* typeEnv */,
+void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const TypeEnvironment& typeEnvironment,
         const AstProgram& program, const AstRelation& relation, const IOType& /* ioTypes */) {
     const auto& attributes = relation.getAttributes();
     assert(attributes.size() == relation.getArity() && "mismatching attribute size and arity");
@@ -692,8 +699,7 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
         AstQualifiedName typeName = attr->getTypeName();
 
         /* check whether type exists */
-        if (typeName != "number" && typeName != "symbol" && typeName != "float" && typeName != "unsigned" &&
-                (getType(program, typeName) == nullptr)) {
+        if (!typeEnvironment.isPredefinedType(typeName) && (getType(program, typeName) == nullptr)) {
             report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
                                     toString(attr->getTypeName()),
                     attr->getSrcLoc());
@@ -753,11 +759,11 @@ void AstSemanticChecker::checkRules(ErrorReport& report, const TypeEnvironment& 
 
 // ----- types --------
 
-void AstSemanticChecker::checkUnionType(
-        ErrorReport& report, const AstProgram& program, const AstUnionType& type) {
+void AstSemanticChecker::checkUnionType(ErrorReport& report, const AstProgram& program,
+        const TypeEnvironment& typeEnvironment, const AstUnionType& type) {
     // check presence of all the element types and that all element types are based off a primitive
     for (const AstQualifiedName& sub : type.getTypes()) {
-        if (sub != "number" && sub != "symbol") {
+        if (!typeEnvironment.isPredefinedType(sub)) {
             const AstType* subt = getType(program, sub);
             if (subt == nullptr) {
                 report.addError("Undefined type " + toString(sub) + " in definition of union type " +
@@ -773,11 +779,11 @@ void AstSemanticChecker::checkUnionType(
     }
 }
 
-void AstSemanticChecker::checkRecordType(
-        ErrorReport& report, const AstProgram& program, const AstRecordType& type) {
+void AstSemanticChecker::checkRecordType(ErrorReport& report, const AstProgram& program,
+        const TypeEnvironment& typeEnvironment, const AstRecordType& type) {
     // check proper definition of all field types
     for (const auto& field : type.getFields()) {
-        if (field.type != "number" && field.type != "symbol" && (getType(program, field.type) == nullptr)) {
+        if (!typeEnvironment.isPredefinedType(field.type) && (getType(program, field.type) == nullptr)) {
             report.addError(
                     "Undefined type " + toString(field.type) + " in definition of field " + field.name,
                     type.getSrcLoc());
@@ -786,8 +792,7 @@ void AstSemanticChecker::checkRecordType(
 
     // check that field names are unique
     auto& fields = type.getFields();
-    std::size_t numFields = fields.size();
-    for (std::size_t i = 0; i < numFields; i++) {
+    for (std::size_t i = 0; i < fields.size(); i++) {
         const std::string& cur_name = fields[i].name;
         for (std::size_t j = 0; j < i; j++) {
             if (fields[j].name == cur_name) {
@@ -799,11 +804,12 @@ void AstSemanticChecker::checkRecordType(
     }
 }
 
-void AstSemanticChecker::checkType(ErrorReport& report, const AstProgram& program, const AstType& type) {
+void AstSemanticChecker::checkType(ErrorReport& report, const AstProgram& program,
+        const TypeEnvironment& typeEnvironment, const AstType& type) {
     if (const auto* u = dynamic_cast<const AstUnionType*>(&type)) {
-        checkUnionType(report, program, *u);
+        checkUnionType(report, program, typeEnvironment, *u);
     } else if (const auto* r = dynamic_cast<const AstRecordType*>(&type)) {
-        checkRecordType(report, program, *r);
+        checkRecordType(report, program, typeEnvironment, *r);
     }
 }
 
@@ -909,7 +915,7 @@ void AstSemanticChecker::checkTypes(
         ErrorReport& report, const TypeEnvironmentAnalysis& typeEnvAnalysis, const AstProgram& program) {
     /* check each type individually */
     for (const auto& cur : program.getTypes()) {
-        checkType(report, program, *cur);
+        checkType(report, program, typeEnvAnalysis.getTypeEnvironment(), *cur);
     }
 
     /* check that union types do not mix number and symbol types */

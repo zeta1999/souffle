@@ -17,14 +17,26 @@
 #include "RamTransformer.h"
 #include "DebugReport.h"
 #include "DebugReporter.h"
+#include "RamProgram.h"
 #include "RamTranslationUnit.h"
 #include "Util.h"
 
 #include <algorithm>
+#include <sstream>
 
 namespace souffle {
 
 bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
+    static const bool debug = Global::config().has("debug-report");
+
+    if (!debug) {
+        if (transform(translationUnit)) {
+            translationUnit.invalidateAnalyses();
+            return true;
+        }
+        return false;
+    }
+    translationUnit.getDebugReport().startSection();
     // take snapshot of alive analyses before invocation
     std::set<const RamAnalysis*> beforeInvocation = translationUnit.getAliveAnalyses();
 
@@ -57,9 +69,9 @@ bool RamTransformer::apply(RamTranslationUnit& translationUnit) {
         translationUnit.getDebugReport().addSection(getName(), "RAM Program after " + getName(),
                 DebugReporter::generateDiff(ramProgStrOld.str(), translationUnit.getProgram()));
 
+        translationUnit.getDebugReport().endSection(getName(), getName());
     } else {
-        translationUnit.getDebugReport().addSection(
-                getName(), "After " + getName() + " " + " (unchanged)", "");
+        translationUnit.getDebugReport().endSection(getName(), getName() + " " + " (unchanged)");
     }
 
     /* Abort evaluation of the program if errors were encountered */

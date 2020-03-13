@@ -1689,10 +1689,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitPackRecord(const RamPackRecord& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
+
             out << "recordTable.pack("
-                << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">({"
-                << join(pack.getArguments(), ",", rec) << "})"
-                << ")";
+                << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">";
+            if (pack.getArguments().size() == 0) {
+                out << "{{}}";
+            } else {
+                out << "{{ramBitCast(" << join(pack.getArguments(), "),ramBitCast(", rec) << ")}}\n";
+            }
+            out << ")";
+
             PRINT_END_COMMENT(out);
         }
 

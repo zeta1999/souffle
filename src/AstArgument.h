@@ -529,6 +529,11 @@ public:
         return fun;
     }
 
+    /** Set aggregate operator */
+    void setOperator(AggregateOp op) {
+        fun = op;
+    }
+
     /** Set target expression */
     void setTargetExpression(std::unique_ptr<AstArgument> arg) {
         expression = std::move(arg);

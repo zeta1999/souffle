@@ -1019,8 +1019,21 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // get the targeted relation
             const InterpreterRelation& rel = *node->getRelation();
 
+            if (cur.getFunction() == AggregateOp::count) {
+                RamDomain result = 0;
+
+                for (const RamDomain* data : rel) {
+                    ctxt[cur.getTupleId()] = data;
+
+                    if (execute(node->getChild(0), ctxt)) {
+                        ++result;
+                    }
+                }
+
+                return result;
+            }
             // initialize result
-            RamDomain res = 0;
+
             switch (cur.getFunction()) {
                 case AggregateOp::min:
                     res = MAX_RAM_DOMAIN;
@@ -1028,24 +1041,18 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 case AggregateOp::max:
                     res = MIN_RAM_DOMAIN;
                     break;
-                case AggregateOp::count:
-                    res = 0;
-                    break;
                 case AggregateOp::sum:
                     res = 0;
                     break;
+
+                case AggregateOp::count:
+                    assert(false && "count should be handled earlier");
             }
 
             for (const RamDomain* data : rel) {
                 ctxt[cur.getTupleId()] = data;
 
                 if (!execute(node->getChild(0), ctxt)) {
-                    continue;
-                }
-
-                // count is easy
-                if (cur.getFunction() == AggregateOp::count) {
-                    ++res;
                     continue;
                 }
 

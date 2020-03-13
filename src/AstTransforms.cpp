@@ -1313,6 +1313,24 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                         }
                     }
                 }
+
+                if (auto* aggregator = dynamic_cast<AstAggregator*>(node.get())) {
+                    if (isOverloadedAggregator(aggregator->getOperator())) {
+                        auto* targetExpression = aggregator->getTargetExpression();
+
+                        if (isFloat(targetExpression)) {
+                            AggregateOp convertedOperator = convertOverloadedAggregator(
+                                    aggregator->getOperator(), TypeAttribute::Float);
+                            aggregator->setOperator(convertedOperator);
+                            changed = true;
+                        } else if (isUnsigned(targetExpression)) {
+                            AggregateOp convertedOperator = convertOverloadedAggregator(
+                                    aggregator->getOperator(), TypeAttribute::Unsigned);
+                            aggregator->setOperator(convertedOperator);
+                            changed = true;
+                        }
+                    }
+                }
             } catch (std::out_of_range&) {
                 // No types to convert in undeclared clauses
             }

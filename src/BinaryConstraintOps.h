@@ -110,7 +110,7 @@ inline BinaryConstraintOp convertOverloadedConstraint(
         default:
             assert(false && "Invalid constraint conversion");
     }
-    __builtin_unreachable();
+    assert(false);
 }
 
 /**
@@ -253,7 +253,7 @@ inline TypeAttribute getBinaryConstraintType(const BinaryConstraintOp op) {
         default:
             assert(false && "Invalid argument");
     }
-    __builtin_unreachable();
+    assert(false);
 }
 
 }  // end of namespace souffle

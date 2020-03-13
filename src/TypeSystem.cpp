@@ -51,8 +51,14 @@ void RecordType::print(std::ostream& out) const {
     }) << " )";
 }
 
-TypeEnvironment::TypeEnvironment() {
-    clear();
+TypeSet TypeEnvironment::initializePredefinedTypes() {
+    // initialize predefined types.
+    createType<PredefinedType>("number");
+    createType<PredefinedType>("float");
+    createType<PredefinedType>("symbol");
+    createType<PredefinedType>("unsigned");
+
+    return TypeSet(getType("number"), getType("float"), getType("symbol"), getType("unsigned"));
 }
 
 TypeEnvironment::~TypeEnvironment() {
@@ -68,11 +74,8 @@ void TypeEnvironment::clear() {
     }
     types.clear();
 
-    // re-initialize type environment
-    createType<PredefinedType>("number");
-    createType<PredefinedType>("float");
-    createType<PredefinedType>("symbol");
-    createType<PredefinedType>("unsigned");
+    // Reinitialize predefined types
+    initializePredefinedTypes();
 }
 
 bool TypeEnvironment::isType(const AstQualifiedName& ident) const {

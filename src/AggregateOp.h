@@ -23,20 +23,24 @@ enum class AggregateOp {
     // int
     max,
     min,
-    count,
     sum,
 
     // uint
     fmax,
     fmin,
-    fcount,
     fsum,
 
     // float
     umax,
     umin,
-    ucount,
     usum,
+
+    // Count works on all types.
+    count,
 };
+
+inline bool canBeUsedOnSymbols(const AggregateOp op) {
+    return op == AggregateOp::count;
+}
 
 }  // namespace souffle

@@ -738,9 +738,11 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // visit aggregates
         void visitAggregator(const AstAggregator& agg) override {
-            TypeSet numericTypes = TypeSet(env.getNumberType(), env.getFloatType(), env.getUnsignedType());
-
-            addConstraint(hasSuperTypeInSet(getVar(agg), numericTypes));
+            if (canBeUsedOnSymbols(agg.getOperator())) {
+                addConstraint(hasSuperTypeInSet(getVar(agg), env.getPredefinedTypes()));
+            } else {
+                addConstraint(hasSuperTypeInSet(getVar(agg), env.getNumericTypes()));
+            }
 
             if (auto expr = agg.getTargetExpression()) {
                 addConstraint(isSubtypeOf(getVar(expr), getVar(agg)));

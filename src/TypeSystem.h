@@ -227,10 +227,9 @@ public:
 
     /** Adds the given type to this set */
     void insert(const Type& type) {
-        if (all) {
-            return;
+        if (!all) {
+            types.insert(&type);
         }
-        types.insert(&type);
     }
 
     /** Calculate intersection of two TypeSet */
@@ -333,7 +332,9 @@ private:
 class TypeEnvironment {
 public:
     // -- constructors / destructores --
-    TypeEnvironment();
+    TypeEnvironment()
+            : types(), predefinedTypes(initializePredefinedTypes()),
+              predefinedNumericTypes(TypeSet(getType("number"), getType("float"), getType("unsigned"))){};
 
     TypeEnvironment(const TypeEnvironment&) = delete;
 
@@ -396,10 +397,6 @@ public:
         return getType("symbol");
     }
 
-    TypeSet predefinedTypes() const {
-        return TypeSet(getType("number"), getType("unsigned"), getType("float"), getType("symbol"));
-    }
-
     bool isPredefinedType(const AstQualifiedName& identifier) const {
         if (isType(identifier)) {
             return isPredefinedType(getType(identifier));
@@ -409,7 +406,15 @@ public:
     }
 
     bool isPredefinedType(const Type& typeName) const {
-        return predefinedTypes().contains(typeName);
+        return predefinedTypes.contains(typeName);
+    }
+
+    const TypeSet& getPredefinedTypes() const {
+        return predefinedTypes;
+    }
+
+    const TypeSet& getNumericTypes() const {
+        return predefinedNumericTypes;
     }
 
     TypeSet getAllTypes() const;
@@ -430,11 +435,17 @@ public:
     }
 
 private:
+    /** Register types created by one of the factory functions */
+    void addType(Type& type);
+
+    TypeSet initializePredefinedTypes(void);
+
     /** The list of covered types */
     std::map<AstQualifiedName, Type*> types;
 
-    /** Register types created by one of the factory functions */
-    void addType(Type& type);
+    const TypeSet predefinedTypes;
+
+    const TypeSet predefinedNumericTypes;
 };
 
 // ---------------------------------------------------------------

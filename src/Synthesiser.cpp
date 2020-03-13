@@ -996,19 +996,48 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::min:
                     init = "MAX_RAM_SIGNED";
                     break;
+                case AggregateOp::fmin:
+                    init = "MAX_RAM_FLOAT";
+                    break;
+                case AggregateOp::umin:
+                    init = "MAX_RAM_UNSIGNED";
+                    break;
                 case AggregateOp::max:
                     init = "MIN_RAM_SIGNED";
+                    break;
+                case AggregateOp::fmax:
+                    init = "MIN_RAM_FLOAT";
+                    break;
+                case AggregateOp::umax:
+                    init = "MIN_RAM_UNSIGNED";
                     break;
                 case AggregateOp::count:
                     init = "0";
                     break;
+                case AggregateOp::fsum:
+                case AggregateOp::usum:
                 case AggregateOp::sum:
                     init = "0";
                     break;
-                default:
-                    abort();
             }
-            out << "RamDomain res" << identifier << " = " << init << ";\n";
+
+            if (aggregate.getFunction() == AggregateOp::count) {
+                out << "RamDomain res" << identifier << " = " << init << ";\n";
+            } else {
+                switch (getTypeAttributeAggregate(aggregate.getFunction())) {
+                    case TypeAttribute::Signed:
+                        out << "RamSigned res" << identifier << " = " << init << ";\n";
+                        break;
+                    case TypeAttribute::Unsigned:
+                        out << "RamUnsigned res" << identifier << " = " << init << ";\n";
+                        break;
+                    case TypeAttribute::Float:
+                        out << "RamFloat res" << identifier << " = " << init << ";\n";
+                        break;
+                    default:
+                        assert(false && "Invalid type");
+                }
+            }
 
             // check whether there is an index to use
             out << "for(const auto& env" << identifier << " : "
@@ -1021,11 +1050,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // pick function
             switch (aggregate.getFunction()) {
+                case AggregateOp::fmin:
+                case AggregateOp::umin:
                 case AggregateOp::min:
                     out << "res" << identifier << " = std::min(res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
+                case AggregateOp::fmax:
+                case AggregateOp::umax:
                 case AggregateOp::max:
                     out << "res" << identifier << " = std::max(res" << identifier << ",";
                     visit(aggregate.getExpression(), out);
@@ -1034,13 +1067,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::count:
                     out << "++res" << identifier << "\n;";
                     break;
+                case AggregateOp::fsum:
+                case AggregateOp::usum:
                 case AggregateOp::sum:
                     out << "res" << identifier << " += ";
                     visit(aggregate.getExpression(), out);
                     out << ";\n";
                     break;
-                default:
-                    abort();
             }
 
             out << "}\n";
@@ -1049,7 +1082,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "}\n";
 
             // write result into environment tuple
-            out << "env" << identifier << "[0] = res" << identifier << ";\n";
+            out << "env" << identifier << "[0] = ramBitCast(res" << identifier << ");\n";
 
             if (aggregate.getFunction() == AggregateOp::min || aggregate.getFunction() == AggregateOp::max) {
                 // check whether there exists a min/max first before next loop
@@ -1884,7 +1917,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // declare symbol table
     os << "// -- initialize symbol table --\n";
 
-    os << "SymbolTable symTable\n";
+    os << "SymbolTable symTable";
     if (symTable.size() > 0) {
         os << "{\n";
         for (size_t i = 0; i < symTable.size(); i++) {

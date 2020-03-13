@@ -521,12 +521,12 @@ public:
      * @return the corresponding range of matching elements
      */
     iterator lower_bound(const TupleType& entry, operation_hints&) const {
-        if (entry[0] == MIN_RAM_DOMAIN && entry[1] == MIN_RAM_DOMAIN) {
+        if (entry[0] == MIN_RAM_SIGNED && entry[1] == MIN_RAM_SIGNED) {
             // Return an iterator over all tuples.
             return begin();
         }
 
-        if (entry[0] != MIN_RAM_DOMAIN && entry[1] == MIN_RAM_DOMAIN) {
+        if (entry[0] != MIN_RAM_SIGNED && entry[1] == MIN_RAM_SIGNED) {
             // Return an iterator over all (entry[0], _)
 
             if (!sds.nodeExists(entry[0])) {
@@ -535,7 +535,7 @@ public:
             return anteriorIt(entry[0]);
         }
 
-        if (entry[0] != MIN_RAM_DOMAIN && entry[1] != MIN_RAM_DOMAIN) {
+        if (entry[0] != MIN_RAM_SIGNED && entry[1] != MIN_RAM_SIGNED) {
             // Return an iterator point to the exact same node.
 
             if (!sds.contains(entry[0], entry[1])) {

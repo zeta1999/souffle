@@ -273,8 +273,8 @@ protected:
         // Transfer upper_bound to a equivalent lower bound
         bool fullIndexSearch = true;
         for (size_t i = Arity; i-- > 0;) {
-            if (a[i] == MIN_RAM_DOMAIN && b[i] == MAX_RAM_DOMAIN) {
-                b[i] = MIN_RAM_DOMAIN;
+            if (a[i] == MIN_RAM_SIGNED && b[i] == MAX_RAM_SIGNED) {
+                b[i] = MIN_RAM_SIGNED;
                 continue;
             }
             if (a[i] == b[i]) {

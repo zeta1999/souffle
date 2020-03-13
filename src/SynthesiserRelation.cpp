@@ -387,8 +387,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
                 if (((search >> column) & 1) == 0) {
-                    out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
-                    out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
+                    out << "low[" << column << "] = MIN_RAM_SIGNED;\n";
+                    out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
             }
             out << "return make_range(ind_" << indNum << ".lower_bound(low, h.hints_" << indNum << "), ind_"
@@ -684,8 +684,8 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
                 if (((search >> column) & 1) == 0) {
-                    out << "low[" << column << "] = MIN_RAM_DOMAIN;\n";
-                    out << "high[" << column << "] = MAX_RAM_DOMAIN;\n";
+                    out << "low[" << column << "] = MIN_RAM_SIGNED;\n";
+                    out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
             }
             out << "return range<iterator_" << indNum << ">(ind_" << indNum << ".lower_bound(&low, h.hints_"

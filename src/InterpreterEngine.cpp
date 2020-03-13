@@ -632,8 +632,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             RamDomain low[arity];
             RamDomain high[arity];
             for (size_t i = 0; i < node->getChildren().size(); ++i) {
-                low[i] = node->getChild(i) != nullptr ? execute(node->getChild(i), ctxt) : MIN_RAM_DOMAIN;
-                high[i] = node->getChild(i) != nullptr ? low[i] : MAX_RAM_DOMAIN;
+                low[i] = node->getChild(i) != nullptr ? execute(node->getChild(i), ctxt) : MIN_RAM_SIGNED;
+                high[i] = node->getChild(i) != nullptr ? low[i] : MAX_RAM_SIGNED;
             }
             return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(high, arity));
         ESAC(ExistenceCheck)
@@ -646,14 +646,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             RamDomain low[arity];
             RamDomain high[arity];
             for (size_t i = 0; i < arity - 2; i++) {
-                low[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MIN_RAM_DOMAIN;
-                high[i] = node->getChild(i) ? low[i] : MAX_RAM_DOMAIN;
+                low[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MIN_RAM_SIGNED;
+                high[i] = node->getChild(i) ? low[i] : MAX_RAM_SIGNED;
             }
 
-            low[arity - 2] = MIN_RAM_DOMAIN;
-            low[arity - 1] = MIN_RAM_DOMAIN;
-            high[arity - 2] = MAX_RAM_DOMAIN;
-            high[arity - 1] = MAX_RAM_DOMAIN;
+            low[arity - 2] = MIN_RAM_SIGNED;
+            low[arity - 1] = MIN_RAM_SIGNED;
+            high[arity - 2] = MAX_RAM_SIGNED;
+            high[arity - 1] = MAX_RAM_SIGNED;
 
             // obtain view
             size_t viewPos = node->getData(0);
@@ -824,8 +824,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     low[i] = execute(node->getChild(i), ctxt);
                     hig[i] = low[i];
                 } else {
-                    low[i] = MIN_RAM_DOMAIN;
-                    hig[i] = MAX_RAM_DOMAIN;
+                    low[i] = MIN_RAM_SIGNED;
+                    hig[i] = MAX_RAM_SIGNED;
                 }
             }
 
@@ -854,8 +854,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     low[i] = execute(node->getChild(i), ctxt);
                     hig[i] = low[i];
                 } else {
-                    low[i] = MIN_RAM_DOMAIN;
-                    hig[i] = MAX_RAM_DOMAIN;
+                    low[i] = MIN_RAM_SIGNED;
+                    hig[i] = MAX_RAM_SIGNED;
                 }
             }
 
@@ -933,8 +933,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     low[i] = execute(node->getChild(i), ctxt);
                     hig[i] = low[i];
                 } else {
-                    low[i] = MIN_RAM_DOMAIN;
-                    hig[i] = MAX_RAM_DOMAIN;
+                    low[i] = MIN_RAM_SIGNED;
+                    hig[i] = MAX_RAM_SIGNED;
                 }
             }
 
@@ -967,8 +967,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     low[i] = execute(node->getChild(i), ctxt);
                     hig[i] = low[i];
                 } else {
-                    low[i] = MIN_RAM_DOMAIN;
-                    hig[i] = MAX_RAM_DOMAIN;
+                    low[i] = MIN_RAM_SIGNED;
+                    hig[i] = MAX_RAM_SIGNED;
                 }
             }
 
@@ -1019,40 +1019,33 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // get the targeted relation
             const InterpreterRelation& rel = *node->getRelation();
 
-            if (cur.getFunction() == AggregateOp::count) {
-                RamDomain result = 0;
-
-                for (const RamDomain* data : rel) {
-                    ctxt[cur.getTupleId()] = data;
-
-                    if (execute(node->getChild(0), ctxt)) {
-                        ++result;
-                    }
-                }
-
-                return result;
-            }
             // initialize result
-
+            RamDomain res = 0;
             switch (cur.getFunction()) {
                 case AggregateOp::min:
-                    res = MAX_RAM_DOMAIN;
+                    res = MAX_RAM_SIGNED;
                     break;
                 case AggregateOp::max:
-                    res = MIN_RAM_DOMAIN;
+                    res = MIN_RAM_SIGNED;
+                    break;
+                case AggregateOp::count:
+                    res = 0;
                     break;
                 case AggregateOp::sum:
                     res = 0;
                     break;
-
-                case AggregateOp::count:
-                    assert(false && "count should be handled earlier");
             }
 
             for (const RamDomain* data : rel) {
                 ctxt[cur.getTupleId()] = data;
 
                 if (!execute(node->getChild(0), ctxt)) {
+                    continue;
+                }
+
+                // count is easy
+                if (cur.getFunction() == AggregateOp::count) {
+                    ++res;
                     continue;
                 }
 
@@ -1082,10 +1075,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             tuple[0] = res;
             ctxt[cur.getTupleId()] = tuple;
 
-            if (cur.getFunction() == AggregateOp::max && res == MIN_RAM_DOMAIN) {
+            if (cur.getFunction() == AggregateOp::max && res == MIN_RAM_SIGNED) {
                 // no maximum found
                 return true;
-            } else if (cur.getFunction() == AggregateOp::min && res == MAX_RAM_DOMAIN) {
+            } else if (cur.getFunction() == AggregateOp::min && res == MAX_RAM_SIGNED) {
                 // no minimum found
                 return true;
             } else {
@@ -1099,10 +1092,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             RamDomain res = 0;
             switch (cur.getFunction()) {
                 case AggregateOp::min:
-                    res = MAX_RAM_DOMAIN;
+                    res = MAX_RAM_SIGNED;
                     break;
                 case AggregateOp::max:
-                    res = MIN_RAM_DOMAIN;
+                    res = MIN_RAM_SIGNED;
                     break;
                 case AggregateOp::count:
                     res = 0;
@@ -1124,8 +1117,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     low[i] = execute(node->getChild(i), ctxt);
                     hig[i] = low[i];
                 } else {
-                    low[i] = MIN_RAM_DOMAIN;
-                    hig[i] = MAX_RAM_DOMAIN;
+                    low[i] = MIN_RAM_SIGNED;
+                    hig[i] = MAX_RAM_SIGNED;
                 }
             }
 
@@ -1174,10 +1167,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             ctxt[cur.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
-            if (cur.getFunction() == AggregateOp::max && res == MIN_RAM_DOMAIN) {
+            if (cur.getFunction() == AggregateOp::max && res == MIN_RAM_SIGNED) {
                 // no maximum found
                 return true;
-            } else if (cur.getFunction() == AggregateOp::min && res == MAX_RAM_DOMAIN) {
+            } else if (cur.getFunction() == AggregateOp::min && res == MAX_RAM_SIGNED) {
                 // no minimum found
                 return true;
             } else {

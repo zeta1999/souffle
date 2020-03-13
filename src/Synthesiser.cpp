@@ -873,10 +873,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             std::string init;
             switch (aggregate.getFunction()) {
                 case AggregateOp::min:
-                    init = "MAX_RAM_DOMAIN";
+                    init = "MAX_RAM_SIGNED";
                     break;
                 case AggregateOp::max:
-                    init = "MIN_RAM_DOMAIN";
+                    init = "MIN_RAM_SIGNED";
                     break;
                 case AggregateOp::count:
                     init = "0";
@@ -994,10 +994,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             std::string init;
             switch (aggregate.getFunction()) {
                 case AggregateOp::min:
-                    init = "MAX_RAM_DOMAIN";
+                    init = "MAX_RAM_SIGNED";
                     break;
                 case AggregateOp::max:
-                    init = "MIN_RAM_DOMAIN";
+                    init = "MIN_RAM_SIGNED";
                     break;
                 case AggregateOp::count:
                     init = "0";

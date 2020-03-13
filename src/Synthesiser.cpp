@@ -1021,23 +1021,25 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
             }
 
+            std::string type;
             if (aggregate.getFunction() == AggregateOp::count) {
-                out << "RamDomain res" << identifier << " = " << init << ";\n";
+                type = "RamDomain";
             } else {
                 switch (getTypeAttributeAggregate(aggregate.getFunction())) {
                     case TypeAttribute::Signed:
-                        out << "RamSigned res" << identifier << " = " << init << ";\n";
+                        type = "RamSigned";
                         break;
                     case TypeAttribute::Unsigned:
-                        out << "RamUnsigned res" << identifier << " = " << init << ";\n";
+                        type = "RamUnsigned";
                         break;
                     case TypeAttribute::Float:
-                        out << "RamFloat res" << identifier << " = " << init << ";\n";
+                        type = "RamFloat";
                         break;
                     default:
                         assert(false && "Invalid type");
                 }
             }
+            out << type << " res" << identifier << " = " << init << ";\n";
 
             // check whether there is an index to use
             out << "for(const auto& env" << identifier << " : "
@@ -1053,16 +1055,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::fmin:
                 case AggregateOp::umin:
                 case AggregateOp::min:
-                    out << "res" << identifier << " = std::min(res" << identifier << ",";
+                    out << "res" << identifier << " = std::min(res" << identifier << ",ramBitCast<" << type
+                        << ">(";
                     visit(aggregate.getExpression(), out);
-                    out << ");\n";
+                    out << "));\n";
                     break;
                 case AggregateOp::fmax:
                 case AggregateOp::umax:
                 case AggregateOp::max:
-                    out << "res" << identifier << " = std::max(res" << identifier << ",";
+                    out << "res" << identifier << " = std::max(res" << identifier << ",ramBitCast<" << type
+                        << ">(";
                     visit(aggregate.getExpression(), out);
-                    out << ");\n";
+                    out << "));\n";
                     break;
                 case AggregateOp::count:
                     out << "++res" << identifier << "\n;";
@@ -1070,9 +1074,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::fsum:
                 case AggregateOp::usum:
                 case AggregateOp::sum:
-                    out << "res" << identifier << " += ";
+                    out << "res" << identifier << " += "
+                        << "ramBitCast<" << type << ">(";
+                    ;
                     visit(aggregate.getExpression(), out);
-                    out << ";\n";
+                    out << ");\n";
                     break;
             }
 

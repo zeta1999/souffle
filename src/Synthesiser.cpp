@@ -2311,8 +2311,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "false,\n";
         os << "R\"()\",\n";
     }
-    os << std::stoi(Global::config().get("jobs")) << ",\n";
-    os << "-1";
+    os << std::stoi(Global::config().get("jobs"));
     os << ");\n";
 
     os << "if (!opt.parse(argc,argv)) return 1;\n";

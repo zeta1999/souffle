@@ -1322,7 +1322,10 @@ bool InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Aggrega
         case AggregateOp::mean: {
             auto result = FOLD_NUMERIC([](auto a, auto b) { return a + b; });
 
-            if (result.first != 0 && agg.getFunction() == AggregateOp::mean) {
+            if (agg.getFunction() == AggregateOp::mean) {
+                // fail the `mean` aggregate if there isn't at least one match
+                if (result.first == 0) return false;
+
                 switch (agg.getExpressionType()) {
                     case TypeAttribute::Signed:
                         result.second =
@@ -1342,6 +1345,7 @@ bool InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Aggrega
                 }
             }
 
+            // `sum` has historically succeeded w/ zero when there are no matches
             return runNested(result.second);
         }
     }

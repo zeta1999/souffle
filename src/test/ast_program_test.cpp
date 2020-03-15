@@ -182,7 +182,7 @@ TEST(AstProgram, RemoveClause) {
     auto sum = std::make_unique<AstAggregator>(AggregateOp::sum, std::make_unique<AstVariable>("x"));
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::move(atom));
-    sum->setBodyLiterals(std::move(body));
+    sum->setBody(std::move(body));
 
     auto tu1 = makeATU(".decl A,B(x:number) \n A(sum x : B(x)).");
     auto clause = makeClause("A", std::move(sum));

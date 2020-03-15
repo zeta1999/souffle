@@ -110,7 +110,7 @@ TEST(AstPrint, AggregatorMin) {
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::make_unique<AstAtom>("B"));
 
-    min->setBodyLiterals(std::move(body));
+    min->setBody(std::move(body));
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
@@ -126,7 +126,7 @@ TEST(AstPrint, AggregatorMax) {
 
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::move(atom));
-    max->setBodyLiterals(std::move(body));
+    max->setBody(std::move(body));
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
@@ -142,7 +142,7 @@ TEST(AstPrint, AggregatorCount) {
 
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::move(atom));
-    count->setBodyLiterals(std::move(body));
+    count->setBody(std::move(body));
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();
@@ -158,7 +158,7 @@ TEST(AstPrint, AggregatorSum) {
 
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::move(atom));
-    sum->setBodyLiterals(std::move(body));
+    sum->setBody(std::move(body));
 
     auto tu1 = makeATU();
     auto* prog1 = tu1->getProgram();

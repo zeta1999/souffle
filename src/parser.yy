@@ -1284,7 +1284,7 @@ arg
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
 
-        aggr->setBodyLiterals(std::move(body));
+        aggr->setBody(std::move(body));
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1305,7 +1305,7 @@ arg
         for (auto& cur : bodies[0]->getBodyLiterals()) {
             body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
-        aggr->setBodyLiterals(std::move(body));
+        aggr->setBody(std::move(body));
         delete bodies[0];
 
         $$ = aggr;
@@ -1318,7 +1318,7 @@ arg
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
 
-        aggr->setBodyLiterals(std::move(body));
+        aggr->setBody(std::move(body));
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1340,7 +1340,7 @@ arg
         for (auto& cur : bodies[0]->getBodyLiterals()) {
             body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
-        aggr->setBodyLiterals(std::move(body));
+        aggr->setBody(std::move(body));
         delete bodies[0];
 
         $$ = aggr;
@@ -1355,7 +1355,7 @@ arg
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
 
-        aggr->setBodyLiterals(std::move(body));
+        aggr->setBody(std::move(body));
         $atom = nullptr;
 
         $$ = aggr;
@@ -1378,7 +1378,7 @@ arg
         for (auto& cur : bodies[0]->getBodyLiterals()) {
             body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
-        aggr->setBodyLiterals(std::move(body));
+        aggr->setBody(std::move(body));
         delete bodies[0];
 
         $$ = aggr;
@@ -1393,7 +1393,7 @@ arg
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
 
-        aggr->setBodyLiterals(std::move(body));
+        aggr->setBody(std::move(body));
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1415,7 +1415,7 @@ arg
         for (auto& cur : bodies[0]->getBodyLiterals()) {
             body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
-        aggr->setBodyLiterals(std::move(body));
+        aggr->setBody(std::move(body));
         delete bodies[0];
 
         $$ = aggr;

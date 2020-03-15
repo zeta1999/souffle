@@ -521,7 +521,7 @@ public:
         return toPtrVector(body);
     }
 
-    void setBodyLiterals(std::vector<std::unique_ptr<AstLiteral>> bodyLiterals) {
+    void setBody(std::vector<std::unique_ptr<AstLiteral>> bodyLiterals) {
         body = std::move(bodyLiterals);
     }
 

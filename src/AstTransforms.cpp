@@ -369,7 +369,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
 
             std::vector<std::unique_ptr<AstLiteral>> newBody;
             newBody.push_back(std::move(aggAtom));
-            const_cast<AstAggregator&>(agg).setBodyLiterals(std::move(newBody));
+            const_cast<AstAggregator&>(agg).setBody(std::move(newBody));
         });
     });
     return changed;
@@ -579,7 +579,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                                 std::make_unique<AstNumericConstant>(1)));
                     }
 
-                    replacementAggregator->setBodyLiterals(std::move(newBody));
+                    replacementAggregator->setBody(std::move(newBody));
                     return replacementAggregator;
                 }
             }
@@ -1095,7 +1095,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
                         for (const auto& lit : agg->getBodyLiterals()) {
                             newBody.push_back(std::unique_ptr<AstLiteral>(lit->clone()));
                         }
-                        count->setBodyLiterals(std::move(newBody));
+                        count->setBody(std::move(newBody));
 
                         auto number = std::unique_ptr<AstNumericConstant>(constant->clone());
                         // Now it's constant * count : { ... }

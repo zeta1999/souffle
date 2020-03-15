@@ -544,7 +544,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     for (AstLiteral* lit : aggr->getBodyLiterals()) {
                         newBody.push_back(std::unique_ptr<AstLiteral>(lit->clone()));
                     }
-                    newAggr->setBodyLiterals(std::move(newBody));
+                    newAggr->setBody(std::move(newBody));
                     versions.push_back(newAggr);
                 }
             }
@@ -588,7 +588,7 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                             newBody.push_back(std::unique_ptr<AstLiteral>(addedLit));
                         }
 
-                        newAggr->setBodyLiterals(std::move(newBody));
+                        newAggr->setBody(std::move(newBody));
                         aggrVersions.push_back(newAggr);
                     }
 

@@ -41,10 +41,6 @@ enum class AggregateOp {
     count,
 };
 
-inline bool canBeUsedOnSymbols(const AggregateOp op) {
-    return op == AggregateOp::count;
-}
-
 /**
  * Get type of aggregate.
  *

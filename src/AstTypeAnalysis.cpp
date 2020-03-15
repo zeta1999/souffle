@@ -738,12 +738,17 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // visit aggregates
         void visitAggregator(const AstAggregator& agg) override {
-            if (canBeUsedOnSymbols(agg.getOperator())) {
-                addConstraint(hasSuperTypeInSet(getVar(agg), env.getPredefinedTypes()));
-            } else {
-                addConstraint(hasSuperTypeInSet(getVar(agg), env.getNumericTypes()));
+            // count is a special case.
+            if (agg.getOperator() == AggregateOp::count) {
+                // count must be an integral type.
+                TypeSet integralTypes = TypeSet(env.getNumberType(), env.getUnsignedType());
+                addConstraint(hasSuperTypeInSet(getVar(agg), std::move(integralTypes)));
+                return;
             }
 
+            addConstraint(hasSuperTypeInSet(getVar(agg), env.getNumericTypes()));
+
+            // If there is a target expression - it should be of the same type as the aggregator.
             if (auto expr = agg.getTargetExpression()) {
                 addConstraint(isSubtypeOf(getVar(expr), getVar(agg)));
                 addConstraint(isSubtypeOf(getVar(agg), getVar(expr)));

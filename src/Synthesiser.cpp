@@ -990,6 +990,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 return;
             }
 
+            out << "bool shouldRunNested = false;\n";
+
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
@@ -1013,11 +1015,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
                 case AggregateOp::count:
                     init = "0";
+                    out << "shouldRunNested = true;\n";
                     break;
                 case AggregateOp::fsum:
                 case AggregateOp::usum:
                 case AggregateOp::sum:
                     init = "0";
+                    out << "shouldRunNested = true;\n";
                     break;
             }
 
@@ -1050,6 +1054,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             visit(aggregate.getCondition(), out);
             out << ") {\n";
 
+            out << "shouldRunNested = true;\n";
             // pick function
             switch (aggregate.getFunction()) {
                 case AggregateOp::fmin:
@@ -1090,14 +1095,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // write result into environment tuple
             out << "env" << identifier << "[0] = ramBitCast(res" << identifier << ");\n";
 
-            if (aggregate.getFunction() == AggregateOp::min || aggregate.getFunction() == AggregateOp::max) {
-                // check whether there exists a min/max first before next loop
-                out << "if(res" << identifier << " != " << init << "){\n";
-                visitTupleOperation(aggregate, out);
-                out << "}\n";
-            } else {
-                visitTupleOperation(aggregate, out);
-            }
+            // check whether there exists a min/max first before next loop
+            out << "if (shouldRunNested) {\n";
+            visitTupleOperation(aggregate, out);
+            out << "}\n";
 
             PRINT_END_COMMENT(out);
         }

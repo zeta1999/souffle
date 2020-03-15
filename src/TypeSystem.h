@@ -429,32 +429,9 @@ public:
         types.swap(env.types);
     }
 
-    TypeSet const& getNumericTypes() const {
-        if (numericTypes.empty()) {
-            numericTypes.insert(getNumberType());
-            numericTypes.insert(getUnsignedType());
-            numericTypes.insert(getFloatType());
-        }
-
-        return numericTypes;
-    }
-
-    TypeSet const& getOrderedTypes() const {
-        if (orderedTypes.empty()) {
-            orderedTypes = getNumericTypes();
-            orderedTypes.insert(getSymbolType());
-        }
-
-        return orderedTypes;
-    }
-
 private:
     /** The list of covered types */
     std::map<AstQualifiedName, Type*> types;
-
-    // `mutable` as these are lazy-init'd and once init'd immutable
-    mutable TypeSet numericTypes;
-    mutable TypeSet orderedTypes;
 
     /** Register types created by one of the factory functions */
     void addType(Type& type);

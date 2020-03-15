@@ -108,7 +108,7 @@ inline BinaryConstraintOp convertOverloadedConstraint(
         assert(false && "unhandled TypeAttr");                          \
         break; /* HACK: GCC-9 is incorrectly reporting a case fallthru */
     // clang-format on
-  
+
     switch (constraintOp) {
         COMPARE_CONSTRAINT_FLOAT_OR_RAW(EQ)
         COMPARE_CONSTRAINT_FLOAT_OR_RAW(NE)
@@ -121,10 +121,10 @@ inline BinaryConstraintOp convertOverloadedConstraint(
         default:
             assert(false && "Invalid constraint conversion");
     }
-  
+
 #undef COMPARE_CONSTRAINT_FLOAT_OR_RAW
 #undef COMPARE_CONSTRAINT
-  
+
     assert(isOverloaded(constraintOp) && "missing handler for overloadable constraint op");
     assert(!isOverloaded(constraintOp) && "can't overload this binary op");
     exit(EXIT_FAILURE);

@@ -696,7 +696,7 @@ TEST(MultiArg, SymbolMin) {
     SymbolTable symTab;
 
     for (RamDomain i = -100; i <= 100; ++i) {
-        args.push_back(std::make_unique<RamConstant>(symTab.lookup(std::to_string(i))));
+        args.push_back(std::make_unique<RamSignedConstant>(symTab.lookup(std::to_string(i))));
     }
 
     RamDomain result = evalMultiArg(functor, std::move(args));

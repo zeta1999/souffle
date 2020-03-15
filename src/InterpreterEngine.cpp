@@ -1285,15 +1285,14 @@ bool InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Aggrega
             exit(EXIT_FAILURE);                                   \
     } }();
 #define FOLD_NUMERIC(op_num)                                      \
-    ([&]() { switch (agg.getExpressionType()) {                   \
+    [&]() { switch (agg.getExpressionType()) {                    \
         case TypeAttribute::Signed  : FOLDL(RamSigned  , op_num); \
         case TypeAttribute::Unsigned: FOLDL(RamUnsigned, op_num); \
         case TypeAttribute::Float   : FOLDL(RamFloat   , op_num); \
         default:                                                  \
             assert(false && "non-numeric type found");            \
             exit(EXIT_FAILURE);                                   \
-            return std::make_pair<size_t, RamDomain>(0, 0);       \
-    } })();
+    } }();
     // clang-format on
 
     switch (agg.getFunction()) {

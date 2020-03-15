@@ -1016,6 +1016,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(UnpackRecord)
 
         CASE(Aggregate)
+            bool shouldRunNested = false;
+
             // get the targeted relation
             const InterpreterRelation& rel = *node->getRelation();
 
@@ -1042,15 +1044,19 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
                 case AggregateOp::sum:
                     res = 0;
+                    shouldRunNested = true;
                     break;
                 case AggregateOp::usum:
                     res = ramBitCast(static_cast<RamUnsigned>(0));
+                    shouldRunNested = true;
                     break;
                 case AggregateOp::fsum:
                     res = ramBitCast(static_cast<RamFloat>(0));
+                    shouldRunNested = true;
                     break;
                 case AggregateOp::count:
                     res = 0;
+                    shouldRunNested = true;
                     break;
             }
 
@@ -1061,6 +1067,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     continue;
                 }
 
+                shouldRunNested = true;
                 // count is a special case.
                 if (cur.getFunction() == AggregateOp::count) {
                     ++res;
@@ -1111,26 +1118,52 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             tuple[0] = res;
             ctxt[cur.getTupleId()] = tuple;
 
-            // run nested part - using base class visitor
-            return execute(node->getChild(2), ctxt);
-
+            if (!shouldRunNested) {
+                return true;
+            } else {
+                return execute(node->getChild(2), ctxt);
+            }
         ESAC(Aggregate)
 
         CASE(IndexAggregate)
+            bool shouldRunNested = false;
+
             // initialize result
             RamDomain res = 0;
             switch (cur.getFunction()) {
                 case AggregateOp::min:
                     res = MAX_RAM_SIGNED;
                     break;
+                case AggregateOp::umin:
+                    res = ramBitCast(MAX_RAM_UNSIGNED);
+                    break;
+                case AggregateOp::fmin:
+                    res = ramBitCast(MAX_RAM_FLOAT);
+                    break;
                 case AggregateOp::max:
                     res = MIN_RAM_SIGNED;
                     break;
-                case AggregateOp::count:
-                    res = 0;
+                case AggregateOp::umax:
+                    res = ramBitCast(MIN_RAM_UNSIGNED);
+                    break;
+                case AggregateOp::fmax:
+                    res = ramBitCast(MIN_RAM_FLOAT);
                     break;
                 case AggregateOp::sum:
                     res = 0;
+                    shouldRunNested = true;
+                    break;
+                case AggregateOp::usum:
+                    res = ramBitCast(static_cast<RamUnsigned>(0));
+                    shouldRunNested = true;
+                    break;
+                case AggregateOp::fsum:
+                    res = ramBitCast(static_cast<RamFloat>(0));
+                    shouldRunNested = true;
+                    break;
+                case AggregateOp::count:
+                    res = 0;
+                    shouldRunNested = true;
                     break;
             }
 
@@ -1163,13 +1196,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     continue;
                 }
 
+                shouldRunNested = true;
+
                 // count is easy
                 if (cur.getFunction() == AggregateOp::count) {
                     ++res;
                     continue;
                 }
-
-                // aggregation is a bit more difficult
 
                 // eval target expression
                 RamDomain val = execute(node->getChild(arity + 1), ctxt);
@@ -1178,14 +1211,34 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     case AggregateOp::min:
                         res = std::min(res, val);
                         break;
+                    case AggregateOp::fmin:
+                        res = ramBitCast(std::min(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
+                        break;
+                    case AggregateOp::umin:
+                        res = ramBitCast(
+                                std::min(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
+                        break;
                     case AggregateOp::max:
                         res = std::max(res, val);
                         break;
-                    case AggregateOp::count:
-                        res = 0;
+                    case AggregateOp::fmax:
+                        res = ramBitCast(std::max(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
+                        break;
+                    case AggregateOp::umax:
+                        res = ramBitCast(
+                                std::max(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
                         break;
                     case AggregateOp::sum:
                         res += val;
+                        break;
+                    case AggregateOp::fsum:
+                        res = ramBitCast(ramBitCast<RamFloat>(res) + ramBitCast<RamFloat>(val));
+                        break;
+                    case AggregateOp::usum:
+                        res = ramBitCast(ramBitCast<RamUnsigned>(res) + ramBitCast<RamUnsigned>(val));
+                        break;
+                    case AggregateOp::count:
+                        assert(false && "This should never be executed");
                         break;
                 }
             }
@@ -1195,15 +1248,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             tuple[0] = res;
             ctxt[cur.getTupleId()] = tuple;
 
-            // run nested part - using base class visitor
-            if (cur.getFunction() == AggregateOp::max && res == MIN_RAM_SIGNED) {
-                // no maximum found
-                return true;
-            } else if (cur.getFunction() == AggregateOp::min && res == MAX_RAM_SIGNED) {
-                // no minimum found
+            if (!shouldRunNested) {
                 return true;
             } else {
-                // run nested part - using base class visitor
                 return execute(node->getChild(arity + 2), ctxt);
             }
         ESAC(IndexAggregate)

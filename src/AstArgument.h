@@ -487,12 +487,14 @@ protected:
 
 /**
  * An argument aggregating a value from a sub-query.
- * remove getters/setters for individual literals
  */
 class AstAggregator : public AstArgument {
 public:
-    /** Creates a new aggregation node */
     AstAggregator(AggregateOp fun) : fun(fun), expression(nullptr) {}
+
+    /** Creates a new aggregation node */
+    AstAggregator(AggregateOp fun, std::unique_ptr<AstArgument> expr)
+            : fun(fun), expression(std::move(expr)) {}
 
     /** Get aggregate operator */
     AggregateOp getOperator() const {
@@ -519,14 +521,8 @@ public:
         return toPtrVector(body);
     }
 
-    /** Clear body literals */
-    void clearBodyLiterals() {
-        body.clear();
-    }
-
-    /** Add body literal */
-    void addBodyLiteral(std::unique_ptr<AstLiteral> lit) {
-        body.push_back(std::move(lit));
+    void setBodyLiterals(std::vector<std::unique_ptr<AstLiteral>> bodyLiterals) {
+        body = std::move(bodyLiterals);
     }
 
     std::vector<const AstNode*> getChildNodes() const override {

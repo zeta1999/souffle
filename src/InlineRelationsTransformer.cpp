@@ -537,11 +537,14 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
 
                 // Create a new aggregator per version of the target expression
                 for (AstArgument* newArg : argumentVersions.getVector()) {
-                    auto* newAggr = new AstAggregator(aggr->getOperator());
-                    newAggr->setTargetExpression(std::unique_ptr<AstArgument>(newArg));
+                    auto* newAggr =
+                            new AstAggregator(aggr->getOperator(), std::unique_ptr<AstArgument>(newArg));
+
+                    std::vector<std::unique_ptr<AstLiteral>> newBody;
                     for (AstLiteral* lit : aggr->getBodyLiterals()) {
-                        newAggr->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));
+                        newBody.push_back(std::unique_ptr<AstLiteral>(lit->clone()));
                     }
+                    newAggr->setBodyLiterals(std::move(newBody));
                     versions.push_back(newAggr);
                 }
             }
@@ -566,25 +569,26 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // Create an aggregator (with the same operation) for each possible body
                     std::vector<AstAggregator*> aggrVersions;
                     for (std::vector<AstLiteral*> inlineVersions : literalVersions.getVector()) {
-                        auto* newAggr = new AstAggregator(aggr->getOperator());
+                        std::unique_ptr<AstArgument> target;
                         if (aggr->getTargetExpression() != nullptr) {
-                            newAggr->setTargetExpression(
-                                    std::unique_ptr<AstArgument>(aggr->getTargetExpression()->clone()));
+                            target = std::unique_ptr<AstArgument>(aggr->getTargetExpression()->clone());
                         }
+                        auto* newAggr = new AstAggregator(aggr->getOperator(), std::move(target));
 
+                        std::vector<std::unique_ptr<AstLiteral>> newBody;
                         // Add in everything except the current literal being replaced
                         for (size_t j = 0; j < bodyLiterals.size(); j++) {
                             if (i != j) {
-                                newAggr->addBodyLiteral(
-                                        std::unique_ptr<AstLiteral>(bodyLiterals[j]->clone()));
+                                newBody.push_back(std::unique_ptr<AstLiteral>(bodyLiterals[j]->clone()));
                             }
                         }
 
                         // Add in everything new that replaces that literal
                         for (AstLiteral* addedLit : inlineVersions) {
-                            newAggr->addBodyLiteral(std::unique_ptr<AstLiteral>(addedLit));
+                            newBody.push_back(std::unique_ptr<AstLiteral>(addedLit));
                         }
 
+                        newAggr->setBodyLiterals(std::move(newBody));
                         aggrVersions.push_back(newAggr);
                     }
 

@@ -1281,7 +1281,10 @@ arg
   | COUNT COLON atom {
         auto aggr = new AstAggregator(AggregateOp::count);
 
-        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        std::vector<std::unique_ptr<AstLiteral>> body;
+        body.push_back(std::unique_ptr<AstLiteral>($atom));
+
+        aggr->setBodyLiterals(std::move(body));
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1298,9 +1301,11 @@ arg
             exit(1);
         }
 
+        std::vector<std::unique_ptr<AstLiteral>> body;
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
+            body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        aggr->setBodyLiterals(std::move(body));
         delete bodies[0];
 
         $$ = aggr;
@@ -1308,10 +1313,12 @@ arg
     }
 
   | SUM arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AggregateOp::sum);
+        auto aggr = new AstAggregator(AggregateOp::sum, std::unique_ptr<AstArgument>($target_expr));
 
-        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
-        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        std::vector<std::unique_ptr<AstLiteral>> body;
+        body.push_back(std::unique_ptr<AstLiteral>($atom));
+
+        aggr->setBodyLiterals(std::move(body));
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1320,8 +1327,7 @@ arg
         $atom = nullptr;
     }
   | SUM arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AggregateOp::sum);
-        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::sum, std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
 
@@ -1330,9 +1336,11 @@ arg
             exit(1);
         }
 
+        std::vector<std::unique_ptr<AstLiteral>> body;
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
+            body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        aggr->setBodyLiterals(std::move(body));
         delete bodies[0];
 
         $$ = aggr;
@@ -1342,10 +1350,12 @@ arg
     }
 
   | MIN arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AggregateOp::min);
+        auto aggr = new AstAggregator(AggregateOp::min, std::unique_ptr<AstArgument>($target_expr));
 
-        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
-        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        std::vector<std::unique_ptr<AstLiteral>> body;
+        body.push_back(std::unique_ptr<AstLiteral>($atom));
+
+        aggr->setBodyLiterals(std::move(body));
         $atom = nullptr;
 
         $$ = aggr;
@@ -1355,8 +1365,7 @@ arg
         $atom = nullptr;
     }
   | MIN arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AggregateOp::min);
-        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::min, std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
 
@@ -1365,9 +1374,11 @@ arg
             exit(1);
         }
 
+        std::vector<std::unique_ptr<AstLiteral>> body;
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
+            body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        aggr->setBodyLiterals(std::move(body));
         delete bodies[0];
 
         $$ = aggr;
@@ -1377,10 +1388,12 @@ arg
     }
 
   | MAX arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AggregateOp::max);
+        auto aggr = new AstAggregator(AggregateOp::max, std::unique_ptr<AstArgument>($target_expr));
 
-        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
-        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        std::vector<std::unique_ptr<AstLiteral>> body;
+        body.push_back(std::unique_ptr<AstLiteral>($atom));
+
+        aggr->setBodyLiterals(std::move(body));
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1389,8 +1402,7 @@ arg
         $atom = nullptr;
     }
   | MAX arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AggregateOp::max);
-        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::max, std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
 
@@ -1399,9 +1411,11 @@ arg
             exit(1);
         }
 
+        std::vector<std::unique_ptr<AstLiteral>> body;
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
+            body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        aggr->setBodyLiterals(std::move(body));
         delete bodies[0];
 
         $$ = aggr;

@@ -703,12 +703,47 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // visit aggregates
         void visitAggregator(const AstAggregator& agg) override {
-            // this value must be a number value
-            addConstraint(isSubtypeOf(getVar(agg), env.getNumberType()));
+            auto addExprConstraint = [&](const TypeSet& ts) {
+                auto expr = agg.getTargetExpression();
+                assert(expr && "agg must have an expr");
 
-            // also, the target expression needs to be a number
-            if (auto expr = agg.getTargetExpression()) {
-                addConstraint(isSubtypeOf(getVar(expr), env.getNumberType()));
+                auto aggVar = getVar(agg);
+                auto exprVar = getVar(expr);
+                addConstraint(isSubtypeOf(aggVar, exprVar));
+                addConstraint(isSubtypeOf(exprVar, aggVar));
+                addConstraint(hasSuperTypeInSet(exprVar, ts));
+            };
+
+            // this value must be a number value
+            switch (agg.getOperator()) {
+                // TODO: make this agg return `unsigned`?
+                case AggregateOp::count: {
+                    addConstraint(isSubtypeOf(getVar(agg), env.getNumberType()));
+                    break;
+                }
+                case AggregateOp::max:
+                case AggregateOp::min: {
+                    // if there's an order agg then the return type can be anything
+                    if (auto expr = agg.getTargetExpression()) {
+                        auto aggVar = getVar(agg);
+                        auto exprVar = getVar(expr);
+                        addConstraint(isSubtypeOf(aggVar, exprVar));
+                        addConstraint(isSubtypeOf(exprVar, aggVar));
+                    }
+
+                    break;
+                }
+                case AggregateOp::sum: {
+                    addExprConstraint(env.getNumericTypes());
+                    break;
+                }
+                case AggregateOp::mean: {
+                    // `mean` always produces a float value, regardless of the expr type.
+                    addConstraint(isSubtypeOf(getVar(agg), env.getFloatType()));
+                    addConstraint(
+                            hasSuperTypeInSet(getVar(agg.getTargetExpression()), env.getNumericTypes()));
+                    break;
+                }
             }
         }
     };

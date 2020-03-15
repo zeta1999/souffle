@@ -24,6 +24,7 @@ enum class AggregateOp {
     min,
     count,
     sum,
+    mean,
 };
 
 }  // namespace souffle

@@ -97,6 +97,7 @@
 %token ORD                       "ordinal number of a string"
 %token STRLEN                    "length of a string"
 %token SUBSTR                    "sub-string of a string"
+%token MEAN                      "mean aggregator"
 %token MIN                       "min aggregator"
 %token MAX                       "max aggregator"
 %token COUNT                     "count aggregator"
@@ -286,21 +287,21 @@ unit
             if (cur->hasQualifier(RelationQualifier::INPUT)) {
                 auto load = std::make_unique<AstIO>();
                 load->setSrcLoc(cur->getSrcLoc());
-                load->setType(AstIO::InputIO); 
+                load->setType(AstIO::InputIO);
                 load->setQualifiedName(cur->getQualifiedName());
                 driver.addIO(std::move(load));
             }
             if (cur->hasQualifier(RelationQualifier::OUTPUT)) {
                 auto store = std::make_unique<AstIO>();
                 store->setSrcLoc(cur->getSrcLoc());
-                store->setType(AstIO::OutputIO); 
+                store->setType(AstIO::OutputIO);
                 store->setQualifiedName(cur->getQualifiedName());
                 driver.addIO(std::move(store));
             }
             if (cur->hasQualifier(RelationQualifier::PRINTSIZE)) {
                 auto printSize = std::make_unique<AstIO>();
                 printSize->setSrcLoc(cur->getSrcLoc());
-                printSize->setType(AstIO::PrintsizeIO); 
+                printSize->setType(AstIO::PrintsizeIO);
                 printSize->setQualifiedName(cur->getQualifiedName());
                 driver.addIO(std::move(printSize));
             }
@@ -1278,6 +1279,40 @@ arg
     }
 
     /* -- aggregators -- */
+  | MEAN arg[target_expr] COLON atom {
+        auto aggr = new AstAggregator(AggregateOp::mean);
+
+        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+
+        $$ = aggr;
+        $$->setSrcLoc(@$);
+
+        $target_expr = nullptr;
+        $atom = nullptr;
+    }
+  | MEAN arg[target_expr] COLON LBRACE body RBRACE {
+        auto aggr = new AstAggregator(AggregateOp::mean);
+        aggr->setTargetExpression(std::unique_ptr<AstArgument>($target_expr));
+
+        auto bodies = $body->toClauseBodies();
+
+        if (bodies.size() != 1) {
+            std::cerr << "ERROR: currently not supporting non-conjunctive aggregation clauses!";
+            exit(1);
+        }
+
+        for (auto& cur : bodies[0]->getBodyLiterals()) {
+            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
+        }
+        delete bodies[0];
+
+        $$ = aggr;
+        $$->setSrcLoc(@$);
+
+        $target_expr = nullptr;
+    }
+
   | COUNT COLON atom {
         auto aggr = new AstAggregator(AggregateOp::count);
 
@@ -1501,14 +1536,14 @@ component_body
             if (rel->hasQualifier(RelationQualifier::INPUT)) {
                 auto load = std::make_unique<AstIO>();
                 load->setSrcLoc(rel->getSrcLoc());
-                load->setType(AstIO::InputIO); 
+                load->setType(AstIO::InputIO);
                 load->setQualifiedName(rel->getQualifiedName());
                 driver.addIO(std::move(load));
             }
             if (rel->hasQualifier(RelationQualifier::OUTPUT)) {
                 auto store = std::make_unique<AstIO>();
                 store->setSrcLoc(rel->getSrcLoc());
-                store->setType(AstIO::OutputIO); 
+                store->setType(AstIO::OutputIO);
                 store->setQualifiedName(rel->getQualifiedName());
                 driver.addIO(std::move(store));
             }
@@ -1516,7 +1551,7 @@ component_body
                 auto printSize = std::make_unique<AstIO>();
                 printSize->setSrcLoc(rel->getSrcLoc());
                 printSize->setQualifiedName(rel->getQualifiedName());
-                printSize->setType(AstIO::PrintsizeIO); 
+                printSize->setType(AstIO::PrintsizeIO);
                 driver.addIO(std::move(printSize));
             }
             $$->addRelation(std::unique_ptr<AstRelation>(rel));
@@ -1653,15 +1688,15 @@ pragma
 io_head
   : INPUT_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            auto load = new AstIO(*io); 
-            load->setType(AstIO::InputIO); 
+            auto load = new AstIO(*io);
+            load->setType(AstIO::InputIO);
             $$.push_back(load);
         }
     }
   | OUTPUT_DECL io_directive_list {
         for (const auto* io : $io_directive_list) {
-            auto store = new AstIO(*io); 
-            store->setType(AstIO::OutputIO); 
+            auto store = new AstIO(*io);
+            store->setType(AstIO::OutputIO);
             $$.push_back(store);
         }
     }

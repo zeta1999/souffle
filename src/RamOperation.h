@@ -651,9 +651,9 @@ public:
  */
 class RamAbstractAggregate {
 public:
-    RamAbstractAggregate(
-            AggregateOp fun, std::unique_ptr<RamExpression> expr, std::unique_ptr<RamCondition> cond)
-            : function(fun), expression(std::move(expr)), condition(std::move(cond)) {
+    RamAbstractAggregate(AggregateOp fun, std::unique_ptr<RamExpression> expr, TypeAttribute exprTy,
+            std::unique_ptr<RamCondition> cond)
+            : function(fun), expression(std::move(expr)), expressionType(exprTy), condition(std::move(cond)) {
         assert(condition != nullptr && "Condition is a null-pointer");
         assert(expression != nullptr && "Expression is a null-pointer");
     }
@@ -677,6 +677,10 @@ public:
         return *expression;
     }
 
+    TypeAttribute getExpressionType() const {
+        return expressionType;
+    };
+
     std::vector<const RamNode*> getChildNodes() const {
         return {expression.get(), condition.get()};
     }
@@ -695,6 +699,9 @@ public:
             case AggregateOp::sum:
                 os << "sum ";
                 break;
+            case AggregateOp::mean:
+                os << "mean ";
+                break;
         }
         if (function != AggregateOp::count) {
             os << *expression << " ";
@@ -705,7 +712,7 @@ protected:
     bool equal(const RamNode& node) const {
         const auto& other = dynamic_cast<const RamAbstractAggregate*>(&node);
         return getCondition() == other->getCondition() && getFunction() == other->getFunction() &&
-               getExpression() == other->getExpression();
+               getExpression() == other->getExpression() && getExpressionType() == other->getExpressionType();
     }
 
     /** Aggregation function */
@@ -713,6 +720,9 @@ protected:
 
     /** Aggregation expression */
     std::unique_ptr<RamExpression> expression;
+
+    /** Aggregation expression's type */
+    TypeAttribute expressionType;
 
     /** Aggregation tuple condition */
     std::unique_ptr<RamCondition> condition;
@@ -733,9 +743,9 @@ class RamAggregate : public RamRelationOperation, public RamAbstractAggregate {
 public:
     RamAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
-            std::unique_ptr<RamCondition> condition, int ident)
+            TypeAttribute exprTy, std::unique_ptr<RamCondition> condition, int ident)
             : RamRelationOperation(std::move(relRef), ident, std::move(nested)),
-              RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
+              RamAbstractAggregate(fun, std::move(expression), exprTy, std::move(condition)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -757,10 +767,9 @@ public:
     }
 
     RamAggregate* clone() const override {
-        return new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                std::unique_ptr<RamExpression>(expression->clone()),
-                std::unique_ptr<RamCondition>(condition->clone()), getTupleId());
+        return new RamAggregate(souffle::clone(&getOperation()), function, souffle::clone(relationRef),
+                souffle::clone(expression), getExpressionType(), souffle::clone(condition->clone()),
+                getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -784,10 +793,10 @@ class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate 
 public:
     RamIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
-            std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
-            int ident)
+            TypeAttribute exprTy, std::unique_ptr<RamCondition> condition,
+            std::vector<std::unique_ptr<RamExpression>> queryPattern, int ident)
             : RamIndexOperation(std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
-              RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
+              RamAbstractAggregate(fun, std::move(expression), exprTy, std::move(condition)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
@@ -810,14 +819,9 @@ public:
     }
 
     RamIndexAggregate* clone() const override {
-        std::vector<std::unique_ptr<RamExpression>> pattern;
-        for (auto const& e : queryPattern) {
-            pattern.push_back(std::unique_ptr<RamExpression>(e->clone()));
-        }
-        return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                std::unique_ptr<RamExpression>(expression->clone()),
-                std::unique_ptr<RamCondition>(condition->clone()), std::move(pattern), getTupleId());
+        return new RamIndexAggregate(souffle::clone(&getOperation()), function, souffle::clone(relationRef),
+                souffle::clone(expression), getExpressionType(), souffle::clone(condition),
+                souffle::clone(queryPattern), getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {

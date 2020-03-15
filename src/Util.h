@@ -432,6 +432,30 @@ range<Iter> make_range(const Iter& a, const Iter& b) {
 }
 
 // -------------------------------------------------------------------------------
+//                             Cloning Utilities
+// -------------------------------------------------------------------------------
+
+template <typename A>
+std::unique_ptr<A> clone(const A* node) {
+    return node ? std::unique_ptr<A>(node->clone()) : nullptr;
+}
+
+template <typename A>
+std::unique_ptr<A> clone(const std::unique_ptr<A>& node) {
+    return node ? std::unique_ptr<A>(node->clone()) : nullptr;
+}
+
+template <typename A>
+std::vector<std::unique_ptr<A>> clone(const std::vector<std::unique_ptr<A>>& xs) {
+    std::vector<std::unique_ptr<A>> ys;
+    ys.reserve(xs.size());
+    for (auto&& x : xs) {
+        ys.emplace_back(clone(x));
+    }
+    return ys;
+}
+
+// -------------------------------------------------------------------------------
 //                             Equality Utilities
 // -------------------------------------------------------------------------------
 

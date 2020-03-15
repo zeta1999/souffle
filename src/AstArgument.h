@@ -509,6 +509,16 @@ public:
         return expression.get();
     }
 
+    /** Sets/caches the target expression's type */
+    void setTargetExpressionType(TypeAttribute type) {
+        expressionType = type;
+    }
+
+    /** Get target expression's type, if cached/computed */
+    std::optional<TypeAttribute> getTargetExpressionType() const {
+        return expressionType;
+    }
+
     /** Get body literals */
     std::vector<AstLiteral*> getBodyLiterals() const {
         return toPtrVector(body);
@@ -537,10 +547,9 @@ public:
 
     AstAggregator* clone() const override {
         auto res = new AstAggregator(fun);
-        res->expression = (expression) ? std::unique_ptr<AstArgument>(expression->clone()) : nullptr;
-        for (const auto& cur : body) {
-            res->body.emplace_back(cur->clone());
-        }
+        res->body = souffle::clone(body);
+        res->expression = souffle::clone(expression);
+        res->expressionType = expressionType;
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -588,7 +597,8 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstAggregator*>(&node));
         const auto& other = static_cast<const AstAggregator&>(node);
-        return fun == other.fun && equal_ptr(expression, other.expression) && equal_targets(body, other.body);
+        return fun == other.fun && equal_ptr(expression, other.expression) &&
+               expressionType == other.expressionType && equal_targets(body, other.body);
     }
 
 private:
@@ -597,6 +607,9 @@ private:
 
     /** Aggregation expression */
     std::unique_ptr<AstArgument> expression;
+
+    /** Aggregation expression type */
+    std::optional<TypeAttribute> expressionType;
 
     /** Body literal of sub-query */
     std::vector<std::unique_ptr<AstLiteral>> body;

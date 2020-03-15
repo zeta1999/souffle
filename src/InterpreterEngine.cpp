@@ -1016,95 +1016,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(UnpackRecord)
 
         CASE(Aggregate)
-            // get the targeted relation
-            const InterpreterRelation& rel = *node->getRelation();
-
-            // initialize result
-            RamDomain res = 0;
-            switch (cur.getFunction()) {
-                case AggregateOp::min:
-                    res = MAX_RAM_DOMAIN;
-                    break;
-                case AggregateOp::max:
-                    res = MIN_RAM_DOMAIN;
-                    break;
-                case AggregateOp::count:
-                    res = 0;
-                    break;
-                case AggregateOp::sum:
-                    res = 0;
-                    break;
-            }
-
-            for (const RamDomain* data : rel) {
-                ctxt[cur.getTupleId()] = data;
-
-                if (!execute(node->getChild(0), ctxt)) {
-                    continue;
-                }
-
-                // count is easy
-                if (cur.getFunction() == AggregateOp::count) {
-                    ++res;
-                    continue;
-                }
-
-                // aggregation is a bit more difficult
-
-                // eval target expression
-                RamDomain val = execute(node->getChild(1), ctxt);
-
-                switch (cur.getFunction()) {
-                    case AggregateOp::min:
-                        res = std::min(res, val);
-                        break;
-                    case AggregateOp::max:
-                        res = std::max(res, val);
-                        break;
-                    case AggregateOp::count:
-                        res = 0;
-                        break;
-                    case AggregateOp::sum:
-                        res += val;
-                        break;
-                }
-            }
-
-            // write result to environment
-            RamDomain tuple[1];
-            tuple[0] = res;
-            ctxt[cur.getTupleId()] = tuple;
-
-            if (cur.getFunction() == AggregateOp::max && res == MIN_RAM_DOMAIN) {
-                // no maximum found
-                return true;
-            } else if (cur.getFunction() == AggregateOp::min && res == MAX_RAM_DOMAIN) {
-                // no minimum found
-                return true;
-            } else {
-                // run nested part - using base class visitor
-                return execute(node->getChild(2), ctxt);
-            }
+            return executeAggregate(ctxt, cur, *node->getChild(0), *node->getChild(1), *node->getChild(2),
+                    node->getRelation()->scan());
         ESAC(Aggregate)
 
         CASE(IndexAggregate)
-            // initialize result
-            RamDomain res = 0;
-            switch (cur.getFunction()) {
-                case AggregateOp::min:
-                    res = MAX_RAM_DOMAIN;
-                    break;
-                case AggregateOp::max:
-                    res = MIN_RAM_DOMAIN;
-                    break;
-                case AggregateOp::count:
-                    res = 0;
-                    break;
-                case AggregateOp::sum:
-                    res = 0;
-                    break;
-            }
-
             // init temporary tuple for this level
             size_t arity = cur.getRelation().getArity();
 
@@ -1125,58 +1041,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t viewId = node->getData(0);
             auto& view = ctxt.getView(viewId);
 
-            for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
-                // link tuple
-                const RamDomain* data = &ip[0];
-                ctxt[cur.getTupleId()] = data;
-
-                if (!execute(node->getChild(arity), ctxt)) {
-                    continue;
-                }
-
-                // count is easy
-                if (cur.getFunction() == AggregateOp::count) {
-                    ++res;
-                    continue;
-                }
-
-                // aggregation is a bit more difficult
-
-                // eval target expression
-                RamDomain val = execute(node->getChild(arity + 1), ctxt);
-
-                switch (cur.getFunction()) {
-                    case AggregateOp::min:
-                        res = std::min(res, val);
-                        break;
-                    case AggregateOp::max:
-                        res = std::max(res, val);
-                        break;
-                    case AggregateOp::count:
-                        res = 0;
-                        break;
-                    case AggregateOp::sum:
-                        res += val;
-                        break;
-                }
-            }
-
-            // write result to environment
-            RamDomain tuple[1];
-            tuple[0] = res;
-            ctxt[cur.getTupleId()] = tuple;
-
-            // run nested part - using base class visitor
-            if (cur.getFunction() == AggregateOp::max && res == MIN_RAM_DOMAIN) {
-                // no maximum found
-                return true;
-            } else if (cur.getFunction() == AggregateOp::min && res == MAX_RAM_DOMAIN) {
-                // no minimum found
-                return true;
-            } else {
-                // run nested part - using base class visitor
-                return execute(node->getChild(arity + 2), ctxt);
-            }
+            return executeAggregate(ctxt, cur, *node->getChild(arity), *node->getChild(arity + 1),
+                    *node->getChild(arity + 2), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
         ESAC(IndexAggregate)
 
         CASE_NO_CAST(Break)
@@ -1373,6 +1239,120 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         default:
             assert(false && "Unhandled\n");
     }
+}
+
+template <typename Aggregate>
+bool InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Aggregate& agg,
+        const InterpreterNode& filter, const InterpreterNode& expr, const InterpreterNode& nested_op,
+        Stream stream) {
+    auto forEach = [&](auto&& fn) {
+        for (auto&& ip : stream) {
+            ctxt[agg.getTupleId()] = ip.getBase();
+            if (!execute(&filter, ctxt)) continue;
+
+            fn();
+        }
+    };
+
+    auto runNested = [&](RamDomain result) -> bool {
+        ctxt[agg.getTupleId()] = &result;
+        return execute(&nested_op, ctxt);
+    };
+
+    // FIXME: This should be a polymorphic lambda, but I'm running into template errors that I do not have
+    // time to debug. And it avoids a hack with a semi-phantom param to pass type information (pre-C++20).
+#define FOLDL(ty, op)                                        \
+    {                                                        \
+        size_t count = 0;                                    \
+        ty result = 0;                                       \
+        forEach([&] {                                        \
+            auto rhs = ramBitCast<ty>(execute(&expr, ctxt)); \
+            result = count == 0 ? rhs : op(result, rhs);     \
+            count += 1;                                      \
+        });                                                  \
+        return std::make_pair(count, ramBitCast(result));    \
+    }
+
+    // clang-format off
+#define FOLD_ORDERED(op_num, op_sym)                              \
+    [&]() { switch (agg.getExpressionType()) {                    \
+        case TypeAttribute::Signed  : FOLDL(RamSigned  , op_num); \
+        case TypeAttribute::Unsigned: FOLDL(RamUnsigned, op_num); \
+        case TypeAttribute::Float   : FOLDL(RamFloat   , op_num); \
+        case TypeAttribute::Symbol  : FOLDL(RamDomain  , op_sym); \
+        default:                                                  \
+            assert(false && "non-orderable type found");          \
+            exit(EXIT_FAILURE);                                   \
+    } }();
+#define FOLD_NUMERIC(op_num)                                      \
+    ([&]() { switch (agg.getExpressionType()) {                   \
+        case TypeAttribute::Signed  : FOLDL(RamSigned  , op_num); \
+        case TypeAttribute::Unsigned: FOLDL(RamUnsigned, op_num); \
+        case TypeAttribute::Float   : FOLDL(RamFloat   , op_num); \
+        default:                                                  \
+            assert(false && "non-numeric type found");            \
+            exit(EXIT_FAILURE);                                   \
+            return std::make_pair<size_t, RamDomain>(0, 0);       \
+    } })();
+    // clang-format on
+
+    switch (agg.getFunction()) {
+        case AggregateOp::min: {
+            auto result = FOLD_ORDERED(std::min, [&](RamDomain lhs, RamDomain rhs) {
+                auto keep_lhs = getSymbolTable().resolve(lhs) < getSymbolTable().resolve(rhs);
+                return keep_lhs ? lhs : rhs;
+            });
+            return 0 < result.first && runNested(result.second);
+        }
+
+        case AggregateOp::max: {
+            auto result = FOLD_ORDERED(std::max, [&](RamDomain lhs, RamDomain rhs) {
+                auto keep_lhs = getSymbolTable().resolve(lhs) > getSymbolTable().resolve(rhs);
+                return keep_lhs ? lhs : rhs;
+            });
+            return 0 < result.first && runNested(result.second);
+        }
+
+        case AggregateOp::count: {
+            RamDomain count = 0;
+            forEach([&] { count += 1; });
+            return runNested(count);
+        }
+
+        case AggregateOp::sum:
+        case AggregateOp::mean: {
+            auto result = FOLD_NUMERIC([](auto a, auto b) { return a + b; });
+
+            if (result.first != 0 && agg.getFunction() == AggregateOp::mean) {
+                switch (agg.getExpressionType()) {
+                    case TypeAttribute::Signed:
+                        result.second =
+                                ramBitCast(ramBitCast<RamSigned>(result.second) / RamFloat(result.first));
+                        break;
+                    case TypeAttribute::Unsigned:
+                        result.second =
+                                ramBitCast(ramBitCast<RamUnsigned>(result.second) / RamFloat(result.first));
+                        break;
+                    case TypeAttribute::Float:
+                        result.second =
+                                ramBitCast(ramBitCast<RamFloat>(result.second) / RamFloat(result.first));
+                        break;
+                    default:
+                        assert(false && "non-numeric type found");
+                        exit(EXIT_FAILURE);
+                }
+            }
+
+            return runNested(result.second);
+        }
+    }
+
+    assert(false && "unhandled aggregate mode");
+    exit(EXIT_FAILURE);
+
+#undef FOLDL
+#undef FOLDL_ORDERED
+#undef FOLDL_NUMERIC
 }
 
 }  // namespace souffle

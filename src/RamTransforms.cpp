@@ -320,10 +320,9 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
         std::unique_ptr<RamCondition> condition = constructPattern(
                 queryPattern, indexable, toConjunctionList(&agg->getCondition()), identifier);
         if (indexable) {
-            return std::make_unique<RamIndexAggregate>(
-                    std::unique_ptr<RamOperation>(agg->getOperation().clone()), agg->getFunction(),
-                    std::make_unique<RamRelationReference>(&rel),
-                    std::unique_ptr<RamExpression>(agg->getExpression().clone()), std::move(condition),
+            return std::make_unique<RamIndexAggregate>(souffle::clone(&agg->getOperation()),
+                    agg->getFunction(), std::make_unique<RamRelationReference>(&rel),
+                    souffle::clone(&agg->getExpression()), agg->getExpressionType(), std::move(condition),
                     std::move(queryPattern), agg->getTupleId());
         }
     }

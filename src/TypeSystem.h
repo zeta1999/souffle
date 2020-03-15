@@ -429,9 +429,32 @@ public:
         types.swap(env.types);
     }
 
+    TypeSet const& getNumericTypes() const {
+        if (numericTypes.empty()) {
+            numericTypes.insert(getNumberType());
+            numericTypes.insert(getUnsignedType());
+            numericTypes.insert(getFloatType());
+        }
+
+        return numericTypes;
+    }
+
+    TypeSet const& getOrderedTypes() const {
+        if (orderedTypes.empty()) {
+            orderedTypes = getNumericTypes();
+            orderedTypes.insert(getSymbolType());
+        }
+
+        return orderedTypes;
+    }
+
 private:
     /** The list of covered types */
     std::map<AstQualifiedName, Type*> types;
+
+    // `mutable` as these are lazy-init'd and once init'd immutable
+    mutable TypeSet numericTypes;
+    mutable TypeSet orderedTypes;
 
     /** Register types created by one of the factory functions */
     void addType(Type& type);
@@ -463,7 +486,8 @@ bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
         case TypeAttribute::Record:
             return isRecordType(type);
     }
-    return false;
+    assert(false && "unhandled `TypeAttribute`");
+    exit(EXIT_FAILURE);
 }
 
 /**
@@ -495,6 +519,11 @@ TypeAttribute getTypeAttribute(const T& type) {
 template <typename T>  // T = Type or T = Typeset
 inline bool isNumericType(const T& type) {
     return isFloatType(type) || isNumberType(type) || isUnsignedType(type);
+}
+
+template <typename T>  // T = Type or T = Typeset
+inline bool isOrderableType(const T& type) {
+    return isNumericType(type) || isSymbolType(type);
 }
 
 /**

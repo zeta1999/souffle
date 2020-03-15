@@ -1241,11 +1241,17 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // Utility lambdas to determine if all args are of the same type.
+            auto isSigned = [&](const AstArgument* argument) {
+                return isNumberType(typeAnalysis.getTypes(argument));
+            };
             auto isFloat = [&](const AstArgument* argument) {
                 return isFloatType(typeAnalysis.getTypes(argument));
             };
             auto isUnsigned = [&](const AstArgument* argument) {
                 return isUnsignedType(typeAnalysis.getTypes(argument));
+            };
+            auto isSymbol = [&](const AstArgument* argument) {
+                return isSymbolType(typeAnalysis.getTypes(argument));
             };
 
             // rewrite sub-expressions first
@@ -1310,6 +1316,34 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                                     binaryConstraint->getOperator(), TypeAttribute::Unsigned);
                             binaryConstraint->setOperator(convertedConstraint);
                             changed = true;
+                        }
+                    }
+                }
+
+                if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
+                    switch (agg->getOperator()) {
+                        case AggregateOp::count:
+                            // just assign a dummy type; `count` has no expr
+                            agg->setTargetExpressionType(TypeAttribute::Signed);
+                            break;
+
+                        case AggregateOp::max:
+                        case AggregateOp::min:
+                        case AggregateOp::sum:
+                        case AggregateOp::mean: {
+                            auto expr = agg->getTargetExpression();
+                            if (isSigned(expr)) {
+                                agg->setTargetExpressionType(TypeAttribute::Signed);
+                            } else if (isUnsigned(expr)) {
+                                agg->setTargetExpressionType(TypeAttribute::Unsigned);
+                            } else if (isFloat(expr)) {
+                                agg->setTargetExpressionType(TypeAttribute::Float);
+                            } else if (isSymbol(expr)) {
+                                agg->setTargetExpressionType(TypeAttribute::Symbol);
+                            }
+                            // Other cases don't produce supported overloads.
+                            // Type checker will reject later on.
+                            break;
                         }
                     }
                 }

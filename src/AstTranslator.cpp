@@ -808,11 +808,12 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             aggCondition = std::make_unique<RamTrue>();
         }
 
+        assert(cur->getTargetExpressionType() && "need type info regarding agg expr");
+
         // add Ram-Aggregation layer
-        std::unique_ptr<RamAggregate> aggregate =
-                std::make_unique<RamAggregate>(std::move(op), cur->getOperator(),
-                        translator.translateRelation(atom), std::move(expr), std::move(aggCondition), level);
-        op = std::move(aggregate);
+        op = std::make_unique<RamAggregate>(std::move(op), cur->getOperator(),
+                translator.translateRelation(atom), std::move(expr), *cur->getTargetExpressionType(),
+                std::move(aggCondition), level);
     }
 
     // build operation bottom-up

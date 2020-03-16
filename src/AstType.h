@@ -63,20 +63,14 @@ public:
     /** Creates a new primitive type */
     AstPrimitiveType(const AstQualifiedName& name, TypeAttribute type) : AstType(name), type(type) {}
 
-    /** Tests whether this type is a numeric type */
-    bool isNumeric() const {
-        return isNumericType(type);
-    }
-
-    /** Tests whether this type is a symbolic type */
-    bool isSymbolic() const {
-        return type == TypeAttribute::Symbol;
-    }
-
     AstPrimitiveType* clone() const override {
         auto res = new AstPrimitiveType(getQualifiedName(), type);
         res->setSrcLoc(getSrcLoc());
         return res;
+    }
+
+    TypeAttribute getTypeAttribute() const {
+        return type;
     }
 
 protected:

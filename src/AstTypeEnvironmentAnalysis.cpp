@@ -52,7 +52,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
 
         // create type within type environment
         if (auto* t = dynamic_cast<const AstPrimitiveType*>(cur)) {
-            if (t->isNumeric()) {
+            if (t->getTypeAttribute() == TypeAttribute::Signed) {
                 env.createNumericType(cur->getQualifiedName());
             } else {
                 env.createSymbolType(cur->getQualifiedName());
@@ -112,7 +112,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
     Graph<AstQualifiedName> typeDependencyGraph;
     for (const auto& cur : program.getTypes()) {
         if (auto type = dynamic_cast<const AstPrimitiveType*>(cur)) {
-            if (type->isNumeric()) {
+            if (type->getTypeAttribute() == TypeAttribute::Signed) {
                 typeDependencyGraph.insert(type->getQualifiedName(), "number");
             } else {
                 typeDependencyGraph.insert(type->getQualifiedName(), "symbol");

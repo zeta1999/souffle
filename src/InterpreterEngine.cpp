@@ -467,6 +467,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 #undef BINARY_OP_NUMERIC
 #undef BINARY_OP_SHIFT_MASK
 #undef BINARY_OP_INTEGRAL_SHIFT
+#undef MINMAX_OP_SYM
 #undef MINMAX_OP
 #undef MINMAX_NUMERIC
         ESAC(IntrinsicOperator)

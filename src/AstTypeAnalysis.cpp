@@ -191,40 +191,6 @@ TypeConstraint hasSuperTypeInSet(const TypeVar& var, TypeSet values) {
     return std::make_shared<C>(var, values);
 }
 
-// /**
-//  * Ensure that left and right have the same set solutions.
-//  */
-// TypeConstraint areSameType(const TypeVar& left, const TypeVar& right) {
-//     struct C : public Constraint<TypeVar> {
-//         TypeVar left;
-//         TypeVar right;
-
-//         C(TypeVar left, TypeVar right) : left(left), right(right) {}
-
-//         bool update(Assignment<TypeVar>& assigment) const override {
-//             TypeSet& assigmentsLeft = assigment[left];
-//             TypeSet& assigmentsRight = assigment[right];
-
-//             TypeSet newAssigments = TypeSet::intersection(assigmentsLeft, assigmentsRight);
-
-//             // check whether there was a change
-//             if (assigmentsLeft == newAssigments && assigmentsRight == newAssigments) {
-//                 return false;
-//             }
-
-//             assigmentsLeft = newAssigments;
-//             assigmentsRight = newAssigments;
-
-//             return true;
-//         }
-
-//         void print(std::ostream& out) const override {
-//             out << left << " = " << right;
-//         }
-//     };
-
-//     return std::make_shared<C>(left, right);
-// }
 
 /**
  * Ensure that types of left and right have the same base types.

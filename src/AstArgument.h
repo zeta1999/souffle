@@ -549,25 +549,25 @@ public:
 protected:
     void print(std::ostream& os) const override {
         switch (fun) {
-            case AggregateOp::sum:
-            case AggregateOp::fsum:
-            case AggregateOp::usum:
+            case AggregateOp::SUM:
+            case AggregateOp::FSUM:
+            case AggregateOp::USUM:
                 os << "sum";
                 break;
-            case AggregateOp::min:
-            case AggregateOp::fmin:
-            case AggregateOp::umin:
+            case AggregateOp::MIN:
+            case AggregateOp::FMIN:
+            case AggregateOp::UMIN:
                 os << "min";
                 break;
-            case AggregateOp::max:
-            case AggregateOp::fmax:
-            case AggregateOp::umax:
+            case AggregateOp::MAX:
+            case AggregateOp::FMAX:
+            case AggregateOp::UMAX:
                 os << "max";
                 break;
-            case AggregateOp::count:
+            case AggregateOp::COUNT:
                 os << "count";
                 break;
-            case AggregateOp::mean:
+            case AggregateOp::MEAN:
                 os << "mean";
                 break;
         }

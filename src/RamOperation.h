@@ -683,29 +683,29 @@ public:
 
     void print(std::ostream& os, int /* tabpos */) const {
         switch (function) {
-            case AggregateOp::min:
-            case AggregateOp::fmin:
-            case AggregateOp::umin:
+            case AggregateOp::MIN:
+            case AggregateOp::FMIN:
+            case AggregateOp::UMIN:
                 os << "min ";
                 break;
-            case AggregateOp::max:
-            case AggregateOp::umax:
-            case AggregateOp::fmax:
+            case AggregateOp::MAX:
+            case AggregateOp::UMAX:
+            case AggregateOp::FMAX:
                 os << "max ";
                 break;
-            case AggregateOp::sum:
-            case AggregateOp::fsum:
-            case AggregateOp::usum:
+            case AggregateOp::SUM:
+            case AggregateOp::FSUM:
+            case AggregateOp::USUM:
                 os << "sum ";
                 break;
-            case AggregateOp::count:
+            case AggregateOp::COUNT:
                 os << "count ";
                 break;
-            case AggregateOp::mean:
+            case AggregateOp::MEAN:
                 os << "mean ";
                 break;
         }
-        if (function != AggregateOp::count) {
+        if (function != AggregateOp::COUNT) {
             os << *expression << " ";
         }
     }

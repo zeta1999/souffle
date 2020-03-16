@@ -22,20 +22,20 @@ namespace souffle {
 
 /** Types of aggregation functions */
 enum class AggregateOp {
-    max,
-    min,
-    sum,
+    MAX,
+    MIN,
+    SUM,
 
-    fmax,
-    fmin,
-    fsum,
-    mean,
+    FMAX,
+    FMIN,
+    FSUM,
+    MEAN,
 
-    umax,
-    umin,
-    usum,
+    UMAX,
+    UMIN,
+    USUM,
 
-    count,
+    COUNT,
 };
 
 /**
@@ -43,21 +43,21 @@ enum class AggregateOp {
  */
 inline TypeAttribute getTypeAttributeAggregate(const AggregateOp op) {
     switch (op) {
-        case AggregateOp::count:
-        case AggregateOp::max:
-        case AggregateOp::min:
-        case AggregateOp::sum:
+        case AggregateOp::COUNT:
+        case AggregateOp::MAX:
+        case AggregateOp::MIN:
+        case AggregateOp::SUM:
             return TypeAttribute::Signed;
 
-        case AggregateOp::mean:
-        case AggregateOp::fmax:
-        case AggregateOp::fmin:
-        case AggregateOp::fsum:
+        case AggregateOp::MEAN:
+        case AggregateOp::FMAX:
+        case AggregateOp::FMIN:
+        case AggregateOp::FSUM:
             return TypeAttribute::Float;
 
-        case AggregateOp::umax:
-        case AggregateOp::umin:
-        case AggregateOp::usum:
+        case AggregateOp::UMAX:
+        case AggregateOp::UMIN:
+        case AggregateOp::USUM:
             return TypeAttribute::Unsigned;
     }
 
@@ -67,9 +67,9 @@ inline TypeAttribute getTypeAttributeAggregate(const AggregateOp op) {
 
 inline bool isOverloadedAggregator(const AggregateOp op) {
     switch (op) {
-        case AggregateOp::max:
-        case AggregateOp::min:
-        case AggregateOp::sum:
+        case AggregateOp::MAX:
+        case AggregateOp::MIN:
+        case AggregateOp::SUM:
             return true;
         default:
             break;
@@ -84,29 +84,29 @@ inline bool isOverloadedAggregator(const AggregateOp op) {
  **/
 inline AggregateOp convertOverloadedAggregator(const AggregateOp op, const TypeAttribute type) {
     switch (op) {
-        case AggregateOp::sum:
+        case AggregateOp::SUM:
             if (type == TypeAttribute::Float) {
-                return AggregateOp::fsum;
+                return AggregateOp::FSUM;
             } else if (type == TypeAttribute::Unsigned) {
-                return AggregateOp::usum;
+                return AggregateOp::USUM;
             } else {
                 assert(false && "Invalid argument;");
             }
             break;
-        case AggregateOp::max:
+        case AggregateOp::MAX:
             if (type == TypeAttribute::Float) {
-                return AggregateOp::fmax;
+                return AggregateOp::FMAX;
             } else if (type == TypeAttribute::Unsigned) {
-                return AggregateOp::umax;
+                return AggregateOp::UMAX;
             } else {
                 assert(false && "Invalid argument;");
             }
             break;
-        case AggregateOp::min:
+        case AggregateOp::MIN:
             if (type == TypeAttribute::Float) {
-                return AggregateOp::fmin;
+                return AggregateOp::FMIN;
             } else if (type == TypeAttribute::Unsigned) {
-                return AggregateOp::umin;
+                return AggregateOp::UMIN;
             } else {
                 assert(false && "Invalid argument;");
             }

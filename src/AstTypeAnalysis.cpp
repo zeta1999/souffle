@@ -703,9 +703,9 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // visit aggregates
         void visitAggregator(const AstAggregator& agg) override {
-            if (agg.getOperator() == AggregateOp::count) {
+            if (agg.getOperator() == AggregateOp::COUNT) {
                 addConstraint(isSubtypeOf(getVar(agg), env.getNumberType()));
-            } else if (agg.getOperator() == AggregateOp::mean) {
+            } else if (agg.getOperator() == AggregateOp::MEAN) {
                 addConstraint(isSubtypeOf(getVar(agg), env.getFloatType()));
             } else {
                 addConstraint(hasSuperTypeInSet(getVar(agg), env.getNumericTypes()));

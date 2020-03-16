@@ -309,13 +309,13 @@ TEST(RamAggregate, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> a_return_args;
     a_return_args.emplace_back(new RamTupleElement(0, 0));
     auto a_return = std::make_unique<RamSubroutineReturnValue>(std::move(a_return_args));
-    RamAggregate a(std::move(a_return), AggregateOp::count, std::make_unique<RamRelationReference>(&edge),
+    RamAggregate a(std::move(a_return), AggregateOp::COUNT, std::make_unique<RamRelationReference>(&edge),
             std::make_unique<RamTupleElement>(0, 0), std::make_unique<RamTrue>(), 1);
 
     std::vector<std::unique_ptr<RamExpression>> b_return_args;
     b_return_args.emplace_back(new RamTupleElement(0, 0));
     auto b_return = std::make_unique<RamSubroutineReturnValue>(std::move(b_return_args));
-    RamAggregate b(std::move(b_return), AggregateOp::count, std::make_unique<RamRelationReference>(&edge),
+    RamAggregate b(std::move(b_return), AggregateOp::COUNT, std::make_unique<RamRelationReference>(&edge),
             std::make_unique<RamTupleElement>(0, 0), std::make_unique<RamTrue>(), 1);
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);
@@ -339,7 +339,7 @@ TEST(RamIndexAggregate, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> a_criteria;
     a_criteria.emplace_back(new RamUndefValue);
     a_criteria.emplace_back(new RamUndefValue);
-    RamIndexAggregate a(std::move(a_return), AggregateOp::min, std::make_unique<RamRelationReference>(&sqrt),
+    RamIndexAggregate a(std::move(a_return), AggregateOp::MIN, std::make_unique<RamRelationReference>(&sqrt),
             std::make_unique<RamTupleElement>(1, 1), std::move(a_cond), std::move(a_criteria), 1);
 
     std::vector<std::unique_ptr<RamExpression>> b_return_args;
@@ -350,7 +350,7 @@ TEST(RamIndexAggregate, CloneAndEquals) {
     std::vector<std::unique_ptr<RamExpression>> b_criteria;
     b_criteria.emplace_back(new RamUndefValue);
     b_criteria.emplace_back(new RamUndefValue);
-    RamIndexAggregate b(std::move(b_return), AggregateOp::min, std::make_unique<RamRelationReference>(&sqrt),
+    RamIndexAggregate b(std::move(b_return), AggregateOp::MIN, std::make_unique<RamRelationReference>(&sqrt),
             std::make_unique<RamTupleElement>(1, 1), std::move(b_cond), std::move(b_criteria), 1);
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);

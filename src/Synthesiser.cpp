@@ -836,7 +836,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = isa->getSearchSignature(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == AggregateOp::count && keys == 0 &&
+            if (aggregate.getFunction() == AggregateOp::COUNT && keys == 0 &&
                     isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -851,34 +851,34 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case AggregateOp::min:
+                case AggregateOp::MIN:
                     init = "MAX_RAM_SIGNED";
                     break;
-                case AggregateOp::fmin:
+                case AggregateOp::FMIN:
                     init = "MAX_RAM_FLOAT";
                     break;
-                case AggregateOp::umin:
+                case AggregateOp::UMIN:
                     init = "MAX_RAM_UNSIGNED";
                     break;
-                case AggregateOp::max:
+                case AggregateOp::MAX:
                     init = "MIN_RAM_SIGNED";
                     break;
-                case AggregateOp::fmax:
+                case AggregateOp::FMAX:
                     init = "MIN_RAM_FLOAT";
                     break;
-                case AggregateOp::umax:
+                case AggregateOp::UMAX:
                     init = "MIN_RAM_UNSIGNED";
                     break;
-                case AggregateOp::count:
+                case AggregateOp::COUNT:
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
-                case AggregateOp::mean:
+                case AggregateOp::MEAN:
                     init = "0";
                     break;
-                case AggregateOp::fsum:
-                case AggregateOp::usum:
-                case AggregateOp::sum:
+                case AggregateOp::FSUM:
+                case AggregateOp::USUM:
+                case AggregateOp::SUM:
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
@@ -900,7 +900,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
-            if (aggregate.getFunction() == AggregateOp::mean) {
+            if (aggregate.getFunction() == AggregateOp::MEAN) {
                 out << "if (accumulateMean.second != 0) {\n";
                 out << "res" << identifier << " = accumulateMean.first / accumulateMean.second;\n";
                 out << "}\n";
@@ -931,35 +931,35 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // pick function
             switch (aggregate.getFunction()) {
-                case AggregateOp::fmin:
-                case AggregateOp::umin:
-                case AggregateOp::min:
+                case AggregateOp::FMIN:
+                case AggregateOp::UMIN:
+                case AggregateOp::MIN:
                     out << "res" << identifier << " = std::min(res" << identifier << ",ramBitCast<" << type
                         << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::fmax:
-                case AggregateOp::umax:
-                case AggregateOp::max:
+                case AggregateOp::FMAX:
+                case AggregateOp::UMAX:
+                case AggregateOp::MAX:
                     out << "res" << identifier << " = std::max(res" << identifier << ",ramBitCast<" << type
                         << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::count:
+                case AggregateOp::COUNT:
                     out << "++res" << identifier << "\n;";
                     break;
-                case AggregateOp::fsum:
-                case AggregateOp::usum:
-                case AggregateOp::sum:
+                case AggregateOp::FSUM:
+                case AggregateOp::USUM:
+                case AggregateOp::SUM:
                     out << "res" << identifier << " += "
                         << "ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
 
-                case AggregateOp::mean:
+                case AggregateOp::MEAN:
                     out << "accumulateMean.first += "
                         << "ramBitCast<RamFloat>(";
                     visit(aggregate.getExpression(), out);
@@ -973,7 +973,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // end aggregator loop
             out << "}\n";
 
-            if (aggregate.getFunction() == AggregateOp::mean) {
+            if (aggregate.getFunction() == AggregateOp::MEAN) {
                 out << "if (accumulateMean.second != 0) {\n";
                 out << "res" << identifier << " = accumulateMean.first / accumulateMean.second;\n";
                 out << "}\n";
@@ -1002,7 +1002,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == AggregateOp::count && isRamTrue(&aggregate.getCondition())) {
+            if (aggregate.getFunction() == AggregateOp::COUNT && isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
@@ -1016,36 +1016,36 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case AggregateOp::min:
+                case AggregateOp::MIN:
                     init = "MAX_RAM_SIGNED";
                     break;
-                case AggregateOp::fmin:
+                case AggregateOp::FMIN:
                     init = "MAX_RAM_FLOAT";
                     break;
-                case AggregateOp::umin:
+                case AggregateOp::UMIN:
                     init = "MAX_RAM_UNSIGNED";
                     break;
-                case AggregateOp::max:
+                case AggregateOp::MAX:
                     init = "MIN_RAM_SIGNED";
                     break;
-                case AggregateOp::fmax:
+                case AggregateOp::FMAX:
                     init = "MIN_RAM_FLOAT";
                     break;
-                case AggregateOp::umax:
+                case AggregateOp::UMAX:
                     init = "MIN_RAM_UNSIGNED";
                     break;
-                case AggregateOp::count:
+                case AggregateOp::COUNT:
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
 
-                case AggregateOp::mean:
+                case AggregateOp::MEAN:
                     init = "0";
                     break;
 
-                case AggregateOp::fsum:
-                case AggregateOp::usum:
-                case AggregateOp::sum:
+                case AggregateOp::FSUM:
+                case AggregateOp::USUM:
+                case AggregateOp::SUM:
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
@@ -1067,7 +1067,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
-            if (aggregate.getFunction() == AggregateOp::mean) {
+            if (aggregate.getFunction() == AggregateOp::MEAN) {
                 out << "std::pair<RamFloat, RamFloat> accumulateMean = {0, 0};\n";
             }
 
@@ -1083,28 +1083,28 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "shouldRunNested = true;\n";
             // pick function
             switch (aggregate.getFunction()) {
-                case AggregateOp::fmin:
-                case AggregateOp::umin:
-                case AggregateOp::min:
+                case AggregateOp::FMIN:
+                case AggregateOp::UMIN:
+                case AggregateOp::MIN:
                     out << "res" << identifier << " = std::min(res" << identifier << ",ramBitCast<" << type
                         << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::fmax:
-                case AggregateOp::umax:
-                case AggregateOp::max:
+                case AggregateOp::FMAX:
+                case AggregateOp::UMAX:
+                case AggregateOp::MAX:
                     out << "res" << identifier << " = std::max(res" << identifier << ",ramBitCast<" << type
                         << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::count:
+                case AggregateOp::COUNT:
                     out << "++res" << identifier << "\n;";
                     break;
-                case AggregateOp::fsum:
-                case AggregateOp::usum:
-                case AggregateOp::sum:
+                case AggregateOp::FSUM:
+                case AggregateOp::USUM:
+                case AggregateOp::SUM:
                     out << "res" << identifier << " += "
                         << "ramBitCast<" << type << ">(";
                     ;
@@ -1112,7 +1112,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ");\n";
                     break;
 
-                case AggregateOp::mean:
+                case AggregateOp::MEAN:
                     out << "accumulateMean.first += "
                         << "ramBitCast<RamFloat>(";
                     visit(aggregate.getExpression(), out);
@@ -1126,7 +1126,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // end aggregator loop
             out << "}\n";
 
-            if (aggregate.getFunction() == AggregateOp::mean) {
+            if (aggregate.getFunction() == AggregateOp::MEAN) {
                 out << "res" << identifier << " = accumulateMean.first / accumulateMean.second;\n";
             }
 

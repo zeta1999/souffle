@@ -1280,7 +1280,7 @@ arg
 
     /* -- aggregators -- */
   | MEAN arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AggregateOp::mean, std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::MEAN, std::unique_ptr<AstArgument>($target_expr));
 
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
@@ -1294,7 +1294,7 @@ arg
         $atom = nullptr;
     }
   | MEAN arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AggregateOp::mean, std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::MEAN, std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
 
@@ -1317,7 +1317,7 @@ arg
     }
 
   | COUNT COLON atom {
-        auto aggr = new AstAggregator(AggregateOp::count);
+        auto aggr = new AstAggregator(AggregateOp::COUNT);
 
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
@@ -1330,7 +1330,7 @@ arg
         $atom = nullptr;
     }
   | COUNT COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AggregateOp::count);
+        auto aggr = new AstAggregator(AggregateOp::COUNT);
 
         auto bodies = $body->toClauseBodies();
 
@@ -1351,7 +1351,7 @@ arg
     }
 
   | SUM arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AggregateOp::sum, std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::SUM, std::unique_ptr<AstArgument>($target_expr));
 
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
@@ -1365,7 +1365,7 @@ arg
         $atom = nullptr;
     }
   | SUM arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AggregateOp::sum, std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::SUM, std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
 
@@ -1388,7 +1388,7 @@ arg
     }
 
   | MIN arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AggregateOp::min, std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::MIN, std::unique_ptr<AstArgument>($target_expr));
 
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
@@ -1403,7 +1403,7 @@ arg
         $atom = nullptr;
     }
   | MIN arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AggregateOp::min, std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::MIN, std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
 
@@ -1426,7 +1426,7 @@ arg
     }
 
   | MAX arg[target_expr] COLON atom {
-        auto aggr = new AstAggregator(AggregateOp::max, std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::MAX, std::unique_ptr<AstArgument>($target_expr));
 
         std::vector<std::unique_ptr<AstLiteral>> body;
         body.push_back(std::unique_ptr<AstLiteral>($atom));
@@ -1440,7 +1440,7 @@ arg
         $atom = nullptr;
     }
   | MAX arg[target_expr] COLON LBRACE body RBRACE {
-        auto aggr = new AstAggregator(AggregateOp::max, std::unique_ptr<AstArgument>($target_expr));
+        auto aggr = new AstAggregator(AggregateOp::MAX, std::unique_ptr<AstArgument>($target_expr));
 
         auto bodies = $body->toClauseBodies();
 

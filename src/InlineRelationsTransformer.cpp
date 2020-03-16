@@ -597,48 +597,48 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                         newAggr->setBody(std::move(newBody));
                         aggrVersions.push_back(newAggr);
                     }
-
+                    
                     // Create the actual overall aggregator that ties the replacement aggregators together.
                     switch (op) {
                         // min x : { a(x) }. <=> min ( min x : { a1(x) }, min x : { a2(x) }, ... )
-                        case AggregateOp::min:
+                        case AggregateOp::MIN:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::MIN));
                             break;
-                        case AggregateOp::fmin:
+                        case AggregateOp::FMIN:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::FMIN));
                             break;
-                        case AggregateOp::umin:
+                        case AggregateOp::UMIN:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::UMIN));
                             break;
 
                             // max x : { a(x) }. <=> max ( max x : { a1(x) }, max x : { a2(x) }, ... )
-                        case AggregateOp::max:
+                        case AggregateOp::MAX:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::MAX));
                             break;
-                        case AggregateOp::fmax:
+                        case AggregateOp::FMAX:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::FMAX));
                             break;
-                        case AggregateOp::umax:
+                        case AggregateOp::UMAX:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::UMAX));
                             break;
 
                             // sum x : { a(x) }. <=> sum ( sum x : { a1(x) }, sum x : { a2(x) }, ... )
-                        case AggregateOp::sum:
+                        case AggregateOp::SUM:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
                             break;
-                        case AggregateOp::fsum:
+                        case AggregateOp::FSUM:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::FADD));
                             break;
-                        case AggregateOp::usum:
+                        case AggregateOp::USUM:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::UADD));
                             break;
 
                             // count : { a(x) }. <=> sum ( count : { a1(x) }, count : { a2(x) }, ... )
-                        case AggregateOp::count:
+                        case AggregateOp::COUNT:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
                             break;
 
-                        case AggregateOp::mean:
+                        case AggregateOp::MEAN:
                             // TODO.
                             break;
                     }

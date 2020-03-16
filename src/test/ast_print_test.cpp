@@ -105,7 +105,7 @@ TEST(AstPrint, Counter) {
 TEST(AstPrint, AggregatorMin) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto min = std::make_unique<AstAggregator>(AggregateOp::min, std::make_unique<AstVariable>("x"));
+    auto min = std::make_unique<AstAggregator>(AggregateOp::MIN, std::make_unique<AstVariable>("x"));
 
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::make_unique<AstAtom>("B"));
@@ -122,7 +122,7 @@ TEST(AstPrint, AggregatorMin) {
 TEST(AstPrint, AggregatorMax) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto max = std::make_unique<AstAggregator>(AggregateOp::max, std::make_unique<AstVariable>("x"));
+    auto max = std::make_unique<AstAggregator>(AggregateOp::MAX, std::make_unique<AstVariable>("x"));
 
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::move(atom));
@@ -138,7 +138,7 @@ TEST(AstPrint, AggregatorMax) {
 TEST(AstPrint, AggregatorCount) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto count = std::make_unique<AstAggregator>(AggregateOp::count);
+    auto count = std::make_unique<AstAggregator>(AggregateOp::COUNT);
 
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::move(atom));
@@ -154,7 +154,7 @@ TEST(AstPrint, AggregatorCount) {
 TEST(AstPrint, AggregatorSum) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto sum = std::make_unique<AstAggregator>(AggregateOp::sum, std::make_unique<AstVariable>("x"));
+    auto sum = std::make_unique<AstAggregator>(AggregateOp::SUM, std::make_unique<AstVariable>("x"));
 
     std::vector<std::unique_ptr<AstLiteral>> body;
     body.push_back(std::move(atom));

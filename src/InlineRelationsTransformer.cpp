@@ -597,50 +597,38 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                         newAggr->setBody(std::move(newBody));
                         aggrVersions.push_back(newAggr);
                     }
-                    
+
+                    // Utility lambda: get functor used to tie aggregators together.
+                    auto aggregateToFunctor = [](AggregateOp op) {
+                        switch (op) {
+                            case AggregateOp::MIN:
+                                return FunctorOp::MIN;
+                            case AggregateOp::FMIN:
+                                return FunctorOp::FMIN;
+                            case AggregateOp::UMIN:
+                                return FunctorOp::UMIN;
+                            case AggregateOp::MAX:
+                                return FunctorOp::MAX;
+                            case AggregateOp::FMAX:
+                                return FunctorOp::FMAX;
+                            case AggregateOp::UMAX:
+                                return FunctorOp::UMAX;
+                            case AggregateOp::SUM:
+                                return FunctorOp::ADD;
+                            case AggregateOp::FSUM:
+                                return FunctorOp::FADD;
+                            case AggregateOp::USUM:
+                                return FunctorOp::UADD;
+                            case AggregateOp::COUNT:
+                                return FunctorOp::ADD;
+                            case AggregateOp::MEAN:
+                                assert(false && "no translation");
+                        }
+                    };
                     // Create the actual overall aggregator that ties the replacement aggregators together.
-                    switch (op) {
-                        // min x : { a(x) }. <=> min ( min x : { a1(x) }, min x : { a2(x) }, ... )
-                        case AggregateOp::MIN:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::MIN));
-                            break;
-                        case AggregateOp::FMIN:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::FMIN));
-                            break;
-                        case AggregateOp::UMIN:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::UMIN));
-                            break;
-
-                            // max x : { a(x) }. <=> max ( max x : { a1(x) }, max x : { a2(x) }, ... )
-                        case AggregateOp::MAX:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::MAX));
-                            break;
-                        case AggregateOp::FMAX:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::FMAX));
-                            break;
-                        case AggregateOp::UMAX:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::UMAX));
-                            break;
-
-                            // sum x : { a(x) }. <=> sum ( sum x : { a1(x) }, sum x : { a2(x) }, ... )
-                        case AggregateOp::SUM:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
-                            break;
-                        case AggregateOp::FSUM:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::FADD));
-                            break;
-                        case AggregateOp::USUM:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::UADD));
-                            break;
-
-                            // count : { a(x) }. <=> sum ( count : { a1(x) }, count : { a2(x) }, ... )
-                        case AggregateOp::COUNT:
-                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
-                            break;
-
-                        case AggregateOp::MEAN:
-                            // TODO.
-                            break;
+                    // example: min x : { a(x) }. <=> min ( min x : { a1(x) }, min x : { a2(x) }, ... )
+                    if (op != AggregateOp::MEAN) {
+                        versions.push_back(combineAggregators(aggrVersions, aggregateToFunctor(op)));
                     }
                 }
 

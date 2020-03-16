@@ -191,7 +191,6 @@ TypeConstraint hasSuperTypeInSet(const TypeVar& var, TypeSet values) {
     return std::make_shared<C>(var, values);
 }
 
-
 /**
  * Ensure that types of left and right have the same base types.
  */
@@ -704,11 +703,8 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // visit aggregates
         void visitAggregator(const AstAggregator& agg) override {
-            // count is a special case.
             if (agg.getOperator() == AggregateOp::count) {
-                // count must be an integral type.
-                TypeSet integralTypes = TypeSet(env.getNumberType(), env.getUnsignedType());
-                addConstraint(hasSuperTypeInSet(getVar(agg), std::move(integralTypes)));
+                addConstraint(isSubtypeOf(getVar(agg), env.getNumberType()));
                 return;
             }
 

@@ -1068,6 +1068,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
 
                 shouldRunNested = true;
+
                 // count is a special case.
                 if (cur.getFunction() == AggregateOp::count) {
                     ++res;
@@ -1198,7 +1199,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
                 shouldRunNested = true;
 
-                // count is easy
+                // count is a special case
                 if (cur.getFunction() == AggregateOp::count) {
                     ++res;
                     continue;

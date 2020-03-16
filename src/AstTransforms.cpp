@@ -558,7 +558,7 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                             }
                         }
 
-                        // If the body is still empty and contains true add it now.
+                        // If the body is still empty and the original body contains true add it now.
                         if (containsTrue && isEmpty) {
                             newBody.push_back(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
                                     std::make_unique<AstNumericConstant>(1),
@@ -568,12 +568,10 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                         }
                     }
 
-                    if (isEmpty || containsFalse) {
+                    if (containsFalse || isEmpty) {
                         // Empty aggregator body!
                         // Not currently handled, so add in a false literal in the body
                         // E.g. max x : { } =becomes=> max 1 : {0 = 1}
-                        // replacementAggregator->setTargetExpression(std::make_unique<AstNumericConstant>(1));
-
                         newBody.push_back(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
                                 std::make_unique<AstNumericConstant>(0),
                                 std::make_unique<AstNumericConstant>(1)));
@@ -1089,14 +1087,12 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
                         changed = true;
                         // Then construct the new thing to replace it with
                         auto count = std::make_unique<AstAggregator>(AggregateOp::count);
-
                         // Duplicate the body of the aggregate
                         std::vector<std::unique_ptr<AstLiteral>> newBody;
                         for (const auto& lit : agg->getBodyLiterals()) {
                             newBody.push_back(std::unique_ptr<AstLiteral>(lit->clone()));
                         }
                         count->setBody(std::move(newBody));
-
                         auto number = std::unique_ptr<AstNumericConstant>(constant->clone());
                         // Now it's constant * count : { ... }
                         auto result = std::make_unique<AstIntrinsicFunctor>(

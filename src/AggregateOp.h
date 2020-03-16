@@ -22,33 +22,27 @@ namespace souffle {
 
 /** Types of aggregation functions */
 enum class AggregateOp {
-    // int
     max,
     min,
     sum,
 
-    // uint
     fmax,
     fmin,
     fsum,
 
-    // float
     umax,
     umin,
     usum,
 
-    // Count works on all types.
     count,
 };
 
 /**
- * Get type of aggregate.
- *
- * This procedure shouldn't be called on count, as it has many possible types.
+ * Get return type of the aggregate.
  */
 inline TypeAttribute getTypeAttributeAggregate(const AggregateOp op) {
-    //
     switch (op) {
+        case AggregateOp::count:
         case AggregateOp::max:
         case AggregateOp::min:
         case AggregateOp::sum:
@@ -63,12 +57,10 @@ inline TypeAttribute getTypeAttributeAggregate(const AggregateOp op) {
         case AggregateOp::umin:
         case AggregateOp::usum:
             return TypeAttribute::Unsigned;
-
-        default:
-            break;
     }
 
     assert(false && "invalid argument");
+    exit(EXIT_FAILURE);
 }
 
 inline bool isOverloadedAggregator(const AggregateOp op) {
@@ -84,6 +76,10 @@ inline bool isOverloadedAggregator(const AggregateOp op) {
     return false;
 }
 
+/**
+ * Convert aggregator to a give type.
+ * Eg. sum, float → fsum.
+ **/
 inline AggregateOp convertOverloadedAggregator(const AggregateOp op, const TypeAttribute type) {
     switch (op) {
         case AggregateOp::sum:

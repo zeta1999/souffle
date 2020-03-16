@@ -1026,22 +1026,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             std::string type;
-            if (aggregate.getFunction() == AggregateOp::count) {
-                type = "RamDomain";
-            } else {
-                switch (getTypeAttributeAggregate(aggregate.getFunction())) {
-                    case TypeAttribute::Signed:
-                        type = "RamSigned";
-                        break;
-                    case TypeAttribute::Unsigned:
-                        type = "RamUnsigned";
-                        break;
-                    case TypeAttribute::Float:
-                        type = "RamFloat";
-                        break;
-                    default:
-                        assert(false && "Invalid type");
-                }
+            switch (getTypeAttributeAggregate(aggregate.getFunction())) {
+                case TypeAttribute::Signed:
+                    type = "RamSigned";
+                    break;
+                case TypeAttribute::Unsigned:
+                    type = "RamUnsigned";
+                    break;
+                case TypeAttribute::Float:
+                    type = "RamFloat";
+                    break;
+                default:
+                    assert(false && "Invalid type");
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 

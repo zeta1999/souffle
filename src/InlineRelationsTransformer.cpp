@@ -539,7 +539,6 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                 for (AstArgument* newArg : argumentVersions.getVector()) {
                     auto* newAggr =
                             new AstAggregator(aggr->getOperator(), std::unique_ptr<AstArgument>(newArg));
-
                     std::vector<std::unique_ptr<AstLiteral>> newBody;
                     for (AstLiteral* lit : aggr->getBodyLiterals()) {
                         newBody.push_back(std::unique_ptr<AstLiteral>(lit->clone()));
@@ -593,20 +592,44 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     }
 
                     // Create the actual overall aggregator that ties the replacement aggregators together.
-                    if (op == AggregateOp::min) {
+                    switch (op) {
                         // min x : { a(x) }. <=> min ( min x : { a1(x) }, min x : { a2(x) }, ... )
-                        versions.push_back(combineAggregators(aggrVersions, FunctorOp::MIN));
-                    } else if (op == AggregateOp::max) {
-                        // max x : { a(x) }. <=> max ( max x : { a1(x) }, max x : { a2(x) }, ... )
-                        versions.push_back(combineAggregators(aggrVersions, FunctorOp::MAX));
-                    } else if (op == AggregateOp::count) {
-                        // count : { a(x) }. <=> sum ( count : { a1(x) }, count : { a2(x) }, ... )
-                        versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
-                    } else if (op == AggregateOp::sum) {
-                        // sum x : { a(x) }. <=> sum ( sum x : { a1(x) }, sum x : { a2(x) }, ... )
-                        versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
-                    } else {
-                        assert(false && "Unsupported aggregator type");
+                        case AggregateOp::min:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::MIN));
+                            break;
+                        case AggregateOp::fmin:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::FMIN));
+                            break;
+                        case AggregateOp::umin:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::UMIN));
+                            break;
+
+                            // max x : { a(x) }. <=> max ( max x : { a1(x) }, max x : { a2(x) }, ... )
+                        case AggregateOp::max:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::MAX));
+                            break;
+                        case AggregateOp::fmax:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::FMAX));
+                            break;
+                        case AggregateOp::umax:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::UMAX));
+                            break;
+
+                            // sum x : { a(x) }. <=> sum ( sum x : { a1(x) }, sum x : { a2(x) }, ... )
+                        case AggregateOp::sum:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
+                            break;
+                        case AggregateOp::fsum:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::FADD));
+                            break;
+                        case AggregateOp::usum:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::UADD));
+                            break;
+
+                            // count : { a(x) }. <=> sum ( count : { a1(x) }, count : { a2(x) }, ... )
+                        case AggregateOp::count:
+                            versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
+                            break;
                     }
                 }
 

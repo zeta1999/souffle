@@ -339,18 +339,13 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     });
 
     visitDepthFirst(nodes, [&](const AstAggregator& aggregator) {
-        // Check if operation type and aggregator type agree.
         auto op = aggregator.getOperator();
 
         auto aggregatorType = typeAnalysis.getTypes(&aggregator);
 
-        // Everything can be counted
-        if (op == AggregateOp::count) {
-            return;
-        }
-
         TypeAttribute opType = getTypeAttributeAggregate(op);
 
+        // Check if operation type and return type agree.
         if (!eqTypeTypeAttribute(opType, aggregatorType)) {
             report.addError("Couldn't assign types to the aggregator", aggregator.getSrcLoc());
         }

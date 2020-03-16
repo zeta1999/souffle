@@ -645,9 +645,9 @@ TEST(MultiArg, SymbolMax) {
         args.push_back(std::make_unique<RamSignedConstant>(symTab.lookup(std::to_string(i))));
     }
 
-    RamDomain result = evalMultiArg(functor, std::move(args), symTab);
+    auto&& result = symTab.resolve(evalMultiArg(functor, std::move(args), symTab));
 
-    EXPECT_EQ(result, symTab.lookup("100"));
+    EXPECT_EQ(result, "99");
 }
 
 TEST(MultiArg, Min) {
@@ -699,9 +699,9 @@ TEST(MultiArg, SymbolMin) {
         args.push_back(std::make_unique<RamSignedConstant>(symTab.lookup(std::to_string(i))));
     }
 
-    RamDomain result = evalMultiArg(functor, std::move(args), symTab);
+    auto&& result = symTab.resolve(evalMultiArg(functor, std::move(args), symTab));
 
-    EXPECT_EQ(result, symTab.lookup("-1"));
+    EXPECT_EQ(result, "-1");
 }
 
 }  // namespace souffle::test

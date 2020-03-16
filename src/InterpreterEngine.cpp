@@ -280,13 +280,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         }                                                        \
         return result;                                           \
     }
-#define MINMAX_OP(ty, op)                                 \
-    {                                                     \
-        auto result = EVAL_CHILD(ty, 0);                  \
-        for (size_t i = 1; i < args.size(); i++) {        \
-            result = std::max(result, EVAL_CHILD(ty, i)); \
-        }                                                 \
-        return ramBitCast(result);                        \
+#define MINMAX_OP(ty, op)                           \
+    {                                               \
+        auto result = EVAL_CHILD(ty, 0);            \
+        for (size_t i = 1; i < args.size(); i++) {  \
+            result = op(result, EVAL_CHILD(ty, i)); \
+        }                                           \
+        return ramBitCast(result);                  \
     }
 #define MINMAX_NUMERIC(opCode, op)                        \
     case FunctorOp::   opCode: MINMAX_OP(RamSigned  , op) \

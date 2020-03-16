@@ -1156,11 +1156,16 @@ bool NormaliseConstraintsTransformer::transform(AstTranslationUnit& translationU
                 std::stringstream newVariableName;
                 newVariableName << boundPrefix << changeCount << "_" << numberConstant->getConstant() << "_n";
 
+                assert(numberConstant->getType() && "numeric constant hasn't been poly-constrained");
+                auto opEq = *numberConstant->getType() == AstNumericConstant::Type::Float
+                                    ? BinaryConstraintOp::FEQ
+                                    : BinaryConstraintOp::EQ;
+
                 // create new constraint (+abdulX = constant)
                 auto newVariable = std::make_unique<AstVariable>(newVariableName.str());
-                constraints.insert(new AstBinaryConstraint(BinaryConstraintOp::EQ,
-                        std::unique_ptr<AstArgument>(newVariable->clone()),
-                        std::unique_ptr<AstArgument>(numberConstant->clone())));
+                constraints.insert(
+                        new AstBinaryConstraint(opEq, std::unique_ptr<AstArgument>(newVariable->clone()),
+                                std::unique_ptr<AstArgument>(numberConstant->clone())));
 
                 // update constant to be the variable created
                 return newVariable;

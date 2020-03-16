@@ -630,6 +630,10 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                         case AggregateOp::count:
                             versions.push_back(combineAggregators(aggrVersions, FunctorOp::ADD));
                             break;
+
+                        case AggregateOp::mean:
+                            // TODO.
+                            break;
                     }
                 }
 

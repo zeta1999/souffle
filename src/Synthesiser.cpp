@@ -873,6 +873,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
+                case AggregateOp::mean:
+                    init = "0";
+                    break;
                 case AggregateOp::fsum:
                 case AggregateOp::usum:
                 case AggregateOp::sum:
@@ -897,6 +900,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
+            if (aggregate.getFunction() == AggregateOp::mean) {
+                out << "if (accumulateMean.second != 0) {\n";
+                out << "res" << identifier << " = accumulateMean.first / accumulateMean.second;\n";
+                out << "}\n";
+            }
+
             // check whether there is an index to use
             if (keys == 0) {
                 out << "for(const auto& env" << identifier << " : "
@@ -919,6 +928,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << ") {\n";
 
             out << "shouldRunNested = true;\n";
+
             // pick function
             switch (aggregate.getFunction()) {
                 case AggregateOp::fmin:
@@ -945,9 +955,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::sum:
                     out << "res" << identifier << " += "
                         << "ramBitCast<" << type << ">(";
-                    ;
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
+                    break;
+
+                case AggregateOp::mean:
+                    out << "accumulateMean.first += "
+                        << "ramBitCast<RamFloat>(";
+                    visit(aggregate.getExpression(), out);
+                    out << ");\n";
+                    out << "++accumulateMean.second;\n";
                     break;
             }
 
@@ -956,8 +973,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // end aggregator loop
             out << "}\n";
 
+            if (aggregate.getFunction() == AggregateOp::mean) {
+                out << "if (accumulateMean.second != 0) {\n";
+                out << "res" << identifier << " = accumulateMean.first / accumulateMean.second;\n";
+                out << "}\n";
+            }
+
             // write result into environment tuple
-            out << "env" << identifier << "[0] = res" << identifier << ";\n";
+            out << "env" << identifier << "[0] = ramBitCast(res" << identifier << ");\n";
 
             // check whether there exists a min/max first before next loop
             out << "if (shouldRunNested) {\n";
@@ -1015,6 +1038,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
+
+                case AggregateOp::mean:
+                    init = "0";
+                    break;
+
                 case AggregateOp::fsum:
                 case AggregateOp::usum:
                 case AggregateOp::sum:
@@ -1038,6 +1066,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     assert(false && "Invalid type");
             }
             out << type << " res" << identifier << " = " << init << ";\n";
+
+            if (aggregate.getFunction() == AggregateOp::mean) {
+                out << "std::pair<RamFloat, RamFloat> accumulateMean = {0, 0};\n";
+            }
 
             // check whether there is an index to use
             out << "for(const auto& env" << identifier << " : "
@@ -1079,12 +1111,24 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;
+
+                case AggregateOp::mean:
+                    out << "accumulateMean.first += "
+                        << "ramBitCast<RamFloat>(";
+                    visit(aggregate.getExpression(), out);
+                    out << ");\n";
+                    out << "++accumulateMean.second;\n";
+                    break;
             }
 
             out << "}\n";
 
             // end aggregator loop
             out << "}\n";
+
+            if (aggregate.getFunction() == AggregateOp::mean) {
+                out << "res" << identifier << " = accumulateMean.first / accumulateMean.second;\n";
+            }
 
             // write result into environment tuple
             out << "env" << identifier << "[0] = ramBitCast(res" << identifier << ");\n";

@@ -567,6 +567,9 @@ protected:
             case AggregateOp::count:
                 os << "count";
                 break;
+            case AggregateOp::mean:
+                os << "mean";
+                break;
         }
         if (targetExpression) {
             os << " " << *targetExpression;

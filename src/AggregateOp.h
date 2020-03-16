@@ -49,6 +49,7 @@ inline TypeAttribute getTypeAttributeAggregate(const AggregateOp op) {
         case AggregateOp::sum:
             return TypeAttribute::Signed;
 
+        case AggregateOp::mean:
         case AggregateOp::fmax:
         case AggregateOp::fmin:
         case AggregateOp::fsum:

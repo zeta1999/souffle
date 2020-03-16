@@ -1282,7 +1282,10 @@ arg
   | MEAN arg[target_expr] COLON atom {
         auto aggr = new AstAggregator(AggregateOp::mean, std::unique_ptr<AstArgument>($target_expr));
 
-        aggr->addBodyLiteral(std::unique_ptr<AstLiteral>($atom));
+        std::vector<std::unique_ptr<AstLiteral>> body;
+        body.push_back(std::unique_ptr<AstLiteral>($atom));
+
+        aggr->setBody(std::move(body));
 
         $$ = aggr;
         $$->setSrcLoc(@$);
@@ -1300,9 +1303,11 @@ arg
             exit(1);
         }
 
+        std::vector<std::unique_ptr<AstLiteral>> body;
         for (auto& cur : bodies[0]->getBodyLiterals()) {
-            aggr->addBodyLiteral(std::unique_ptr<AstLiteral>(cur->clone()));
+            body.push_back(std::unique_ptr<AstLiteral>(cur->clone()));
         }
+        aggr->setBody(std::move(body));
         delete bodies[0];
 
         $$ = aggr;

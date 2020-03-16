@@ -1023,6 +1023,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // initialize result
             RamDomain res = 0;
+
+            // Use for calculating mean.
+            std::pair<RamFloat, RamFloat> accumulateMean;
+
             switch (cur.getFunction()) {
                 case AggregateOp::min:
                     res = MAX_RAM_SIGNED;
@@ -1033,6 +1037,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 case AggregateOp::fmin:
                     res = ramBitCast(MAX_RAM_FLOAT);
                     break;
+
                 case AggregateOp::max:
                     res = MIN_RAM_SIGNED;
                     break;
@@ -1042,6 +1047,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 case AggregateOp::fmax:
                     res = ramBitCast(MIN_RAM_FLOAT);
                     break;
+
                 case AggregateOp::sum:
                     res = 0;
                     shouldRunNested = true;
@@ -1054,6 +1060,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     res = ramBitCast(static_cast<RamFloat>(0));
                     shouldRunNested = true;
                     break;
+
+                case AggregateOp::mean:
+                    accumulateMean = {0, 0};
+                    break;
+
                 case AggregateOp::count:
                     res = 0;
                     shouldRunNested = true;
@@ -1089,6 +1100,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         res = ramBitCast(
                                 std::min(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
                         break;
+
                     case AggregateOp::max:
                         res = std::max(res, val);
                         break;
@@ -1099,6 +1111,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         res = ramBitCast(
                                 std::max(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
                         break;
+
                     case AggregateOp::sum:
                         res += val;
                         break;
@@ -1108,10 +1121,20 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     case AggregateOp::usum:
                         res = ramBitCast(ramBitCast<RamUnsigned>(res) + ramBitCast<RamUnsigned>(val));
                         break;
+
+                    case AggregateOp::mean:
+                        accumulateMean.first += ramBitCast<RamFloat>(val);
+                        accumulateMean.second++;
+                        break;
+
                     case AggregateOp::count:
                         assert(false && "This should never be executed");
                         break;
                 }
+            }
+
+            if (cur.getFunction() == AggregateOp::mean && accumulateMean.second != 0) {
+                res = ramBitCast(accumulateMean.first / accumulateMean.second);
             }
 
             // write result to environment
@@ -1131,6 +1154,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // initialize result
             RamDomain res = 0;
+
+            // Use for calculating mean.
+            std::pair<RamFloat, RamFloat> accumulateMean;
+
             switch (cur.getFunction()) {
                 case AggregateOp::min:
                     res = MAX_RAM_SIGNED;
@@ -1141,6 +1168,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 case AggregateOp::fmin:
                     res = ramBitCast(MAX_RAM_FLOAT);
                     break;
+
                 case AggregateOp::max:
                     res = MIN_RAM_SIGNED;
                     break;
@@ -1150,6 +1178,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 case AggregateOp::fmax:
                     res = ramBitCast(MIN_RAM_FLOAT);
                     break;
+
                 case AggregateOp::sum:
                     res = 0;
                     shouldRunNested = true;
@@ -1161,6 +1190,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 case AggregateOp::fsum:
                     res = ramBitCast(static_cast<RamFloat>(0));
                     shouldRunNested = true;
+                    break;
+
+                case AggregateOp::mean:
+                    accumulateMean = {0, 0};
                     break;
                 case AggregateOp::count:
                     res = 0;
@@ -1219,6 +1252,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         res = ramBitCast(
                                 std::min(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
                         break;
+
                     case AggregateOp::max:
                         res = std::max(res, val);
                         break;
@@ -1229,6 +1263,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         res = ramBitCast(
                                 std::max(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
                         break;
+
                     case AggregateOp::sum:
                         res += val;
                         break;
@@ -1238,10 +1273,20 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     case AggregateOp::usum:
                         res = ramBitCast(ramBitCast<RamUnsigned>(res) + ramBitCast<RamUnsigned>(val));
                         break;
+
+                    case AggregateOp::mean:
+                        accumulateMean.first += ramBitCast<RamFloat>(val);
+                        accumulateMean.second++;
+                        break;
+
                     case AggregateOp::count:
                         assert(false && "This should never be executed");
                         break;
                 }
+            }
+
+            if (cur.getFunction() == AggregateOp::mean && accumulateMean.second != 0) {
+                res = ramBitCast(accumulateMean.first / accumulateMean.second);
             }
 
             // write result to environment

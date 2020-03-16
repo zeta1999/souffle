@@ -1007,7 +1007,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             switch (cur.getFunction()) {
                 case AggregateOp::min:
-                    res = MAX_RAM_SIGNED;
+                    res = ramBitCast(MAX_RAM_SIGNED);
                     break;
                 case AggregateOp::umin:
                     res = ramBitCast(MAX_RAM_UNSIGNED);
@@ -1017,7 +1017,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
 
                 case AggregateOp::max:
-                    res = MIN_RAM_SIGNED;
+                    res = ramBitCast(MIN_RAM_SIGNED);
                     break;
                 case AggregateOp::umax:
                     res = ramBitCast(MIN_RAM_UNSIGNED);
@@ -1027,7 +1027,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
 
                 case AggregateOp::sum:
-                    res = 0;
+                    res = ramBitCast(static_cast<RamSigned>(0));
                     shouldRunNested = true;
                     break;
                 case AggregateOp::usum:
@@ -1040,6 +1040,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
 
                 case AggregateOp::mean:
+                    res = 0;
                     accumulateMean = {0, 0};
                     break;
 
@@ -1138,7 +1139,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             switch (cur.getFunction()) {
                 case AggregateOp::min:
-                    res = MAX_RAM_SIGNED;
+                    res = ramBitCast(MAX_RAM_SIGNED);
                     break;
                 case AggregateOp::umin:
                     res = ramBitCast(MAX_RAM_UNSIGNED);
@@ -1148,7 +1149,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
 
                 case AggregateOp::max:
-                    res = MIN_RAM_SIGNED;
+                    res = ramBitCast(MIN_RAM_SIGNED);
                     break;
                 case AggregateOp::umax:
                     res = ramBitCast(MIN_RAM_UNSIGNED);
@@ -1158,7 +1159,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
 
                 case AggregateOp::sum:
-                    res = 0;
+                    res = ramBitCast(static_cast<RamSigned>(0));
                     shouldRunNested = true;
                     break;
                 case AggregateOp::usum:
@@ -1171,6 +1172,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     break;
 
                 case AggregateOp::mean:
+                    res = ramBitCast(static_cast<RamFloat>(0));
                     accumulateMean = {0, 0};
                     break;
                 case AggregateOp::count:

@@ -29,6 +29,7 @@ enum class AggregateOp {
     fmax,
     fmin,
     fsum,
+    mean,
 
     umax,
     umin,

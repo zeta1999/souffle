@@ -693,13 +693,16 @@ public:
             case AggregateOp::fmax:
                 os << "max ";
                 break;
-            case AggregateOp::count:
-                os << "count ";
-                break;
             case AggregateOp::sum:
             case AggregateOp::fsum:
             case AggregateOp::usum:
                 os << "sum ";
+                break;
+            case AggregateOp::count:
+                os << "count ";
+                break;
+            case AggregateOp::mean:
+                os << "mean ";
                 break;
         }
         if (function != AggregateOp::count) {

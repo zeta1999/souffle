@@ -994,193 +994,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(UnpackRecord)
 
         CASE(Aggregate)
-            bool shouldRunNested = false;
-
-            // get the targeted relation
-            const InterpreterRelation& rel = *node->getRelation();
-
-            // initialize result
-            RamDomain res = 0;
-
-            // Use for calculating mean.
-            std::pair<RamFloat, RamFloat> accumulateMean;
-
-            switch (cur.getFunction()) {
-                case AggregateOp::MIN:
-                    res = ramBitCast(MAX_RAM_SIGNED);
-                    break;
-                case AggregateOp::UMIN:
-                    res = ramBitCast(MAX_RAM_UNSIGNED);
-                    break;
-                case AggregateOp::FMIN:
-                    res = ramBitCast(MAX_RAM_FLOAT);
-                    break;
-
-                case AggregateOp::MAX:
-                    res = ramBitCast(MIN_RAM_SIGNED);
-                    break;
-                case AggregateOp::UMAX:
-                    res = ramBitCast(MIN_RAM_UNSIGNED);
-                    break;
-                case AggregateOp::FMAX:
-                    res = ramBitCast(MIN_RAM_FLOAT);
-                    break;
-
-                case AggregateOp::SUM:
-                    res = ramBitCast(static_cast<RamSigned>(0));
-                    shouldRunNested = true;
-                    break;
-                case AggregateOp::USUM:
-                    res = ramBitCast(static_cast<RamUnsigned>(0));
-                    shouldRunNested = true;
-                    break;
-                case AggregateOp::FSUM:
-                    res = ramBitCast(static_cast<RamFloat>(0));
-                    shouldRunNested = true;
-                    break;
-
-                case AggregateOp::MEAN:
-                    res = 0;
-                    accumulateMean = {0, 0};
-                    break;
-
-                case AggregateOp::COUNT:
-                    res = 0;
-                    shouldRunNested = true;
-                    break;
-            }
-
-            for (const RamDomain* data : rel) {
-                ctxt[cur.getTupleId()] = data;
-
-                if (!execute(node->getChild(0), ctxt)) {
-                    continue;
-                }
-
-                shouldRunNested = true;
-
-                // count is a special case.
-                if (cur.getFunction() == AggregateOp::COUNT) {
-                    ++res;
-                    continue;
-                }
-
-                // eval target expression
-                RamDomain val = execute(node->getChild(1), ctxt);
-
-                switch (cur.getFunction()) {
-                    case AggregateOp::MIN:
-                        res = std::min(res, val);
-                        break;
-                    case AggregateOp::FMIN:
-                        res = ramBitCast(std::min(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
-                        break;
-                    case AggregateOp::UMIN:
-                        res = ramBitCast(
-                                std::min(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
-                        break;
-
-                    case AggregateOp::MAX:
-                        res = std::max(res, val);
-                        break;
-                    case AggregateOp::FMAX:
-                        res = ramBitCast(std::max(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
-                        break;
-                    case AggregateOp::UMAX:
-                        res = ramBitCast(
-                                std::max(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
-                        break;
-
-                    case AggregateOp::SUM:
-                        res += val;
-                        break;
-                    case AggregateOp::FSUM:
-                        res = ramBitCast(ramBitCast<RamFloat>(res) + ramBitCast<RamFloat>(val));
-                        break;
-                    case AggregateOp::USUM:
-                        res = ramBitCast(ramBitCast<RamUnsigned>(res) + ramBitCast<RamUnsigned>(val));
-                        break;
-
-                    case AggregateOp::MEAN:
-                        accumulateMean.first += ramBitCast<RamFloat>(val);
-                        accumulateMean.second++;
-                        break;
-
-                    case AggregateOp::COUNT:
-                        assert(false && "This should never be executed");
-                        break;
-                }
-            }
-
-            if (cur.getFunction() == AggregateOp::MEAN && accumulateMean.second != 0) {
-                res = ramBitCast(accumulateMean.first / accumulateMean.second);
-            }
-
-            // write result to environment
-            RamDomain tuple[1];
-            tuple[0] = res;
-            ctxt[cur.getTupleId()] = tuple;
-
-            if (!shouldRunNested) {
-                return true;
-            } else {
-                return execute(node->getChild(2), ctxt);
-            }
+            return executeAggregate(ctxt, cur, *node->getChild(0), *node->getChild(1), *node->getChild(2),
+                    node->getRelation()->scan());
         ESAC(Aggregate)
 
         CASE(IndexAggregate)
-            bool shouldRunNested = false;
-
-            // initialize result
-            RamDomain res = 0;
-
-            // Use for calculating mean.
-            std::pair<RamFloat, RamFloat> accumulateMean;
-
-            switch (cur.getFunction()) {
-                case AggregateOp::MIN:
-                    res = ramBitCast(MAX_RAM_SIGNED);
-                    break;
-                case AggregateOp::UMIN:
-                    res = ramBitCast(MAX_RAM_UNSIGNED);
-                    break;
-                case AggregateOp::FMIN:
-                    res = ramBitCast(MAX_RAM_FLOAT);
-                    break;
-
-                case AggregateOp::MAX:
-                    res = ramBitCast(MIN_RAM_SIGNED);
-                    break;
-                case AggregateOp::UMAX:
-                    res = ramBitCast(MIN_RAM_UNSIGNED);
-                    break;
-                case AggregateOp::FMAX:
-                    res = ramBitCast(MIN_RAM_FLOAT);
-                    break;
-
-                case AggregateOp::SUM:
-                    res = ramBitCast(static_cast<RamSigned>(0));
-                    shouldRunNested = true;
-                    break;
-                case AggregateOp::USUM:
-                    res = ramBitCast(static_cast<RamUnsigned>(0));
-                    shouldRunNested = true;
-                    break;
-                case AggregateOp::FSUM:
-                    res = ramBitCast(static_cast<RamFloat>(0));
-                    shouldRunNested = true;
-                    break;
-
-                case AggregateOp::MEAN:
-                    res = ramBitCast(static_cast<RamFloat>(0));
-                    accumulateMean = {0, 0};
-                    break;
-                case AggregateOp::COUNT:
-                    res = 0;
-                    shouldRunNested = true;
-                    break;
-            }
-
             // init temporary tuple for this level
             size_t arity = cur.getRelation().getArity();
 
@@ -1201,84 +1019,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t viewId = node->getData(0);
             auto& view = ctxt.getView(viewId);
 
-            for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
-                // link tuple
-                const RamDomain* data = &ip[0];
-                ctxt[cur.getTupleId()] = data;
-
-                if (!execute(node->getChild(arity), ctxt)) {
-                    continue;
-                }
-
-                shouldRunNested = true;
-
-                // count is a special case
-                if (cur.getFunction() == AggregateOp::COUNT) {
-                    ++res;
-                    continue;
-                }
-
-                // eval target expression
-                RamDomain val = execute(node->getChild(arity + 1), ctxt);
-
-                switch (cur.getFunction()) {
-                    case AggregateOp::MIN:
-                        res = std::min(res, val);
-                        break;
-                    case AggregateOp::FMIN:
-                        res = ramBitCast(std::min(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
-                        break;
-                    case AggregateOp::UMIN:
-                        res = ramBitCast(
-                                std::min(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
-                        break;
-
-                    case AggregateOp::MAX:
-                        res = std::max(res, val);
-                        break;
-                    case AggregateOp::FMAX:
-                        res = ramBitCast(std::max(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
-                        break;
-                    case AggregateOp::UMAX:
-                        res = ramBitCast(
-                                std::max(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
-                        break;
-
-                    case AggregateOp::SUM:
-                        res += val;
-                        break;
-                    case AggregateOp::FSUM:
-                        res = ramBitCast(ramBitCast<RamFloat>(res) + ramBitCast<RamFloat>(val));
-                        break;
-                    case AggregateOp::USUM:
-                        res = ramBitCast(ramBitCast<RamUnsigned>(res) + ramBitCast<RamUnsigned>(val));
-                        break;
-
-                    case AggregateOp::MEAN:
-                        accumulateMean.first += ramBitCast<RamFloat>(val);
-                        accumulateMean.second++;
-                        break;
-
-                    case AggregateOp::COUNT:
-                        assert(false && "This should never be executed");
-                        break;
-                }
-            }
-
-            if (cur.getFunction() == AggregateOp::MEAN && accumulateMean.second != 0) {
-                res = ramBitCast(accumulateMean.first / accumulateMean.second);
-            }
-
-            // write result to environment
-            RamDomain tuple[1];
-            tuple[0] = res;
-            ctxt[cur.getTupleId()] = tuple;
-
-            if (!shouldRunNested) {
-                return true;
-            } else {
-                return execute(node->getChild(arity + 2), ctxt);
-            }
+            return executeAggregate(ctxt, cur, *node->getChild(arity), *node->getChild(arity + 1),
+                    *node->getChild(arity + 2), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
         ESAC(IndexAggregate)
 
         CASE_NO_CAST(Break)
@@ -1474,6 +1216,140 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         default:
             assert(false && "Unhandled\n");
+    }
+}
+
+template <typename Aggregate>
+RamDomain InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Aggregate& aggregate,
+        const InterpreterNode& filter, const InterpreterNode& expression,
+        const InterpreterNode& nestedOperation, Stream stream) {
+    bool shouldRunNested = false;
+
+    // initialize result
+    RamDomain res = 0;
+
+    // Use for calculating mean.
+    std::pair<RamFloat, RamFloat> accumulateMean;
+
+    switch (aggregate.getFunction()) {
+        case AggregateOp::MIN:
+            res = ramBitCast(MAX_RAM_SIGNED);
+            break;
+        case AggregateOp::UMIN:
+            res = ramBitCast(MAX_RAM_UNSIGNED);
+            break;
+        case AggregateOp::FMIN:
+            res = ramBitCast(MAX_RAM_FLOAT);
+            break;
+
+        case AggregateOp::MAX:
+            res = ramBitCast(MIN_RAM_SIGNED);
+            break;
+        case AggregateOp::UMAX:
+            res = ramBitCast(MIN_RAM_UNSIGNED);
+            break;
+        case AggregateOp::FMAX:
+            res = ramBitCast(MIN_RAM_FLOAT);
+            break;
+
+        case AggregateOp::SUM:
+            res = ramBitCast(static_cast<RamSigned>(0));
+            shouldRunNested = true;
+            break;
+        case AggregateOp::USUM:
+            res = ramBitCast(static_cast<RamUnsigned>(0));
+            shouldRunNested = true;
+            break;
+        case AggregateOp::FSUM:
+            res = ramBitCast(static_cast<RamFloat>(0));
+            shouldRunNested = true;
+            break;
+
+        case AggregateOp::MEAN:
+            res = 0;
+            accumulateMean = {0, 0};
+            break;
+
+        case AggregateOp::COUNT:
+            res = 0;
+            shouldRunNested = true;
+            break;
+    }
+
+    for (auto ip : stream) {
+        const RamDomain* data = &ip[0];
+        ctxt[aggregate.getTupleId()] = data;
+
+        if (!execute(&filter, ctxt)) {
+            continue;
+        }
+
+        shouldRunNested = true;
+
+        // count is a special case.
+        if (aggregate.getFunction() == AggregateOp::COUNT) {
+            ++res;
+            continue;
+        }
+
+        // eval target expression
+        RamDomain val = execute(&expression, ctxt);
+
+        switch (aggregate.getFunction()) {
+            case AggregateOp::MIN:
+                res = std::min(res, val);
+                break;
+            case AggregateOp::FMIN:
+                res = ramBitCast(std::min(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
+                break;
+            case AggregateOp::UMIN:
+                res = ramBitCast(std::min(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
+                break;
+
+            case AggregateOp::MAX:
+                res = std::max(res, val);
+                break;
+            case AggregateOp::FMAX:
+                res = ramBitCast(std::max(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
+                break;
+            case AggregateOp::UMAX:
+                res = ramBitCast(std::max(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
+                break;
+
+            case AggregateOp::SUM:
+                res += val;
+                break;
+            case AggregateOp::FSUM:
+                res = ramBitCast(ramBitCast<RamFloat>(res) + ramBitCast<RamFloat>(val));
+                break;
+            case AggregateOp::USUM:
+                res = ramBitCast(ramBitCast<RamUnsigned>(res) + ramBitCast<RamUnsigned>(val));
+                break;
+
+            case AggregateOp::MEAN:
+                accumulateMean.first += ramBitCast<RamFloat>(val);
+                accumulateMean.second++;
+                break;
+
+            case AggregateOp::COUNT:
+                assert(false && "This should never be executed");
+                break;
+        }
+    }
+
+    if (aggregate.getFunction() == AggregateOp::MEAN && accumulateMean.second != 0) {
+        res = ramBitCast(accumulateMean.first / accumulateMean.second);
+    }
+
+    // write result to environment
+    RamDomain tuple[1];
+    tuple[0] = res;
+    ctxt[aggregate.getTupleId()] = tuple;
+
+    if (!shouldRunNested) {
+        return true;
+    } else {
+        return execute(&nestedOperation, ctxt);
     }
 }
 

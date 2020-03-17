@@ -75,6 +75,11 @@ private:
     RamTranslationUnit& getTranslationUnit();
     /** @brief Execute the program */
     RamDomain execute(const InterpreterNode*, InterpreterContext&);
+    /** Execute helper. Common part of Aggregate & AggregateIndex. */
+    template <typename Aggregate>
+    RamDomain executeAggregate(InterpreterContext& ctxt, const Aggregate& aggregate,
+            const InterpreterNode& filter, const InterpreterNode& expression,
+            const InterpreterNode& nestedOperation, Stream stream);
     /** @brief Return method handler */
     void* getMethodHandle(const std::string& method);
     /** @brief Load DLL */

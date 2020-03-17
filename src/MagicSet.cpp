@@ -178,7 +178,7 @@ SrcLocation nextSrcLoc(SrcLocation orig) {
     pos += 1;
 
     SrcLocation newLoc;
-    newLoc.filename = orig.filename + " [MAGIC_FILE]";
+    newLoc.filenames.back() = orig.filenames.back() + " [MAGIC_FILE]";
     newLoc.start.line = pos;
     newLoc.end.line = pos;
     newLoc.start.column = 0;

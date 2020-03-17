@@ -51,7 +51,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
         }
 
         // create type within type environment
-        if (auto* t = dynamic_cast<const AstPrimitiveType*>(cur)) {
+        if (auto* t = dynamic_cast<const AstSubsetType*>(cur)) {
             if (t->getTypeAttribute() == TypeAttribute::Signed) {
                 env.createNumericType(cur->getQualifiedName());
             } else {
@@ -74,7 +74,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
         Type* type = env.getModifiableType(cur->getQualifiedName());
         assert(type && "It should be there!");
 
-        if (dynamic_cast<const AstPrimitiveType*>(cur) != nullptr) {
+        if (dynamic_cast<const AstSubsetType*>(cur) != nullptr) {
             // nothing to do here
         } else if (auto* t = dynamic_cast<const AstUnionType*>(cur)) {
             // get type as union type
@@ -111,7 +111,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
     // partition unions into numeric or symbolic types
     Graph<AstQualifiedName> typeDependencyGraph;
     for (const auto& cur : program.getTypes()) {
-        if (auto type = dynamic_cast<const AstPrimitiveType*>(cur)) {
+        if (auto type = dynamic_cast<const AstSubsetType*>(cur)) {
             if (type->getTypeAttribute() == TypeAttribute::Signed) {
                 typeDependencyGraph.insert(type->getQualifiedName(), "number");
             } else {

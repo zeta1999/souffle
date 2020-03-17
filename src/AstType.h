@@ -58,13 +58,13 @@ private:
  * the build-in number or symbol type. Primitive types are the most
  * basic building blocks of souffle's type system.
  */
-class AstPrimitiveType : public AstType {
+class AstSubsetType : public AstType {
 public:
     /** Creates a new primitive type */
-    AstPrimitiveType(const AstQualifiedName& name, TypeAttribute type) : AstType(name), type(type) {}
+    AstSubsetType(const AstQualifiedName& name, TypeAttribute type) : AstType(name), type(type) {}
 
-    AstPrimitiveType* clone() const override {
-        auto res = new AstPrimitiveType(getQualifiedName(), type);
+    AstSubsetType* clone() const override {
+        auto res = new AstSubsetType(getQualifiedName(), type);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
@@ -79,8 +79,8 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstPrimitiveType*>(&node));
-        const auto& other = static_cast<const AstPrimitiveType&>(node);
+        assert(nullptr != dynamic_cast<const AstSubsetType*>(&node));
+        const auto& other = static_cast<const AstSubsetType&>(node);
         return getQualifiedName() == other.getQualifiedName() && type == other.type;
     }
 

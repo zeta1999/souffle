@@ -774,7 +774,7 @@ void AstSemanticChecker::checkUnionType(ErrorReport& report, const AstProgram& p
                                         toString(type.getQualifiedName()),
                         type.getSrcLoc());
             } else if ((dynamic_cast<const AstUnionType*>(subt) == nullptr) &&
-                       (dynamic_cast<const AstPrimitiveType*>(subt) == nullptr)) {
+                       (dynamic_cast<const AstSubsetType*>(subt) == nullptr)) {
                 report.addError("Union type " + toString(type.getQualifiedName()) +
                                         " contains the non-primitive type " + toString(sub),
                         type.getSrcLoc());

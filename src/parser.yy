@@ -371,15 +371,15 @@ identifier
 /* Type declarations */
 type
   : NUMBER_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Signed);
+        $$ = new AstSubsetType($IDENT, TypeAttribute::Signed);
         $$->setSrcLoc(@$);
     }
   | SYMBOL_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Symbol);
+        $$ = new AstSubsetType($IDENT, TypeAttribute::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Symbol);
+        $$ = new AstSubsetType($IDENT, TypeAttribute::Symbol);
         $$->setSrcLoc(@$);
     }
   | TYPE IDENT EQUALS union_type_list {

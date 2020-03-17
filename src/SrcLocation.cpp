@@ -24,7 +24,29 @@
 
 namespace souffle {
 
+std::string getCurrentFilename(const std::vector<std::string>& filenames) {
+    if (filenames.empty()) {
+        return "";
+    }
+
+    std::string path = ".";
+    for (std::string filename : filenames) {
+        if (!filename.empty() && filename[0] == '/') {
+            path = dirName(filename);
+        } else if (existFile(path + "/" + filename)) {
+            path = dirName(path + "/" + filename);
+        } else if (existFile(filename)) {
+            path = dirName(filename);
+        } else {
+            path = ".";
+        }
+    }
+
+    return path + "/" + baseName(filenames.back());
+}
+
 std::string SrcLocation::extloc() const {
+    std::string filename = getCurrentFilename(filenames);
     std::ifstream in(filename);
     std::stringstream s;
     if (in.is_open()) {
@@ -62,9 +84,12 @@ std::string SrcLocation::extloc() const {
         }
         in.close();
     } else {
-        s << "unknown source location.";
+        s << filename << ":" << start.line << ":" << start.column;
     }
     return s.str();
 }
 
+void SrcLocation::print(std::ostream& out) const {
+    out << getCurrentFilename(filenames) << " [" << start << "-" << end << "]";
+}
 }  // end of namespace souffle

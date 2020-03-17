@@ -18,6 +18,7 @@
 
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace souffle {
 
@@ -53,7 +54,7 @@ public:
     };
 
     /** The file referred to */
-    std::string filename;
+    std::vector<std::string> filenames;
 
     /** The start location */
     Point start = {};
@@ -63,10 +64,10 @@ public:
 
     /** A comparison for source locations */
     bool operator<(const SrcLocation& other) const {
-        if (filename < other.filename) {
+        if (filenames.back() < other.filenames.back()) {
             return true;
         }
-        if (filename > other.filename) {
+        if (filenames.back() > other.filenames.back()) {
             return false;
         }
         if (start < other.start) {
@@ -81,12 +82,25 @@ public:
         return false;
     }
 
+    void setFilename(std::string filename) {
+        if (filenames.empty()) {
+            filenames.emplace_back(filename);
+            return;
+        }
+        if (filenames.back() == filename) {
+            return;
+        }
+        if (filenames.size() > 1 && filenames.at(filenames.size() - 2) == filename) {
+            filenames.pop_back();
+            return;
+        }
+        filenames.emplace_back(filename);
+    }
+
     /** An extended string describing this location in a end-user friendly way */
     std::string extloc() const;
 
-    void print(std::ostream& out) const {
-        out << filename << " [" << start << "-" << end << "]";
-    }
+    void print(std::ostream& out) const;
 
     /** Enables ranges to be printed */
     friend std::ostream& operator<<(std::ostream& out, const SrcLocation& range) {

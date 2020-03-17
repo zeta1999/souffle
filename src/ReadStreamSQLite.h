@@ -31,7 +31,7 @@ namespace souffle {
 class ReadStreamSQLite : public ReadStream {
 public:
     ReadStreamSQLite(const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable)
-            : ReadStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("dbname")),
+            : ReadStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("filename")),
               relationName(rwOperation.get("name")) {
         openDB();
         checkTableExists();

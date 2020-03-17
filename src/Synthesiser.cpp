@@ -1093,59 +1093,45 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         void visitConstraint(const RamConstraint& rel, std::ostream& out) override {
+            // clang-format off
+#define EVAL_CHILD(ty, idx)        \
+    out << "ramBitCast<" #ty ">("; \
+    visit(rel.idx(), out);         \
+    out << ")"
+#define COMPARE_NUMERIC(ty, op) \
+    out << "(";                 \
+    EVAL_CHILD(ty, getLHS);     \
+    out << " " #op " ";         \
+    EVAL_CHILD(ty, getRHS);     \
+    out << ")";                 \
+    break
+#define COMPARE_STRING(op)                \
+    out << "(symTable.resolve(";          \
+    EVAL_CHILD(RamDomain, getLHS);        \
+    out << ") " #op " symTable.resolve("; \
+    EVAL_CHILD(RamDomain, getRHS);        \
+    out << "))";                          \
+    break
+#define COMPARE_EQ_NE(opCode, op)                                         \
+    case BinaryConstraintOp::   opCode: COMPARE_NUMERIC(RamDomain  , op); \
+    case BinaryConstraintOp::F##opCode: COMPARE_NUMERIC(RamFloat   , op);
+#define COMPARE(opCode, op)                                               \
+    case BinaryConstraintOp::   opCode: COMPARE_NUMERIC(RamSigned  , op); \
+    case BinaryConstraintOp::U##opCode: COMPARE_NUMERIC(RamUnsigned, op); \
+    case BinaryConstraintOp::F##opCode: COMPARE_NUMERIC(RamFloat   , op); \
+    case BinaryConstraintOp::S##opCode: COMPARE_STRING(op);
+            // clang-format on
+
             PRINT_BEGIN_COMMENT(out);
             switch (rel.getOperator()) {
                 // comparison operators
-                case BinaryConstraintOp::EQ:
-                    out << "((";
-                    visit(rel.getLHS(), out);
-                    out << ") == (";
-                    visit(rel.getRHS(), out);
-                    out << "))";
-                    break;
-                case BinaryConstraintOp::NE:
-                    out << "((";
-                    visit(rel.getLHS(), out);
-                    out << ") != (";
-                    visit(rel.getRHS(), out);
-                    out << "))";
-                    break;
-                case BinaryConstraintOp::ULT:
-                case BinaryConstraintOp::FLT:
-                case BinaryConstraintOp::LT:
-                    out << "((";
-                    visit(rel.getLHS(), out);
-                    out << ") < (";
-                    visit(rel.getRHS(), out);
-                    out << "))";
-                    break;
-                case BinaryConstraintOp::ULE:
-                case BinaryConstraintOp::FLE:
-                case BinaryConstraintOp::LE:
-                    out << "((";
-                    visit(rel.getLHS(), out);
-                    out << ") <= (";
-                    visit(rel.getRHS(), out);
-                    out << "))";
-                    break;
-                case BinaryConstraintOp::UGT:
-                case BinaryConstraintOp::FGT:
-                case BinaryConstraintOp::GT:
-                    out << "((";
-                    visit(rel.getLHS(), out);
-                    out << ") > (";
-                    visit(rel.getRHS(), out);
-                    out << "))";
-                    break;
-                case BinaryConstraintOp::UGE:
-                case BinaryConstraintOp::FGE:
-                case BinaryConstraintOp::GE:
-                    out << "((";
-                    visit(rel.getLHS(), out);
-                    out << ") >= (";
-                    visit(rel.getRHS(), out);
-                    out << "))";
-                    break;
+                COMPARE_EQ_NE(EQ, ==)
+                COMPARE_EQ_NE(NE, !=)
+
+                COMPARE(LT, <)
+                COMPARE(LE, <=)
+                COMPARE(GT, >)
+                COMPARE(GE, >=)
 
                 // strings
                 case BinaryConstraintOp::MATCH: {
@@ -1185,6 +1171,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
             }
             PRINT_END_COMMENT(out);
+
+#undef EVAL_CHILD
+#undef COMPARE_NUMERIC
+#undef COMPARE_STRING
+#undef COMPARE
+#undef COMPARE_EQ_NE
         }
 
         void visitEmptinessCheck(const RamEmptinessCheck& emptiness, std::ostream& out) override {
@@ -1320,6 +1312,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         }
 
         void visitIntrinsicOperator(const RamIntrinsicOperator& op, std::ostream& out) override {
+#define MINMAX_SYMBOL(op)                   \
+    {                                       \
+        out << "symTable.lookup(" #op "({"; \
+        for (auto& cur : args) {            \
+            out << "symTable.resolve(";     \
+            visit(cur, out);                \
+            out << "), ";                   \
+        }                                   \
+        out << "}))";                       \
+        break;                              \
+    }
+
             PRINT_BEGIN_COMMENT(out);
 
 // clang-format off
@@ -1475,6 +1479,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 NARY_OP_ORDERED(MIN, std::min)
                     // clang-format on
 
+                case FunctorOp::SMAX:
+                    MINMAX_SYMBOL(std::max)
+
+                case FunctorOp::SMIN:
+                    MINMAX_SYMBOL(std::min)
+
                 // strings
                 case FunctorOp::CAT: {
                     out << "symTable.lookup(";
@@ -1505,6 +1515,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 }
             }
             PRINT_END_COMMENT(out);
+
+#undef MINMAX_SYMBOL
         }
 
         void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {

@@ -246,23 +246,52 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(AutoIncrement)
 
         CASE(IntrinsicOperator)
+#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
 #define BINARY_OP(op) return execute(node->getChild(0), ctxt) op execute(node->getChild(1), ctxt)
 // clang-format off
-#define BINARY_OP_CAST(ty, op) return ramBitCast(       \
-    ramBitCast<ty>(execute(node->getChild(0), ctxt)) op \
-    ramBitCast<ty>(execute(node->getChild(1), ctxt)) )
+#define BINARY_OP_TYPED(ty, op) return ramBitCast(EVAL_CHILD(ty, 0) op EVAL_CHILD(ty, 1))
+
 #define BINARY_OP_INTEGRAL(opcode, op)                              \
-    case FunctorOp::   opcode: { BINARY_OP_CAST(RamSigned  , op); } \
-    case FunctorOp::U##opcode: { BINARY_OP_CAST(RamUnsigned, op); }
+    case FunctorOp::   opcode: { BINARY_OP_TYPED(RamSigned  , op); } \
+    case FunctorOp::U##opcode: { BINARY_OP_TYPED(RamUnsigned, op); }
 #define BINARY_OP_NUMERIC(opcode, op)                         \
     BINARY_OP_INTEGRAL(opcode, op)                            \
-    case FunctorOp::F##opcode: BINARY_OP_CAST(RamFloat, op);
-#define BINARY_OP_CAST_SHIFT_MASK(ty, op) return ramBitCast(                \
-    ramBitCast<ty>(execute(node->getChild(0), ctxt)) op                     \
-    ramBitCast<ty>(execute(node->getChild(1), ctxt) & RAM_BIT_SHIFT_MASK) )
-#define BINARY_OP_INTEGRAL_SHIFT(opcode, op, tySigned, tyUnsigned)              \
-    case FunctorOp::   opcode: { BINARY_OP_CAST_SHIFT_MASK(tySigned   , op); }  \
-    case FunctorOp::U##opcode: { BINARY_OP_CAST_SHIFT_MASK(tyUnsigned , op); }
+    case FunctorOp::F##opcode: BINARY_OP_TYPED(RamFloat, op);
+
+#define BINARY_OP_SHIFT_MASK(ty, op)                                                 \
+    return ramBitCast(EVAL_CHILD(ty, 0) op (EVAL_CHILD(ty, 1) & RAM_BIT_SHIFT_MASK))
+#define BINARY_OP_INTEGRAL_SHIFT(opcode, op, tySigned, tyUnsigned)        \
+    case FunctorOp::   opcode: { BINARY_OP_SHIFT_MASK(tySigned   , op); } \
+    case FunctorOp::U##opcode: { BINARY_OP_SHIFT_MASK(tyUnsigned , op); }
+
+#define MINMAX_OP_SYM(op)                                        \
+    {                                                            \
+        auto result = EVAL_CHILD(RamDomain, 0);                  \
+        auto* result_val = &getSymbolTable().resolve(result);    \
+        for (size_t i = 1; i < args.size(); i++) {               \
+            auto alt = EVAL_CHILD(RamDomain, i);                 \
+            if (alt == result) continue;                         \
+                                                                 \
+            const auto& alt_val = getSymbolTable().resolve(alt); \
+            if (*result_val op alt_val) {                        \
+                result_val = &alt_val;                           \
+                result = alt;                                    \
+            }                                                    \
+        }                                                        \
+        return result;                                           \
+    }
+#define MINMAX_OP(ty, op)                           \
+    {                                               \
+        auto result = EVAL_CHILD(ty, 0);            \
+        for (size_t i = 1; i < args.size(); i++) {  \
+            result = op(result, EVAL_CHILD(ty, i)); \
+        }                                           \
+        return ramBitCast(result);                  \
+    }
+#define MINMAX_NUMERIC(opCode, op)                        \
+    case FunctorOp::   opCode: MINMAX_OP(RamSigned  , op) \
+    case FunctorOp::U##opCode: MINMAX_OP(RamUnsigned, op) \
+    case FunctorOp::F##opCode: MINMAX_OP(RamFloat   , op)
             // clang-format on
 
             const auto& args = cur.getArguments();
@@ -395,57 +424,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     return ramBitCast(static_cast<RamUnsigned>(first || second));
                 }
 
-                case FunctorOp::MAX: {
-                    auto result = execute(node->getChild(0), ctxt);
-                    for (size_t i = 1; i < args.size(); i++) {
-                        result = std::max(result, execute(node->getChild(i), ctxt));
-                    }
-                    return result;
-                }
+                    // clang-format off
+                MINMAX_NUMERIC(MAX, std::max)
+                MINMAX_NUMERIC(MIN, std::min)
 
-                case FunctorOp::UMAX: {
-                    auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    for (size_t i = 1; i < args.size(); i++) {
-                        auto element = ramBitCast<RamUnsigned>(execute(node->getChild(i), ctxt));
-                        result = std::max(result, element);
-                    }
-                    return ramBitCast(result);
-                }
-
-                case FunctorOp::FMAX: {
-                    auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    for (size_t i = 1; i < args.size(); i++) {
-                        auto element = ramBitCast<RamFloat>(execute(node->getChild(i), ctxt));
-                        result = std::max(result, element);
-                    }
-                    return ramBitCast(result);
-                }
-
-                case FunctorOp::MIN: {
-                    auto result = execute(node->getChild(0), ctxt);
-                    for (size_t i = 1; i < args.size(); i++) {
-                        result = std::min(result, execute(node->getChild(i), ctxt));
-                    }
-                    return result;
-                }
-
-                case FunctorOp::UMIN: {
-                    auto result = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    for (size_t i = 1; i < args.size(); i++) {
-                        auto element = ramBitCast<RamUnsigned>(execute(node->getChild(i), ctxt));
-                        result = std::min(result, element);
-                    }
-                    return ramBitCast(result);
-                }
-
-                case FunctorOp::FMIN: {
-                    auto result = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    for (size_t i = 1; i < args.size(); i++) {
-                        auto element = ramBitCast<RamFloat>(execute(node->getChild(i), ctxt));
-                        result = std::min(result, element);
-                    }
-                    return ramBitCast(result);
-                }
+                case FunctorOp::SMAX: MINMAX_OP_SYM(<)
+                case FunctorOp::SMIN: MINMAX_OP_SYM(>)
+                    // clang-format on
 
                 case FunctorOp::CAT: {
                     std::stringstream ss;
@@ -475,6 +460,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     return 0;
                 }
             }
+
+#undef EVAL_CHILD
+#undef BINARY_OP_TYPED
+#undef BINARY_OP_INTEGRAL
+#undef BINARY_OP_NUMERIC
+#undef BINARY_OP_SHIFT_MASK
+#undef BINARY_OP_INTEGRAL_SHIFT
+#undef MINMAX_OP_SYM
+#undef MINMAX_OP
+#undef MINMAX_NUMERIC
         ESAC(IntrinsicOperator)
 
         CASE(UserDefinedOperator)
@@ -661,59 +656,31 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(ProvenanceExistenceCheck)
 
         CASE(Constraint)
+        // clang-format off
+#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
+#define COMPARE_NUMERIC(ty, op) return EVAL_CHILD(ty, 0) op EVAL_CHILD(ty, 1)
+#define COMPARE_STRING(op)                                        \
+    return (getSymbolTable().resolve(EVAL_CHILD(RamDomain, 0)) op \
+            getSymbolTable().resolve(EVAL_CHILD(RamDomain, 1)))
+#define COMPARE_EQ_NE(opCode, op)                                         \
+    case BinaryConstraintOp::   opCode: COMPARE_NUMERIC(RamDomain  , op); \
+    case BinaryConstraintOp::F##opCode: COMPARE_NUMERIC(RamFloat   , op);
+#define COMPARE(opCode, op)                                               \
+    case BinaryConstraintOp::   opCode: COMPARE_NUMERIC(RamSigned  , op); \
+    case BinaryConstraintOp::U##opCode: COMPARE_NUMERIC(RamUnsigned, op); \
+    case BinaryConstraintOp::F##opCode: COMPARE_NUMERIC(RamFloat   , op); \
+    case BinaryConstraintOp::S##opCode: COMPARE_STRING(op);
+            // clang-format on
+
             switch (cur.getOperator()) {
-                case BinaryConstraintOp::EQ:
-                    BINARY_OP(==);
-                case BinaryConstraintOp::NE:
-                    BINARY_OP(!=);
-                case BinaryConstraintOp::LT:
-                    BINARY_OP(<);
-                case BinaryConstraintOp::ULT: {
-                    auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return left < right;
-                }
-                case BinaryConstraintOp::FLT: {
-                    auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                    return left < right;
-                }
-                case BinaryConstraintOp::LE:
-                    BINARY_OP(<=);
-                case BinaryConstraintOp::ULE: {
-                    auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return left <= right;
-                }
-                case BinaryConstraintOp::FLE: {
-                    auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                    return left <= right;
-                }
-                case BinaryConstraintOp::GT:
-                    BINARY_OP(>);
-                case BinaryConstraintOp::UGT: {
-                    auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return left > right;
-                }
-                case BinaryConstraintOp::FGT: {
-                    auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                    return left > right;
-                }
-                case BinaryConstraintOp::GE:
-                    BINARY_OP(>=);
-                case BinaryConstraintOp::UGE: {
-                    auto left = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto right = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
-                    return left >= right;
-                }
-                case BinaryConstraintOp::FGE: {
-                    auto left = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto right = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
-                    return left >= right;
-                }
+                COMPARE_EQ_NE(EQ, ==)
+                COMPARE_EQ_NE(NE, !=)
+
+                COMPARE(LT, <)
+                COMPARE(LE, <=)
+                COMPARE(GT, >)
+                COMPARE(GE, >=)
+
                 case BinaryConstraintOp::MATCH: {
                     RamDomain left = execute(node->getChild(0), ctxt);
                     RamDomain right = execute(node->getChild(1), ctxt);
@@ -756,10 +723,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     const std::string& text = getSymbolTable().resolve(right);
                     return text.find(pattern) == std::string::npos;
                 }
-                default:
-                    assert(false && "unsupported operator");
-                    return false;
             }
+
+            assert(false && "unsupported operator");
+            return false;
+
+#undef EVAL_CHILD
+#undef COMPARE_NUMERIC
+#undef COMPARE_STRING
+#undef COMPARE
+#undef COMPARE_EQ_NE
         ESAC(Constraint)
 
         CASE(TupleOperation)

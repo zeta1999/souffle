@@ -250,7 +250,7 @@ std::unique_ptr<RamExpression> MakeIndexTransformer::getExpression(
         RamCondition* c, size_t& element, int identifier) {
     if (auto* binRelOp = dynamic_cast<RamConstraint*>(c)) {
         // TODO: FIXME: how does this interact w/ `FEQ`?
-        if (binRelOp->getOperator() == BinaryConstraintOp::EQ) {
+        if (isEqConstraint(binRelOp->getOperator())) {
             if (const auto* lhs = dynamic_cast<const RamTupleElement*>(&binRelOp->getLHS())) {
                 const RamExpression* rhs = &binRelOp->getRHS();
                 if (lhs->getTupleId() == identifier && rla->getLevel(rhs) < identifier) {

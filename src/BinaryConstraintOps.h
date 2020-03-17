@@ -58,6 +58,17 @@ enum class BinaryConstraintOp {
     NOT_CONTAINS  // whether a sub-string is not contained in a string
 };
 
+inline bool isEqConstraint(const BinaryConstraintOp constraintOp) {
+    switch (constraintOp) {
+        case BinaryConstraintOp::EQ:
+        case BinaryConstraintOp::FEQ:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
 /**
  * Utility function, informing whether constraint is overloaded.
  * Only the signed version's are treated as overloaded (as they are returned by the parser).

@@ -810,7 +810,7 @@ void Adornment::run(const AstTranslationUnit& translationUnit) {
                 // mark all bound arguments from the body
                 for (const auto* bc : getBodyLiterals<AstBinaryConstraint>(*clause)) {
                     BinaryConstraintOp op = bc->getOperator();
-                    if (op != BinaryConstraintOp::EQ) {
+                    if (!isEqConstraint(op)) {
                         continue;
                     }
 

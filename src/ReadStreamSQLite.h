@@ -148,7 +148,8 @@ protected:
             }
         }
         sqlite3_finalize(tableStatement);
-        throw std::invalid_argument("Required table or view does not exist for relation " + relationName);
+        throw std::invalid_argument(
+                "Required table or view does not exist in " + dbFilename + " for relation " + relationName);
     }
     const std::string& dbFilename;
     const std::string& relationName;

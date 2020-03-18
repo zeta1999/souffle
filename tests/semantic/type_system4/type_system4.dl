@@ -13,8 +13,8 @@
 //
 
 
-.number_type M
-.number_type Var
+.type M <: number
+.type Var <: number
 
 .decl numeric(m:M, v:Var)
 numeric(m, v) :- m = v - 1, v = 2.

@@ -220,7 +220,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
                     // Predefined type is always a base type.
                     if (dynamic_cast<const PredefinedType*>(&type) != nullptr) {
                         baseTypesLeft.insert(type);
-                    } else if (auto* primitive = dynamic_cast<const PrimitiveType*>(&type)) {
+                    } else if (auto* primitive = dynamic_cast<const SubsetType*>(&type)) {
                         baseTypesLeft.insert(primitive->getBaseType());
                     }
                 }
@@ -231,7 +231,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
                     // Predefined type is always a base type.
                     if (dynamic_cast<const PredefinedType*>(&type) != nullptr) {
                         baseTypesRight.insert(type);
-                    } else if (auto* primitive = dynamic_cast<const PrimitiveType*>(&type)) {
+                    } else if (auto* primitive = dynamic_cast<const SubsetType*>(&type)) {
                         baseTypesRight.insert(primitive->getBaseType());
                     }
                 }

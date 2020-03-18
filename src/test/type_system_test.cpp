@@ -25,8 +25,8 @@ namespace test {
 TEST(TypeSystem, Basic) {
     TypeEnvironment env;
 
-    auto& A = env.createNumericType("A");
-    auto& B = env.createSymbolType("B");
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Symbol);
 
     auto& U = env.createUnionType("U");
     U.add(A);
@@ -50,10 +50,10 @@ TEST(TypeSystem, isNumberType) {
 
     auto& N = env.getNumberType();
 
-    auto& A = env.createNumericType("A");
-    auto& B = env.createNumericType("B");
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
-    auto& C = env.createSymbolType("C");
+    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
 
     EXPECT_TRUE(isNumberType(N));
     EXPECT_TRUE(isNumberType(A));
@@ -97,8 +97,8 @@ TEST(TypeSystem, isNumberType) {
 TEST(TypeSystem, isRecursiveType) {
     TypeEnvironment env;
 
-    auto& A = env.createNumericType("A");
-    auto& B = env.createNumericType("B");
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
     auto& U = env.createUnionType("U");
     auto& R = env.createRecordType("R");
@@ -164,8 +164,8 @@ TEST(TypeSystem, isSubtypeOf_Basic) {
 
     // check primitive type
 
-    auto& A = env.createNumericType("A");
-    auto& B = env.createNumericType("B");
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
     EXPECT_PRED2(isSubtypeOf, A, A);
     EXPECT_PRED2(isSubtypeOf, B, B);
@@ -214,8 +214,8 @@ TEST(TypeSystem, isSubtypeOf_Basic) {
 TEST(TypeSystem, isSubtypeOf_Records) {
     TypeEnvironment env;
 
-    auto& A = env.createNumericType("A");
-    auto& B = env.createNumericType("B");
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
     auto& R1 = env.createRecordType("R1");
     auto& R2 = env.createRecordType("R2");
@@ -234,9 +234,9 @@ TEST(TypeSystem, GreatestCommonSubtype) {
 
     auto& N = env.getNumberType();
 
-    auto& A = env.createNumericType("A");
-    auto& B = env.createNumericType("B");
-    auto& C = env.createSymbolType("C");
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
 
     EXPECT_EQ("{number}", toString(getGreatestCommonSubtypes(N, N)));
 
@@ -307,10 +307,10 @@ TEST(TypeSystem, GreatestCommonSubtype) {
 TEST(TypeSystem, LeastCommonSupertype) {
     TypeEnvironment env;
 
-    auto& A = env.createNumericType("A");
-    auto& B = env.createNumericType("B");
-    auto& C = env.createSymbolType("C");
-    auto& D = env.createSymbolType("D");
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
+    auto& D = env.createSubsetType("D", TypeAttribute::Symbol);
 
     auto& U = env.createUnionType("U");
     U.add(A);
@@ -338,8 +338,8 @@ TEST(TypeSystem, LeastCommonSupertype) {
 TEST(TypeSystem, MultipleLeastCommonSupertype) {
     TypeEnvironment env;
 
-    auto& A = env.createNumericType("A");
-    auto& B = env.createNumericType("B");
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
     auto& U = env.createUnionType("U");
     U.add(A);

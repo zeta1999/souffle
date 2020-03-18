@@ -1,5 +1,5 @@
-.type Node
-.type Dot
+.type Node <: symbol
+.type Dot <: symbol
 
 .decl edge (node1:Node, node2:Node)
 .decl line (dot1:Dot, dot2:Dot)

@@ -6,7 +6,7 @@
 
 // example taken from tests/interface/insert_for
 
-.type Node
+.type Node <: symbol
 .decl edge (node1:Node, node2:Node)
 .input edge ()
 .decl path (node1:Node, node2:Node)

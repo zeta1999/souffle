@@ -6,7 +6,7 @@
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
  */
 
-.symbol_type s
+.type s <: symbol
 
 .decl Fact(x:s)
 

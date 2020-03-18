@@ -54,39 +54,48 @@ private:
 };
 
 /**
- * A primitive type is named type that can either be a sub-type of
- * the build-in number or symbol type. Primitive types are the most
- * basic building blocks of souffle's type system.
+ * A subset type is named type that can either be a sub-type of
+ * the predefined types (float/unsigned/number/symbol).
  */
-class AstPrimitiveType : public AstType {
+class AstSubsetType : public AstType {
 public:
     /** Creates a new primitive type */
-    AstPrimitiveType(const AstQualifiedName& name, TypeAttribute type) : AstType(name), type(type) {}
+    AstSubsetType(const AstQualifiedName& name, TypeAttribute type) : AstType(name), type(type) {}
 
-    /** Tests whether this type is a numeric type */
-    bool isNumeric() const {
-        return isNumericType(type);
-    }
-
-    /** Tests whether this type is a symbolic type */
-    bool isSymbolic() const {
-        return type == TypeAttribute::Symbol;
-    }
-
-    AstPrimitiveType* clone() const override {
-        auto res = new AstPrimitiveType(getQualifiedName(), type);
+    AstSubsetType* clone() const override {
+        auto res = new AstSubsetType(getQualifiedName(), type);
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
+    TypeAttribute getTypeAttribute() const {
+        return type;
+    }
+
 protected:
     void print(std::ostream& os) const override {
-        os << ".type " << getQualifiedName() << (type == TypeAttribute::Signed ? "= number" : "");
+        os << ".type " << getQualifiedName() << " <: ";
+        switch (type) {
+            case TypeAttribute::Signed:
+                os << "number";
+                break;
+            case TypeAttribute::Unsigned:
+                os << "unsigned";
+                break;
+            case TypeAttribute::Float:
+                os << "float";
+                break;
+            case TypeAttribute::Symbol:
+                os << "symbol";
+                break;
+            case TypeAttribute::Record:
+                assert(false && "Invalid type");
+        }
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstPrimitiveType*>(&node));
-        const auto& other = static_cast<const AstPrimitiveType&>(node);
+        assert(nullptr != dynamic_cast<const AstSubsetType*>(&node));
+        const auto& other = static_cast<const AstSubsetType&>(node);
         return getQualifiedName() == other.getQualifiedName() && type == other.type;
     }
 

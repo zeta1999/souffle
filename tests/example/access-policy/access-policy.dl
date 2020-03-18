@@ -1,6 +1,6 @@
 // Example adapted (hacked) from Olson, Gunter, Madhusudan CCS'08, Data is random
 
-.type String
+.type String <: symbol
 
 .decl view_employee(x : String, p:String, ssn:number, s:number, e:String, d:String, pos:String, bday:number)
 .output view_employee()

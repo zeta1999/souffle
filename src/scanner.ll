@@ -133,6 +133,7 @@
 ":"                                   { return yy::parser::make_COLON(yylloc); }
 ";"                                   { return yy::parser::make_SEMICOLON(yylloc); }
 "."                                   { return yy::parser::make_DOT(yylloc); }
+"<:"                                  { return yy::parser::make_SUBTYPE(yylloc); }
 "<="                                  { return yy::parser::make_LE(yylloc); }
 ">="                                  { return yy::parser::make_GE(yylloc); }
 "!="                                  { return yy::parser::make_NE(yylloc); }

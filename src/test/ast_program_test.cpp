@@ -48,7 +48,7 @@ TEST(AstProgram, Parse) {
     // check something simple
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                   .type Node
+                   .type Node <: symbol
                    .decl e ( a : Node , b : Node )
                    .decl r ( from : Node , to : Node )
 
@@ -92,7 +92,7 @@ TESTASTCLONEANDEQUAL(Program,
 
 TESTASTCLONEANDEQUAL(Record,
         R"(
-                 .type N
+                 .type N <: symbol
                  .type R = [ a : N, B : N ]
 
                  .decl r ( r : R )
@@ -104,8 +104,8 @@ TESTASTCLONEANDEQUAL(Record,
 
 TESTASTCLONEANDEQUAL(SimpleTypes,
         R"(
-                 .type A
-                 .type B
+                 .type A <: symbol
+                 .type B <: symbol
                  .type U = A | B
 
                  .decl a ( x : A )
@@ -123,8 +123,8 @@ TESTASTCLONEANDEQUAL(SimpleTypes,
 
 TESTASTCLONEANDEQUAL(ComplexTypes,
         R"(
-                 .symbol_type A
-                 .number_type B
+                 .type A <: symbol
+                 .type B <: number
                  .type U = B
 
                  .decl a ( x : A )
@@ -139,7 +139,7 @@ TESTASTCLONEANDEQUAL(ComplexTypes,
 
 TESTASTCLONEANDEQUAL(ChainedTypes,
         R"(
-                .type D
+                .type D <: symbol
                 .type C = D
                 .type B = C
                 .type A = B
@@ -153,7 +153,7 @@ TESTASTCLONEANDEQUAL(ChainedTypes,
 
 TESTASTCLONEANDEQUAL(NestedAggregates,
         R"(
-                .type D
+                .type D <: symbol
                 .decl r(x:D)
 
                 r(x) :- r(y), x=cat(cat(x,x),x).

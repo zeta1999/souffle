@@ -79,7 +79,7 @@ TEST(AstUtils, GroundedRecords) {
     DebugReport d;
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                 .type N
+                 .type N <: symbol
                  .type R = [ a : N, B : N ]
 
                  .decl r ( r : R )
@@ -117,8 +117,8 @@ TEST(AstUtils, SimpleTypes) {
     // load some test program
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                 .type A
-                 .type B
+                 .type A <: symbol
+                 .type B <: symbol
                  .type U = A | B
 
                  .decl a ( x : A )
@@ -163,8 +163,8 @@ TEST(AstUtils, NumericTypes) {
     // load some test program
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                 .symbol_type A
-                 .number_type B
+                 .type A <: symbol
+                 .type B <: number
                  .type U = B
 
                  .decl a ( x : A )
@@ -200,7 +200,7 @@ TEST(AstUtils, SubtypeChain) {
     // load some test program
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                .type D
+                .type D <: symbol
                 .type C = D
                 .type B = C
                 .type A = B
@@ -243,10 +243,10 @@ TEST(AstUtils, FactTypes) {
     // load some test program
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                 .symbol_type A
-                 .number_type B
+                 .type A <: symbol
+                 .type B <: number
 
-                 .type C
+                 .type C <: symbol
                  .type U = A | C
 
                  .decl a ( x : A )
@@ -282,7 +282,7 @@ TEST(AstUtils, NestedFunctions) {
     // load some test program
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                .type D
+                .type D <: symbol
                 .decl r(x:D)
 
                 r(x) :- r(y), x=cat(cat(x,x),x).
@@ -306,7 +306,7 @@ TEST(AstUtils, GroundTermPropagation) {
     // load some test program
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                .type D
+                .type D <: symbol
                 .decl p(a:D,b:D)
 
                 p(a,b) :- p(x,y), r = [x,y], s = r, s = [w,v], [w,v] = [a,b].
@@ -337,7 +337,7 @@ TEST(AstUtils, GroundTermPropagation2) {
     // load some test program
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-               .type D
+               .type D <: symbol
                .decl p(a:D,b:D)
 
                p(a,b) :- p(x,y), x = y, x = a, y = b.
@@ -364,7 +364,7 @@ TEST(AstUtils, ResolveGroundedAliases) {
     DebugReport d;
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                .type D
+                .type D <: symbol
                 .decl p(a:D,b:D)
 
                 p(a,b) :- p(x,y), r = [x,y], s = r, s = [w,v], [w,v] = [a,b].
@@ -387,7 +387,7 @@ TEST(AstUtils, ResolveAliasesWithTermsInAtoms) {
     DebugReport d;
     std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
             R"(
-                .type D
+                .type D <: symbol
                 .decl p(a:D,b:D)
 
                 p(x,c) :- p(x,b), p(b,c), c = b+1, x=c+2.

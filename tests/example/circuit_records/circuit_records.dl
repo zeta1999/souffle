@@ -30,7 +30,7 @@
 // the list as a sort of associative list.
 //
 
-.type Wire
+.type Wire <: symbol
 .type Wire_state = [id : Wire, val : number]
 .type Wire_list = [head : Wire_state, tail: Wire_list]
 

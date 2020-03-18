@@ -8,8 +8,8 @@
 // Shortest Path Computation
 //
 
-.symbol_type Node
-.number_type Distance
+.type Node <: symbol
+.type Distance <: number
 
 //
 // start node

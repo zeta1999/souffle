@@ -1,4 +1,4 @@
-.type S
+.type S <: symbol
 
 
 .decl r(x:S,y:S)

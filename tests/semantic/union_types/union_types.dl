@@ -6,9 +6,9 @@
 // expands to different primitive types".
 //
 
-.number_type one
-.number_type two
-.symbol_type three
+.type one <: number
+.type two <: number
+.type three <: symbol
 
 .type all = one | two
 

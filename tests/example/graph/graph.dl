@@ -1,6 +1,6 @@
 //// Test Case adopted from Ocaml datalog
 
-.type number
+.type number <: symbol
 
 .decl reachable  (node1:number, node2:number)
 .output reachable  ()

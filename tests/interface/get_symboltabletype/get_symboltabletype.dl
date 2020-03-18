@@ -1,6 +1,6 @@
-.type first_name
-.type last_name
-.type gender
+.type first <: symbol_name
+.type last <: symbol_name
+.type gender <: symbol
 
 .decl people (Surname:first_name, name:last_name, gender:gender, age:number, height:number)
 

@@ -99,7 +99,7 @@ struct PredefinedType : public Type {
 /**
  * A primitive type. The basic type construct to build new types.
  */
-class PrimitiveType : public Type {
+class SubsetType : public Type {
 public:
     void print(std::ostream& out) const override;
 
@@ -114,7 +114,7 @@ private:
     /** The base type -- may be symbol or numeric */
     const Type& baseType;
 
-    PrimitiveType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type& base)
+    SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type& base)
             : Type(environment, name), baseType(base) {}
 };
 
@@ -348,20 +348,20 @@ public:
         return *res;
     }
 
-    PrimitiveType& createNumericType(const AstQualifiedName& name) {
-        return createType<PrimitiveType>(name, getNumberType());
-    }
-
-    PrimitiveType& createFloatType(const AstQualifiedName& name) {
-        return createType<PrimitiveType>(name, getFloatType());
-    }
-
-    PrimitiveType& createUnsignedType(const AstQualifiedName& name) {
-        return createType<PrimitiveType>(name, getUnsignedType());
-    }
-
-    PrimitiveType& createSymbolType(const AstQualifiedName& name) {
-        return createType<PrimitiveType>(name, getSymbolType());
+    SubsetType& createSubsetType(const AstQualifiedName& name, TypeAttribute typeAttribute) {
+        switch (typeAttribute) {
+            case TypeAttribute::Signed:
+                return createType<SubsetType>(name, getNumberType());
+            case TypeAttribute::Unsigned:
+                return createType<SubsetType>(name, getUnsignedType());
+            case TypeAttribute::Float:
+                return createType<SubsetType>(name, getFloatType());
+            case TypeAttribute::Symbol:
+                return createType<SubsetType>(name, getSymbolType());
+            case TypeAttribute::Record:
+                assert(false && "Invalid type attribute");
+        }
+        return createType<SubsetType>(name, getNumberType());
     }
 
     UnionType& createUnionType(const AstQualifiedName& name) {

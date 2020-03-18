@@ -2,7 +2,7 @@
 // Tests various properties of a tic-tac-toe gameboard
 //
 
-.type Mark
+.type Mark <: symbol
 
 .decl player(x:Mark)
 

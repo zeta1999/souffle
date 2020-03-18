@@ -149,6 +149,7 @@
 %token PERCENT                   "%"
 %token LBRACE                    "{"
 %token RBRACE                    "}"
+%token SUBTYPE                   "<:"
 %token LT                        "<"
 %token GT                        ">"
 %token LE                        "<="
@@ -182,7 +183,7 @@
 %type <AstExecutionPlan *>                  exec_plan_list
 %type <AstClause *>                         fact
 %type <AstFunctorDeclaration *>             functor_decl
-%type <TypeAttribute>                       functor_type
+%type <TypeAttribute>                       predefined_type
 %type <std::vector<AstAtom *>>              head
 %type <std::vector<std::string>>            identifier
 %type <std::vector<AstIO *>>                io_directive_list
@@ -224,7 +225,7 @@
 %destructor { delete $$; }                                  exec_plan_list
 %destructor { delete $$; }                                  fact
 %destructor { delete $$; }                                  functor_decl
-%destructor { }                                             functor_type
+%destructor { }                                             predefined_type
 %destructor { for (auto* cur : $$) { delete cur; } }        head
 %destructor { for (auto* cur : $$) { delete cur; } }        io_directive_list
 %destructor { for (auto* cur : $$) { delete cur; } }        io_relation_list
@@ -370,17 +371,27 @@ identifier
 
 /* Type declarations */
 type
-  : NUMBER_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Signed);
+  : TYPE IDENT SUBTYPE predefined_type {
+        $$ = new AstSubsetType($IDENT, $predefined_type);
         $$->setSrcLoc(@$);
+    }
+  | NUMBER_TYPE IDENT {
+        $$ = new AstSubsetType($IDENT, TypeAttribute::Signed);
+        $$->setSrcLoc(@$);
+
+        driver.warning(@1, "Deprecated type declaration used");
     }
   | SYMBOL_TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Symbol);
+        $$ = new AstSubsetType($IDENT, TypeAttribute::Symbol);
         $$->setSrcLoc(@$);
+
+        driver.warning(@1, "Deprecated type declaration used");
     }
   | TYPE IDENT {
-        $$ = new AstPrimitiveType($IDENT, TypeAttribute::Symbol);
+        $$ = new AstSubsetType($IDENT, TypeAttribute::Symbol);
         $$->setSrcLoc(@$);
+
+        driver.warning(@1, "Deprecated type declaration used");
     }
   | TYPE IDENT EQUALS union_type_list {
         $$ = $union_type_list;
@@ -1593,31 +1604,31 @@ comp_init
 
 /* Functor declaration */
 functor_decl
-  : FUNCTOR IDENT LPAREN RPAREN COLON functor_type {
-        $$ = new AstFunctorDeclaration($IDENT, {}, $functor_type);
+  : FUNCTOR IDENT LPAREN RPAREN COLON predefined_type {
+        $$ = new AstFunctorDeclaration($IDENT, {}, $predefined_type);
         $$->setSrcLoc(@$);
     }
-  | FUNCTOR IDENT LPAREN non_empty_functor_arg_type_list RPAREN COLON functor_type {
+  | FUNCTOR IDENT LPAREN non_empty_functor_arg_type_list RPAREN COLON predefined_type {
         auto typesig = $non_empty_functor_arg_type_list;
-        $$ = new AstFunctorDeclaration($IDENT, typesig, $functor_type);
+        $$ = new AstFunctorDeclaration($IDENT, typesig, $predefined_type);
         $$->setSrcLoc(@$);
     }
   ;
 
 /* Functor argument list type */
 non_empty_functor_arg_type_list
-  : functor_type {
-        $$.push_back($functor_type);
+  : predefined_type {
+        $$.push_back($predefined_type);
     }
-  | non_empty_functor_arg_type_list[curr_list] COMMA functor_type {
+  | non_empty_functor_arg_type_list[curr_list] COMMA predefined_type {
         $$ = $curr_list;
-        $$.push_back($functor_type);
+        $$.push_back($predefined_type);
         $curr_list.clear();
     }
   ;
 
-/* Functor type */
-functor_type
+/* Predefined type */
+predefined_type
   : IDENT {
         if ($IDENT == "number") {
             $$ = TypeAttribute::Signed;
@@ -1628,7 +1639,7 @@ functor_type
         } else if ($IDENT == "unsigned") {
             $$ = TypeAttribute::Unsigned;
         } else {
-            driver.error(@IDENT, "number or symbol identifier expected");
+            driver.error(@IDENT, "[number | symbol | float | unsigned] identifier expected");
         }
     }
   ;

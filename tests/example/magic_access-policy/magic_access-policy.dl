@@ -4,7 +4,7 @@
 // the magic set transformation
 .pragma "magic-transform" "*"
 
-.type String
+.type String <: symbol
 
 .decl view_employee(x : String, p:String, ssn:number, s:number, e:String, d:String, pos:String, bday:number)
 .output view_employee()

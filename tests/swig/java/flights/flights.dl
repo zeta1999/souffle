@@ -6,7 +6,7 @@
 
 // example taken from tests/example/flights
 
-.type Node
+.type Node <: symbol
 .decl flight      (node1:Node, node2:Node, node3:Node)
 .decl QAflies   (node1:Node, node2:Node)
 .output QAflies   ()

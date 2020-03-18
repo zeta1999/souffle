@@ -54,9 +54,8 @@ private:
 };
 
 /**
- * A primitive type is named type that can either be a sub-type of
- * the build-in number or symbol type. Primitive types are the most
- * basic building blocks of souffle's type system.
+ * A subset type is named type that can either be a sub-type of
+ * the predefined types (float/unsigned/number/symbol).
  */
 class AstSubsetType : public AstType {
 public:
@@ -75,7 +74,23 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        os << ".type " << getQualifiedName() << (type == TypeAttribute::Signed ? "= number" : "");
+        os << ".type getQualifiedName() <: ";
+        switch (type) {
+            case TypeAttribute::Signed:
+                os << "number";
+                break;
+            case TypeAttribute::Unsigned:
+                os << "unsigned";
+                break;
+            case TypeAttribute::Float:
+                os << "float";
+                break;
+            case TypeAttribute::Symbol:
+                os << "symbol";
+                break;
+            case TypeAttribute::Record:
+                assert(false && "Invalid type");
+        }
     }
 
     bool equal(const AstNode& node) const override {

@@ -31,7 +31,7 @@ class WriteStreamSQLite : public WriteStream {
 public:
     WriteStreamSQLite(
             const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
-            : WriteStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("dbname")),
+            : WriteStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("filename")),
               relationName(rwOperation.get("name")) {
         openDB();
         createTables();

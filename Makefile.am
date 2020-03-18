@@ -69,3 +69,21 @@ completions_DATA=utilities/bash-completion/completions/souffle
 
 # Man pages
 dist_man1_MANS = $(wildcard $(srcdir)/man/*.1)
+
+#Linting
+lint: format tidy
+
+format:
+	cpplist=`git ls-files *.cpp *.h`; \
+	for file in $$cpplist; \
+	do \
+		clang-format -i $$file; \
+	done;
+
+tidy:
+	cpplist=`git ls-files *.cpp`; \
+	for file in $$cpplist; \
+	do \
+		clang-tidy $$file --quiet --header-filter=".*" --extra-arg=-std=c++17 -- $(CXXFLAGS) ;\
+	done;
+

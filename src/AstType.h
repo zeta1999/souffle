@@ -74,7 +74,7 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        os << ".type getQualifiedName() <: ";
+        os << ".type " << getQualifiedName() << " <: ";
         switch (type) {
             case TypeAttribute::Signed:
                 os << "number";

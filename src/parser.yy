@@ -60,11 +60,11 @@
         if (N) {                                                \
             (Cur).start         = YYRHSLOC(Rhs, 1).start;       \
             (Cur).end           = YYRHSLOC(Rhs, N).end;         \
-            (Cur).filename      = YYRHSLOC(Rhs, N).filename;    \
+            (Cur).filenames     = YYRHSLOC(Rhs, N).filenames;   \
         } else {                                                \
             (Cur).start         = YYRHSLOC(Rhs, 0).end;         \
             (Cur).end           = YYRHSLOC(Rhs, 0).end;         \
-            (Cur).filename      = YYRHSLOC(Rhs, 0).filename;    \
+            (Cur).filenames     = YYRHSLOC(Rhs, 0).filenames;   \
         }                                                       \
     } while (0)
 }

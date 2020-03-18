@@ -56,7 +56,7 @@
     yylloc.start = SrcLocation::Point({ yylineno, yycolumn }); \
     yycolumn += yyleng;             \
     yylloc.end   = SrcLocation::Point({ yylineno, yycolumn }); \
-    yylloc.filename = yyfilename;   \
+    yylloc.setFilename(yyfilename); \
 }
 
 %}

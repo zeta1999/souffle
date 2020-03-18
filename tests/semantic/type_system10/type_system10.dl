@@ -1,0 +1,54 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2020, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+//
+// Type System 10
+//
+// Check if float & unsigned work correctly with unions
+//
+
+
+.type A <: float
+.type B <: float
+
+.type X <: unsigned
+.type Y <: unsigned
+
+.type AB = A | B
+.type XY = X | Y
+
+
+.decl relA(a: A)
+relA(1).
+relA(0.5).
+
+.decl relB(b: B)
+relB(-1).
+relB(-0.5).
+
+
+.decl relAB(ab: AB)
+relAB(x) :- relA(x).
+relAB(x) :- relB(x).
+
+
+.decl relX(x: X)
+relX(0).
+relX(1).
+
+.decl relY(y: Y)
+relY(0xffffffff).
+relY(0xfffffffe).
+
+
+.decl relXY(xy: XY)
+relXY(x) :- relX(x).
+relXY(x) :- relY(x).
+
+
+
+
+.output relAB, relXY

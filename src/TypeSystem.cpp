@@ -21,7 +21,7 @@
 
 namespace souffle {
 
-void PrimitiveType::print(std::ostream& out) const {
+void SubsetType::print(std::ostream& out) const {
     out << getName() << " <: " << baseType;
 }
 
@@ -126,8 +126,8 @@ struct TypeVisitor {
         if (auto* t = dynamic_cast<const PredefinedType*>(&type)) {
             return visitPredefinedType(*t);
         }
-        if (auto* t = dynamic_cast<const PrimitiveType*>(&type)) {
-            return visitPrimitiveType(*t);
+        if (auto* t = dynamic_cast<const SubsetType*>(&type)) {
+            return visitSubsetType(*t);
         }
         if (auto* t = dynamic_cast<const UnionType*>(&type)) {
             return visitUnionType(*t);
@@ -143,7 +143,7 @@ struct TypeVisitor {
         return visitType(type);
     }
 
-    virtual R visitPrimitiveType(const PrimitiveType& type) const {
+    virtual R visitSubsetType(const SubsetType& type) const {
         return visitType(type);
     }
 
@@ -202,7 +202,7 @@ bool isOfRootType(const Type& type, const Type& root) {
         bool visitPredefinedType(const PredefinedType& type) const override {
             return type == root;
         }
-        bool visitPrimitiveType(const PrimitiveType& type) const override {
+        bool visitSubsetType(const SubsetType& type) const override {
             return type == root || type.getBaseType() == root || isOfRootType(type.getBaseType(), root);
         }
         bool visitUnionType(const UnionType& type) const override {
@@ -414,8 +414,8 @@ bool isSubtypeOf(const Type& a, const Type& b) {
     }
 
     // check primitive type chains
-    if (isA<PrimitiveType>(a)) {
-        if (isSubtypeOf(as<PrimitiveType>(a).getBaseType(), b)) {
+    if (isA<SubsetType>(a)) {
+        if (isSubtypeOf(as<SubsetType>(a).getBaseType(), b)) {
             return true;
         }
     }

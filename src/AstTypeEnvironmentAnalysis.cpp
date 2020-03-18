@@ -52,11 +52,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
 
         // create type within type environment
         if (auto* t = dynamic_cast<const AstSubsetType*>(cur)) {
-            if (t->getTypeAttribute() == TypeAttribute::Signed) {
-                env.createNumericType(cur->getQualifiedName());
-            } else {
-                env.createSymbolType(cur->getQualifiedName());
-            }
+            env.createSubsetType(cur->getQualifiedName(), t->getTypeAttribute());
         } else if (dynamic_cast<const AstUnionType*>(cur) != nullptr) {
             // initialize the union
             env.createUnionType(cur->getQualifiedName());

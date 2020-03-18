@@ -104,10 +104,15 @@ void AstTranslator::translateDirectives(std::map<std::string, std::string>& dire
         if (directives.find("filename") == directives.end()) {
             directives["filename"] = directives.at("name") + fileExt;
         }
-        // if filename is not an absolute path, concat with cmd line facts directory
-        if (directives.at("IO") == "file" && directives.at("filename").front() != '/') {
-            directives["filename"] = filePath + "/" + directives.at("filename");
-        }
+    }
+    // legacy support for SQLite prior to 2020-03-18
+    // convert dbname to filename
+    if (directives.at("IO") == "sqlite" && directives.find("dbname") != directives.end()) {
+        directives["filename"] = directives.at("dbname");
+    }
+    // if filename is not an absolute path, concat with cmd line facts directory
+    if (directives.find("filename") != directives.end() && directives.at("filename").front() != '/') {
+        directives["filename"] = filePath + "/" + directives.at("filename");
     }
 
     // Prepare type system information.

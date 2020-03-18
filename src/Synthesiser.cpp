@@ -241,8 +241,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::map<std::string, std::string> directiveMap(";
                 printDirectives(directives);
                 out << ");\n";
-                out << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-                out << "directiveMap[\"filename\"].front() != '/') {";
+                out << R"_(if (!inputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
                 out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
                 out << "RWOperation rwOperation(directiveMap);\n";
@@ -258,8 +257,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::map<std::string, std::string> directiveMap(";
                 printDirectives(directives);
                 out << ");\n";
-                out << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-                out << "directiveMap[\"filename\"].front() != '/') {";
+                out << R"_(if (!outputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
                 out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
                 out << "RWOperation rwOperation(directiveMap);\n";

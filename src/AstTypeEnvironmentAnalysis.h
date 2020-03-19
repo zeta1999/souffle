@@ -17,8 +17,11 @@
 #pragma once
 
 #include "AstAnalysis.h"
+#include "RamTypes.h"
 #include "TypeSystem.h"
+#include <map>
 #include <ostream>
+#include <set>
 
 namespace souffle {
 
@@ -39,18 +42,13 @@ public:
         return env;
     }
 
-    const std::set<AstQualifiedName>& getNumericUnions() const {
-        return numericUnions;
-    }
-
-    const std::set<AstQualifiedName>& getSymbolicUnions() const {
-        return symbolicUnions;
+    const std::set<TypeAttribute>& getUnionType(const AstQualifiedName& identifier) const {
+        return unionTypes.at(identifier);
     }
 
 private:
     TypeEnvironment env;
-    std::set<AstQualifiedName> numericUnions;
-    std::set<AstQualifiedName> symbolicUnions;
+    std::map<AstQualifiedName, std::set<TypeAttribute>> unionTypes;
 
     void updateTypeEnvironment(const AstProgram& program);
 };

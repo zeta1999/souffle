@@ -15,10 +15,6 @@ then
 fi
 
 clang-format \
-        -i \
-        -style=file \
-        src/*.h \
-        src/*.cpp \
-        src/test/*.h \
-        src/test/*.cpp \
-        tests/interface/*/*.cpp
+    -i \
+    -style=file \
+    $(git diff --cached --name-only *.cpp *.h)

@@ -29,7 +29,7 @@ TEST(Pack, Tuple) {
     RecordTable recordTable;
     const ram::Tuple<RamDomain, 3> tuple = {{1, 2, 3}};
 
-    RamDomain ref = recordTable.pack(tuple);
+    RamDomain ref = pack(recordTable, tuple);
 
     const RamDomain* ptr = recordTable.unpack(ref, 3);
 
@@ -63,12 +63,12 @@ TEST(PackUnpack, Tuple) {
     // Generate and pack the tuples
     for (size_t i = 0; i < NUMBER_OF_TESTS; ++i) {
         toPack[i] = {{random(), random(), random()}};
-        tupleRef[i] = recordTable.pack(toPack[i]);
+        tupleRef[i] = pack(recordTable, toPack[i]);
     }
 
     // unpack and test
     for (size_t i = 0; i < NUMBER_OF_TESTS; ++i) {
-        auto unpacked = recordTable.unpackTuple<tupleSize>(tupleRef[i]);
+        auto unpacked = recordTable.unpack(tupleRef[i], tupleSize);
         tupleType cmp = {unpacked[0], unpacked[1], unpacked[2]};
         EXPECT_EQ(toPack[i], cmp);
     }

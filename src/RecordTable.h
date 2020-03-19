@@ -29,9 +29,7 @@
 
 namespace souffle {
 
-/**
- * @brief Bidirectional mappping between records and record references
- */
+/** @brief Bidirectional mappping between records and record references */
 class RecordMap {
     /** arity of record */
     const size_t arity;
@@ -60,6 +58,7 @@ public:
     explicit RecordMap(size_t arity) : arity(arity), indexToRecord(1) {}  // note: index 0 element left free
 
     /** @brief converts record to a record reference */
+    // TODO (b-scholz): replace vector<RamDomain> with something more memory-frugal
     RamDomain pack(const std::vector<RamDomain>& vector) {
         RamDomain index;
 #pragma omp critical(record_pack)
@@ -112,11 +111,11 @@ public:
     RecordTable() = default;
     virtual ~RecordTable() = default;
 
-    /* @brief convert record to record reference for the interpreter / readstream */
+    /** @brief convert record to record reference */
     RamDomain pack(RamDomain* tuple, size_t arity) {
         return lookupArity(arity).pack(tuple);
     }
-    /** @brief convert record reference to a record for the interpreter / write stream */
+    /** @brief convert record reference to a record */
     const RamDomain* unpack(RamDomain ref, size_t arity) const {
         auto iter = maps.find(arity);
         assert(iter != maps.end() && "Attempting to unpack non-existing record");

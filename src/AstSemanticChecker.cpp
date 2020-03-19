@@ -935,14 +935,43 @@ void AstSemanticChecker::checkTypes(
         checkType(report, program, typeEnvAnalysis.getTypeEnvironment(), *cur);
     }
 
-    /* check that union types do not mix number and symbol types */
-    const auto& numericUnions = typeEnvAnalysis.getNumericUnions();
-    const auto& symbolicUnions = typeEnvAnalysis.getSymbolicUnions();
-    for (const auto& type : program.getTypes()) {
+    /* check that union types do not mix different primitive types */
+    for (const auto* type : program.getTypes()) {
+        // We are only interested in unions here.
+        if (dynamic_cast<const AstUnionType*>(type) == nullptr) {
+            continue;
+        }
+
         const auto& name = type->getQualifiedName();
-        if (contains(numericUnions, name) && contains(symbolicUnions, name)) {
-            report.addError("Union type " + toString(name) + " contains a mixture of symbol and number types",
-                    type->getSrcLoc());
+
+        const std::set<TypeAttribute>& predefinedTypesInUnion = typeEnvAnalysis.getUnionType(name);
+
+        // Report error (if size == 0, then the union is cyclic)
+        if (predefinedTypesInUnion.size() > 1) {
+            std::stringstream errorMessage;
+            auto toPrimitiveTypeName = [](std::ostream& out, TypeAttribute type) {
+                switch (type) {
+                    case TypeAttribute::Signed:
+                        out << "number";
+                        break;
+                    case TypeAttribute::Unsigned:
+                        out << "unsigned";
+                        break;
+                    case TypeAttribute::Float:
+                        out << "float";
+                        break;
+                    case TypeAttribute::Symbol:
+                        out << "symbol";
+                        break;
+                    default:
+                        assert(false && "Invalid type");
+                }
+            };
+            errorMessage << "Union type " << name << " is defined over {"
+                         << join(predefinedTypesInUnion, ", ", toPrimitiveTypeName) << "}"
+                         << " (multiple primitive types in union)";
+
+            report.addError(errorMessage.str(), type->getSrcLoc());
         }
     }
 

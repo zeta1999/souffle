@@ -788,21 +788,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
             auto arity = lookup.getArity();
 
-            // get the tuple type working with
-            std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
-
             // look up reference
             out << "RamDomain const ref = ";
             visit(lookup.getExpression(), out);
             out << ";\n";
 
             // Handle nil case.
-            out << "if (recordTable.isNil(ref)) continue;\n";
+            out << "if (ref == 0) continue;\n";
 
             // Unpack tuple
-            out << tuple_type << " "
+            out << "const RamDomain *"
                 << "env" << lookup.getTupleId() << " = "
-                << "recordTable.unpackTuple<RamDomain, " << arity << ">"
+                << "recordTable.unpackTuple<" << arity << ">"
                 << "(ref);"
                 << "\n";
 

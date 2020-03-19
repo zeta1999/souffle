@@ -104,14 +104,25 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
         }
     }
 
-    // partition unions into numeric or symbolic types
+    // Assign types to unions.
     Graph<AstQualifiedName> typeDependencyGraph;
     for (const auto& cur : program.getTypes()) {
         if (auto type = dynamic_cast<const AstSubsetType*>(cur)) {
-            if (type->getTypeAttribute() == TypeAttribute::Signed) {
-                typeDependencyGraph.insert(type->getQualifiedName(), "number");
-            } else {
-                typeDependencyGraph.insert(type->getQualifiedName(), "symbol");
+            switch (type->getTypeAttribute()) {
+                case TypeAttribute::Signed:
+                    typeDependencyGraph.insert(type->getQualifiedName(), "number");
+                    break;
+                case TypeAttribute::Unsigned:
+                    typeDependencyGraph.insert(type->getQualifiedName(), "unsigned");
+                    break;
+                case TypeAttribute::Float:
+                    typeDependencyGraph.insert(type->getQualifiedName(), "float");
+                    break;
+                case TypeAttribute::Symbol:
+                    typeDependencyGraph.insert(type->getQualifiedName(), "symbol");
+                    break;
+                case TypeAttribute::Record:
+                    assert(false && "invalid type");
             }
         } else if (dynamic_cast<const AstRecordType*>(cur) != nullptr) {
             // do nothing
@@ -127,11 +138,31 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
     for (const auto& cur : program.getTypes()) {
         if (auto unionType = dynamic_cast<const AstUnionType*>(cur)) {
             AstQualifiedName unionName = unionType->getQualifiedName();
-            if (typeDependencyGraph.reaches(unionName, "number")) {
-                numericUnions.insert(unionName);
+
+            auto itereratorToUnion = unionTypes.find(unionName);
+
+            // Initialize with the empty set
+            if (itereratorToUnion == unionTypes.end()) {
+                itereratorToUnion = unionTypes.insert({unionName, {}}).first;
             }
+
+            auto& associatedTypes = itereratorToUnion->second;
+
+            // Insert any reachable predefined type
+            if (typeDependencyGraph.reaches(unionName, "number")) {
+                associatedTypes.insert(TypeAttribute::Signed);
+            }
+
             if (typeDependencyGraph.reaches(unionName, "symbol")) {
-                symbolicUnions.insert(unionName);
+                associatedTypes.insert(TypeAttribute::Symbol);
+            }
+
+            if (typeDependencyGraph.reaches(unionName, "unsigned")) {
+                associatedTypes.insert(TypeAttribute::Unsigned);
+            }
+
+            if (typeDependencyGraph.reaches(unionName, "float")) {
+                associatedTypes.insert(TypeAttribute::Float);
             }
         }
     }

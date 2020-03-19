@@ -11,44 +11,40 @@
 //
 
 
-.type A <: float
-.type B <: float
+.type Float1 <: float
+.type Float2 <: float
 
-.type X <: unsigned
-.type Y <: unsigned
+.type Unsigned1 <: unsigned
+.type Unsigned2 <: unsigned
 
-.type AB = A | B
-.type XY = X | Y
+.type FloatUnion = Float1 | Float2
+.type UnsignedUnion = Unsigned1 | Unsigned2
 
+.decl relFloat1(a: Float1)
+relFloat1(1).
+relFloat1(0.5).
 
-.decl relA(a: A)
-relA(1).
-relA(0.5).
-
-.decl relB(b: B)
-relB(-1).
-relB(-0.5).
-
-
-.decl relAB(ab: AB)
-relAB(x) :- relA(x).
-relAB(x) :- relB(x).
+.decl relFloat2(b: Float2)
+relFloat2(-1).
+relFloat2(-0.5).
 
 
-.decl relX(x: X)
-relX(0).
-relX(1).
-
-.decl relY(y: Y)
-relY(0xffffffff).
-relY(0xfffffffe).
+.decl relFloatUnion(ab: FloatUnion)
+relFloatUnion(x) :- relFloat1(x).
+relFloatUnion(x) :- relFloat2(x).
 
 
-.decl relXY(xy: XY)
-relXY(x) :- relX(x).
-relXY(x) :- relY(x).
+.decl relUnsigned1(x: Unsigned1)
+relUnsigned1(0).
+relUnsigned1(1).
+
+.decl relUnsigned2(y: Unsigned2)
+relUnsigned2(0xffffffff).
+relUnsigned2(0xfffffffe).
 
 
+.decl relUnsignedUnion(xy: UnsignedUnion)
+relUnsignedUnion(x) :- relUnsigned1(x).
+relUnsignedUnion(x) :- relUnsigned2(x).
 
-
-.output relAB, relXY
+.output relFloatUnion, relUnsignedUnion

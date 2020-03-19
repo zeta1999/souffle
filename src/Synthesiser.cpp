@@ -799,8 +799,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // Unpack tuple
             out << "const RamDomain *"
                 << "env" << lookup.getTupleId() << " = "
-                << "recordTable.unpackTuple<" << arity << ">"
-                << "(ref);"
+                << "recordTable.unpack(ref," << arity << ");"
                 << "\n";
 
             out << "{\n";
@@ -1565,7 +1564,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitPackRecord(const RamPackRecord& pack, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            out << "recordTable.pack("
+            out << "pack(recordTable,"
                 << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">";
             if (pack.getArguments().size() == 0) {
                 out << "{{}}";

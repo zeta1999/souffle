@@ -49,9 +49,11 @@ class RecordMap {
     };
 
     /** map from records to references */
+    // TODO (b-scholz): replace vector<RamDomain> with something more memory-frugal
     std::unordered_map<std::vector<RamDomain>, RamDomain, RecordHash> recordToIndex;
 
     /** array of records; index represents record reference */
+    // TODO (b-scholz): replace vector<RamDomain> with something more memory-frugal
     std::vector<std::vector<RamDomain>> indexToRecord;
 
 public:
@@ -110,7 +112,7 @@ public:
     RecordTable() = default;
     virtual ~RecordTable() = default;
 
-    /* @brief convert tuple to record reference for the interpreter / readstream */
+    /* @brief convert record to record reference for the interpreter / readstream */
     RamDomain pack(RamDomain* tuple, size_t arity) {
         return lookupArity(arity).pack(tuple);
     }
@@ -119,19 +121,6 @@ public:
         auto iter = maps.find(arity);
         assert(iter != maps.end() && "Attempting to unpack non-existing record");
         return (iter->second).unpack(ref);
-    }
-
-    /** @brief convert tuple to record reference for the synthesiser */
-    // TODO(b-scholz): further templatize to save the lookup
-    template <std::size_t Arity>
-    RamDomain pack(ram::Tuple<RamDomain, Arity> tuple) {
-        return lookupArity(Arity).pack(static_cast<RamDomain*>(tuple.data));
-    }
-    /** @brief convert record reference to a record for the synthesiser */
-    // TODO(b-scholz): further templatize to save the lookup
-    template <std::size_t Arity>
-    const RamDomain* unpackTuple(RamDomain ref) {
-        return lookupArity(Arity).unpack(ref);
     }
 
 private:
@@ -149,5 +138,11 @@ private:
     /** Arity/RecordMap association */
     std::unordered_map<size_t, RecordMap> maps;
 };
+
+/** @brief helper to convert tuple to record reference for the synthesiser */
+template <std::size_t Arity>
+inline RamDomain pack(RecordTable& recordTab, ram::Tuple<RamDomain, Arity> tuple) {
+    recordTab.pack(static_cast<RamDomain*>(tuple.data), Arity);
+}
 
 }  // namespace souffle

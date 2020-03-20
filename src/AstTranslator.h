@@ -410,7 +410,7 @@ private:
         if (auto strConstant = dynamic_cast<const AstStringConstant*>(&constant)) {
             return getSymbolTable().lookup(strConstant->getConstant());
         } else if (dynamic_cast<const AstNilConstant*>(&constant) != nullptr) {
-            return RecordTable::getNil();
+            return 0;
         } else if (auto* numConstant = dynamic_cast<const AstNumericConstant*>(&constant)) {
             assert(numConstant->getType().has_value());
             switch (*numConstant->getType()) {

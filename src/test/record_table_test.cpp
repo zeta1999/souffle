@@ -29,9 +29,9 @@ TEST(Pack, Tuple) {
     RecordTable recordTable;
     const ram::Tuple<RamDomain, 3> tuple = {{1, 2, 3}};
 
-    RamDomain ref = recordTable.pack(tuple);
+    RamDomain ref = pack(recordTable, tuple);
 
-    RamDomain* ptr = recordTable.unpack(ref, 3);
+    const RamDomain* ptr = recordTable.unpack(ref, 3);
 
     for (size_t i = 0; i < 3; ++i) {
         EXPECT_EQ(tuple[i], ptr[i]);
@@ -63,13 +63,14 @@ TEST(PackUnpack, Tuple) {
     // Generate and pack the tuples
     for (size_t i = 0; i < NUMBER_OF_TESTS; ++i) {
         toPack[i] = {{random(), random(), random()}};
-        tupleRef[i] = recordTable.pack(toPack[i]);
+        tupleRef[i] = pack(recordTable, toPack[i]);
     }
 
     // unpack and test
     for (size_t i = 0; i < NUMBER_OF_TESTS; ++i) {
-        auto unpacked = recordTable.unpackTuple<RamDomain, tupleSize>(tupleRef[i]);
-        EXPECT_EQ(toPack[i], unpacked);
+        auto unpacked = recordTable.unpack(tupleRef[i], tupleSize);
+        tupleType cmp = {unpacked[0], unpacked[1], unpacked[2]};
+        EXPECT_EQ(toPack[i], cmp);
     }
 }
 
@@ -90,7 +91,7 @@ TEST(PackUnpack, Vector) {
     // Generate and pack the tuples
     for (size_t i = 0; i < NUMBER_OF_TESTS; ++i) {
         toPack[i] = testutil::generateRandomVector<RamDomain>(10);
-        tupleRef[i] = recordTable.pack(toPack[i]);
+        tupleRef[i] = recordTable.pack(toPack[i].data(), vectorSize);
         std::cerr << "Ref: " << tupleRef[i] << std::endl;
     }
 

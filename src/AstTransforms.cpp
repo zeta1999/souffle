@@ -244,13 +244,13 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             while (getRelation(program, relName) != nullptr) {
                 relName = "__agg_rel_" + toString(counter++);
             }
-            // create the new clause for the materialised thing
+            // create the new clause for the materialised rule
             auto* aggClause = new AstClause();
-            // create the body of the new thing
+            // create the body of the new materialised rule
             for (const auto& cur : agg.getBodyLiterals()) {
                 aggClause->addToBody(std::unique_ptr<AstLiteral>(cur->clone()));
             }
-            // find stuff for which we need a grounding
+            // find variables for which we need a grounding
             for (const auto& argPair : getGroundedTerms(*aggClause)) {
                 const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
                 bool variableIsGrounded = argPair.second;
@@ -263,7 +263,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                 for (const auto& lit : clause.getBodyLiterals()) {
                     const auto* atom = dynamic_cast<const AstAtom*>(lit);
                     if (atom == nullptr) {
-                        continue;  // ignore these because they can't ground the variable
+                        continue;  // it's not an atom so it can't help ground anything
                     }
                     for (const auto& arg : atom->getArguments()) {
                         const auto* atomVariable = dynamic_cast<const AstVariable*>(arg);
@@ -376,8 +376,8 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
 }
 
 bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(const AstAggregator& agg) {
-    // everything with more than 1 body literal => materialize
-    if (agg.getBodyLiterals().size() > 1) {
+    // everything with at least 1 body literal => materialize
+    if (agg.getBodyLiterals().size() >= 1) {
         return true;
     }
 

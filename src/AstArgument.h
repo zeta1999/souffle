@@ -487,26 +487,25 @@ protected:
 
 /**
  * An argument aggregating a value from a sub-query.
- * remove getters/setters for individual literals
  */
 class AstAggregator : public AstArgument {
 public:
-    /** Creates a new aggregation node */
-    AstAggregator(AggregateOp fun) : fun(fun), expression(nullptr) {}
+    AstAggregator(AggregateOp fun, std::unique_ptr<AstArgument> expr = nullptr)
+            : fun(fun), targetExpression(std::move(expr)) {}
 
     /** Get aggregate operator */
     AggregateOp getOperator() const {
         return fun;
     }
 
-    /** Set target expression */
-    void setTargetExpression(std::unique_ptr<AstArgument> arg) {
-        expression = std::move(arg);
+    /** Set aggregate operator */
+    void setOperator(AggregateOp op) {
+        fun = op;
     }
 
     /** Get target expression */
     const AstArgument* getTargetExpression() const {
-        return expression.get();
+        return targetExpression.get();
     }
 
     /** Get body literals */
@@ -514,20 +513,14 @@ public:
         return toPtrVector(body);
     }
 
-    /** Clear body literals */
-    void clearBodyLiterals() {
-        body.clear();
-    }
-
-    /** Add body literal */
-    void addBodyLiteral(std::unique_ptr<AstLiteral> lit) {
-        body.push_back(std::move(lit));
+    void setBody(std::vector<std::unique_ptr<AstLiteral>> bodyLiterals) {
+        body = std::move(bodyLiterals);
     }
 
     std::vector<const AstNode*> getChildNodes() const override {
         auto res = AstArgument::getChildNodes();
-        if (expression) {
-            res.push_back(expression.get());
+        if (targetExpression) {
+            res.push_back(targetExpression.get());
         }
         for (auto& cur : body) {
             res.push_back(cur.get());
@@ -536,8 +529,7 @@ public:
     }
 
     AstAggregator* clone() const override {
-        auto res = new AstAggregator(fun);
-        res->expression = (expression) ? std::unique_ptr<AstArgument>(expression->clone()) : nullptr;
+        auto* res = new AstAggregator(fun, std::unique_ptr<AstArgument>(souffle::clone(targetExpression)));
         for (const auto& cur : body) {
             res->body.emplace_back(cur->clone());
         }
@@ -546,8 +538,8 @@ public:
     }
 
     void apply(const AstNodeMapper& map) override {
-        if (expression) {
-            expression = map(std::move(expression));
+        if (targetExpression) {
+            targetExpression = map(std::move(targetExpression));
         }
         for (auto& cur : body) {
             cur = map(std::move(cur));
@@ -557,23 +549,30 @@ public:
 protected:
     void print(std::ostream& os) const override {
         switch (fun) {
-            case AggregateOp::sum:
+            case AggregateOp::SUM:
+            case AggregateOp::FSUM:
+            case AggregateOp::USUM:
                 os << "sum";
                 break;
-            case AggregateOp::min:
+            case AggregateOp::MIN:
+            case AggregateOp::FMIN:
+            case AggregateOp::UMIN:
                 os << "min";
                 break;
-            case AggregateOp::max:
+            case AggregateOp::MAX:
+            case AggregateOp::FMAX:
+            case AggregateOp::UMAX:
                 os << "max";
                 break;
-            case AggregateOp::count:
+            case AggregateOp::COUNT:
                 os << "count";
                 break;
-            default:
+            case AggregateOp::MEAN:
+                os << "mean";
                 break;
         }
-        if (expression) {
-            os << " " << *expression;
+        if (targetExpression) {
+            os << " " << *targetExpression;
         }
         os << " : ";
         if (body.size() > 1) {
@@ -588,7 +587,8 @@ protected:
     bool equal(const AstNode& node) const override {
         assert(nullptr != dynamic_cast<const AstAggregator*>(&node));
         const auto& other = static_cast<const AstAggregator&>(node);
-        return fun == other.fun && equal_ptr(expression, other.expression) && equal_targets(body, other.body);
+        return fun == other.fun && equal_ptr(targetExpression, other.targetExpression) &&
+               equal_targets(body, other.body);
     }
 
 private:
@@ -596,7 +596,7 @@ private:
     AggregateOp fun;
 
     /** Aggregation expression */
-    std::unique_ptr<AstArgument> expression;
+    std::unique_ptr<AstArgument> targetExpression;
 
     /** Body literal of sub-query */
     std::vector<std::unique_ptr<AstLiteral>> body;

@@ -703,12 +703,18 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
 
         // visit aggregates
         void visitAggregator(const AstAggregator& agg) override {
-            // this value must be a number value
-            addConstraint(isSubtypeOf(getVar(agg), env.getNumberType()));
+            if (agg.getOperator() == AggregateOp::COUNT) {
+                addConstraint(isSubtypeOf(getVar(agg), env.getNumberType()));
+            } else if (agg.getOperator() == AggregateOp::MEAN) {
+                addConstraint(isSubtypeOf(getVar(agg), env.getFloatType()));
+            } else {
+                addConstraint(hasSuperTypeInSet(getVar(agg), env.getNumericTypes()));
+            }
 
-            // also, the target expression needs to be a number
+            // If there is a target expression - it should be of the same type as the aggregator.
             if (auto expr = agg.getTargetExpression()) {
-                addConstraint(isSubtypeOf(getVar(expr), env.getNumberType()));
+                addConstraint(isSubtypeOf(getVar(expr), getVar(agg)));
+                addConstraint(isSubtypeOf(getVar(agg), getVar(expr)));
             }
         }
     };

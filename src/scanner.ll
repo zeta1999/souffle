@@ -96,6 +96,7 @@
 "ftoi"                                { return yy::parser::make_FTOI(yylloc); }
 "ftou"                                { return yy::parser::make_FTOU(yylloc); }
 "match"                               { return yy::parser::make_TMATCH(yylloc); }
+"mean"                                { return yy::parser::make_MEAN(yylloc); }
 "cat"                                 { return yy::parser::make_CAT(yylloc); }
 "ord"                                 { return yy::parser::make_ORD(yylloc); }
 "strlen"                              { return yy::parser::make_STRLEN(yylloc); }

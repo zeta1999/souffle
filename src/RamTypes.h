@@ -129,9 +129,15 @@ inline To ramBitCast(From RamElement) {
     return Union.destination;
 }
 
-/** lower and upper boundaries for the ram domain **/
-#define MIN_RAM_DOMAIN (std::numeric_limits<RamDomain>::min())
-#define MAX_RAM_DOMAIN (std::numeric_limits<RamDomain>::max())
+/** lower and upper boundaries for the ram types **/
+constexpr RamSigned MIN_RAM_SIGNED = std::numeric_limits<RamSigned>::min();
+constexpr RamSigned MAX_RAM_SIGNED = std::numeric_limits<RamSigned>::max();
+
+constexpr RamUnsigned MIN_RAM_UNSIGNED = std::numeric_limits<RamUnsigned>::min();
+constexpr RamUnsigned MAX_RAM_UNSIGNED = std::numeric_limits<RamUnsigned>::max();
+
+constexpr RamFloat MIN_RAM_FLOAT = std::numeric_limits<RamFloat>::min();
+constexpr RamFloat MAX_RAM_FLOAT = std::numeric_limits<RamFloat>::max();
 
 /** search signature of a RAM operation; each bit represents an attribute of a relation.
  * A one represents that the attribute has an assigned value; a zero represents that

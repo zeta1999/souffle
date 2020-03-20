@@ -558,7 +558,7 @@ private:
 
 /**
  * Transformation pass to determine instances of polymorphic object
- * objects = Functors (plus, minus...) ∪ binary constraints (>, ≥ ...) ∪ numeric constants (int, uint, float)
+ * objects = Functors (plus, minus...) ∪ binary constraints (>, ≥ ...) ∪ aggregation ∪ numeric constants
  */
 
 class PolymorphicObjectsTransformer : public AstTransformer {

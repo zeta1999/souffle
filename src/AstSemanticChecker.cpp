@@ -342,6 +342,19 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
+    visitDepthFirst(nodes, [&](const AstAggregator& aggregator) {
+        auto op = aggregator.getOperator();
+
+        auto aggregatorType = typeAnalysis.getTypes(&aggregator);
+
+        TypeAttribute opType = getTypeAttributeAggregate(op);
+
+        // Check if operation type and return type agree.
+        if (!eqTypeTypeAttribute(opType, aggregatorType)) {
+            report.addError("Couldn't assign types to the aggregator", aggregator.getSrcLoc());
+        }
+    });
+
     // - stratification --
 
     // check for cyclic dependencies

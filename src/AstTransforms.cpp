@@ -293,7 +293,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             aggClause->setHead(std::unique_ptr<AstAtom>(head));
 
             // instantiate unnamed variables in count operations
-            if (agg.getOperator() == AggregateOp::count) {
+            if (agg.getOperator() == AggregateOp::COUNT) {
                 int count = 0;
                 for (const auto& cur : aggClause->getBodyLiterals()) {
                     cur->apply(makeLambdaAstMapper(
@@ -364,9 +364,12 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
                 }
                 args.emplace_back(arg->clone());
             }
-            auto* aggAtom = new AstAtom(head->getQualifiedName(), std::move(args), head->getSrcLoc());
-            const_cast<AstAggregator&>(agg).clearBodyLiterals();
-            const_cast<AstAggregator&>(agg).addBodyLiteral(std::unique_ptr<AstLiteral>(aggAtom));
+            auto aggAtom =
+                    std::make_unique<AstAtom>(head->getQualifiedName(), std::move(args), head->getSrcLoc());
+
+            std::vector<std::unique_ptr<AstLiteral>> newBody;
+            newBody.push_back(std::move(aggAtom));
+            const_cast<AstAggregator&>(agg).setBody(std::move(newBody));
         });
     });
     return changed;
@@ -527,28 +530,41 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                 bool containsTrue = false;
                 bool containsFalse = false;
 
+                // Check if aggregator body contains booleans.
                 for (AstLiteral* lit : aggr->getBodyLiterals()) {
                     if (auto* bc = dynamic_cast<AstBooleanConstraint*>(lit)) {
-                        bc->isTrue() ? containsTrue = true : containsFalse = true;
+                        if (bc->isTrue()) {
+                            containsTrue = true;
+                        } else {
+                            containsFalse = true;
+                        }
                     }
                 }
 
+                // Only keep literals that aren't boolean constraints
                 if (containsFalse || containsTrue) {
-                    // Only keep literals that aren't boolean constraints
                     auto replacementAggregator = std::unique_ptr<AstAggregator>(aggr->clone());
-                    replacementAggregator->clearBodyLiterals();
+                    std::vector<std::unique_ptr<AstLiteral>> newBody;
 
                     bool isEmpty = true;
 
                     // Don't bother copying over body literals if any are false
                     if (!containsFalse) {
                         for (AstLiteral* lit : aggr->getBodyLiterals()) {
-                            // Don't add in 'true' boolean constraints
+                            // Don't add in boolean constraints
                             if (dynamic_cast<AstBooleanConstraint*>(lit) == nullptr) {
                                 isEmpty = false;
-                                replacementAggregator->addBodyLiteral(
-                                        std::unique_ptr<AstLiteral>(lit->clone()));
+                                newBody.push_back(std::unique_ptr<AstLiteral>(lit->clone()));
                             }
+                        }
+
+                        // If the body is still empty and the original body contains true add it now.
+                        if (containsTrue && isEmpty) {
+                            newBody.push_back(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                                    std::make_unique<AstNumericConstant>(1),
+                                    std::make_unique<AstNumericConstant>(1)));
+
+                            isEmpty = false;
                         }
                     }
 
@@ -556,15 +572,12 @@ bool RemoveBooleanConstraintsTransformer::transform(AstTranslationUnit& translat
                         // Empty aggregator body!
                         // Not currently handled, so add in a false literal in the body
                         // E.g. max x : { } =becomes=> max 1 : {0 = 1}
-                        replacementAggregator->setTargetExpression(std::make_unique<AstNumericConstant>(1));
-
-                        // Add '0 = 1' if false was found, '1 = 1' otherwise
-                        int lhsConstant = containsFalse ? 0 : 1;
-                        replacementAggregator->addBodyLiteral(std::make_unique<AstBinaryConstraint>(
-                                BinaryConstraintOp::EQ, std::make_unique<AstNumericConstant>(lhsConstant),
+                        newBody.push_back(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
+                                std::make_unique<AstNumericConstant>(0),
                                 std::make_unique<AstNumericConstant>(1)));
                     }
 
+                    replacementAggregator->setBody(std::move(newBody));
                     return replacementAggregator;
                 }
             }
@@ -1068,16 +1081,18 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
             // Apply to all aggregates of the form
             // sum k : { .. } where k is a constant
             if (auto* agg = dynamic_cast<AstAggregator*>(node.get())) {
-                if (agg->getOperator() == AggregateOp::sum) {
+                if (agg->getOperator() == AggregateOp::SUM) {
                     if (const auto* constant =
                                     dynamic_cast<const AstNumericConstant*>(agg->getTargetExpression())) {
                         changed = true;
                         // Then construct the new thing to replace it with
-                        auto count = std::make_unique<AstAggregator>(AggregateOp::count);
+                        auto count = std::make_unique<AstAggregator>(AggregateOp::COUNT);
                         // Duplicate the body of the aggregate
+                        std::vector<std::unique_ptr<AstLiteral>> newBody;
                         for (const auto& lit : agg->getBodyLiterals()) {
-                            count->addBodyLiteral(std::unique_ptr<AstLiteral>(lit->clone()));
+                            newBody.push_back(std::unique_ptr<AstLiteral>(lit->clone()));
                         }
+                        count->setBody(std::move(newBody));
                         auto number = std::unique_ptr<AstNumericConstant>(constant->clone());
                         // Now it's constant * count : { ... }
                         auto result = std::make_unique<AstIntrinsicFunctor>(
@@ -1322,6 +1337,24 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                             BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
                                     binaryConstraint->getOperator(), TypeAttribute::Symbol);
                             binaryConstraint->setOperator(convertedConstraint);
+                            changed = true;
+                        }
+                    }
+                }
+
+                if (auto* aggregator = dynamic_cast<AstAggregator*>(node.get())) {
+                    if (isOverloadedAggregator(aggregator->getOperator())) {
+                        auto* targetExpression = aggregator->getTargetExpression();
+
+                        if (isFloat(targetExpression)) {
+                            AggregateOp convertedOperator = convertOverloadedAggregator(
+                                    aggregator->getOperator(), TypeAttribute::Float);
+                            aggregator->setOperator(convertedOperator);
+                            changed = true;
+                        } else if (isUnsigned(targetExpression)) {
+                            AggregateOp convertedOperator = convertOverloadedAggregator(
+                                    aggregator->getOperator(), TypeAttribute::Unsigned);
+                            aggregator->setOperator(convertedOperator);
                             changed = true;
                         }
                     }

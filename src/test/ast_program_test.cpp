@@ -179,9 +179,10 @@ TESTASTCLONEANDEQUAL(RelationCopies,
 TEST(AstProgram, RemoveClause) {
     auto atom = std::make_unique<AstAtom>("B");
     atom->addArgument(std::make_unique<AstVariable>("x"));
-    auto sum = std::make_unique<AstAggregator>(AggregateOp::sum);
-    sum->setTargetExpression(std::make_unique<AstVariable>("x"));
-    sum->addBodyLiteral(std::move(atom));
+    auto sum = std::make_unique<AstAggregator>(AggregateOp::SUM, std::make_unique<AstVariable>("x"));
+    std::vector<std::unique_ptr<AstLiteral>> body;
+    body.push_back(std::move(atom));
+    sum->setBody(std::move(body));
 
     auto tu1 = makeATU(".decl A,B(x:number) \n A(sum x : B(x)).");
     auto clause = makeClause("A", std::move(sum));

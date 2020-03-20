@@ -101,7 +101,7 @@ protected:
         assert(!recordInfo.is_null() && "Missing record type information");
 
         // Check for nil
-        if (recordTable.isNil(value)) {
+        if (value == 0) {
             destination << "nil";
             return;
         }

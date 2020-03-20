@@ -90,7 +90,7 @@ protected:
             if (charactersRead != nullptr) {
                 *charactersRead = 3;
             }
-            return recordTable.getNil();
+            return 0;
         }
 
         const Json recordTypes = recordInfo["types"];
@@ -135,7 +135,7 @@ protected:
             *charactersRead = pos - initial_position;
         }
 
-        return recordTable.pack(recordValues);
+        return recordTable.pack(recordValues.data(), recordValues.size());
     }
 
     RamDomain readStringInRecord(const std::string& source, const size_t pos, size_t* charactersRead) {

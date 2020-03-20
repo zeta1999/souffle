@@ -973,7 +973,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             RamDomain ref = execute(node->getChild(0), ctxt);
 
             // check for nil
-            if (getRecordTable().isNil(ref)) {
+            if (ref == 0) {
                 return true;
             }
 

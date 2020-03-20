@@ -319,7 +319,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitNilConstant(const AstNilConstant&) override {
-            return std::make_unique<RamSignedConstant>(RecordTable::getNil());
+            return std::make_unique<RamSignedConstant>(0);
         }
 
         std::unique_ptr<RamExpression> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {

@@ -39,14 +39,15 @@ namespace souffle {
  */
 class RamOperation : public RamNode {
 public:
+    RamOperation* clone() const override = 0;
+
     /** @brief Pretty print with indentation */
     virtual void print(std::ostream& os, int tabpos) const = 0;
 
+protected:
     void print(std::ostream& os) const override {
         print(os, 0);
     }
-
-    RamOperation* clone() const override = 0;
 };
 
 /**
@@ -90,10 +91,6 @@ public:
         return profileText;
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        nestedOperation->print(os, tabpos);
-    }
-
     std::vector<const RamNode*> getChildNodes() const override {
         return {nestedOperation.get()};
     }
@@ -102,10 +99,14 @@ public:
         nestedOperation = map(std::move(nestedOperation));
     }
 
+    void print(std::ostream& os, int tabpos) const override {
+        nestedOperation->print(os, tabpos);
+    }
+
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamNestedOperation&>(node);
-        return getOperation() == other.getOperation() && getProfileText() == other.getProfileText();
+        return equal_ptr(nestedOperation, other.nestedOperation) && profileText == other.profileText;
     }
 
     /** Nested operation */
@@ -141,7 +142,7 @@ public:
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamTupleOperation&>(node);
-        return RamNestedOperation::equal(other) && getTupleId() == other.getTupleId();
+        return RamNestedOperation::equal(other) && identifier == other.identifier;
     }
 
     /**
@@ -185,7 +186,7 @@ public:
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamRelationOperation&>(node);
-        return RamTupleOperation::equal(other) && getRelation() == other.getRelation();
+        return RamTupleOperation::equal(other) && equal_ptr(relationRef, other.relationRef);
     }
 
     /** Search relation */
@@ -211,16 +212,16 @@ public:
             std::string profileText = "")
             : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)) {}
 
+    RamScan* clone() const override {
+        return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "FOR t" << getTupleId();
         os << " IN " << getRelation().getName() << std::endl;
         RamRelationOperation::print(os, tabpos + 1);
-    }
-
-    RamScan* clone() const override {
-        return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 };
 
@@ -242,16 +243,16 @@ public:
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamScan(std::move(rel), ident, std::move(nested), profileText) {}
 
+    RamParallelScan* clone() const override {
+        return new RamParallelScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "PARALLEL FOR t" << getTupleId();
         os << " IN " << getRelation().getName() << std::endl;
         RamRelationOperation::print(os, tabpos + 1);
-    }
-
-    RamParallelScan* clone() const override {
-        return new RamParallelScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 };
 
@@ -295,7 +296,6 @@ public:
         }
     }
 
-protected:
     /** @brief Helper method for printing */
     void printIndex(std::ostream& os) const {
         const auto& attrib = getRelation().getAttributeNames();
@@ -315,6 +315,7 @@ protected:
         }
     }
 
+protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexOperation&>(node);
         return RamRelationOperation::equal(other) && equal_targets(queryPattern, other.queryPattern);
@@ -344,16 +345,6 @@ public:
             : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested),
                       std::move(profileText)) {}
 
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "FOR t" << getTupleId() << " IN ";
-        os << rel.getName();
-        printIndex(os);
-        os << std::endl;
-        RamIndexOperation::print(os, tabpos + 1);
-    }
-
     RamIndexScan* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
         for (unsigned int i = 0; i < queryPattern.size(); ++i) {
@@ -362,6 +353,16 @@ public:
         return new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
                 getProfileText());
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        const RamRelation& rel = getRelation();
+        os << times(" ", tabpos);
+        os << "FOR t" << getTupleId() << " IN ";
+        os << rel.getName();
+        printIndex(os);
+        os << std::endl;
+        RamIndexOperation::print(os, tabpos + 1);
     }
 };
 
@@ -384,16 +385,6 @@ public:
             std::string profileText = "")
             : RamIndexScan(std::move(rel), ident, std::move(queryPattern), std::move(nested), profileText) {}
 
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "PARALLEL FOR t" << getTupleId() << " IN ";
-        os << rel.getName();
-        printIndex(os);
-        os << std::endl;
-        RamIndexOperation::print(os, tabpos + 1);
-    }
-
     RamParallelIndexScan* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
         for (unsigned int i = 0; i < queryPattern.size(); ++i) {
@@ -402,6 +393,16 @@ public:
         return new RamParallelIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        const RamRelation& rel = getRelation();
+        os << times(" ", tabpos);
+        os << "PARALLEL FOR t" << getTupleId() << " IN ";
+        os << rel.getName();
+        printIndex(os);
+        os << std::endl;
+        RamIndexOperation::print(os, tabpos + 1);
     }
 };
 
@@ -433,8 +434,8 @@ public:
 
 protected:
     bool equal(const RamNode& node) const {
-        const auto& other = dynamic_cast<const RamAbstractChoice*>(&node);
-        return getCondition() == other->getCondition();
+        const auto& other = dynamic_cast<const RamAbstractChoice&>(node);
+        return equal_ptr(condition, other.condition);
     }
 
     /** Condition for which a tuple in the relation may hold */
@@ -463,15 +464,6 @@ public:
             : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)),
               RamAbstractChoice(std::move(cond)) {}
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "CHOICE t" << getTupleId();
-        os << " IN " << getRelation().getName();
-        os << " WHERE " << getCondition();
-        os << std::endl;
-        RamRelationOperation::print(os, tabpos + 1);
-    }
-
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
         RamAbstractChoice::apply(map);
@@ -487,10 +479,19 @@ public:
         return {nestedOperation.get(), relationRef.get(), RamAbstractChoice::getChildNodes().at(0)};
     }
 
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "CHOICE t" << getTupleId();
+        os << " IN " << getRelation().getName();
+        os << " WHERE " << getCondition();
+        os << std::endl;
+        RamRelationOperation::print(os, tabpos + 1);
+    }
+
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamChoice&>(node);
-        return RamRelationOperation::equal(other) && getCondition() == other.getCondition();
+        return RamRelationOperation::equal(other) && RamAbstractChoice::equal(other);
     }
 };
 
@@ -513,6 +514,12 @@ public:
             std::string profileText = "")
             : RamChoice(std::move(rel), ident, std::move(cond), std::move(nested), profileText) {}
 
+    RamParallelChoice* clone() const override {
+        return new RamParallelChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+    }
+
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "PARALLEL CHOICE t" << getTupleId();
@@ -520,12 +527,6 @@ public:
         os << " WHERE " << getCondition();
         os << std::endl;
         RamRelationOperation::print(os, tabpos + 1);
-    }
-
-    RamParallelChoice* clone() const override {
-        return new RamParallelChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 };
 
@@ -556,16 +557,6 @@ public:
         assert(getRangePattern().size() == getRelation().getArity());
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "CHOICE " << rel.getName() << " AS t" << getTupleId();
-        printIndex(os);
-        os << " WHERE " << getCondition();
-        os << std::endl;
-        RamIndexOperation::print(os, tabpos + 1);
-    }
-
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
         for (auto& pattern : queryPattern) {
@@ -591,11 +582,20 @@ public:
         return res;
     }
 
+    void print(std::ostream& os, int tabpos) const override {
+        const RamRelation& rel = getRelation();
+        os << times(" ", tabpos);
+        os << "CHOICE " << rel.getName() << " AS t" << getTupleId();
+        printIndex(os);
+        os << " WHERE " << getCondition();
+        os << std::endl;
+        RamIndexOperation::print(os, tabpos + 1);
+    }
+
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexChoice&>(node);
-        return RamRelationOperation::equal(other) && equal_targets(queryPattern, other.queryPattern) &&
-               getCondition() == other.getCondition();
+        return RamIndexOperation::equal(other) && RamAbstractChoice::equal(other);
     }
 };
 
@@ -620,16 +620,6 @@ public:
             : RamIndexChoice(std::move(r), ident, std::move(cond), std::move(queryPattern), std::move(nested),
                       profileText) {}
 
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "PARALLEL CHOICE " << rel.getName() << " AS t" << getTupleId();
-        printIndex(os);
-        os << " WHERE " << getCondition();
-        os << std::endl;
-        RamIndexOperation::print(os, tabpos + 1);
-    }
-
     RamParallelIndexChoice* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
         for (size_t i = 0; i < queryPattern.size(); ++i) {
@@ -639,6 +629,16 @@ public:
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
         return res;
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        const RamRelation& rel = getRelation();
+        os << times(" ", tabpos);
+        os << "PARALLEL CHOICE " << rel.getName() << " AS t" << getTupleId();
+        printIndex(os);
+        os << " WHERE " << getCondition();
+        os << std::endl;
+        RamIndexOperation::print(os, tabpos + 1);
     }
 };
 
@@ -712,9 +712,9 @@ public:
 
 protected:
     bool equal(const RamNode& node) const {
-        const auto& other = dynamic_cast<const RamAbstractAggregate*>(&node);
-        return getCondition() == other->getCondition() && getFunction() == other->getFunction() &&
-               getExpression() == other->getExpression();
+        const auto& other = dynamic_cast<const RamAbstractAggregate&>(node);
+        return function == other.function && equal_ptr(expression, other.expression) &&
+               equal_ptr(condition, other.condition);
     }
 
     /** Aggregation function */
@@ -746,18 +746,6 @@ public:
             : RamRelationOperation(std::move(relRef), ident, std::move(nested)),
               RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "t" << getTupleId() << ".0=";
-        RamAbstractAggregate::print(os, tabpos);
-        os << "FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
-        if (!isRamTrue(condition.get())) {
-            os << " WHERE " << getCondition();
-        }
-        os << std::endl;
-        RamRelationOperation::print(os, tabpos + 1);
-    }
-
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamRelationOperation::getChildNodes();
         auto children = RamAbstractAggregate::getChildNodes();
@@ -776,6 +764,18 @@ public:
         RamRelationOperation::apply(map);
         condition = map(std::move(condition));
         expression = map(std::move(expression));
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "t" << getTupleId() << ".0=";
+        RamAbstractAggregate::print(os, tabpos);
+        os << "FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
+        if (!isRamTrue(condition.get())) {
+            os << " WHERE " << getCondition();
+        }
+        os << std::endl;
+        RamRelationOperation::print(os, tabpos + 1);
     }
 
 protected:
@@ -797,19 +797,6 @@ public:
             int ident)
             : RamIndexOperation(std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
               RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
-
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "t" << getTupleId() << ".0=";
-        RamAbstractAggregate::print(os, tabpos);
-        os << "SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
-        printIndex(os);
-        if (!isRamTrue(condition.get())) {
-            os << " WHERE " << getCondition();
-        }
-        os << std::endl;
-        RamIndexOperation::print(os, tabpos + 1);
-    }
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamIndexOperation::getChildNodes();
@@ -835,10 +822,23 @@ public:
         expression = map(std::move(expression));
     }
 
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "t" << getTupleId() << ".0=";
+        RamAbstractAggregate::print(os, tabpos);
+        os << "SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
+        printIndex(os);
+        if (!isRamTrue(condition.get())) {
+            os << " WHERE " << getCondition();
+        }
+        os << std::endl;
+        RamIndexOperation::print(os, tabpos + 1);
+    }
+
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamAggregate&>(node);
-        return RamIndexOperation::equal(other) && RamAbstractAggregate::equal(node);
+        return RamIndexOperation::equal(other) && RamAbstractAggregate::equal(other);
     }
 };
 
@@ -878,11 +878,6 @@ public:
         return res;
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos) << "UNPACK " << getExpression() << " INTO t" << getTupleId() << std::endl;
-        RamTupleOperation::print(os, tabpos + 1);
-    }
-
     RamUnpackRecord* clone() const override {
         return new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(),
                 std::unique_ptr<RamExpression>(getExpression().clone()), arity);
@@ -893,11 +888,16 @@ public:
         expression = map(std::move(expression));
     }
 
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos) << "UNPACK " << getExpression() << " INTO t" << getTupleId() << std::endl;
+        RamTupleOperation::print(os, tabpos + 1);
+    }
+
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamUnpackRecord&>(node);
-        return RamTupleOperation::equal(other) && getExpression() == other.getExpression() &&
-               getArity() == other.getArity();
+        return RamTupleOperation::equal(other) && equal_ptr(expression, other.expression) &&
+               arity == other.arity;
     }
 
     /** Expression for record reference */
@@ -939,7 +939,7 @@ public:
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamAbstractConditional&>(node);
-        return RamNestedOperation::equal(node) && getCondition() == other.getCondition();
+        return RamNestedOperation::equal(node) && equal_ptr(condition, other.condition);
     }
 
     /** Condition */
@@ -965,20 +965,15 @@ public:
             std::string profileText = "")
             : RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "IF " << getCondition() << std::endl;
-        RamNestedOperation::print(os, tabpos + 1);
-    }
-
     RamFilter* clone() const override {
         return new RamFilter(std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
-protected:
-    bool equal(const RamNode& node) const override {
-        return RamAbstractConditional::equal(node);
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "IF " << getCondition() << std::endl;
+        RamNestedOperation::print(os, tabpos + 1);
     }
 };
 
@@ -1001,20 +996,15 @@ public:
             std::string profileText = "")
             : RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "IF " << getCondition() << " BREAK" << std::endl;
-        RamNestedOperation::print(os, tabpos + 1);
-    }
-
     RamBreak* clone() const override {
         return new RamBreak(std::unique_ptr<RamCondition>(condition->clone()),
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
-protected:
-    bool equal(const RamNode& node) const override {
-        return RamAbstractConditional::equal(node);
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "IF " << getCondition() << " BREAK" << std::endl;
+        RamNestedOperation::print(os, tabpos + 1);
     }
 };
 
@@ -1050,12 +1040,6 @@ public:
         return toPtrVector(expressions);
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "PROJECT (" << join(expressions, ", ", print_deref<std::unique_ptr<RamExpression>>())
-           << ") INTO " << getRelation().getName() << std::endl;
-    }
-
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res;
         res.push_back(relationRef.get());
@@ -1081,10 +1065,16 @@ public:
         }
     }
 
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "PROJECT (" << join(expressions, ", ", print_deref<std::unique_ptr<RamExpression>>())
+           << ") INTO " << getRelation().getName() << std::endl;
+    }
+
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamProject&>(node);
-        return getRelation() == other.getRelation() && equal_targets(expressions, other.expressions);
+        return equal_ptr(relationRef, other.relationRef) && equal_targets(expressions, other.expressions);
     }
 
     /** Relation that values are projected into */
@@ -1113,18 +1103,6 @@ public:
         }
     }
 
-    void print(std::ostream& os, int tabpos) const override {
-        os << times(" ", tabpos);
-        os << "RETURN (";
-        for (auto val : getValues()) {
-            val->print(os);
-            if (val != *(getValues().end() - 1)) {
-                os << ", ";
-            }
-        }
-        os << ")" << std::endl;
-    }
-
     /** @brief Getter for expressions */
     std::vector<RamExpression*> getValues() const {
         return toPtrVector(expressions);
@@ -1150,6 +1128,18 @@ public:
         for (auto& expr : expressions) {
             expr = map(std::move(expr));
         }
+    }
+
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "RETURN (";
+        for (auto val : getValues()) {
+            os << *val;
+            if (val != *(getValues().end() - 1)) {
+                os << ", ";
+            }
+        }
+        os << ")" << std::endl;
     }
 
 protected:

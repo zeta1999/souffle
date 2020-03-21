@@ -293,9 +293,6 @@ private:
      */
     void nameUnnamedVariables(AstClause* clause);
 
-    /** append statement to a list of statements */
-    void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
-
     /** converts the given relation identifier into a relation name */
     std::string getRelationName(const AstQualifiedName& id) {
         return toString(join(id.getQualifiers(), "."));

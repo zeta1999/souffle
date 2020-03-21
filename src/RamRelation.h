@@ -1,4 +1,5 @@
 /*
+               ietMain() == other.getMain() && equal_targets(relations, other.relations);
  * Souffle - A Datalog Compiler
  * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved
  * Licensed under the Universal Permissive License v 1.0 as shown at:
@@ -18,6 +19,7 @@
 #include "RamNode.h"
 #include "RamTypes.h"
 #include "RelationTag.h"
+#include "Util.h"
 
 #include <string>
 #include <utility>
@@ -90,6 +92,11 @@ public:
         return name < other.name;
     }
 
+    RamRelation* clone() const override {
+        return new RamRelation(name, arity, auxiliaryArity, attributeNames, attributeTypes, representation);
+    }
+
+protected:
     void print(std::ostream& out) const override {
         out << name;
         if (arity > 0) {
@@ -108,16 +115,12 @@ public:
         }
     }
 
-    RamRelation* clone() const override {
-        return new RamRelation(name, arity, auxiliaryArity, attributeNames, attributeTypes, representation);
-    }
-
-protected:
     bool equal(const RamNode& node) const override {
         assert(nullptr != dynamic_cast<const RamRelation*>(&node));
         const auto& other = static_cast<const RamRelation&>(node);
-        return name == other.name && arity == other.arity && attributeNames == other.attributeNames &&
-               attributeTypes == other.attributeTypes && representation == other.representation;
+        return representation == other.representation && name == other.name && arity == other.arity &&
+               auxiliaryArity == other.auxiliaryArity && attributeNames == other.attributeNames &&
+               attributeTypes == other.attributeTypes;
     }
 
 protected:
@@ -155,19 +158,18 @@ public:
         return relation;
     }
 
-    void print(std::ostream& out) const override {
-        out << relation->getName();
-    }
-
     RamRelationReference* clone() const override {
         return new RamRelationReference(relation);
     }
 
 protected:
+    void print(std::ostream& out) const override {
+        out << relation->getName();
+    }
+
     bool equal(const RamNode& node) const override {
-        assert(nullptr != dynamic_cast<const RamRelationReference*>(&node));
         const auto& other = static_cast<const RamRelationReference&>(node);
-        return relation == other.relation;
+        return equal_ptr(relation, other.relation);
     }
 
 protected:

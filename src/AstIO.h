@@ -113,7 +113,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstIO*>(&node));
         const auto& other = static_cast<const AstIO&>(node);
         return other.type == type && other.name == name && other.directives == directives;
     }

@@ -124,7 +124,6 @@ protected:
         return RamRelationStatement::equal(other) && directives == other.directives;
     }
 
-protected:
     /** IO directives */
     std::map<std::string, std::string> directives;
 };
@@ -340,11 +339,11 @@ public:
 
     template <typename... Stmts>
     RamListStatement(std::unique_ptr<Stmts>&&... stmts) {
-         std::unique_ptr<RamStatement> tmp[] = {std::move(stmts)...};
-         for (auto& cur : tmp) {
-             assert(cur.get() != nullptr && "statement is a null-pointer");
-             statements.emplace_back(std::move(cur));
-         }
+        std::unique_ptr<RamStatement> tmp[] = {std::move(stmts)...};
+        for (auto& cur : tmp) {
+            assert(cur.get() != nullptr && "statement is a null-pointer");
+            statements.emplace_back(std::move(cur));
+        }
     }
 
     /** @brief Get statements */
@@ -498,7 +497,7 @@ protected:
         return equal_ptr(body, other.body);
     }
 
-    /** Body of loop */
+    /** loop body */
     std::unique_ptr<RamStatement> body;
 };
 
@@ -752,7 +751,6 @@ protected:
         return RamRelationStatement::equal(other) && message == other.message;
     }
 
-protected:
     /** logging message */
     std::string message;
 };

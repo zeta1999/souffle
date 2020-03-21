@@ -469,12 +469,6 @@ public:
         assert(body != nullptr && "Loop body is a null-pointer");
     }
 
-#if 0
-    template <typename... Stmts>
-    RamLoop(std::unique_ptr<RamStatement> f, std::unique_ptr<RamStatement> s, std::unique_ptr<Stmts>... rest)
-            : body(std::make_unique<RamSequence>(std::move(f), std::move(s), std::move(rest)...)) {}
-#endif
-
     /** @brief Get loop body */
     const RamStatement& getBody() const {
         return *body;

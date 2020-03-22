@@ -48,7 +48,7 @@ class AstRelation : public AstNode {
 public:
     AstRelation() = default;
 
-    /** Return the name of the relation */
+    /** get qualified relation name */
     const AstQualifiedName& getQualifiedName() const {
         return name;
     }
@@ -69,12 +69,12 @@ public:
         return attributes.size();
     }
 
-    /** Obtains a list of the contained attributes */
+    /** Get relation attributes */
     std::vector<AstAttribute*> getAttributes() const {
         return toPtrVector(attributes);
     }
 
-    /** Return qualifiers associated with this relation */
+    /** Get relation qualifiers */
     const std::set<RelationQualifier>& getQualifiers() const {
         return qualifiers;
     }
@@ -89,15 +89,17 @@ public:
         qualifiers.erase(q);
     }
 
-    /** Get representation for this relation */
+    /** Get relation representation */
     RelationRepresentation getRepresentation() const {
         return representation;
     }
 
+    /** Set relation representation */
     void setRepresentation(RelationRepresentation representation) {
         this->representation = representation;
     }
 
+    /** check for a relation qualifier */
     bool hasQualifier(RelationQualifier q) const {
         return qualifiers.find(q) != qualifiers.end();
     }
@@ -163,6 +165,10 @@ protected:
     RelationRepresentation representation{RelationRepresentation::DEFAULT};
 };
 
+/**
+ * Lexicographical order for AstRelation
+ * using the qualified name as an ordering criteria.
+ */
 struct AstNameComparison {
     bool operator()(const AstRelation* x, const AstRelation* y) const {
         if (x != nullptr && y != nullptr) {

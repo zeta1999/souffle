@@ -1083,12 +1083,10 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
                         std::make_unique<RamProject>(
                                 std::unique_ptr<RamRelationReference>(dest->clone()), std::move(values))));
         if (dest->get()->getRepresentation() == RelationRepresentation::EQREL) {
-            std::vector<std::unique_ptr<RamStatement>> stmts;
-            appendStmt(
-                    stmts, std::make_unique<RamExtend>(std::unique_ptr<RamRelationReference>(dest->clone()),
-                                   std::unique_ptr<RamRelationReference>(src->clone())));
-            appendStmt(stmts, std::move(stmt));
-            stmt = std::make_unique<RamSequence>(std::move(stmts));
+            stmt = std::make_unique<RamSequence>(
+                    std::make_unique<RamExtend>(std::unique_ptr<RamRelationReference>(dest->clone()),
+                            std::unique_ptr<RamRelationReference>(src->clone())),
+                    std::move(stmt));
         }
         return stmt;
     };
@@ -1098,22 +1096,17 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
     /* Compute non-recursive clauses for relations in scc and push
        the results in their delta tables. */
     for (const AstRelation* rel : scc) {
-        std::vector<std::unique_ptr<RamStatement>> updateRelTable;
-
         /* create update statements for fixpoint (even iteration) */
-        appendStmt(updateRelTable, genMerge(translateRelation(rel).get(), translateNewRelation(rel).get()));
-        appendStmt(updateRelTable,
-                std::make_unique<RamSwap>(translateDeltaRelation(rel), translateNewRelation(rel)));
-        appendStmt(updateRelTable, std::make_unique<RamClear>(translateNewRelation(rel)));
+        std::unique_ptr<RamStatement> updateRelTable = std::make_unique<RamSequence>(
+                genMerge(translateRelation(rel).get(), translateNewRelation(rel).get()),
+                std::make_unique<RamSwap>(translateDeltaRelation(rel), translateNewRelation(rel)),
+                std::make_unique<RamClear>(translateNewRelation(rel)));
 
         /* measure update time for each relation */
         if (Global::config().has("profile")) {
-            std::unique_ptr<RamStatement> profileStmt = std::make_unique<RamLogRelationTimer>(
-                    std::make_unique<RamSequence>(std::move(updateRelTable)),
+            updateRelTable = std::make_unique<RamLogRelationTimer>(std::move(updateRelTable),
                     LogStatement::cRecursiveRelation(toString(rel->getQualifiedName()), rel->getSrcLoc()),
                     translateNewRelation(rel));
-            updateRelTable.clear();
-            appendStmt(updateRelTable, std::move(profileStmt));
         }
 
         /* drop temporary tables after recursion */
@@ -1121,13 +1114,12 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         appendStmt(postamble, std::make_unique<RamClear>(translateNewRelation(rel)));
 
         /* Generate code for non-recursive part of relation */
-        appendStmt(preamble, translateNonRecursiveRelation(*rel, recursiveClauses));
-
         /* Generate merge operation for temp tables */
+        appendStmt(preamble, translateNonRecursiveRelation(*rel, recursiveClauses));
         appendStmt(preamble, genMerge(translateDeltaRelation(rel).get(), translateRelation(rel).get()));
 
         /* Add update operations of relations to parallel statements */
-        appendStmt(updateTable, std::make_unique<RamSequence>(std::move(updateRelTable)));
+        appendStmt(updateTable, std::move(updateRelTable));
     }
 
     // --- build main loop ---
@@ -1270,11 +1262,9 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
         appendStmt(res, std::make_unique<RamSequence>(std::move(preamble)));
     }
     if (!loop->getStatements().empty() && exitCond && updateTable.size() > 0) {
-        std::vector<std::unique_ptr<RamStatement>> loopBody;
-        appendStmt(loopBody, std::move(loop));
-        appendStmt(loopBody, std::make_unique<RamExit>(std::move(exitCond)));
-        appendStmt(loopBody, std::make_unique<RamSequence>(std::move(updateTable)));
-        appendStmt(res, std::make_unique<RamLoop>(std::make_unique<RamSequence>(std::move(loopBody))));
+        appendStmt(res, std::make_unique<RamLoop>(std::make_unique<RamSequence>(std::move(loop),
+                                std::make_unique<RamExit>(std::move(exitCond)),
+                                std::make_unique<RamSequence>(std::move(updateTable)))));
     }
     if (postamble.size() > 0) {
         appendStmt(res, std::make_unique<RamSequence>(std::move(postamble)));

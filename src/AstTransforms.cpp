@@ -132,7 +132,8 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
                 }
             }
         }
-    }
+		}
+    
 
     // map each relation to its ultimate alias (could be transitive)
     alias_map isAliasOf;
@@ -219,6 +220,146 @@ bool UniqueAggregationVariablesTransformer::transform(AstTranslationUnit& transl
         aggNumber++;
     });
     return changed;
+}
+
+bool MaterializeSingletonAggregationTransformer::transform(
+				AstTranslationUnit& translationUnit) {
+		bool changed = false;
+		AstProgram& program = *translationUnit.getProgram();
+    const TypeEnvironment& env = translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
+		int counter = 0;
+		visitDepthFirst(program, [&](const AstClause& clause) {
+			visitDepthFirst(clause, [&](const AstLiteral& literal) {
+				visitDepthFirst(literal, [&](const AstAggregator& agg) {
+					if (!isSingleValued(agg)) {
+							return;
+					}
+					changed = true; 
+					auto* clause = new AstClause();
+					auto* head = new AstAtom();
+					head->setQualifiedName("A");
+					head->addArgument(std::make_unique<AstVariable>("X"));
+					clause->setHead(std::unique_ptr<AstAtom>(head));
+					// auto* literalCopy = literal.clone();
+					clause->addToBody(std::unique_ptr<AstLiteral>(head->clone()));
+					program.addClause(std::unique_ptr<AstClause>(clause));
+//					// We are now in this situation
+//					// Head :- Body, x = sum y : {...}.
+//					// The goal is...
+//					// Head :- Body, agg(x).
+//					
+//					/* Steps:
+//					 * 1. Make a new relation __agg_i and a new clause __agg_i(x) :- literal.
+//					 * 2. Update the current clause to replace literal with _agg_i_(x).
+//					 * 3. Add the new relation to the program
+//					 * 4. Add the new clause to the program
+//					 */
+//					 // 1. Make a new relation __agg_i and a new clause __agg_i(x) :- literal.
+					 auto relName = "__agg_" + toString(counter++);
+					 while (getRelation(program, relName) != nullptr) {
+					 		relName = "__agg_" + toString(counter++);
+					 }
+//					 auto* newRule = new AstClause();
+//					 newRule->addToBody(std::unique_ptr<AstLiteral>(literal.clone()));
+//					 // now this clause has
+//					 // :- x = sum y : {B(y), C(y)}.
+//					 auto* newRuleHead = new AstAtom();
+//					 newRuleHead->setQualifiedName(relName);
+//					 // add variables to the head (once only)
+//					 std::set<std::string> variables;
+//					 visitDepthFirst(agg, [&](const AstVariable& var) {
+//							variables.insert(var.getName()); 
+//					 });
+//					 for (const auto& var : variables) {
+//							newRuleHead->addArgument(std::make_unique<AstVariable>(var));	
+//					 }
+//					 newRule->setHead(std::unique_ptr<AstAtom>(newRuleHead));
+//////					 // Now we have a full blown __agg_i(x) :- literal. Yay!
+//////					 // Now you need to update the original clause to remove this and replace with head.
+//////					 // You also need to add this relation to the program.
+//					 auto* rel = new AstRelation();
+//					 rel->setQualifiedName(relName);
+//////						
+//////					 // add attributes for type system
+//            std::map<const AstArgument*, TypeSet> argTypes =
+//                    TypeAnalysis::analyseTypes(env, *newRule, &program);
+//            for (const auto& cur : newRuleHead->getArguments()) {
+//                rel->addAttribute(std::make_unique<AstAttribute>(
+//                        toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
+//            }
+//////
+//            program.addClause(std::unique_ptr<AstClause>(newRule));
+//            program.addRelation(std::unique_ptr<AstRelation>(rel));
+//						// now mutate the clause so that we replace the literal with the head __agg_i(x).
+////						struct replaceAggregateLiteral : public AstNodeMapper {
+////							const AstLiteral& literal;
+////							const AstAtom* replacement;
+////							
+////							replaceAggregateLiteral(const AstLiteral& literal, const AstAtom* replacement) 
+////											: literal(literal), replacement(replacement) {}
+////
+////							std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+////								if (auto* lit = dynamic_cast<AstLiteral*>(node.get())) {
+////									if (*lit == literal) {
+////										std::vector<std::unique_ptr<AstArgument>> args;
+////										for (auto arg : replacement->getArguments()) {
+////												args.emplace_back(arg->clone());
+////										}
+////										auto literalReplacement = std::make_unique<AstAtom>(replacement->getQualifiedName(), std::move(args), replacement->getSrcLoc());
+////										return literalReplacement;
+////									}
+////								}
+////								return node;
+////							}
+////						};
+////						replaceAggregateLiteral update(literal, literalClauseHead);
+////						program.apply(update);
+//
+//
+//						//////auto aggAtom =
+//            ////        std::make_unique<AstAtom>(head->getQualifiedName(), std::move(args), head->getSrcLoc());
+//
+//            ////std::vector<std::unique_ptr<AstLiteral>> newBody;
+//            ////newBody.push_back(std::move(aggAtom));
+//            ////const_cast<AstAggregator&>(agg).setBody(std::move(newBody));
+//						//std::vector<std::unique_ptr<AstLiteral>> newClauseBody;
+//						//for (const auto& lit : clause.getBodyLiterals()) {
+//						//		if (lit != &literal) {
+//						//			newClauseBody.push_back(std::move(lit));
+//						//		}
+//						//}
+//            //std::vector<std::unique_ptr<AstArgument>> args;
+//            //for (auto arg : literalClauseHead->getArguments()) {
+//            //    args.emplace_back(arg->clone());
+//            //}
+//
+//						//auto literalReplacement = std::make_unique<AstAtom>(literalClauseHead->getQualifiedName(), std::move(args), literalClauseHead->getSrcLoc());
+//						//newClauseBody.push_back(std::move(literalReplacement));
+//						//const_cast<AstClause&>(clause).setBody(std::move(newClauseBody));
+					});
+				});
+			});
+
+		return changed;
+}
+
+// An aggregate is single-valued if none of the variables appearing in the body
+// are ungrounded when ignoring the outer scope
+// ie the aggregate only ever evaluates to a single value.
+bool MaterializeSingletonAggregationTransformer::isSingleValued(const AstAggregator& agg) {
+		// Dummy clause to analyse groundedness
+		auto* aggClause = new AstClause();
+		for (const auto& lit : agg.getBodyLiterals()) {
+			 aggClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
+		}
+		for (const auto& argPair : getGroundedTerms(*aggClause)) {
+				const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
+				bool variableIsGrounded = argPair.second;
+				if (variable != nullptr && !variableIsGrounded) {
+						return false;
+				}
+		}
+		return true;
 }
 
 bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
@@ -376,8 +517,8 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
 }
 
 bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(const AstAggregator& agg) {
-    // everything with at least 1 body literal => materialize
-    if (agg.getBodyLiterals().size() >= 1) {
+    // everything with more than 1 body literal => materialize
+    if (agg.getBodyLiterals().size() > 1) {
         return true;
     }
 

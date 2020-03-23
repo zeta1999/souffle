@@ -117,6 +117,24 @@ private:
 };
 
 /**
+ * Replaces literals containing single-valued aggregates with
+ * a synthesised relation
+ */
+class MaterializeSingletonAggregationTransformer : public AstTransformer {
+public:
+		std::string getName() const override {
+			return "MaterializeSingletonAggregationTransformer";
+		}
+private:
+		bool transform(AstTranslationUnit& translationUnit) override;
+		/**
+		 * Determines whether an aggregate is single-valued,
+		 * ie the aggregate does not depend on the outer scope.
+		 */
+		static bool isSingleValued(const AstAggregator& agg); 
+};
+
+/**
  * Transformation pass to create artificial relations for bodies of
  * aggregation functions consisting of more than a single atom.
  */

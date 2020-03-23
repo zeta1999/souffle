@@ -89,7 +89,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstFunctorDeclaration*>(&node));
         const auto& other = static_cast<const AstFunctorDeclaration&>(node);
         return name == other.name && argsTypes == other.argsTypes && returnType == other.returnType;
     }

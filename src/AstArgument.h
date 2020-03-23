@@ -65,7 +65,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstVariable*>(&node));
         const auto& other = static_cast<const AstVariable&>(node);
         return name == other.name;
     }
@@ -126,7 +125,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstConstant*>(&node));
         const auto& other = static_cast<const AstConstant&>(node);
         return constant == other.constant;
     }
@@ -188,7 +186,6 @@ public:
 
 protected:
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstNumericConstant*>(&node));
         const auto& other = static_cast<const AstNumericConstant&>(node);
         return AstConstant::equal(node) && type == other.type;
     }
@@ -246,7 +243,6 @@ public:
 
 protected:
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstTerm*>(&node));
         const auto& other = static_cast<const AstTerm&>(node);
         return equal_targets(args, other.args);
     }
@@ -333,7 +329,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstIntrinsicFunctor*>(&node));
         const auto& other = static_cast<const AstIntrinsicFunctor&>(node);
         return function == other.function && AstFunctor::equal(node);
     }
@@ -396,7 +391,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstUserDefinedFunctor*>(&node));
         const auto& other = static_cast<const AstUserDefinedFunctor&>(node);
         return name == other.name && AstFunctor::equal(node);
     }
@@ -473,7 +467,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstTypeCast*>(&node));
         const auto& other = static_cast<const AstTypeCast&>(node);
         return type == other.type && equal_ptr(value, other.value);
     }
@@ -585,7 +578,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstAggregator*>(&node));
         const auto& other = static_cast<const AstAggregator&>(node);
         return fun == other.fun && equal_ptr(targetExpression, other.targetExpression) &&
                equal_targets(body, other.body);
@@ -626,7 +618,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstSubroutineArgument*>(&node));
         const auto& other = static_cast<const AstSubroutineArgument&>(node);
         return index == other.index;
     }

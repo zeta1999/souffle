@@ -59,7 +59,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstExecutionOrder*>(&node));
         const auto& other = static_cast<const AstExecutionOrder&>(node);
         return order == other.order;
     }
@@ -122,7 +121,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstExecutionPlan*>(&node));
         const auto& other = static_cast<const AstExecutionPlan&>(node);
         return equal_targets(plans, other.plans);
     }
@@ -223,7 +221,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstClause*>(&node));
         const auto& other = static_cast<const AstClause&>(node);
         return equal_ptr(head, other.head) && equal_targets(bodyLiterals, other.bodyLiterals) &&
                equal_ptr(plan, other.plan);

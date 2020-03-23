@@ -65,7 +65,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstAttribute*>(&node));
         const auto& other = static_cast<const AstAttribute&>(node);
         return name == other.name && typeName == other.typeName;
     }

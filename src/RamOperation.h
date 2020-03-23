@@ -296,6 +296,7 @@ public:
         }
     }
 
+protected:
     /** @brief Helper method for printing */
     void printIndex(std::ostream& os) const {
         const auto& attrib = getRelation().getAttributeNames();
@@ -315,7 +316,6 @@ public:
         }
     }
 
-protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexOperation&>(node);
         return RamRelationOperation::equal(other) && equal_targets(queryPattern, other.queryPattern);
@@ -837,7 +837,7 @@ public:
 
 protected:
     bool equal(const RamNode& node) const override {
-        const auto& other = static_cast<const RamAggregate&>(node);
+        const auto& other = static_cast<const RamIndexAggregate&>(node);
         return RamIndexOperation::equal(other) && RamAbstractAggregate::equal(other);
     }
 };

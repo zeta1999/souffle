@@ -1005,7 +1005,7 @@ std::unique_ptr<RamStatement> AstTranslator::translateNonRecursiveRelation(
         const std::string logSizeStatement = LogStatement::nNonrecursiveRelation(relationName, srcLocation);
 
         // add timer if we did any work
-        if (res.size() > 0) {
+        if (!res.empty()) {
             const std::string logTimerStatement =
                     LogStatement::tNonrecursiveRelation(relationName, srcLocation);
             std::unique_ptr<RamStatement> newStmt =

@@ -388,8 +388,8 @@ public:
             : RamListStatement(std::move(statements)) {}
     RamSequence() : RamListStatement() {}
     template <typename... Stmts>
-    RamSequence(std::unique_ptr<RamStatement> f, std::unique_ptr<Stmts>... rest)
-            : RamListStatement(std::move(f), std::move(rest)...) {}
+    RamSequence(std::unique_ptr<RamStatement> first, std::unique_ptr<Stmts>... rest)
+            : RamListStatement(std::move(first), std::move(rest)...) {}
 
     RamSequence* clone() const override {
         auto* res = new RamSequence();
@@ -429,8 +429,8 @@ public:
             : RamListStatement(std::move(statements)) {}
     RamParallel() : RamListStatement() {}
     template <typename... Stmts>
-    RamParallel(std::unique_ptr<RamStatement> f, std::unique_ptr<Stmts>... rest)
-            : RamListStatement(std::move(f), std::move(rest)...) {}
+    RamParallel(std::unique_ptr<RamStatement> first, std::unique_ptr<Stmts>... rest)
+            : RamListStatement(std::move(first), std::move(rest)...) {}
 
     RamParallel* clone() const override {
         auto* res = new RamParallel();

@@ -20,7 +20,7 @@
 #include "RamTypes.h"
 #include "SouffleInterface.h"
 #include "WriteStreamCSV.h"
-
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -108,12 +108,9 @@ public:
 
     /** Verify if the query product satisfies constant constraint */
     bool verify(const std::vector<tuple>& product) const {
-        for (auto constr : constConstrs) {
-            if (product[constr.first.first][constr.first.second] != constr.second) {
-                return false;
-            }
-        }
-        return true;
+        return std::all_of(constConstrs.begin(), constConstrs.end(), [&product](auto constr) {
+            return product[constr.first.first][constr.first.second] == constr.second;
+        });
     }
 
     /** Get the constant constraint vector */
@@ -167,7 +164,7 @@ public:
 
     virtual std::string getRule(std::string relName, size_t ruleNum) = 0;
 
-    virtual std::vector<std::string> getRules(std::string relName) = 0;
+    virtual std::vector<std::string> getRules(const std::string& relName) = 0;
 
     virtual std::string measureRelation(std::string relName) = 0;
 

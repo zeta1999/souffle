@@ -56,7 +56,7 @@ public:
                 RamDomain ruleNum;
                 tuple >> ruleNum;
 
-                for (size_t i = 1; i < rel->getArity() - 1; i++) {
+                for (size_t i = 1; i + 1 < rel->getArity(); i++) {
                     std::string bodyLit;
                     tuple >> bodyLit;
                     bodyLiterals.push_back(bodyLit);
@@ -498,7 +498,7 @@ public:
         }
     }
 
-    std::vector<std::string> getRules(std::string relName) override {
+    std::vector<std::string> getRules(const std::string& relName) override {
         std::vector<std::string> relRules;
         // go through all rules
         for (auto& rule : rules) {

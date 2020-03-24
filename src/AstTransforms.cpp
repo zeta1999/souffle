@@ -301,8 +301,8 @@ bool MaterializeSingletonAggregationTransformer::transform(
 									for (auto arg : replacement->getArguments()) {
 											args.emplace_back(arg->clone());
 									}
-									auto literalReplacement = std::make_unique<AstLiteral>(replacement->getQualifiedName(), std::move(args), replacement->getSrcLoc());
-									return literalReplacement;
+									auto literalReplacementAtom = std::make_unique<AstAtom>(replacement->getQualifiedName(), std::move(args), replacement->getSrcLoc());
+									return literalReplacementAtom;
 								}
 							}
 

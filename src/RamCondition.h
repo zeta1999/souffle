@@ -49,12 +49,13 @@ public:
  */
 class RamTrue : public RamCondition {
 public:
-    void print(std::ostream& os) const override {
-        os << "true";
-    }
-
     RamTrue* clone() const override {
         return new RamTrue();
+    }
+
+protected:
+    void print(std::ostream& os) const override {
+        os << "true";
     }
 };
 
@@ -66,12 +67,13 @@ public:
  */
 class RamFalse : public RamCondition {
 public:
-    void print(std::ostream& os) const override {
-        os << "false";
-    }
-
     RamFalse* clone() const override {
         return new RamFalse();
+    }
+
+protected:
+    void print(std::ostream& os) const override {
+        os << "false";
     }
 };
 
@@ -107,10 +109,6 @@ public:
         return *rhs;
     }
 
-    void print(std::ostream& os) const override {
-        os << "(" << *lhs << " AND " << *rhs << ")";
-    }
-
     std::vector<const RamNode*> getChildNodes() const override {
         return {lhs.get(), rhs.get()};
     }
@@ -126,9 +124,13 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "(" << *lhs << " AND " << *rhs << ")";
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamConjunction&>(node);
-        return getLHS() == other.getLHS() && getRHS() == other.getRHS();
+        return equal_ptr(lhs, other.lhs) && equal_ptr(rhs, other.rhs);
     }
 
     /** Left-hand side of conjunction */
@@ -158,10 +160,6 @@ public:
         return *operand;
     }
 
-    void print(std::ostream& os) const override {
-        os << "(NOT " << *operand << ")";
-    }
-
     std::vector<const RamNode*> getChildNodes() const override {
         return {operand.get()};
     }
@@ -175,9 +173,13 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "(NOT " << *operand << ")";
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamNegation&>(node);
-        return getOperand() == other.getOperand();
+        return equal_ptr(operand, other.operand);
     }
 
     /** Operand */
@@ -203,12 +205,6 @@ public:
             : op(op), lhs(std::move(l)), rhs(std::move(r)) {
         assert(lhs != nullptr && "left-hand side of constraint is a null-pointer");
         assert(rhs != nullptr && "right-hand side of constraint is a null-pointer");
-    }
-
-    void print(std::ostream& os) const override {
-        os << "(" << *lhs << " ";
-        os << toBinaryConstraintSymbol(op);
-        os << " " << *rhs << ")";
     }
 
     /** @brief Get left-hand side */
@@ -241,10 +237,15 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "(" << *lhs << " ";
+        os << toBinaryConstraintSymbol(op);
+        os << " " << *rhs << ")";
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamConstraint&>(node);
-        return getOperator() == other.getOperator() && getLHS() == other.getLHS() &&
-               getRHS() == other.getRHS();
+        return op == other.op && equal_ptr(lhs, other.lhs) && equal_ptr(rhs, other.rhs);
     }
 
     /** Operator */
@@ -286,19 +287,6 @@ public:
         return toPtrVector(values);
     }
 
-    void print(std::ostream& os) const override {
-        os << "("
-           << join(values, ",",
-                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
-                          if (!value) {
-                              out << "_";
-                          } else {
-                              out << *value;
-                          }
-                      })
-           << ") ∈ " << getRelation().getName();
-    }
-
     std::vector<const RamNode*> getChildNodes() const override {
         std::vector<const RamNode*> res = {relationRef.get()};
         for (const auto& cur : values) {
@@ -315,9 +303,22 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "("
+           << join(values, ",",
+                      [](std::ostream& out, const std::unique_ptr<RamExpression>& value) {
+                          if (!value) {
+                              out << "_";
+                          } else {
+                              out << *value;
+                          }
+                      })
+           << ") ∈ " << getRelation().getName();
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamAbstractExistenceCheck&>(node);
-        return getRelation() == other.getRelation() && equal_targets(values, other.values);
+        return equal_ptr(relationRef, other.relationRef) && equal_targets(values, other.values);
     }
 
     /** Relation */
@@ -365,11 +366,6 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::vector<std::unique_ptr<RamExpression>> vals)
             : RamAbstractExistenceCheck(std::move(relRef), std::move(vals)) {}
 
-    void print(std::ostream& os) const override {
-        os << "prov";
-        RamAbstractExistenceCheck::print(os);
-    }
-
     RamProvenanceExistenceCheck* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> newValues;
         for (auto& cur : values) {
@@ -377,6 +373,12 @@ public:
         }
         return new RamProvenanceExistenceCheck(
                 std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
+    }
+
+protected:
+    void print(std::ostream& os) const override {
+        os << "prov";
+        RamAbstractExistenceCheck::print(os);
     }
 };
 
@@ -402,10 +404,6 @@ public:
         return *relationRef->get();
     }
 
-    void print(std::ostream& os) const override {
-        os << "(" << getRelation().getName() << " = ∅)";
-    }
-
     std::vector<const RamNode*> getChildNodes() const override {
         return {relationRef.get()};
     }
@@ -419,9 +417,13 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "(" << getRelation().getName() << " = ∅)";
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamEmptinessCheck&>(node);
-        return getRelation() == other.getRelation();
+        return equal_ptr(relationRef, other.relationRef);
     }
 
     /** Relation */

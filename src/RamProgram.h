@@ -68,24 +68,6 @@ public:
         return children;
     }
 
-    void print(std::ostream& out) const override {
-        out << "PROGRAM" << std::endl;
-        out << " DECLARATION" << std::endl;
-        for (const auto& rel : relations) {
-            out << "  " << *rel << std::endl;
-        }
-        out << " END DECLARATION" << std::endl;
-        for (const auto& sub : subroutines) {
-            out << " SUBROUTINE " << sub.first << std::endl;
-            sub.second->print(out, 2);
-            out << " END SUBROUTINE" << std::endl;
-        }
-        out << " BEGIN MAIN" << std::endl;
-        main->print(out, 2);
-        out << " END MAIN" << std::endl;
-        out << "END PROGRAM" << std::endl;
-    }
-
     /** @brief Get main program */
     RamStatement& getMain() const {
         return *main;
@@ -144,17 +126,29 @@ public:
     }
 
 protected:
+    void print(std::ostream& out) const override {
+        out << "PROGRAM" << std::endl;
+        out << " DECLARATION" << std::endl;
+        for (const auto& rel : relations) {
+            out << "  " << *rel << std::endl;
+        }
+        out << " END DECLARATION" << std::endl;
+        for (const auto& sub : subroutines) {
+            out << " SUBROUTINE " << sub.first << std::endl;
+            sub.second->print(out, 2);
+            out << " END SUBROUTINE" << std::endl;
+        }
+        out << " BEGIN MAIN" << std::endl;
+        main->print(out, 2);
+        out << " END MAIN" << std::endl;
+        out << "END PROGRAM" << std::endl;
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamProgram&>(node);
-        if (relations.size() != other.relations.size() || subroutines.size() != other.subroutines.size()) {
-            return false;
-        }
-        for (auto& sub : subroutines) {
-            if (other.getSubroutine(sub.first) != getSubroutine(sub.first)) {
-                return false;
-            }
-        }
-        return getMain() == other.getMain() && equal_targets(relations, other.relations);
+
+        return equal_targets(relations, other.relations) && equal_ptr(main, other.main) &&
+               equal_targets(subroutines, other.subroutines);
     }
 
 protected:

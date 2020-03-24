@@ -96,20 +96,6 @@ public:
     RamIntrinsicOperator(FunctorOp op, std::vector<std::unique_ptr<RamExpression>> args)
             : RamAbstractOperator(std::move(args)), operation(op) {}
 
-    void print(std::ostream& os) const override {
-        if (isInfixFunctorOp(operation)) {
-            os << "(";
-            os << join(arguments, getSymbolForFunctorOp(operation),
-                    print_deref<std::unique_ptr<RamExpression>>());
-            os << ")";
-        } else {
-            os << getSymbolForFunctorOp(operation);
-            os << "(";
-            os << join(arguments, ",", print_deref<std::unique_ptr<RamExpression>>());
-            os << ")";
-        }
-    }
-
     /** @brief Get operator symbol */
     FunctorOp getOperator() const {
         return operation;
@@ -124,9 +110,23 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        if (isInfixFunctorOp(operation)) {
+            os << "(";
+            os << join(arguments, getSymbolForFunctorOp(operation),
+                    print_deref<std::unique_ptr<RamExpression>>());
+            os << ")";
+        } else {
+            os << getSymbolForFunctorOp(operation);
+            os << "(";
+            os << join(arguments, ",", print_deref<std::unique_ptr<RamExpression>>());
+            os << ")";
+        }
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIntrinsicOperator&>(node);
-        return RamAbstractOperator::equal(node) && getOperator() == other.getOperator();
+        return RamAbstractOperator::equal(node) && operation == other.operation;
     }
 
     /** Operation symbol */
@@ -144,13 +144,6 @@ public:
             : RamAbstractOperator(std::move(args)), name(std::move(n)), argsTypes(std::move(argsTypes)),
               returnType(returnType) {
         assert(argsTypes.size() == args.size());
-    }
-
-    void print(std::ostream& os) const override {
-        os << "@" << name << "_" << argsTypes << "(";
-        os << join(arguments, ",",
-                [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) { out << *arg; });
-        os << ")";
     }
 
     /** @brief Get operator name */
@@ -178,6 +171,13 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "@" << name << "_" << argsTypes << "(";
+        os << join(arguments, ",",
+                [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) { out << *arg; });
+        os << ")";
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamUserDefinedOperator&>(node);
         return RamAbstractOperator::equal(node) && name == other.name && argsTypes == other.argsTypes &&
@@ -206,11 +206,6 @@ protected:
 class RamTupleElement : public RamExpression {
 public:
     RamTupleElement(size_t ident, size_t elem) : identifier(ident), element(elem) {}
-
-    void print(std::ostream& os) const override {
-        os << "t" << identifier << "." << element;
-    }
-
     /** @brief Get identifier */
     int getTupleId() const {
         return identifier;
@@ -226,9 +221,13 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "t" << identifier << "." << element;
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamTupleElement&>(node);
-        return getTupleId() == other.getTupleId() && getElement() == other.getElement();
+        return identifier == other.identifier && element == other.element;
     }
 
     /** Identifier for the tuple */
@@ -280,13 +279,14 @@ public:
         return constant;
     }
 
-    void print(std::ostream& os) const override {
-        os << "number(" << constant << ")";
-    }
-
     /** Create clone */
     RamSignedConstant* clone() const override {
         return new RamSignedConstant(getValue());
+    }
+
+protected:
+    void print(std::ostream& os) const override {
+        os << "number(" << constant << ")";
     }
 };
 
@@ -308,13 +308,14 @@ public:
         return ramBitCast<RamUnsigned>(constant);
     }
 
-    void print(std::ostream& os) const override {
-        os << "unsigned(" << getValue() << ")";
-    }
-
     /** Create clone */
     RamUnsignedConstant* clone() const override {
         return new RamUnsignedConstant(getValue());
+    }
+
+protected:
+    void print(std::ostream& os) const override {
+        os << "unsigned(" << getValue() << ")";
     }
 };
 
@@ -331,10 +332,6 @@ class RamFloatConstant : public RamConstant {
 public:
     explicit RamFloatConstant(RamFloat val) : RamConstant(ramBitCast(val)) {}
 
-    void print(std::ostream& os) const override {
-        os << "float(" << getValue() << ")";
-    }
-
     /** @brief Get value of the constant. */
     RamFloat getValue() const {
         return ramBitCast<RamFloat>(constant);
@@ -343,6 +340,11 @@ public:
     /** Create clone */
     RamFloatConstant* clone() const override {
         return new RamFloatConstant(getValue());
+    }
+
+protected:
+    void print(std::ostream& os) const override {
+        os << "float(" << getValue() << ")";
     }
 };
 
@@ -354,12 +356,13 @@ public:
  */
 class RamAutoIncrement : public RamExpression {
 public:
-    void print(std::ostream& os) const override {
-        os << "autoinc()";
-    }
-
     RamAutoIncrement* clone() const override {
         return new RamAutoIncrement();
+    }
+
+protected:
+    void print(std::ostream& os) const override {
+        os << "autoinc()";
     }
 };
 
@@ -371,12 +374,13 @@ public:
  */
 class RamUndefValue : public RamExpression {
 public:
-    void print(std::ostream& os) const override {
-        os << "⊥";
-    }
-
     RamUndefValue* clone() const override {
         return new RamUndefValue();
+    }
+
+protected:
+    void print(std::ostream& os) const override {
+        os << "⊥";
     }
 };
 
@@ -395,12 +399,6 @@ public:
     /** @brief Get record arguments */
     std::vector<RamExpression*> getArguments() const {
         return toPtrVector(arguments);
-    }
-
-    void print(std::ostream& os) const override {
-        os << "[" << join(arguments, ",", [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) {
-            out << *arg;
-        }) << "]";
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
@@ -426,6 +424,12 @@ public:
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "[" << join(arguments, ",", [](std::ostream& out, const std::unique_ptr<RamExpression>& arg) {
+            out << *arg;
+        }) << "]";
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamPackRecord&>(node);
         return equal_targets(arguments, other.arguments);
@@ -452,18 +456,18 @@ public:
         return number;
     }
 
-    void print(std::ostream& os) const override {
-        os << "argument(" << number << ")";
-    }
-
     RamSubroutineArgument* clone() const override {
         return new RamSubroutineArgument(number);
     }
 
 protected:
+    void print(std::ostream& os) const override {
+        os << "argument(" << number << ")";
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamSubroutineArgument&>(node);
-        return getArgument() == other.getArgument();
+        return number == other.number;
     }
 
     /** Argument number */

@@ -67,3 +67,4 @@ POSITIVE_PROVENANCE_OUTPUT_TEST([path_explain_output_subtreeHeights],[provenance
 POSITIVE_PROVENANCE_TEST([query_1],[provenance])
 POSITIVE_PROVENANCE_TEST([query_2],[provenance])
 POSITIVE_PROVENANCE_TEST([query_3],[provenance])
+POSITIVE_PROVENANCE_TEST([query_float_unsigned],[provenance])

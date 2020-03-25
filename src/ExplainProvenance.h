@@ -19,6 +19,7 @@
 #include "ExplainTree.h"
 #include "RamTypes.h"
 #include "SouffleInterface.h"
+#include "Util.h"
 #include "WriteStreamCSV.h"
 #include <algorithm>
 #include <sstream>
@@ -76,7 +77,10 @@ public:
         return indices;
     }
 
-    /** Get type of the variable of the equivalence class, 'i' for RamDomain, 's' for symbol */
+    /** Get type of the variable of the equivalence class,
+     * 'i' for RamSigned, 's' for symbol
+     * 'u' for RamUnsigned, 'f' for RamFloat
+     */
     char getType() {
         return type;
     }
@@ -197,8 +201,12 @@ protected:
                     auto originalStr = args[i].substr(1, args[i].size() - 2);
                     nums.push_back(symTable.lookup(originalStr));
                 }
+            } else if (*rel->getAttrType(i) == 'f') {
+                nums.push_back(ramBitCast(RamFloatFromString(args[i])));
+            } else if (*rel->getAttrType(i) == 'u') {
+                nums.push_back(ramBitCast(RamUnsignedFromString(args[i])));
             } else {
-                nums.push_back(std::stoi(args[i]));
+                nums.push_back(RamSignedFromString(args[i]));
             }
         }
 
@@ -215,11 +223,17 @@ protected:
         }
 
         for (size_t i = 0; i < nums.size(); i++) {
+            std::string arg;
             if (*rel->getAttrType(i) == 's') {
-                args.push_back("\"" + std::string(symTable.resolve(nums[i])) + "\"");
+                arg = "\"" + std::string(symTable.resolve(nums[i])) + "\"";
+            } else if (*rel->getAttrType(i) == 'f') {
+                arg = std::to_string(ramBitCast<RamFloat>(nums[i]));
+            } else if (*rel->getAttrType(i) == 'u') {
+                arg = std::to_string(ramBitCast<RamUnsigned>(nums[i]));
             } else {
-                args.push_back(std::to_string(nums[i]));
+                arg = std::to_string(ramBitCast<RamSigned>(nums[i]));
             }
+            args.push_back(std::move(arg));
         }
 
         return args;

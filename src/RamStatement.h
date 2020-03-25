@@ -40,13 +40,20 @@ class RamStatement : public RamNode {
 public:
     RamStatement* clone() const override = 0;
 
-    /** @brief Pretty print with indentation */
-    virtual void print(std::ostream& os, int tabpos) const = 0;
-
 protected:
     void print(std::ostream& os) const override {
         print(os, 0);
     }
+    /** @brief Pretty print with indentation */
+    virtual void print(std::ostream& os, int tabpos) const = 0;
+
+    /** @brief Pretty print jump-bed */
+    static void print(const RamStatement* statement, std::ostream& os, int tabpos) {
+        assert(statement != nullptr && "statement is a null-pointer");
+        statement->print(os, tabpos);
+    }
+
+    friend class RamProgram;
 };
 
 /**
@@ -108,6 +115,7 @@ public:
         return new RamIO(std::unique_ptr<RamRelationReference>(relationRef->clone()), directives);
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
@@ -118,7 +126,6 @@ public:
         os << ")" << std::endl;
     };
 
-protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIO&>(node);
         return RamRelationStatement::equal(other) && directives == other.directives;
@@ -147,6 +154,7 @@ public:
         return new RamClear(std::unique_ptr<RamRelationReference>(relationRef->clone()));
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
         os << times(" ", tabpos);
@@ -240,6 +248,7 @@ public:
         return res;
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "EXTEND " << getTargetRelation().getName() << " WITH " << getSourceRelation().getName();
@@ -268,6 +277,7 @@ public:
                 std::unique_ptr<RamRelationReference>(second->clone()));
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
         os << "SWAP (" << getFirstRelation().getName() << ", " << getSecondRelation().getName() << ")";
@@ -312,12 +322,12 @@ public:
         operation = map(std::move(operation));
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "QUERY" << std::endl;
         operation->print(os, tabpos + 1);
     }
 
-protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamQuery&>(node);
         return equal_ptr(operation, other.operation);
@@ -399,9 +409,10 @@ public:
         return res;
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         for (const auto& stmt : statements) {
-            stmt->print(os, tabpos);
+            RamStatement::print(stmt.get(), os, tabpos);
         }
     }
 };
@@ -440,10 +451,11 @@ public:
         return res;
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "PARALLEL" << std::endl;
         for (auto const& stmt : statements) {
-            stmt->print(os, tabpos + 1);
+            RamStatement::print(stmt.get(), os, tabpos + 1);
         }
         os << times(" ", tabpos) << "END PARALLEL" << std::endl;
     }
@@ -485,13 +497,13 @@ public:
         body = map(std::move(body));
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "LOOP" << std::endl;
-        body->print(os, tabpos + 1);
+        RamStatement::print(body.get(), os, tabpos + 1);
         os << times(" ", tabpos) << "END LOOP" << std::endl;
     }
 
-protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamLoop&>(node);
         return equal_ptr(body, other.body);
@@ -536,11 +548,11 @@ public:
         condition = map(std::move(condition));
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "EXIT " << getCondition() << std::endl;
     }
 
-protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamExit&>(node);
         return equal_ptr(condition, other.condition);
@@ -634,10 +646,11 @@ public:
         RamAbstractLog::apply(map);
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "START_TIMER ON " << getRelation().getName() << " \""
            << stringify(message) << "\"" << std::endl;
-        statement->print(os, tabpos + 1);
+        RamStatement::print(statement.get(), os, tabpos + 1);
         os << times(" ", tabpos) << "END_TIMER" << std::endl;
     }
 };
@@ -678,9 +691,10 @@ public:
         RamAbstractLog::apply(map);
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "START_TIMER \"" << stringify(message) << "\"" << std::endl;
-        statement->print(os, tabpos + 1);
+        RamStatement::print(statement.get(), os, tabpos + 1);
         os << times(" ", tabpos) << "END_TIMER" << std::endl;
     }
 };
@@ -713,9 +727,10 @@ public:
         RamAbstractLog::apply(map);
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "BEGIN_DEBUG \"" << stringify(message) << "\"" << std::endl;
-        statement->print(os, tabpos + 1);
+        RamStatement::print(statement.get(), os, tabpos + 1);
         os << times(" ", tabpos) << "END_DEBUG" << std::endl;
     }
 };
@@ -738,6 +753,7 @@ public:
         return new RamLogSize(std::unique_ptr<RamRelationReference>(relationRef->clone()), message);
     }
 
+protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos) << "LOGSIZE " << getRelation().getName();
         os << " TEXT "
@@ -745,7 +761,6 @@ public:
         os << std::endl;
     }
 
-protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamLogSize&>(node);
         return RamRelationStatement::equal(other) && message == other.message;

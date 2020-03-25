@@ -530,17 +530,45 @@ public:
     }
 
     /**
-     * Set the "current element" of the tuple to the given number, then increment the index giving the current
+     * Set the "current element" of the tuple to the given int, then increment the index giving the current
      * element.
      *
-     * @param number Number to be added (RamDomain)
+     * @param number Number to be added
      * @return Reference to the tuple
      */
-    tuple& operator<<(RamDomain number) {
+    tuple& operator<<(RamSigned integer) {
         assert(pos < size() && "exceeded tuple's size");
         assert((*relation.getAttrType(pos) == 'i' || *relation.getAttrType(pos) == 'r') &&
                 "wrong element type");
-        array[pos++] = number;
+        array[pos++] = integer;
+        return *this;
+    }
+
+    /**
+     * Set the "current element" of the tuple to the given uint, then increment the index giving the current
+     * element.
+     *
+     * @param uint Unsigned number to be added
+     * @return Reference to the tuple
+     */
+    tuple& operator<<(RamUnsigned uint) {
+        assert(pos < size() && "exceeded tuple's size");
+        assert((*relation.getAttrType(pos) == 'u') && "wrong element type");
+        array[pos++] = ramBitCast(uint);
+        return *this;
+    }
+
+    /**
+     * Set the "current element" of the tuple to the given float, then increment the index giving the current
+     * element.
+     *
+     * @param float float to be added
+     * @return Reference to the tuple
+     */
+    tuple& operator<<(RamFloat ramFloat) {
+        assert(pos < size() && "exceeded tuple's size");
+        assert((*relation.getAttrType(pos) == 'f') && "wrong element type");
+        array[pos++] = ramBitCast(ramFloat);
         return *this;
     }
 
@@ -559,17 +587,45 @@ public:
     }
 
     /**
-     * Get the "current element" of the tuple as a number, then increment the index giving the current
+     * Get the "current element" of the tuple as a int, then increment the index giving the current
      * element.
      *
-     * @param number Number to be loaded from the tuple (RamDomain)
+     * @param integer Integer to be loaded from the tuple
      * @return Reference to the tuple
      */
-    tuple& operator>>(RamDomain& number) {
+    tuple& operator>>(RamSigned& integer) {
         assert(pos < size() && "exceeded tuple's size");
         assert((*relation.getAttrType(pos) == 'i' || *relation.getAttrType(pos) == 'r') &&
                 "wrong element type");
-        number = array[pos++];
+        integer = ramBitCast<RamSigned>(array[pos++]);
+        return *this;
+    }
+
+    /**
+     * Get the "current element" of the tuple as a unsigned, then increment the index giving the current
+     * element.
+     *
+     * @param uint Unsigned number to be loaded from the tuple
+     * @return Reference to the tuple
+     */
+    tuple& operator>>(RamUnsigned& uint) {
+        assert(pos < size() && "exceeded tuple's size");
+        assert((*relation.getAttrType(pos) == 'u') && "wrong element type");
+        uint = ramBitCast<RamUnsigned>(array[pos++]);
+        return *this;
+    }
+
+    /**
+     * Get the "current element" of the tuple as a float, then increment the index giving the current
+     * element.
+     *
+     * @param ramFloat Flat to be loaded from the tuple
+     * @return Reference to the tuple
+     */
+    tuple& operator>>(RamFloat& ramFloat) {
+        assert(pos < size() && "exceeded tuple's size");
+        assert((*relation.getAttrType(pos) == 'f') && "wrong element type");
+        ramFloat = ramBitCast<RamFloat>(array[pos++]);
         return *this;
     }
 

@@ -195,18 +195,22 @@ protected:
         }
 
         for (size_t i = 0; i < args.size(); i++) {
-            if (*rel->getAttrType(i) == 's') {
-                // remove quotation marks
-                if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
-                    auto originalStr = args[i].substr(1, args[i].size() - 2);
-                    nums.push_back(symTable.lookup(originalStr));
-                }
-            } else if (*rel->getAttrType(i) == 'f') {
-                nums.push_back(ramBitCast(RamFloatFromString(args[i])));
-            } else if (*rel->getAttrType(i) == 'u') {
-                nums.push_back(ramBitCast(RamUnsignedFromString(args[i])));
-            } else {
-                nums.push_back(RamSignedFromString(args[i]));
+            switch (*(rel->getAttrType(i))) {
+                case 's':
+                    if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
+                        auto originalStr = args[i].substr(1, args[i].size() - 2);
+                        nums.push_back(symTable.lookup(originalStr));
+                    }
+                    break;
+                case 'f':
+                    nums.push_back(ramBitCast(RamFloatFromString(args[i])));
+                    break;
+                case 'u':
+                    nums.push_back(ramBitCast(RamUnsignedFromString(args[i])));
+                    break;
+                default:
+                    nums.push_back(RamSignedFromString(args[i]));
+                    break;
             }
         }
 
@@ -223,20 +227,28 @@ protected:
         }
 
         for (size_t i = 0; i < nums.size(); i++) {
-            std::string arg;
-            if (*rel->getAttrType(i) == 's') {
-                arg = "\"" + std::string(symTable.resolve(nums[i])) + "\"";
-            } else if (*rel->getAttrType(i) == 'f') {
-                arg = std::to_string(ramBitCast<RamFloat>(nums[i]));
-            } else if (*rel->getAttrType(i) == 'u') {
-                arg = std::to_string(ramBitCast<RamUnsigned>(nums[i]));
-            } else {
-                arg = std::to_string(ramBitCast<RamSigned>(nums[i]));
-            }
-            args.push_back(std::move(arg));
+            args.push_back(numToArg(*rel->getAttrType(i), nums[i]));
         }
 
         return args;
+    }
+
+    std::string numToArg(const char type, const RamDomain num) const {
+        std::string arg;
+        switch (type) {
+            case 's':
+                arg = "\"" + std::string(symTable.resolve(num)) + "\"";
+                break;
+            case 'f':
+                arg = std::to_string(ramBitCast<RamFloat>(num));
+                break;
+            case 'u':
+                arg = std::to_string(ramBitCast<RamUnsigned>(num));
+                break;
+            default:
+                arg = std::to_string(ramBitCast<RamSigned>(num));
+        }
+        return arg;
     }
 };
 

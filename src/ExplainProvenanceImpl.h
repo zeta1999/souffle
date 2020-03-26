@@ -186,8 +186,7 @@ public:
             } else if (isConstraint) {
                 std::stringstream joinedConstraint;
 
-                // FIXME: We need type info in order to figure out if the constraint is a string constraint or
-                // not!
+                // FIXME: We need type info in order to figure out how to print arguments.
                 BinaryConstraintOp rawBinOp = toBinaryConstraintOp(bodyRel);
                 if (isOrderedBinaryConstraintOp(rawBinOp)) {
                     joinedConstraint << subproofTuple[0] << " " << bodyRel << " " << subproofTuple[1];

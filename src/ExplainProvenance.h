@@ -217,7 +217,10 @@ protected:
         return nums;
     }
 
-    std::vector<std::string> numsToArgs(
+    /**
+     * Decode arguments from their ram representation and return as strings.
+     **/
+    std::vector<std::string> decodeArguments(
             const std::string& relName, const std::vector<RamDomain>& nums) const {
         std::vector<std::string> args;
 
@@ -227,13 +230,13 @@ protected:
         }
 
         for (size_t i = 0; i < nums.size(); i++) {
-            args.push_back(numToArg(*rel->getAttrType(i), nums[i]));
+            args.push_back(RamDomainToArgument(*rel->getAttrType(i), nums[i]));
         }
 
         return args;
     }
 
-    std::string numToArg(const char type, const RamDomain num) const {
+    std::string RamDomainToArgument(const char type, const RamDomain num) const {
         std::string arg;
         switch (type) {
             case 's':

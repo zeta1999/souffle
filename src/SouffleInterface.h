@@ -533,7 +533,7 @@ public:
      * Set the "current element" of the tuple to the given int, then increment the index giving the current
      * element.
      *
-     * @param number Number to be added
+     * @param integer Integer to be added
      * @return Reference to the tuple
      */
     tuple& operator<<(RamSigned integer) {
@@ -619,7 +619,7 @@ public:
      * Get the "current element" of the tuple as a float, then increment the index giving the current
      * element.
      *
-     * @param ramFloat Flat to be loaded from the tuple
+     * @param ramFloat Float to be loaded from the tuple
      * @return Reference to the tuple
      */
     tuple& operator>>(RamFloat& ramFloat) {

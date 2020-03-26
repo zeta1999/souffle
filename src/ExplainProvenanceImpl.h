@@ -74,7 +74,7 @@ public:
     std::unique_ptr<TreeNode> explain(std::string relName, std::vector<RamDomain> tuple, int ruleNum,
             int levelNum, std::vector<RamDomain> subtreeLevels, size_t depthLimit) {
         std::stringstream joinedArgs;
-        joinedArgs << join(numsToArgs(relName, tuple), ", ");
+        joinedArgs << join(decodeArguments(relName, tuple), ", ");
         auto joinedArgsStr = joinedArgs.str();
 
         // if fact
@@ -178,7 +178,7 @@ public:
             // for a negation, display the corresponding tuple and do not recurse
             if (bodyRel[0] == '!' && bodyRel != "!=") {
                 std::stringstream joinedTuple;
-                joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple), ", ");
+                joinedTuple << join(decodeArguments(bodyRelAtomName, subproofTuple), ", ");
                 auto joinedTupleStr = joinedTuple.str();
                 internalNode->add_child(std::make_unique<LeafNode>(bodyRel + "(" + joinedTupleStr + ")"));
                 internalNode->setSize(internalNode->getSize() + 1);

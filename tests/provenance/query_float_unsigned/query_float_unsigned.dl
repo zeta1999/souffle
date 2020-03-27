@@ -25,7 +25,7 @@ Unsigned(0).
 Unsigned(1).
 Unsigned(0b10).
 Unsigned(0xf).
-Unsigned(0xffffffff).
+Unsigned(0x11).
 
 
 .output Unsigned, Float

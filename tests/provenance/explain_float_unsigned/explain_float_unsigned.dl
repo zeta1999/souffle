@@ -11,22 +11,11 @@
 
 .pragma "provenance" "explain"
 
-.decl V(x: float)
-V(-3).
-V(-0.4).
-V(0).
-V(0.4).
-V(0.9).
-V(1.1).
-V(2).
-V(3).
-V(5).
+.decl Float(x: float)
+Float(1.1).
 
-.decl orderFloat(x: float, y: float)
-orderFloat(x, y) :- V(x), V(y), x < y.
-
-.decl orderFloatToInt(x: number, y: number)
-orderFloatToInt(ftoi(x), ftoi(y)) :- orderFloat(x, y).
+.decl FtoI(x: number)
+FtoI(ftoi(x)) :- Float(x).
 
 .decl VUnsigned(x:unsigned)
 VUnsigned(0).
@@ -46,4 +35,4 @@ pathUnsigned(x, z) :- edgeUnsigned(x, y), pathUnsigned(y, z).
 
 
 
-.output orderFloatToInt, pathUnsigned
+.output FtoI, pathUnsigned

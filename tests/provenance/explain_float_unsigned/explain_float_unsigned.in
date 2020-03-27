@@ -1,4 +1,4 @@
-explain orderFloatToInt(1,3)
+explain FtoI(1)
 explain pathUnsigned(0,3)
 explainnegation pathUnsigned(0,5)
 2

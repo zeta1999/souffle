@@ -213,7 +213,6 @@ public:
                     "9]+|\"[^\"]*\"|[a-zA-Z_][a-zA-Z_0-9]*))*)?\\)",
                     std::regex_constants::extended);
             std::smatch relationMatcher;
-            std::smatch argsMatcher;
             std::string relationStr = command[1];
             // use relationRegex to match each relation string and call parseQueryTuple() to parse the
             // relation name and arguments
@@ -374,7 +373,7 @@ private:
 
 class ExplainConsole : public Explain {
 public:
-    ExplainConsole(ExplainProvenance& provenance) : Explain(provenance) {}
+    explicit ExplainConsole(ExplainProvenance& provenance) : Explain(provenance) {}
 
     /* The main explain call */
     void explain() override {
@@ -456,7 +455,7 @@ private:
 #ifdef USE_NCURSES
 class ExplainNcurses : public Explain {
 public:
-    ExplainNcurses(ExplainProvenance& provenance) : Explain(provenance) {}
+    explicit ExplainNcurses(ExplainProvenance& provenance) : Explain(provenance) {}
 
     /* The main explain call */
     void explain() override {

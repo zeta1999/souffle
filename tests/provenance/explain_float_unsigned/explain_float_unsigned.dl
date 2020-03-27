@@ -1,0 +1,49 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2020, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+//
+// explain_float_unsigned.dl
+// This code tests the provenance explain interface for a simple path example.
+//
+
+.pragma "provenance" "explain"
+
+.decl V(x: float)
+V(-3).
+V(-0.4).
+V(0).
+V(0.4).
+V(0.9).
+V(1.1).
+V(2).
+V(3).
+V(5).
+
+.decl orderFloat(x: float, y: float)
+orderFloat(x, y) :- V(x), V(y), x < y.
+
+.decl orderFloatToInt(x: number, y: number)
+orderFloatToInt(ftoi(x), ftoi(y)) :- orderFloat(x, y).
+
+.decl VUnsigned(x:unsigned)
+VUnsigned(0).
+VUnsigned(1).
+VUnsigned(2).
+VUnsigned(3).
+VUnsigned(5).
+
+
+.decl edgeUnsigned(x: unsigned, y: unsigned)
+edgeUnsigned(x, y) :- VUnsigned(x), VUnsigned(y), x + 1 = y.
+edgeUnsigned(x, y) :- edgeUnsigned(y, x).
+
+.decl pathUnsigned(x: unsigned, y: unsigned)
+pathUnsigned(x, y) :- edgeUnsigned(x, y).
+pathUnsigned(x, z) :- edgeUnsigned(x, y), pathUnsigned(y, z).
+
+
+
+.output orderFloatToInt, pathUnsigned

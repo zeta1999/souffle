@@ -19,7 +19,9 @@
 #include "souffle/Brie.h"
 #include "souffle/CompiledIndexUtils.h"
 #include "souffle/CompiledTuple.h"
+#include "souffle/EquivalenceRelation.h"
 #include "souffle/IOSystem.h"
+#include "souffle/IterUtils.h"
 #include "souffle/ParallelUtils.h"
 #include "souffle/RWOperation.h"
 #include "souffle/RamTypes.h"
@@ -166,7 +168,7 @@ private:
 
 public:
     t_nullaries() = default;
-    using t_tuple = ram::Tuple<RamDomain, 0>;
+    using t_tuple = Tuple<RamDomain, 0>;
     struct context {};
     context createContext() {
         return context();
@@ -238,18 +240,18 @@ public:
 template <int Arity>
 class t_info {
 private:
-    std::vector<ram::Tuple<RamDomain, Arity>> data;
+    std::vector<Tuple<RamDomain, Arity>> data;
     Lock insert_lock;
 
 public:
     t_info() = default;
-    using t_tuple = ram::Tuple<RamDomain, Arity>;
+    using t_tuple = Tuple<RamDomain, Arity>;
     struct context {};
     context createContext() {
         return context();
     }
-    class iterator : public std::iterator<std::forward_iterator_tag, ram::Tuple<RamDomain, Arity>> {
-        typename std::vector<ram::Tuple<RamDomain, Arity>>::const_iterator it;
+    class iterator : public std::iterator<std::forward_iterator_tag, Tuple<RamDomain, Arity>> {
+        typename std::vector<Tuple<RamDomain, Arity>>::const_iterator it;
 
     public:
         iterator(const typename std::vector<t_tuple>::const_iterator& o) : it(o) {}

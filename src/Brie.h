@@ -1843,7 +1843,7 @@ public:
     /**
      * The type of the stored entries / tuples.
      */
-    using entry_type = typename ram::Tuple<RamDomain, Dim>;
+    using entry_type = typename souffle::Tuple<RamDomain, Dim>;
 
     // -- operation wrappers --
 
@@ -2295,7 +2295,7 @@ class Trie : public detail::TrieBase<Dim, Trie<Dim>> {
     store_type store;
 
 public:
-    using entry_type = typename ram::Tuple<RamDomain, Dim>;
+    using entry_type = typename souffle::Tuple<RamDomain, Dim>;
     using element_type = entry_type;
 
     // ---------------------------------------------------------------------
@@ -2826,10 +2826,10 @@ class Trie<0u> : public detail::TrieBase<0u, Trie<0u>> {
 
     using base = typename detail::TrieBase<0u, Trie<0u>>;
 
-    using entry_type = typename ram::Tuple<RamDomain, 0>;
+    using entry_type = typename souffle::Tuple<RamDomain, 0>;
 
     // the singleton instance of the 0-ary tuple
-    static const ram::Tuple<RamDomain, 0> instance;
+    static const Tuple<RamDomain, 0> instance;
 
     // a flag determining whether this trie is empty or contains the singleton instance
     bool present = false;

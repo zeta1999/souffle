@@ -15,7 +15,9 @@
  ***********************************************************************/
 
 #include "InterpreterIndex.h"
+#include "Brie.h"
 #include "CompiledIndexUtils.h"
+#include "EquivalenceRelation.h"
 #include "Util.h"
 #include <atomic>
 
@@ -560,11 +562,11 @@ private:
 
 // The comparator to be used for B-tree nodes.
 template <std::size_t Arity>
-using comparator = typename ram::index_utils::get_full_index<Arity>::type::comparator;
+using comparator = typename index_utils::get_full_index<Arity>::type::comparator;
 
 // Node type
 template <std::size_t Arity>
-using t_tuple = typename ram::Tuple<RamDomain, Arity>;
+using t_tuple = typename souffle::Tuple<RamDomain, Arity>;
 
 // Updater for Provenance
 template <std::size_t Arity>

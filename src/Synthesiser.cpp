@@ -821,10 +821,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = aggregate.getTupleId();
 
             // aggregate tuple storing the result of aggregate
-            std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
+            std::string tuple_type = "Tuple<RamDomain," + toString(arity) + ">";
 
             // declare environment variable
-            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
+            out << "Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // get range to aggregate
             auto keys = isa->getSearchSignature(&aggregate);
@@ -993,7 +993,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = aggregate.getTupleId();
 
             // declare environment variable
-            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
+            out << "Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
             if (aggregate.getFunction() == AggregateOp::COUNT && isRamTrue(&aggregate.getCondition())) {
@@ -1681,7 +1681,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
 
             out << "pack(recordTable,"
-                << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">";
+                << "Tuple<RamDomain," << pack.getArguments().size() << ">";
             if (pack.getArguments().size() == 0) {
                 out << "{{}}";
             } else {
@@ -1817,7 +1817,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";
     os << "\n";
     os << "namespace souffle {\n";
-    os << "using namespace ram;\n";
     os << "static const RamDomain RAM_BIT_SHIFT_MASK = RAM_DOMAIN_SIZE - 1;\n";
 
     // synthesise data-structures for relations

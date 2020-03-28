@@ -781,7 +781,7 @@ RamDomain rand(RamDomain max) {
 }  // namespace
 
 TEST(Trie, IteratorStress_1D) {
-    using tuple = typename ram::Tuple<RamDomain, 1>;
+    using tuple = typename souffle::Tuple<RamDomain, 1>;
 
     const int N = 10000;
 
@@ -807,7 +807,7 @@ TEST(Trie, IteratorStress_1D) {
 }
 
 TEST(Trie, IteratorStress_2D) {
-    using tuple = typename ram::Tuple<RamDomain, 2>;
+    using tuple = typename souffle::Tuple<RamDomain, 2>;
 
     const int N = 10000;
 
@@ -835,7 +835,7 @@ TEST(Trie, IteratorStress_2D) {
 }
 
 TEST(Trie, IteratorStress_3D) {
-    using tuple = typename ram::Tuple<RamDomain, 3>;
+    using tuple = typename souffle::Tuple<RamDomain, 3>;
 
     const int N = 10000;
 
@@ -864,7 +864,7 @@ TEST(Trie, IteratorStress_3D) {
 }
 
 TEST(Trie, IteratorStress_4D) {
-    using tuple = typename ram::Tuple<RamDomain, 4>;
+    using tuple = typename souffle::Tuple<RamDomain, 4>;
 
     const int N = 10000;
 
@@ -1279,7 +1279,7 @@ TEST(Trie, BoundaryTest_3D_Stress) {
 }
 
 TEST(Trie, RangeQuery) {
-    using tuple = typename ram::Tuple<RamDomain, 3>;
+    using tuple = typename souffle::Tuple<RamDomain, 3>;
 
     Trie<3> set;
 
@@ -1307,7 +1307,7 @@ TEST(Trie, RangeQuery) {
 }
 
 TEST(Trie, RangeQuery_0D) {
-    using tuple = typename ram::Tuple<RamDomain, 0>;
+    using tuple = typename souffle::Tuple<RamDomain, 0>;
 
     Trie<0> set;
 
@@ -1319,7 +1319,7 @@ TEST(Trie, RangeQuery_0D) {
 }
 
 TEST(Trie, RangeQuery_1D) {
-    using tuple = typename ram::Tuple<RamDomain, 1>;
+    using tuple = typename souffle::Tuple<RamDomain, 1>;
 
     Trie<1> set;
 
@@ -1340,7 +1340,7 @@ TEST(Trie, RangeQuery_1D) {
 }
 
 TEST(Trie, RangeQuery_2D) {
-    using tuple = typename ram::Tuple<RamDomain, 2>;
+    using tuple = typename souffle::Tuple<RamDomain, 2>;
 
     Trie<2> set;
 
@@ -1370,7 +1370,7 @@ TEST(Trie, RangeQuery_2D) {
 }
 
 TEST(Trie, RangeQuery_3D) {
-    using tuple = typename ram::Tuple<RamDomain, 3>;
+    using tuple = typename souffle::Tuple<RamDomain, 3>;
 
     Trie<3> set;
 
@@ -1412,7 +1412,7 @@ TEST(Trie, RangeQuery_3D) {
 }
 
 TEST(Trie, RangeQueryStress) {
-    using tuple = typename ram::Tuple<RamDomain, 3>;
+    using tuple = typename souffle::Tuple<RamDomain, 3>;
 
     Trie<3> set;
 

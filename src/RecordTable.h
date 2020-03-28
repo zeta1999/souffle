@@ -140,7 +140,7 @@ private:
 
 /** @brief helper to convert tuple to record reference for the synthesiser */
 template <std::size_t Arity>
-inline RamDomain pack(RecordTable& recordTab, ram::Tuple<RamDomain, Arity> tuple) {
+inline RamDomain pack(RecordTable& recordTab, Tuple<RamDomain, Arity> tuple) {
     return recordTab.pack(static_cast<RamDomain*>(tuple.data), Arity);
 }
 

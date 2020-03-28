@@ -1077,7 +1077,7 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "struct " << getTypeName() << " {\n";
 
     // eqrel is only for binary relations
-    out << "using t_tuple = ram::Tuple<RamDomain, 2>;\n";
+    out << "using t_tuple = Tuple<RamDomain, 2>;\n";
     out << "using t_ind_" << masterIndex << " = EquivalenceRelation<t_tuple>;\n";
     out << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
 

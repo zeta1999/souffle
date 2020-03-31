@@ -1576,8 +1576,8 @@ public:
  * A utility function to determine whether hints-profiling is enabled or
  * disabled;
  */
-inline bool isHintsProfilingEnabled() {
-    return std::getenv("SOUFFLE_PROFILE_HINTS") != nullptr;
+inline bool isStatsEnabled() {
+    return std::getenv("SOUFFLE_STATS") != nullptr;
 }
 
 /**
@@ -1589,7 +1589,7 @@ class CacheAccessCounter {
     std::atomic<std::size_t> misses;
 
 public:
-    CacheAccessCounter(bool active = isHintsProfilingEnabled()) : active(active), hits(0), misses(0) {}
+    CacheAccessCounter(bool active = isStatsEnabled()) : active(active), hits(0), misses(0) {}
 
     CacheAccessCounter(const CacheAccessCounter& other)
             : active(other.active), hits((active) ? other.getHits() : 0),

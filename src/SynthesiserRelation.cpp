@@ -440,9 +440,10 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         out << "}\n";
     }
 
-    // printHintStatistics method
-    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    // printStatistics method
+    out << "void printStatistics(std::ostream& o, const std::string prefix) const {\n";
     for (size_t i = 0; i < numIndexes; i++) {
+        out << "o << \"Index " << i << ", lex-order " << join(inds[i]) << "\\n\";\n";
         out << "const auto& stats_" << i << " = ind_" << i << ".getHintStatistics();\n";
         out << "o << prefix << \"arity " << getArity() << " direct b-tree index " << inds[i]
             << ": (hits/misses/total)\\n\";\n";
@@ -458,6 +459,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             << ".upper_bound.getHits() << \"/\" << stats_" << i
             << ".upper_bound.getMisses() << \"/\" << stats_" << i
             << ".upper_bound.getAccesses() << \"\\n\";\n";
+        out << "ind_" << i << ".printStats();\n";
     }
     out << "}\n";
 
@@ -730,9 +732,10 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "return ind_" << masterIndex << ".end();\n";
     out << "}\n";
 
-    // printHintStatistics method
-    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    // printStatistics method
+    out << "void printStatistics(std::ostream& o, const std::string prefix) const {\n";
     for (size_t i = 0; i < numIndexes; i++) {
+        out << "o << \"Index " << i << ", lex-order " << join(inds[i]) << "\\n\";\n";
         out << "const auto& stats_" << i << " = ind_" << i << ".getHintStatistics();\n";
         out << "o << prefix << \"arity " << arity << " indirect b-tree index " << inds[i]
             << ": (hits/misses/total)\\n\";\n";
@@ -748,6 +751,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             << ".upper_bound.getHits() << \"/\" << stats_" << i
             << ".upper_bound.getMisses() << \"/\" << stats_" << i
             << ".upper_bound.getAccesses() << \"\\n\";\n";
+        out << "ind_" << i << ".printStats();\n";
     }
     out << "}\n";
 
@@ -1010,9 +1014,10 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     out << "return iterator_" << masterIndex << "(ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
-    // TODO: finish printHintStatistics method
-    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    // TODO: finish printStatistics method
+    out << "void printStatistics(std::ostream& o, const std::string prefix) const {\n";
     for (size_t i = 0; i < numIndexes; i++) {
+        out << "o << \"Index " << i << ", lex-order " << join(inds[i]) << "\\n\";\n";
         out << "const auto& stats_" << i << " = ind_" << i << ".getHintStatistics();\n";
         out << "o << prefix << \"arity " << arity << " brie index " << inds[i]
             << ": (hits/misses/total)\\n\";\n";
@@ -1229,8 +1234,8 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "return iterator_" << masterIndex << "(ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
-    // printHintStatistics method
-    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    // printStatistics method
+    out << "void printStatistics(std::ostream& o, const std::string prefix) const {\n";
     out << "o << \"eqrel index: no hint statistics supported\\n\";\n";
     out << "}\n";
 

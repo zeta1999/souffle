@@ -2047,17 +2047,15 @@ public:
         out << "  avg keys / node:  " << (size() / (double)nodes) << "\n";
         out << "  avg filling rate: " << ((size() / (double)nodes) / node::maxKeys) << "\n";
         out << "---------------------------------\n";
-        if (isHintsProfilingEnabled()) {
-            out << "         insert hint hits: " << hint_stats.inserts.getHits() << "\n";
-            out << "       insert hint misses: " << hint_stats.inserts.getMisses() << "\n";
-            out << "       contains hint hits: " << hint_stats.contains.getHits() << "\n";
-            out << "     contains hint misses: " << hint_stats.contains.getMisses() << "\n";
-            out << "    lower_bound hint hits: " << hint_stats.lower_bound.getHits() << "\n";
-            out << "  lower_bound hint misses: " << hint_stats.lower_bound.getMisses() << "\n";
-            out << "    upper_bound hint hits: " << hint_stats.upper_bound.getHits() << "\n";
-            out << "  upper_bound hint misses: " << hint_stats.upper_bound.getMisses() << "\n";
-            out << "---------------------------------\n";
-        }
+        out << "         insert hint hits: " << hint_stats.inserts.getHits() << "\n";
+        out << "       insert hint misses: " << hint_stats.inserts.getMisses() << "\n";
+        out << "       contains hint hits: " << hint_stats.contains.getHits() << "\n";
+        out << "     contains hint misses: " << hint_stats.contains.getMisses() << "\n";
+        out << "    lower_bound hint hits: " << hint_stats.lower_bound.getHits() << "\n";
+        out << "  lower_bound hint misses: " << hint_stats.lower_bound.getMisses() << "\n";
+        out << "    upper_bound hint hits: " << hint_stats.upper_bound.getHits() << "\n";
+        out << "  upper_bound hint misses: " << hint_stats.upper_bound.getMisses() << "\n";
+        out << "---------------------------------\n";
     }
 
     /**

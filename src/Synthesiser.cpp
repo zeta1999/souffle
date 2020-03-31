@@ -365,8 +365,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitClear(const RamClear& clear, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            out << "if (!isHintsProfilingEnabled()"
-                << (clear.getRelation().isTemp() ? ") " : "&& performIO) ");
             out << synthesiser.getRelationName(clear.getRelation()) << "->"
                 << "purge();\n";
 
@@ -2064,12 +2062,11 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // add code printing hint statistics
     os << "\n// -- relation hint statistics --\n";
-    os << "if(isHintsProfilingEnabled()) {\n";
-    os << "std::cout << \" -- Operation Hint Statistics --\\n\";\n";
+    os << "if(isStatsEnabled()) {\n";
     for (auto rel : prog.getRelations()) {
         auto name = getRelationName(*rel);
-        os << "std::cout << \"Relation " << name << ":\\n\";\n";
-        os << name << "->printHintStatistics(std::cout,\"  \");\n";
+        os << "std::cout << \"Statistics for Relation " << name << ":\\n\";\n";
+        os << name << "->printStatistics(std::cout,\"  \");\n";
         os << "std::cout << \"\\n\";\n";
     }
     os << "}\n";

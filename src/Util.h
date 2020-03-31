@@ -1573,58 +1573,71 @@ public:
 // -------------------------------------------------------------------------------
 
 /**
- * A utility function to determine whether hints-profiling is enabled or
- * disabled;
- */
-inline bool isStatsEnabled() {
-    return std::getenv("SOUFFLE_STATS") != nullptr;
-}
-
-/**
  * A utility class to keep track of cache hits/misses.
  */
 class CacheAccessCounter {
-    bool active;
+#ifdef _SOUFFLE_STATS
     std::atomic<std::size_t> hits;
     std::atomic<std::size_t> misses;
+#endif
 
 public:
-    CacheAccessCounter(bool active = isStatsEnabled()) : active(active), hits(0), misses(0) {}
+    CacheAccessCounter()
+#ifdef _SOUFFLE_STATS
+            : hits(0), misses(0) {
+    }
+#else
+    {
+    }
+#endif
 
-    CacheAccessCounter(const CacheAccessCounter& other)
-            : active(other.active), hits((active) ? other.getHits() : 0),
-              misses((active) ? other.getMisses() : 0) {}
+#ifdef SOUFFLE_STATS
+    CacheAccessCounter(const CacheAccessCounter& other) : hits(other.getHits()), misses(other.getMisses()) {}
+#else
+    CacheAccessCounter(const CacheAccessCounter& /* other */) {}
+#endif
 
     void addHit() {
-        if (active) {
-            hits.fetch_add(1, std::memory_order_relaxed);
-        }
+#ifdef _SOUFFLE_STATS
+        hits.fetch_add(1, std::memory_order_relaxed);
+#endif
     }
 
     void addMiss() {
-        if (active) {
-            misses.fetch_add(1, std::memory_order_relaxed);
-        }
+#ifdef _SOUFFLE_STATS
+        misses.fetch_add(1, std::memory_order_relaxed);
+#endif
     }
 
     std::size_t getHits() const {
-        assert(active);
+#ifdef _SOUFFLE_STATS
         return hits;
+#else
+        return 0;
+#endif
     }
 
     std::size_t getMisses() const {
-        assert(active);
+#ifdef SOUFFLE_STATS
         return misses;
+#else
+        return 0;
+#endif
     }
 
     std::size_t getAccesses() const {
-        assert(active);
+#ifdef SOUFFLE_STATS
         return getHits() + getMisses();
+#else
+        return 0;
+#endif
     }
 
     void reset() {
+#ifdef SOUFFLE_STATS
         hits = 0;
         misses = 0;
+#endif
     }
 };
 

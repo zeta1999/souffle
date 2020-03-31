@@ -1744,6 +1744,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     std::string classname = "Sf_" + id;
 
     // generate C++ program
+
+    if (Global::config().has("verbose")) {
+        os << "#define _SOUFFLE_STATS\n";
+    }
     os << "\n#include \"souffle/CompiledSouffle.h\"\n";
     if (Global::config().has("provenance")) {
         os << "#include <mutex>\n";
@@ -2062,14 +2066,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // add code printing hint statistics
     os << "\n// -- relation hint statistics --\n";
-    os << "if(isStatsEnabled()) {\n";
-    for (auto rel : prog.getRelations()) {
-        auto name = getRelationName(*rel);
-        os << "std::cout << \"Statistics for Relation " << name << ":\\n\";\n";
-        os << name << "->printStatistics(std::cout,\"  \");\n";
-        os << "std::cout << \"\\n\";\n";
+
+    if (Global::config().has("verbose")) {
+        for (auto rel : prog.getRelations()) {
+            auto name = getRelationName(*rel);
+            os << "std::cout << \"Statistics for Relation " << name << ":\\n\";\n";
+            os << name << "->printStatistics(std::cout,\"  \");\n";
+            os << "std::cout << \"\\n\";\n";
+        }
     }
-    os << "}\n";
 
     os << "SignalHandler::instance()->reset();\n";
 

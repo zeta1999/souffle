@@ -141,6 +141,12 @@ private:
  */
 class AstClause : public AstNode {
 public:
+    AstClause() = default;
+    AstClause(std::unique_ptr<AstAtom> head, std::vector<std::unique_ptr<AstLiteral>> bodyLiterals,
+            std::unique_ptr<AstExecutionPlan> plan)
+            : AstNode(), head(std::move(head)), bodyLiterals(std::move(bodyLiterals)),
+              plan(std::move(plan)){};
+
     /** Add a Literal to the body of the clause */
     void addToBody(std::unique_ptr<AstLiteral> literal) {
         bodyLiterals.push_back(std::move(literal));

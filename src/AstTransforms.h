@@ -585,4 +585,22 @@ private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
 
+/**
+ * Transformation pass that removes untyped records
+ * e.g. [a, b, c] = [x, y, z] → a = x, b = y, c = z.
+ */
+class FoldAnonymousRecordTransformer : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "FoldAnonymousRecordTransformer";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+
+    // bool containsRecordBinaryConstraint(const AstClause&);
+
+    // bool isRecordBinaryConstraint(const AstBinaryConstraint&);
+};
+
 }  // end of namespace souffle

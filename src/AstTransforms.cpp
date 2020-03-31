@@ -1414,4 +1414,118 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
     return update.changed;
 }
 
+namespace {
+
+bool isRecordBinaryConstraint(const AstBinaryConstraint& constraint) {
+    // Check if the operator is valid.
+    {
+        // Only valid if it is "=" or "!=".
+        bool isEq = isEqConstraint(constraint.getOperator());
+        bool isNeq = isEqConstraint(negatedConstraintOp(constraint.getOperator()));
+        if (!isEq && !isNeq) {
+            return false;
+        }
+    }
+
+    const auto* left = constraint.getLHS();
+    const auto* right = constraint.getRHS();
+
+    const auto* leftRecord = dynamic_cast<const AstRecordInit*>(left);
+    const auto* rightRecord = dynamic_cast<const AstRecordInit*>(right);
+
+    if ((leftRecord != nullptr) && (rightRecord != nullptr)) {
+        return leftRecord->getChildNodes().size() == rightRecord->getChildNodes().size();
+    }
+
+    return false;
+}
+
+bool containsRecordBinaryConstraint(const AstClause& clause) {
+    bool contains = false;
+    visitDepthFirst(clause, [&](const AstBinaryConstraint& binary) {  // std::cerr << binary << std::endl;
+        contains |= isRecordBinaryConstraint(binary);
+    });
+    return contains;
+}
+
+std::vector<std::unique_ptr<AstLiteral>> transformBinaryConstraint(const AstBinaryConstraint& constraint) {
+    std::vector<std::unique_ptr<AstLiteral>> replacedContraint;
+    const auto* left = dynamic_cast<const AstRecordInit*>(constraint.getLHS());
+    const auto* right = dynamic_cast<const AstRecordInit*>(constraint.getRHS());
+
+    // Sanity check.
+    assert(left && right && "This values can't be null");
+
+    auto leftChildren = left->getChildNodes();
+    auto rightChildren = right->getChildNodes();
+
+    assert(leftChildren.size() == rightChildren.size());
+
+    for (size_t i = 0; i < leftChildren.size(); ++i) {
+        auto leftOperand = std::unique_ptr<AstArgument>(static_cast<AstArgument*>(leftChildren[i]->clone()));
+        auto rightOperand =
+                std::unique_ptr<AstArgument>(static_cast<AstArgument*>(rightChildren[i]->clone()));
+
+        auto newConstraint = std::make_unique<AstBinaryConstraint>(
+                constraint.getOperator(), std::move(leftOperand), std::move(rightOperand));
+        replacedContraint.push_back(std::move(newConstraint));
+    }
+
+    return replacedContraint;
+}
+
+}  // namespace
+
+bool FoldAnonymousRecordTransformer::transform(AstTranslationUnit& translationUnit) {
+    struct RecordFolder : public AstNodeMapper {
+        mutable bool changed{false};
+        const AstProgram& program;
+        ErrorReport& report;
+
+        RecordFolder(const AstProgram& program, ErrorReport& report) : program(program), report(report){};
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            node->apply(*this);
+
+            if (auto* clause = dynamic_cast<AstClause*>(node.get())) {
+                if (!containsRecordBinaryConstraint(*clause)) {
+                    return node;
+                }
+
+                changed = true;
+                std::cerr << *clause << std::endl;
+
+                std::vector<std::unique_ptr<AstLiteral>> newBody;
+                for (auto* literal : clause->getBodyLiterals()) {
+                    // If we have a "valid" binary constraint.
+                    if (auto binary = dynamic_cast<AstBinaryConstraint*>(literal)) {
+                        if (isRecordBinaryConstraint(*binary)) {
+                            auto transformedLiterals = transformBinaryConstraint(*binary);
+                            std::move(std::begin(transformedLiterals), std::end(transformedLiterals),
+                                    std::back_inserter(newBody));
+                            continue;
+                        }
+                    }
+                    // else, we simply copy the literal.
+                    newBody.push_back(std::unique_ptr<AstLiteral>(literal->clone()));
+                }
+
+                auto newHead = std::unique_ptr<AstAtom>(clone(clause->getHead()));
+                auto newExecutionPlan = std::unique_ptr<AstExecutionPlan>(clone(clause->getExecutionPlan()));
+                auto newClause = std::make_unique<AstClause>(
+                        std::move(newHead), std::move(newBody), std::move(newExecutionPlan));
+
+                std::cerr << *newClause << std::endl;
+
+                return newClause;
+            }
+            return node;
+        }
+    };
+    // std::cerr << "Running funeral." << std::endl;
+    RecordFolder update(*translationUnit.getProgram(), translationUnit.getErrorReport());
+    translationUnit.getProgram()->apply(update);
+    return update.changed;
+}
+
 }  // end of namespace souffle

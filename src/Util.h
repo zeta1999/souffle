@@ -1587,14 +1587,13 @@ public:
             : hits(0), misses(0) {
     }
 #else
-    {
-    }
+            = default;
 #endif
 
 #ifdef SOUFFLE_STATS
     CacheAccessCounter(const CacheAccessCounter& other) : hits(other.getHits()), misses(other.getMisses()) {}
 #else
-    CacheAccessCounter(const CacheAccessCounter& /* other */) {}
+    CacheAccessCounter(const CacheAccessCounter& /* other */) = default;
 #endif
 
     void addHit() {

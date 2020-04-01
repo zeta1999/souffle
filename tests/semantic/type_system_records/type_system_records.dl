@@ -1,0 +1,31 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2020, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+//
+// Typing anonymous records.
+// Issue #837.
+//
+
+
+
+// Some simple cases
+.decl B(p: number)
+B(a) :- [a] = [1]. // ok
+B(a) :- [a, a, a] = [2, 2, 2]. // ok
+B(a) :- ["3", a] = ["3", 3]. // ok
+B(a) :- [1, a] = [2, 4].
+
+
+// TODO: This needs to transform into disjunction.
+B(5) :- [1, "3", 5] != [2, "3", 5]. // ok
+
+
+// // This is still problematic.
+// B(a) :- [1, a] = D, D = [1, 6].
+
+
+.output B(IO=stdout)
+

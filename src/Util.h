@@ -1573,59 +1573,57 @@ public:
 // -------------------------------------------------------------------------------
 
 /**
- * A utility function to determine whether hints-profiling is enabled or
- * disabled;
+ * cache hits/misses.
  */
-inline bool isHintsProfilingEnabled() {
-    return std::getenv("SOUFFLE_PROFILE_HINTS") != nullptr;
-}
+#ifdef _SOUFFLE_STATS
 
-/**
- * A utility class to keep track of cache hits/misses.
- */
 class CacheAccessCounter {
-    bool active;
     std::atomic<std::size_t> hits;
     std::atomic<std::size_t> misses;
 
 public:
-    CacheAccessCounter(bool active = isHintsProfilingEnabled()) : active(active), hits(0), misses(0) {}
-
-    CacheAccessCounter(const CacheAccessCounter& other)
-            : active(other.active), hits((active) ? other.getHits() : 0),
-              misses((active) ? other.getMisses() : 0) {}
-
+    CacheAccessCounter() : hits(0), misses(0) {}
+    CacheAccessCounter(const CacheAccessCounter& other) : hits(other.getHits()), misses(other.getMisses()) {}
     void addHit() {
-        if (active) {
-            hits.fetch_add(1, std::memory_order_relaxed);
-        }
+        hits.fetch_add(1, std::memory_order_relaxed);
     }
-
     void addMiss() {
-        if (active) {
-            misses.fetch_add(1, std::memory_order_relaxed);
-        }
+        misses.fetch_add(1, std::memory_order_relaxed);
     }
-
     std::size_t getHits() const {
-        assert(active);
         return hits;
     }
-
     std::size_t getMisses() const {
-        assert(active);
         return misses;
     }
-
     std::size_t getAccesses() const {
-        assert(active);
         return getHits() + getMisses();
     }
-
     void reset() {
         hits = 0;
         misses = 0;
     }
 };
 
+#else
+
+class CacheAccessCounter {
+public:
+    CacheAccessCounter() = default;
+    CacheAccessCounter(const CacheAccessCounter& /* other */) = default;
+    inline void addHit() {}
+    inline void addMiss() {}
+    inline std::size_t getHits() {
+        return 0;
+    }
+    inline std::size_t getMisses() {
+        return 0;
+    }
+    inline std::size_t getAccesses() {
+        return 0;
+    }
+    inline void reset() {}
+};
+
+#endif
 }  // end namespace souffle

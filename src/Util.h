@@ -1573,71 +1573,57 @@ public:
 // -------------------------------------------------------------------------------
 
 /**
- * A utility class to keep track of cache hits/misses.
+ * cache hits/misses.
  */
-class CacheAccessCounter {
 #ifdef _SOUFFLE_STATS
+
+class CacheAccessCounter {
     std::atomic<std::size_t> hits;
     std::atomic<std::size_t> misses;
-#endif
 
 public:
-    CacheAccessCounter()
-#ifdef _SOUFFLE_STATS
-            : hits(0), misses(0) {
-    }
-#else
-            = default;
-#endif
-
-#ifdef SOUFFLE_STATS
+    CacheAccessCounter() : hits(0), misses(0) {}
     CacheAccessCounter(const CacheAccessCounter& other) : hits(other.getHits()), misses(other.getMisses()) {}
-#else
-    CacheAccessCounter(const CacheAccessCounter& /* other */) = default;
-#endif
-
     void addHit() {
-#ifdef _SOUFFLE_STATS
         hits.fetch_add(1, std::memory_order_relaxed);
-#endif
     }
-
     void addMiss() {
-#ifdef _SOUFFLE_STATS
         misses.fetch_add(1, std::memory_order_relaxed);
-#endif
     }
-
     std::size_t getHits() const {
-#ifdef _SOUFFLE_STATS
         return hits;
-#else
-        return 0;
-#endif
     }
-
     std::size_t getMisses() const {
-#ifdef SOUFFLE_STATS
         return misses;
-#else
-        return 0;
-#endif
     }
-
     std::size_t getAccesses() const {
-#ifdef SOUFFLE_STATS
         return getHits() + getMisses();
-#else
-        return 0;
-#endif
     }
-
     void reset() {
-#ifdef SOUFFLE_STATS
         hits = 0;
         misses = 0;
-#endif
     }
 };
 
+#else
+
+class CacheAccessCounter {
+public:
+    CacheAccessCounter() = default;
+    CacheAccessCounter(const CacheAccessCounter& /* other */) = default;
+    inline void addHit() {}
+    inline void addMiss() {}
+    inline std::size_t getHits() {
+        return 0;
+    }
+    inline std::size_t getMisses() {
+        return 0;
+    }
+    inline std::size_t getAccesses() {
+        return 0;
+    }
+    inline void reset() {}
+};
+
+#endif
 }  // end namespace souffle

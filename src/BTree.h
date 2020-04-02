@@ -2007,11 +2007,6 @@ public:
         return sizeof(*this) + (empty() ? 0 : root->getMemoryUsage());
     }
 
-    // Obtains a reference to the internally maintained hint statistics
-    const hint_statistics& getHintStatistics() const {
-        return hint_stats;
-    }
-
     /*
      * Prints a textual representation of this tree to the given
      * output stream (mostly for debugging and tuning).
@@ -2031,31 +2026,27 @@ public:
      */
     void printStats(std::ostream& out = std::cout) const {
         auto nodes = getNumNodes();
-
-        out << "\n";
-        out << "---------------------------------\n";
-        out << "Table Statistics:\n";
-        out << "---------------------------------\n";
+        out << " ---------------------------------\n";
         out << "  Elements: " << size() << "\n";
         out << "  Depth:    " << (empty() ? 0 : root->getDepth()) << "\n";
         out << "  Nodes:    " << nodes << "\n";
-        out << "---------------------------------\n";
+        out << " ---------------------------------\n";
         out << "  Size of inner node: " << sizeof(inner_node) << "\n";
         out << "  Size of leaf node:  " << sizeof(leaf_node) << "\n";
         out << "  Size of Key:        " << sizeof(Key) << "\n";
         out << "  max keys / node:  " << node::maxKeys << "\n";
         out << "  avg keys / node:  " << (size() / (double)nodes) << "\n";
         out << "  avg filling rate: " << ((size() / (double)nodes) / node::maxKeys) << "\n";
-        out << "---------------------------------\n";
-        out << "         insert hint hits: " << hint_stats.inserts.getHits() << "\n";
-        out << "       insert hint misses: " << hint_stats.inserts.getMisses() << "\n";
-        out << "       contains hint hits: " << hint_stats.contains.getHits() << "\n";
-        out << "     contains hint misses: " << hint_stats.contains.getMisses() << "\n";
-        out << "    lower_bound hint hits: " << hint_stats.lower_bound.getHits() << "\n";
-        out << "  lower_bound hint misses: " << hint_stats.lower_bound.getMisses() << "\n";
-        out << "    upper_bound hint hits: " << hint_stats.upper_bound.getHits() << "\n";
-        out << "  upper_bound hint misses: " << hint_stats.upper_bound.getMisses() << "\n";
-        out << "---------------------------------\n";
+        out << " ---------------------------------\n";
+        out << "  insert (hits/misses/total): " << hint_stats.inserts.getHits() << "/"
+            << hint_stats.inserts.getMisses() << "/" << hint_stats.inserts.getAccesses() << "\n";
+        out << "  contains (hits/misses/total):" << hint_stats.contains.getHits() << "/"
+            << hint_stats.contains.getMisses() << "/" << hint_stats.contains.getAccesses() << "\n";
+        out << "  lower-bound (hits/misses/total):" << hint_stats.lower_bound.getHits() << "/"
+            << hint_stats.lower_bound.getMisses() << "/" << hint_stats.lower_bound.getAccesses() << "\n";
+        out << "  upper-bound (hits/misses/total):" << hint_stats.upper_bound.getHits() << "/"
+            << hint_stats.upper_bound.getMisses() << "/" << hint_stats.upper_bound.getAccesses() << "\n";
+        out << " ---------------------------------\n";
     }
 
     /**

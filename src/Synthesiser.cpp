@@ -365,6 +365,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitClear(const RamClear& clear, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
+            out << "if (performIO) ";
             out << synthesiser.getRelationName(clear.getRelation()) << "->"
                 << "purge();\n";
 
@@ -2071,7 +2072,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         for (auto rel : prog.getRelations()) {
             auto name = getRelationName(*rel);
             os << "std::cout << \"Statistics for Relation " << name << ":\\n\";\n";
-            os << name << "->printStatistics(std::cout,\"  \");\n";
+            os << name << "->printStatistics(std::cout);\n";
             os << "std::cout << \"\\n\";\n";
         }
     }

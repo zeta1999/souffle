@@ -1971,11 +1971,11 @@ protected:
 public:
     void printStats(std::ostream& out) const {
         out << "---------------------------------\n";
-        out << "  insert (hits/misses/total): " << hint_stats.inserts.getHits() << "/"
+        out << "  insert-hint (hits/misses/total): " << hint_stats.inserts.getHits() << "/"
             << hint_stats.inserts.getMisses() << "/" << hint_stats.inserts.getAccesses() << "\n";
-        out << "  contains (hits/misses/total):" << hint_stats.contains.getHits() << "/"
+        out << "  contains-hint (hits/misses/total):" << hint_stats.contains.getHits() << "/"
             << hint_stats.contains.getMisses() << "/" << hint_stats.contains.getAccesses() << "\n";
-        out << "  get-boundaries (hits/misses/total):" << hint_stats.get_boundaries.getHits() << "/"
+        out << "  get-boundaries-hint (hits/misses/total):" << hint_stats.get_boundaries.getHits() << "/"
             << hint_stats.get_boundaries.getMisses() << "/" << hint_stats.get_boundaries.getAccesses()
             << "\n";
         out << "---------------------------------\n";

@@ -2038,13 +2038,13 @@ public:
         out << "  avg keys / node:  " << (size() / (double)nodes) << "\n";
         out << "  avg filling rate: " << ((size() / (double)nodes) / node::maxKeys) << "\n";
         out << " ---------------------------------\n";
-        out << "  insert (hits/misses/total): " << hint_stats.inserts.getHits() << "/"
+        out << "  insert-hint (hits/misses/total): " << hint_stats.inserts.getHits() << "/"
             << hint_stats.inserts.getMisses() << "/" << hint_stats.inserts.getAccesses() << "\n";
-        out << "  contains (hits/misses/total):" << hint_stats.contains.getHits() << "/"
+        out << "  contains-hint(hits/misses/total):" << hint_stats.contains.getHits() << "/"
             << hint_stats.contains.getMisses() << "/" << hint_stats.contains.getAccesses() << "\n";
-        out << "  lower-bound (hits/misses/total):" << hint_stats.lower_bound.getHits() << "/"
+        out << "  lower-bound-hint (hits/misses/total):" << hint_stats.lower_bound.getHits() << "/"
             << hint_stats.lower_bound.getMisses() << "/" << hint_stats.lower_bound.getAccesses() << "\n";
-        out << "  upper-bound (hits/misses/total):" << hint_stats.upper_bound.getHits() << "/"
+        out << "  upper-bound-hint (hits/misses/total):" << hint_stats.upper_bound.getHits() << "/"
             << hint_stats.upper_bound.getMisses() << "/" << hint_stats.upper_bound.getAccesses() << "\n";
         out << " ---------------------------------\n";
     }

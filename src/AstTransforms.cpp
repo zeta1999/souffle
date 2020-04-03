@@ -1427,11 +1427,23 @@ bool FoldAnonymousRecordTransformer::isValidRecordConstraint(const AstLiteral* l
     const auto* leftRecord = dynamic_cast<const AstRecordInit*>(left);
     const auto* rightRecord = dynamic_cast<const AstRecordInit*>(right);
 
+    // Check if arguments are records records.
     if ((leftRecord == nullptr) || (rightRecord == nullptr)) {
         return false;
     }
 
-    return leftRecord->getChildNodes().size() == rightRecord->getChildNodes().size();
+    // Check if records are of the same size.
+    if (leftRecord->getChildNodes().size() != rightRecord->getChildNodes().size()) {
+        return false;
+    }
+
+    // Check if op is "=" or "!="
+    if (!isEqConstraint(constraint->getOperator()) &&
+            !isEqConstraint(negatedConstraintOp(constraint->getOperator()))) {
+        return false;
+    }
+
+    return true;
 }
 
 bool FoldAnonymousRecordTransformer::containsValidRecordConstraint(const AstClause& clause) {
@@ -1463,6 +1475,15 @@ std::vector<std::unique_ptr<AstLiteral>> FoldAnonymousRecordTransformer::expandR
         replacedContraint.push_back(std::move(newConstraint));
     }
 
+    // Handle edge case. Empty records.
+    if (leftChildren.size() == 0) {
+        if (isEqConstraint(constraint.getOperator())) {
+            replacedContraint.emplace_back(new AstBooleanConstraint(true));
+        } else {  // case
+            replacedContraint.emplace_back(new AstBooleanConstraint(false));
+        }
+    }
+
     return replacedContraint;
 }
 
@@ -1484,11 +1505,9 @@ void FoldAnonymousRecordTransformer::transformClause(
                         std::back_inserter(newBody));
                 // else if: Case [a_0, ..., a_n] != [b_0, ..., b_n].
                 // track single such case, it will be expanded in the end.
-            } else if (isEqConstraint(negatedConstraintOp(constraint.getOperator())) &&
-                       (neqConstraint == nullptr)) {
+            } else if (neqConstraint == nullptr) {
                 neqConstraint = dynamic_cast<AstBinaryConstraint*>(literal);
-
-                // Else: Invalid constraint or repeated neg-equality.
+                // Else: repeated inequality.
             } else {
                 newBody.push_back(std::unique_ptr<AstLiteral>(literal->clone()));
             }

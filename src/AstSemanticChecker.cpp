@@ -207,12 +207,9 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
 
-        if (!isRecordType(types)) {
-            return;
-        }
-
-        if (types.size() != 1) {
+        if (!isRecordType(types) || types.size() != 1) {
             report.addError("Ambiguous record", constant.getSrcLoc());
+            return;
         }
 
         // At this point we know that there is exactly one type in set, so we can take it.

@@ -586,8 +586,22 @@ private:
 };
 
 /**
- * Transformation pass that removes untyped records
- * e.g. [a, b, c] = [x, y, z] → a = x, b = y, c = z.
+ * Transformation pass that removes (binary) constraints on the anonymous records.
+ * Note: after resolving aliases this is equivalent to completely removing anonymous records.
+ *
+ * e.g.
+ * [a, b, c] = [x, y, z] → a = x, b = y, c = z.
+ * [a, b, c] != [x, y, z] →  a != x  b != y  c != z (expanded to three new clauses)
+ *
+ * In a single pass, in case of equalities  a transformation expands a single level
+ * of records in every clause. (e.g. [[a]] = [[1]] => [a] = [1])
+ * In case of inequalities, it expands at most a single inequality
+ * in every clause
+ *
+ *
+ * This transformation does not resolve aliases.
+ * E.g. A = [a, b], A = [c, d]
+ * Thus is should be called in conjunction with ResolveAnonymousRecordAliases.
  */
 class FoldAnonymousRecordTransformer : public AstTransformer {
 public:
@@ -598,9 +612,45 @@ public:
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 
-    // bool containsRecordBinaryConstraint(const AstClause&);
+    /**
+     * Process a single clause.
+     *
+     * @parem clause Clause to be processed.
+     * @param newClauses a destination for the newly produced clauses.
+     */
+    void transformClause(const AstClause& clause, std::vector<std::unique_ptr<AstClause>>& newClauses);
 
-    // bool isRecordBinaryConstraint(const AstBinaryConstraint&);
+    /**
+     * Expand constraint on records position-wise.
+     *
+     * eg.
+     * [1, 2, 3] = [a, b, c] => vector(1 = a, 2 = b, 3 = c)
+     * [x, y, z] != [a, b, c] => vector(x != a, x != b, z != c)
+     *
+     * Procedure assumes that argument has a valid operation,
+     * that children are of type AstRecordInit and that the size
+     * of both sides is the same
+     */
+    std::vector<std::unique_ptr<AstLiteral>> expandRecordBinaryConstraint(const AstBinaryConstraint&);
+    /**
+     * Determine if the clause contains at least one binary constraint which can be expanded.
+     */
+    bool containsValidRecordConstraint(const AstClause&);
+
+    /**
+     * Determine if binary constraint can be expanded.
+     */
+    bool isValidRecordConstraint(const AstLiteral* literal);
+};
+
+class ResolveAnonymousRecordAliases : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "FoldAnonymousRecordTransformer";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
 };
 
 }  // end of namespace souffle

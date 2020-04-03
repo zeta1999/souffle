@@ -5,7 +5,12 @@
 // - <souffle root>/licenses/SOUFFLE-UPL.txt
 
 //
-// Typing anonymous records.
+// type_system_records.dl
+// Evaluating anonymous records.
+//
+
+
+// TODO: Make separate test for:
 // Issue #837.
 //
 
@@ -17,15 +22,27 @@ B(a) :- [a] = [1]. // ok
 B(a) :- [a, a, a] = [2, 2, 2]. // ok
 B(a) :- ["3", a] = ["3", 3]. // ok
 B(a) :- [1, a] = [2, 4].
-
-
-// TODO: This needs to transform into disjunction.
 B(5) :- [1, "3", 5] != [2, "3", 5]. // ok
 
 
+// Nested anonymous records
+.decl C(x: number)
+C(a) :- [[a]] = [[1]]. // ok
+C(a) :- [[a, [a]]] = [[2, [2]]]. // ok
+C(a) :- [[a, [a]]] = [[-1, [3]]].
+C(4) :- [[[[[[1, 1.5, 3]]], "meow"]]] != [[[[[[1, 1, 3]]], "meow"]]]. // ok
+C(5) :- [[[[[[1, 1.5, 3]]], "meow"]]] != [[[[[[1, 1.5, 3]]], "meow"]]].
+C(6) :- [[[[[[1, 1.5, 3]]], "meow"]]] = [[[[[[1, 1.5, 3]]], "meow"]]]. // ok
+
+
+// Multiple records in single a clause.
+// .decl D(x: number)
+// D(x) :-
+
 // // This is still problematic.
-// B(a) :- [1, a] = D, D = [1, 6].
+// B(a) :- D = [1, a], D = [1, 6].
 
 
-.output B(IO=stdout)
+.output B()
+.output C()
 

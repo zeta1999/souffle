@@ -1414,9 +1414,7 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
     return update.changed;
 }
 
-namespace {
-
-bool isRecordBinaryConstraint(const AstLiteral* literal) {
+bool FoldAnonymousRecordTransformer::isValidRecordConstraint(const AstLiteral* literal) {
     auto constraint = dynamic_cast<const AstBinaryConstraint*>(literal);
 
     if (constraint == nullptr) {
@@ -1436,59 +1434,61 @@ bool isRecordBinaryConstraint(const AstLiteral* literal) {
     return leftRecord->getChildNodes().size() == rightRecord->getChildNodes().size();
 }
 
-bool containsRecordBinaryConstraint(const AstClause& clause) {
+bool FoldAnonymousRecordTransformer::containsValidRecordConstraint(const AstClause& clause) {
     bool contains = false;
     visitDepthFirst(clause, [&](const AstBinaryConstraint& binary) {  // std::cerr << binary << std::endl;
-        contains |= isRecordBinaryConstraint(&binary);
+        contains = (contains || isValidRecordConstraint(&binary));
     });
     return contains;
 }
 
-std::vector<std::unique_ptr<AstLiteral>> transformBinaryConstraint(const AstBinaryConstraint& constraint) {
+std::vector<std::unique_ptr<AstLiteral>> FoldAnonymousRecordTransformer::expandRecordBinaryConstraint(
+        const AstBinaryConstraint& constraint) {
     std::vector<std::unique_ptr<AstLiteral>> replacedContraint;
-    const auto* left = dynamic_cast<const AstRecordInit*>(constraint.getLHS());
-    const auto* right = dynamic_cast<const AstRecordInit*>(constraint.getRHS());
 
-    // Sanity check.
-    assert((left && right) && "This values can't be null");
+    const auto& left = dynamic_cast<AstRecordInit&>(*constraint.getLHS());
+    const auto& right = dynamic_cast<AstRecordInit&>(*constraint.getRHS());
 
-    auto leftChildren = left->getChildNodes();
-    auto rightChildren = right->getChildNodes();
+    auto leftChildren = left.getChildNodes();
+    auto rightChildren = right.getChildNodes();
 
     assert(leftChildren.size() == rightChildren.size());
 
     for (size_t i = 0; i < leftChildren.size(); ++i) {
-        auto leftOperand = std::unique_ptr<AstArgument>(static_cast<AstArgument*>(leftChildren[i]->clone()));
-        auto rightOperand =
-                std::unique_ptr<AstArgument>(static_cast<AstArgument*>(rightChildren[i]->clone()));
+        auto leftOperand = static_cast<AstArgument*>(leftChildren[i]->clone());
+        auto rightOperand = static_cast<AstArgument*>(rightChildren[i]->clone());
 
-        auto newConstraint = std::make_unique<AstBinaryConstraint>(
-                constraint.getOperator(), std::move(leftOperand), std::move(rightOperand));
+        auto newConstraint = std::make_unique<AstBinaryConstraint>(constraint.getOperator(),
+                std::unique_ptr<AstArgument>(leftOperand), std::unique_ptr<AstArgument>(rightOperand));
         replacedContraint.push_back(std::move(newConstraint));
     }
 
     return replacedContraint;
 }
 
-// Also: add extra transformer to resolve aliases
-
-void transformClause(const AstClause& clause, std::vector<std::unique_ptr<AstClause>>& newClauses) {
-    // TODO: this needs to work differently to account for NEQ.
+void FoldAnonymousRecordTransformer::transformClause(
+        const AstClause& clause, std::vector<std::unique_ptr<AstClause>>& newClauses) {
+    // If we have a neq constraint, we need to create new clauses
+    // At most one neq constraint will be expanded in a single pass.
     AstBinaryConstraint* neqConstraint = nullptr;
 
     std::vector<std::unique_ptr<AstLiteral>> newBody;
     for (auto* literal : clause.getBodyLiterals()) {
-        // If we have a "valid" binary constraint.
-        if (isRecordBinaryConstraint(literal)) {
-            const AstBinaryConstraint& constraint = *dynamic_cast<AstBinaryConstraint*>(literal);
+        if (isValidRecordConstraint(literal)) {
+            const AstBinaryConstraint& constraint = dynamic_cast<AstBinaryConstraint&>(*literal);
 
+            // Simple case, [a_0, ..., a_n] = [b_0, ..., b_n]
             if (isEqConstraint(constraint.getOperator())) {
-                auto transformedLiterals = transformBinaryConstraint(constraint);
+                auto transformedLiterals = expandRecordBinaryConstraint(constraint);
                 std::move(std::begin(transformedLiterals), std::end(transformedLiterals),
                         std::back_inserter(newBody));
-            } else if (isEqConstraint(negatedConstraintOp(constraint.getOperator()))) {
+                // else if: Case [a_0, ..., a_n] != [b_0, ..., b_n].
+                // track single such case, it will be expanded in the end.
+            } else if (isEqConstraint(negatedConstraintOp(constraint.getOperator())) &&
+                       (neqConstraint == nullptr)) {
                 neqConstraint = dynamic_cast<AstBinaryConstraint*>(literal);
-                // Invalid constraint. Only = and != can be used on records.
+
+                // Else: Invalid constraint or repeated neg-equality.
             } else {
                 newBody.push_back(std::unique_ptr<AstLiteral>(literal->clone()));
             }
@@ -1500,6 +1500,7 @@ void transformClause(const AstClause& clause, std::vector<std::unique_ptr<AstCla
     }
 
     if (neqConstraint == nullptr) {
+        // Create a new modified clause.
         auto newHead = std::unique_ptr<AstAtom>(clone(clause.getHead()));
         auto newExecutionPlan = std::unique_ptr<AstExecutionPlan>(clone(clause.getExecutionPlan()));
         auto newClause = std::make_unique<AstClause>(
@@ -1507,7 +1508,8 @@ void transformClause(const AstClause& clause, std::vector<std::unique_ptr<AstCla
 
         newClauses.push_back(std::move(newClause));
     } else {
-        auto transformedLiterals = transformBinaryConstraint(*neqConstraint);
+        // For each pair in negation, we need an extra clause.
+        auto transformedLiterals = expandRecordBinaryConstraint(*neqConstraint);
 
         for (auto it = begin(transformedLiterals); it != end(transformedLiterals); ++it) {
             auto newHead = std::unique_ptr<AstAtom>(clone(clause.getHead()));
@@ -1523,8 +1525,6 @@ void transformClause(const AstClause& clause, std::vector<std::unique_ptr<AstCla
     }
 }
 
-}  // namespace
-
 bool FoldAnonymousRecordTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     AstProgram& program = *translationUnit.getProgram();
@@ -1533,7 +1533,7 @@ bool FoldAnonymousRecordTransformer::transform(AstTranslationUnit& translationUn
     std::vector<const AstClause*> clausesToBeRemoved;
 
     for (const auto* clause : program.getClauses()) {
-        if (!containsRecordBinaryConstraint(*clause)) {
+        if (!containsValidRecordConstraint(*clause)) {
             continue;
         }
 
@@ -1541,11 +1541,12 @@ bool FoldAnonymousRecordTransformer::transform(AstTranslationUnit& translationUn
         transformClause(*clause, newClauses);
 
         bool removeSuccess = program.removeClause(clause);
+        // Sanity check.
         assert(removeSuccess && "Trying to remove non-existing clause");
     }
 
     // Sanity check.
-    assert((changed || (newClauses.size() == 0)) && "changed should imply newClauses is nonempty");
+    assert((!changed || (newClauses.size() > 0)) && "changed should imply newClauses is nonempty");
 
     // Update AstProgram.
     for (auto it = begin(newClauses); it != end(newClauses); ++it) {
@@ -1553,6 +1554,67 @@ bool FoldAnonymousRecordTransformer::transform(AstTranslationUnit& translationUn
     }
 
     return changed;
+}
+
+/**
+ * Strategy:
+ * Find first var->record mapping and remember it.
+ * Every time variable appears again, replace it with record.
+ **/
+bool transformClause(AstClause& clause) {
+    // bool changed = false;
+
+    // std::map<const AstVariable*, const AstRecordInit*> variableToRecordMap;
+
+    // std::vector<std::unique_ptr<AstLiteral>> newBody;
+
+    // for (auto* literal : clause.getBodyLiterals()) {
+    //     // Only interested in binary constraints.
+    //     if (dynamic_cast<AstBinaryConstraint*>(literal) == nullptr) {
+    //         newBody.push_back(std::unique_ptr<AstLiteral>(literal->clone()));
+    //         continue;
+    //     }
+    //     const AstBinaryConstraint& constraint = dynamic_cast<const AstBinaryConstraint&>(*literal);
+
+    //     auto op = constraint.getOperator();
+
+    //     // Only valid input is "=" and "!="
+    //     if (!(isEqConstraint(op) || isEqConstraint(negatedConstraintOp(op)))) {
+    //         continue;
+    //     }
+
+    //     auto* left = constraint.getLHS();
+    //     auto* right = constraint.getRHS();
+    // }
+
+    // if (changed) {
+    //     clause.setBodyLiterals(std::move(newBody));
+    // }
+    // return changed;
+}
+
+bool ResolveAnonymousRecordAliases::transform(AstTranslationUnit& translationUnit) {
+    //     struct RecordAliasesResolver : public AstNodeMapper {
+    //         mutable bool changed{false};
+    //         const AstProgram& program;
+    //         ErrorReport& report;
+
+    //         RecordAliasesResolver(const AstProgram& program, ErrorReport& report)
+    //                 : program(program), report(report){};
+
+    //         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+    //             if (auto* clause = dynamic_cast<AstClause*>(node.get())) {
+    //                 // changed |= transformClause(*clause);
+    //             } else {
+    //                 node->apply(*this);
+    //             }
+
+    //             return node;
+    //         }
+    //     };
+    //     RecordAliasesResolver update(*translationUnit.getProgram(), translationUnit.getErrorReport());
+    //     translationUnit.getProgram()->apply(update);
+    return false;
 }
 
 }  // end of namespace souffle

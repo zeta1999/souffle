@@ -46,9 +46,12 @@ dnl $2 -- directory containing the expected output files
 m4_define([SORTED_SAME_FILES],[
   for i in $1
   do
-    sort "$i" > "$i.sorted.generated"
-    sort $2/"$i" > "$i.sorted.expected"
-    SAME_FILE(["$i.sorted.generated"], ["$i.sorted.expected"])
+    if ls "$i" 2>&1 >/dev/null;
+    then
+      sort "$i" > "$i.sorted.generated"
+      sort $2/"$i" > "$i.sorted.expected"
+      SAME_FILE(["$i.sorted.generated"], ["$i.sorted.expected"])
+    fi
   done
 ])
 

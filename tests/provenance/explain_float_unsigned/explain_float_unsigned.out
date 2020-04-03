@@ -1,7 +1,7 @@
 Float(1.100000) 
 ------------(R1)
     FtoI(1)     
-                                 VUnsigned(1) VUnsigned(2) 2 = 2  subproof edgeUnsigned()   
+                                 VUnsigned(1) VUnsigned(2) 2 = 2  subproof edgeUnsigned(0)   
                                  ----------------------------(R1) ---------------------(R1)  
 VUnsigned(0) VUnsigned(1) 1 = 1         edgeUnsigned(1, 2)           pathUnsigned(2, 3)      
 ----------------------------(R1) -------------------------------------------------------(R2) 

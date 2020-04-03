@@ -74,7 +74,7 @@ m4_define([TEST_EVAL_FUNCTOR],[
   cp ../../interface/functors/.libs/libfunctors* .
   # hack for System Integrity Protection (on Travis)
   # TODO (darth_tytus): Investigate a better solution.
-  cp ../../interface/functors/.libs/libfunctors.dylib /usr/local/lib/
+  cp ../../interface/functors/.libs/libfunctors.dylib /usr/local/lib/ 2>/dev/null
   # invoke souffle
   AT_CHECK([LD_LIBRARY_PATH=. "$SOUFFLE" FLAGS -L. -D. -F FACTS PROGRAM 1>TESTNAME.out 2>TESTNAME.err], [0])
   SORTED_SAME_FILES([*.csv],[TESTDIR])

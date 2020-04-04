@@ -35,15 +35,15 @@ C(4) :- [[[[[[1, 1.5, 3]]], "meow"]]] != [[[[[[1, 1, 3]]], "meow"]]]. // ok
 C(5) :- [[[[[[1, 1.5, 3]]], "meow"]]] != [[[[[[1, 1.5, 3]]], "meow"]]].
 C(6) :- [[[[[[1, 1.5, 3]]], "meow"]]] = [[[[[[1, 1.5, 3]]], "meow"]]]. // ok
 
-
-// Multiple records in single a clause.
-// .decl D(x: number)
-// D(x) :-
-
-// // This is still problematic.
-// B(a) :- D = [1, a], D = [1, 6].
+// Multiple nested records,
+.decl D(x: number)
+D(a) :- [[a, [a]]] = [[2, [2]]],
+        [[[[[[1, 1.5, 3]]], "meow"]]] != [[[[[[1, 1, 3]]], "meow"]]],
+        [[[[[[1, 1.5, 3]]], "meow"]]] = [[[[[[1, 1.5, 3]]], "meow"]]].
 
 
-.output B()
-.output C()
+.decl E(x: number)
+E(b) :- a = [1, b], a = [1, 0]. // ok
 
+
+.output B, C, D, E

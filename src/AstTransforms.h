@@ -643,6 +643,11 @@ private:
     bool isValidRecordConstraint(const AstLiteral* literal);
 };
 
+class TypeAnalysis;
+
+/**
+ * This transformer
+ **/
 class ResolveAnonymousRecordAliases : public AstTransformer {
 public:
     std::string getName() const override {
@@ -651,6 +656,20 @@ public:
 
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
+
+    /**
+     * Use mapping found by findVariablesRecordMapping to substitute
+     * a records for each variable that operates on records.
+     **/
+    std::unique_ptr<AstClause> replaceVariablesWithRecords(
+            const AstClause& clause, std::map<std::string, const AstRecordInit*> varToRecordMap);
+
+    /**
+     * For each variable equal to some anonymous record,
+     * assign a value of that record.
+     **/
+    std::map<std::string, const AstRecordInit*> findVariablesRecordMapping(
+            const AstClause&, const TypeAnalysis&);
 };
 
 }  // end of namespace souffle

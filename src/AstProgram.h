@@ -97,6 +97,10 @@ public:
         return false;
     }
 
+    void setClauses(std::vector<std::unique_ptr<AstClause>> newClauses) {
+        clauses = std::move(newClauses);
+    }
+
     /** add a clause */
     void addClause(std::unique_ptr<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");

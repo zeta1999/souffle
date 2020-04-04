@@ -2821,7 +2821,7 @@ private:
 };
 
 /**
- * A template specialization for tries containing tuples for sets.
+ * A template specialization for tries representing a set.
  * For improved memory efficiency, this level is the leaf-node level
  * of all tries exhibiting an arity >= 1. Internally, values are stored utilizing
  * sparse bit maps.

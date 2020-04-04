@@ -743,36 +743,6 @@ TEST(Trie, Iterator) {
     EXPECT_EQ(3, card(set));
 }
 
-TEST(Trie, IteratorStress_0D) {
-    Trie<0> set;
-
-    EXPECT_TRUE(set.empty());
-
-    int count = 0;
-    for (auto it = set.begin(); it != set.end(); ++it) {
-        count++;
-    }
-
-    EXPECT_EQ(0, count);
-    EXPECT_EQ(0, set.size());
-
-    set.insert();
-
-    EXPECT_FALSE(set.empty());
-    EXPECT_EQ(1, set.size());
-
-    set.insert();
-
-    EXPECT_FALSE(set.empty());
-    EXPECT_EQ(1, set.size());
-
-    count = 0;
-    for (auto it = set.begin(); it != set.end(); ++it) {
-        count++;
-    }
-    EXPECT_EQ(1, count);
-}
-
 namespace {
 
 RamDomain rand(RamDomain max) {
@@ -1306,18 +1276,6 @@ TEST(Trie, RangeQuery) {
     EXPECT_EQ(1, card(set.getBoundaries<3>(tuple({{3, 4, 5}}))));
 }
 
-TEST(Trie, RangeQuery_0D) {
-    using tuple = typename souffle::Tuple<RamDomain, 0>;
-
-    Trie<0> set;
-
-    EXPECT_EQ(0, card(set.getBoundaries<0>(tuple())));
-
-    set.insert();
-
-    EXPECT_EQ(1, card(set.getBoundaries<0>(tuple())));
-}
-
 TEST(Trie, RangeQuery_1D) {
     using tuple = typename souffle::Tuple<RamDomain, 1>;
 
@@ -1448,36 +1406,6 @@ TEST(Trie, RangeQueryStress) {
                 EXPECT_EQ(1, card(set.getBoundaries<3>(tuple({{x, y, z}}))));
             }
         }
-    }
-}
-
-TEST(Trie, Merge_0D) {
-    Trie<0> e;
-    Trie<0> f;
-    f.insert();
-
-    {
-        Trie<0> c = e;
-        c.insertAll(e);
-        EXPECT_TRUE(c.empty());
-    }
-
-    {
-        Trie<0> c = e;
-        c.insertAll(f);
-        EXPECT_FALSE(c.empty());
-    }
-
-    {
-        Trie<0> c = f;
-        c.insertAll(e);
-        EXPECT_FALSE(c.empty());
-    }
-
-    {
-        Trie<0> c = f;
-        c.insertAll(f);
-        EXPECT_FALSE(c.empty());
     }
 }
 

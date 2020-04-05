@@ -1439,11 +1439,9 @@ bool FoldAnonymousRecords::isValidRecordConstraint(const AstLiteral* literal) {
 
     // Check if operator is "=" or "!="
     auto op = constraint->getOperator();
-    if (!isEqConstraint(op) && !isEqConstraint(negatedConstraintOp(op))) {
-        return false;
-    }
 
-    return true;
+    return isEqConstraint(op) || isEqConstraint(negatedConstraintOp(op));
+    ;
 }
 
 bool FoldAnonymousRecords::containsValidRecordConstraint(const AstClause& clause) {
@@ -1625,7 +1623,7 @@ bool ResolveAnonymousRecordsAliases::replaceNamedVariables(
         std::map<std::string, const AstRecordInit*> varToRecordMap;
 
         ReplaceVariables(std::map<std::string, const AstRecordInit*> varToRecordMap)
-                : varToRecordMap(varToRecordMap){};
+                : varToRecordMap(std::move(varToRecordMap)){};
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             if (auto variable = dynamic_cast<AstVariable*>(node.get())) {

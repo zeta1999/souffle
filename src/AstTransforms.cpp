@@ -1437,9 +1437,9 @@ bool FoldAnonymousRecordTransformer::isValidRecordConstraint(const AstLiteral* l
         return false;
     }
 
+    auto op = constraint->getOperator();
     // Check if op is "=" or "!="
-    if (!isEqConstraint(constraint->getOperator()) &&
-            !isEqConstraint(negatedConstraintOp(constraint->getOperator()))) {
+    if (!isEqConstraint(op) && !isEqConstraint(negatedConstraintOp(op))) {
         return false;
     }
 
@@ -1466,6 +1466,7 @@ std::vector<std::unique_ptr<AstLiteral>> FoldAnonymousRecordTransformer::expandR
 
     assert(leftChildren.size() == rightChildren.size());
 
+    // [a, b..] = [c, d...] → a = c, b = d ...
     for (size_t i = 0; i < leftChildren.size(); ++i) {
         auto leftOperand = static_cast<AstArgument*>(leftChildren[i]->clone());
         auto rightOperand = static_cast<AstArgument*>(rightChildren[i]->clone());
@@ -1576,7 +1577,6 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findV
 
     auto groundedTerms = getGroundedTerms(clause);
 
-    // Todo: handle edge case: unnamed variable.
     for (auto* literal : clause.getBodyLiterals()) {
         if (auto constraint = dynamic_cast<AstBinaryConstraint*>(literal)) {
             if (!isEqConstraint(constraint->getOperator())) {
@@ -1608,7 +1608,7 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findV
                 continue;
             }
 
-            // We are interested only in a first mapping.
+            // We are interested only in the first mapping.
             if (variableRecordMap.find(variableName) != variableRecordMap.end()) {
                 continue;
             }
@@ -1622,8 +1622,8 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findV
     return variableRecordMap;
 }
 
-std::unique_ptr<AstClause> ResolveAnonymousRecordAliases::replaceVariablesWithRecords(
-        const AstClause& clause, std::map<std::string, const AstRecordInit*> varToRecordMap) {
+bool ResolveAnonymousRecordAliases::replaceVariablesWithRecords(
+        AstClause& clause, const TypeAnalysis& typeAnalysis) {
     struct ReplaceVariables : public AstNodeMapper {
         std::map<std::string, const AstRecordInit*> varToRecordMap;
 
@@ -1643,11 +1643,49 @@ std::unique_ptr<AstClause> ResolveAnonymousRecordAliases::replaceVariablesWithRe
             return node;
         }
     };
+    auto variableToRecordMap = findVariablesRecordMapping(clause, typeAnalysis);
+    bool changed = variableToRecordMap.size() > 0;
+    if (changed) {
+        ReplaceVariables update(std::move(variableToRecordMap));
+        clause.apply(update);
+    }
+    return changed;
+}
 
-    ReplaceVariables update(std::move(varToRecordMap));
-    auto newClause = std::unique_ptr<AstClause>(clause.clone());
-    newClause->apply(update);
-    return newClause;
+bool ResolveAnonymousRecordAliases::replaceUnnamedRecordVariables(AstClause& clause) {
+    struct ReplaceUnnamed : public AstNodeMapper {
+        mutable bool changed{false};
+        ReplaceUnnamed() = default;
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            auto isUnnamed = [](AstNode* node) -> bool {
+                return dynamic_cast<AstUnnamedVariable*>(node) != nullptr;
+            };
+            auto isRecord = [](AstNode* node) -> bool {
+                return dynamic_cast<AstRecordInit*>(node) != nullptr;
+            };
+
+            if (auto constraint = dynamic_cast<AstBinaryConstraint*>(node.get())) {
+                auto left = constraint->getLHS();
+                auto right = constraint->getRHS();
+                bool hasUnnamed = isUnnamed(left) || isUnnamed(right);
+                bool hasRecord = isRecord(left) || isRecord(right);
+                auto op = constraint->getOperator();
+                if (hasUnnamed && hasRecord && isEqConstraint(op)) {
+                    return std::make_unique<AstBooleanConstraint>(true);
+                }
+            }
+
+            node->apply(*this);
+
+            return node;
+        }
+    };
+
+    ReplaceUnnamed update;
+    clause.apply(update);
+
+    return update.changed;
 }
 
 bool ResolveAnonymousRecordAliases::transform(AstTranslationUnit& translationUnit) {
@@ -1656,22 +1694,9 @@ bool ResolveAnonymousRecordAliases::transform(AstTranslationUnit& translationUni
 
     const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
 
-    std::vector<std::unique_ptr<AstClause>> newClauses;
-
-    for (const auto* clause : program.getClauses()) {
-        auto variableToRecordMap = findVariablesRecordMapping(*clause, typeAnalysis);
-        if (!variableToRecordMap.empty()) {
-            changed = true;
-            auto newClause = replaceVariablesWithRecords(*clause, std::move(variableToRecordMap));
-            newClauses.push_back(std::move(newClause));
-        } else {
-            newClauses.emplace_back(clause->clone());
-        }
-    }
-
-    // Update AstProgram.
-    if (changed) {
-        program.setClauses(std::move(newClauses));
+    for (auto* clause : program.getClauses()) {
+        changed |= replaceVariablesWithRecords(*clause, typeAnalysis);
+        changed |= replaceUnnamedRecordVariables(*clause);
     }
 
     return changed;

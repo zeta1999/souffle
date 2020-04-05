@@ -661,8 +661,7 @@ private:
      * Use mapping found by findVariablesRecordMapping to substitute
      * a records for each variable that operates on records.
      **/
-    std::unique_ptr<AstClause> replaceVariablesWithRecords(
-            const AstClause& clause, std::map<std::string, const AstRecordInit*> varToRecordMap);
+    bool replaceVariablesWithRecords(AstClause&, const TypeAnalysis&);
 
     /**
      * For each variable equal to some anonymous record,
@@ -670,6 +669,11 @@ private:
      **/
     std::map<std::string, const AstRecordInit*> findVariablesRecordMapping(
             const AstClause&, const TypeAnalysis&);
+
+    /**
+     * For unnamed variables, replace each equation _ op record with true.
+     **/
+    bool replaceUnnamedRecordVariables(AstClause&);
 };
 
 }  // end of namespace souffle

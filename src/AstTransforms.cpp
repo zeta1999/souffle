@@ -1414,7 +1414,7 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
     return update.changed;
 }
 
-bool FoldAnonymousRecordTransformer::isValidRecordConstraint(const AstLiteral* literal) {
+bool FoldAnonymousRecords::isValidRecordConstraint(const AstLiteral* literal) {
     auto constraint = dynamic_cast<const AstBinaryConstraint*>(literal);
 
     if (constraint == nullptr) {
@@ -1446,7 +1446,7 @@ bool FoldAnonymousRecordTransformer::isValidRecordConstraint(const AstLiteral* l
     return true;
 }
 
-bool FoldAnonymousRecordTransformer::containsValidRecordConstraint(const AstClause& clause) {
+bool FoldAnonymousRecords::containsValidRecordConstraint(const AstClause& clause) {
     bool contains = false;
     visitDepthFirst(clause, [&](const AstBinaryConstraint& binary) {
         contains = (contains || isValidRecordConstraint(&binary));
@@ -1454,7 +1454,7 @@ bool FoldAnonymousRecordTransformer::containsValidRecordConstraint(const AstClau
     return contains;
 }
 
-std::vector<std::unique_ptr<AstLiteral>> FoldAnonymousRecordTransformer::expandRecordBinaryConstraint(
+std::vector<std::unique_ptr<AstLiteral>> FoldAnonymousRecords::expandRecordBinaryConstraint(
         const AstBinaryConstraint& constraint) {
     std::vector<std::unique_ptr<AstLiteral>> replacedContraint;
 
@@ -1488,7 +1488,7 @@ std::vector<std::unique_ptr<AstLiteral>> FoldAnonymousRecordTransformer::expandR
     return replacedContraint;
 }
 
-void FoldAnonymousRecordTransformer::transformClause(
+void FoldAnonymousRecords::transformClause(
         const AstClause& clause, std::vector<std::unique_ptr<AstClause>>& newClauses) {
     // If we have an inequality constraint, we need to create new clauses
     // At most one inequality constraint will be expanded in a single pass.
@@ -1543,7 +1543,7 @@ void FoldAnonymousRecordTransformer::transformClause(
     }
 }
 
-bool FoldAnonymousRecordTransformer::transform(AstTranslationUnit& translationUnit) {
+bool FoldAnonymousRecords::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     AstProgram& program = *translationUnit.getProgram();
 
@@ -1565,7 +1565,7 @@ bool FoldAnonymousRecordTransformer::transform(AstTranslationUnit& translationUn
     return changed;
 }
 
-std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findVariablesRecordMapping(
+std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordsAliases::findVariablesRecordMapping(
         const AstClause& clause, const TypeAnalysis& typeAnalysis) {
     std::map<std::string, const AstRecordInit*> variableRecordMap;
 
@@ -1619,7 +1619,7 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findV
     return variableRecordMap;
 }
 
-bool ResolveAnonymousRecordAliases::replaceNamedVariables(
+bool ResolveAnonymousRecordsAliases::replaceNamedVariables(
         AstClause& clause, const TypeAnalysis& typeAnalysis) {
     struct ReplaceVariables : public AstNodeMapper {
         std::map<std::string, const AstRecordInit*> varToRecordMap;
@@ -1649,7 +1649,7 @@ bool ResolveAnonymousRecordAliases::replaceNamedVariables(
     return changed;
 }
 
-bool ResolveAnonymousRecordAliases::replaceUnnamedVariable(AstClause& clause) {
+bool ResolveAnonymousRecordsAliases::replaceUnnamedVariable(AstClause& clause) {
     struct ReplaceUnnamed : public AstNodeMapper {
         mutable bool changed{false};
         ReplaceUnnamed() = default;
@@ -1685,7 +1685,7 @@ bool ResolveAnonymousRecordAliases::replaceUnnamedVariable(AstClause& clause) {
     return update.changed;
 }
 
-bool ResolveAnonymousRecordAliases::transform(AstTranslationUnit& translationUnit) {
+bool ResolveAnonymousRecordsAliases::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     AstProgram& program = *translationUnit.getProgram();
 

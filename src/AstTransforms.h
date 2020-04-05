@@ -601,12 +601,12 @@ private:
  *
  * This transformation does not resolve aliases.
  * E.g. A = [a, b], A = [c, d]
- * Thus it should be called in conjunction with ResolveAnonymousRecordAliases.
+ * Thus it should be called in conjunction with ResolveAnonymousRecordsAliases.
  */
-class FoldAnonymousRecordTransformer : public AstTransformer {
+class FoldAnonymousRecords : public AstTransformer {
 public:
     std::string getName() const override {
-        return "FoldAnonymousRecordTransformer";
+        return "FoldAnonymousRecords";
     }
 
 private:
@@ -651,12 +651,12 @@ private:
  * of the form a = [...], where a is an anonymous record, and replacing
  * all occurrences of a with the RHS.
  *
- * The transformer is to be called in conjunction with FoldAnonymousRecordTransformer.
+ * The transformer is to be called in conjunction with FoldAnonymousRecords.
  **/
-class ResolveAnonymousRecordAliases : public AstTransformer {
+class ResolveAnonymousRecordsAliases : public AstTransformer {
 public:
     std::string getName() const override {
-        return "FoldAnonymousRecordTransformer";
+        return "FoldAnonymousRecords";
     }
 
 private:

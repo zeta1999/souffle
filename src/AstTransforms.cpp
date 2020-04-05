@@ -1574,6 +1574,8 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findV
     auto isVariable = [](AstNode* node) -> bool { return dynamic_cast<AstVariable*>(node) != nullptr; };
     auto isRecord = [](AstNode* node) -> bool { return dynamic_cast<AstRecordInit*>(node) != nullptr; };
 
+    auto groundedTerms = getGroundedTerms(clause);
+
     // Todo: handle edge case: unnamed variable.
     for (auto* literal : clause.getBodyLiterals()) {
         if (auto constraint = dynamic_cast<AstBinaryConstraint*>(literal)) {
@@ -1601,6 +1603,10 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findV
 
             auto* variable = static_cast<AstVariable*>(isVariable(left) ? left : right);
             const auto& variableName = variable->getName();
+
+            if (!groundedTerms.find(variable)->second) {
+                continue;
+            }
 
             // We are interested only in a first mapping.
             if (variableRecordMap.find(variableName) != variableRecordMap.end()) {

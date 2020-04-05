@@ -1437,8 +1437,8 @@ bool FoldAnonymousRecordTransformer::isValidRecordConstraint(const AstLiteral* l
         return false;
     }
 
+    // Check if operator is "=" or "!="
     auto op = constraint->getOperator();
-    // Check if op is "=" or "!="
     if (!isEqConstraint(op) && !isEqConstraint(negatedConstraintOp(op))) {
         return false;
     }
@@ -1504,10 +1504,12 @@ void FoldAnonymousRecordTransformer::transformClause(
                 auto transformedLiterals = expandRecordBinaryConstraint(constraint);
                 std::move(std::begin(transformedLiterals), std::end(transformedLiterals),
                         std::back_inserter(newBody));
+
                 // else if: Case [a_0, ..., a_n] != [b_0, ..., b_n].
                 // track single such case, it will be expanded in the end.
             } else if (neqConstraint == nullptr) {
                 neqConstraint = dynamic_cast<AstBinaryConstraint*>(literal);
+
                 // Else: repeated inequality.
             } else {
                 newBody.push_back(std::unique_ptr<AstLiteral>(literal->clone()));
@@ -1521,25 +1523,20 @@ void FoldAnonymousRecordTransformer::transformClause(
 
     // If no inequality: create a single modified clause.
     if (neqConstraint == nullptr) {
-        auto newHead = std::unique_ptr<AstAtom>(clone(clause.getHead()));
-        auto newExecutionPlan = std::unique_ptr<AstExecutionPlan>(clone(clause.getExecutionPlan()));
-        auto newClause = std::make_unique<AstClause>(
-                std::move(newHead), std::move(newBody), std::move(newExecutionPlan));
-
-        newClauses.push_back(std::move(newClause));
+        auto newClause = std::unique_ptr<AstClause>(clause.clone());
+        newClause->setBodyLiterals(std::move(newBody));
+        newClauses.emplace_back(std::move(newClause));
 
         // Else: For each pair in negation, we need an extra clause.
     } else {
         auto transformedLiterals = expandRecordBinaryConstraint(*neqConstraint);
 
         for (auto it = begin(transformedLiterals); it != end(transformedLiterals); ++it) {
-            auto newHead = std::unique_ptr<AstAtom>(clone(clause.getHead()));
-            auto newExecutionPlan = std::unique_ptr<AstExecutionPlan>(clone(clause.getExecutionPlan()));
+            auto newClause = std::unique_ptr<AstClause>(clause.clone());
             auto copyBody = clone(newBody);
             copyBody.push_back(std::move(*it));
 
-            auto newClause = std::make_unique<AstClause>(
-                    std::move(newHead), std::move(copyBody), std::move(newExecutionPlan));
+            newClause->setBodyLiterals(std::move(copyBody));
 
             newClauses.push_back(std::move(newClause));
         }
@@ -1595,7 +1592,7 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findV
             }
 
             // TODO (darth_tytus): This should change in the future.
-            // Currently type system assigns anonymous records {- All types - }
+            // Currently type system assigns to anonymous records {- All types - }
             // which is inelegant.
             if (!typeAnalysis.getTypes(left).isAll()) {
                 continue;
@@ -1622,7 +1619,7 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordAliases::findV
     return variableRecordMap;
 }
 
-bool ResolveAnonymousRecordAliases::replaceVariablesWithRecords(
+bool ResolveAnonymousRecordAliases::replaceNamedVariables(
         AstClause& clause, const TypeAnalysis& typeAnalysis) {
     struct ReplaceVariables : public AstNodeMapper {
         std::map<std::string, const AstRecordInit*> varToRecordMap;
@@ -1652,7 +1649,7 @@ bool ResolveAnonymousRecordAliases::replaceVariablesWithRecords(
     return changed;
 }
 
-bool ResolveAnonymousRecordAliases::replaceUnnamedRecordVariables(AstClause& clause) {
+bool ResolveAnonymousRecordAliases::replaceUnnamedVariable(AstClause& clause) {
     struct ReplaceUnnamed : public AstNodeMapper {
         mutable bool changed{false};
         ReplaceUnnamed() = default;
@@ -1695,8 +1692,8 @@ bool ResolveAnonymousRecordAliases::transform(AstTranslationUnit& translationUni
     const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
 
     for (auto* clause : program.getClauses()) {
-        changed |= replaceVariablesWithRecords(*clause, typeAnalysis);
-        changed |= replaceUnnamedRecordVariables(*clause);
+        changed |= replaceNamedVariables(*clause, typeAnalysis);
+        changed |= replaceUnnamedVariable(*clause);
     }
 
     return changed;

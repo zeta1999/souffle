@@ -365,8 +365,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitClear(const RamClear& clear, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            out << "if (!isHintsProfilingEnabled()"
-                << (clear.getRelation().isTemp() ? ") " : "&& performIO) ");
+            if (!clear.getRelation().isTemp()) {
+                out << "if (performIO) ";
+            }
             out << synthesiser.getRelationName(clear.getRelation()) << "->"
                 << "purge();\n";
 
@@ -1746,6 +1747,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     std::string classname = "Sf_" + id;
 
     // generate C++ program
+
+    if (Global::config().has("verbose")) {
+        os << "#define _SOUFFLE_STATS\n";
+    }
     os << "\n#include \"souffle/CompiledSouffle.h\"\n";
     if (Global::config().has("provenance")) {
         os << "#include <mutex>\n";
@@ -2064,15 +2069,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // add code printing hint statistics
     os << "\n// -- relation hint statistics --\n";
-    os << "if(isHintsProfilingEnabled()) {\n";
-    os << "std::cout << \" -- Operation Hint Statistics --\\n\";\n";
-    for (auto rel : prog.getRelations()) {
-        auto name = getRelationName(*rel);
-        os << "std::cout << \"Relation " << name << ":\\n\";\n";
-        os << name << "->printHintStatistics(std::cout,\"  \");\n";
-        os << "std::cout << \"\\n\";\n";
+
+    if (Global::config().has("verbose")) {
+        for (auto rel : prog.getRelations()) {
+            auto name = getRelationName(*rel);
+            os << "std::cout << \"Statistics for Relation " << name << ":\\n\";\n";
+            os << name << "->printStatistics(std::cout);\n";
+            os << "std::cout << \"\\n\";\n";
+        }
     }
-    os << "}\n";
 
     os << "SignalHandler::instance()->reset();\n";
 

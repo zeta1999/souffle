@@ -235,6 +235,18 @@ souffleswigdir = $(soufflepublicdir)/swig
 
 souffleswig_HEADERS = $(souffle_swig_sources)
 
+souffleutilitydir = $(soufflepublicdir)/utility
+
+souffleutility_HEADERS = \
+        utility/CacheUtil.h                       \
+        utility/ContainerUtil.h                   \
+        utility/FileUtil.h                        \
+        utility/FunctionalUtil.h                  \
+        utility/MiscUtil.h                        \
+        utility/ParallelUtil.h                    \
+        utility/StreamUtil.h                      \
+        utility/StringUtil.h
+
 # files to clean
 CLEANFILES = $(BUILT_SOURCES)  parser.cc scanner.cc parser.hh stack.hh
 

@@ -41,6 +41,7 @@
 #include <memory>
 #include <ostream>
 #include <set>
+#include <utility>
 
 namespace souffle {
 
@@ -132,8 +133,7 @@ bool RemoveRelationCopiesTransformer::removeRelationCopies(AstTranslationUnit& t
                 }
             }
         }
-		}
-    
+    }
 
     // map each relation to its ultimate alias (could be transitive)
     alias_map isAliasOf;
@@ -222,234 +222,118 @@ bool UniqueAggregationVariablesTransformer::transform(AstTranslationUnit& transl
     return changed;
 }
 
-bool MaterializeSingletonAggregationTransformer::transform(
-				AstTranslationUnit& translationUnit) {
-		bool changed = false;
-		AstProgram& program = *translationUnit.getProgram();
+bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& translationUnit) {
+    bool changed = false;
+    AstProgram& program = *translationUnit.getProgram();
     const TypeEnvironment& env = translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
-		int counter = 0; // to ensure new synthesised relations have unique names
-		visitDepthFirst(program, [&](const AstClause& clause) {
-			visitDepthFirst(clause, [&](const AstLiteral& literal) {
-				visitDepthFirst(literal, [&](const AstAggregator& agg) {
-					if (!isSingleValued(agg)) {
-							return;
-					}
-					changed = true; 
-					auto relName = "__agg_rel_" + toString(counter++);
-					 while (getRelation(program, relName) != nullptr) {
-					 		relName = "__agg_rel_" + toString(counter++);
-					 }
-					// figure out which variables we need to add to the head
-					std::set<std::string> literalVariables;
-					visitDepthFirst(literal, [&](const AstVariable& variable) {
-						literalVariables.insert(variable.getName());								
-					});
-					std::set<std::string> aggregateVariables;
-					visitDepthFirst(agg, [&](const AstVariable& variable) {
-						aggregateVariables.insert(variable.getName());
-					});
-					for (auto i = literalVariables.begin(), last = literalVariables.end(); i != last; ) {
-						if (aggregateVariables.find(*i) != aggregateVariables.end()) {
-							i = literalVariables.erase(i);
-						} else {
-							i++;
-						}
-					}
-					// done
-					// set up new relation and rule
-					auto* rel = new AstRelation();
-					auto* newClause = new AstClause();
-					auto* head = new AstAtom();
-
-					rel->setQualifiedName(relName);
-					head->setQualifiedName(relName);
-					// add arguments to haed
-					for (auto variableName : literalVariables) {
-						head->addArgument(std::make_unique<AstVariable>(variableName));	
-					}
-					std::cout << "new head: " << *head << "\n";
-					newClause->setHead(std::unique_ptr<AstAtom>(head));
-					std::cout << "new clause: " << *newClause << "\n";
-					newClause->addToBody(std::unique_ptr<AstLiteral>(literal.clone()));
-					std::cout << "new clause: " << *newClause << "\n";
-					// add arguments to relation
-          std::map<const AstArgument*, TypeSet> argTypes =
-                  TypeAnalysis::analyseTypes(env, *newClause, &program);
-          for (const auto& cur : head->getArguments()) {
-              rel->addAttribute(std::make_unique<AstAttribute>(
-                      toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
-          }
-					std::cout << "completed relation: " << *rel << "\n";
-					// add relation and new clause to program
-					std::cout << "program before adding: " << program << "\n";
-					program.addRelation(std::unique_ptr<AstRelation>(rel));
-					program.addClause(std::unique_ptr<AstClause>(newClause));
-					std::cout << "program after adding: " << program << "\n";
-					// update the original clause to refer to the new synthesised aggregate clause
-					struct replaceAggregateLiteral : public AstNodeMapper {
-						const AstLiteral& literal;
-						const AstAtom* replacement;
-						
-						replaceAggregateLiteral(const AstLiteral& literal, const AstAtom* replacement) 
-										: literal(literal), replacement(replacement) {}
-						std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-							std::cout << "current node: " << *node.get() << "\n";
-							std::cout << this << "\n";
-							if (auto* lit = dynamic_cast<AstLiteral*>(node.get())) {
-								if (*lit == literal) {
-									std::vector<std::unique_ptr<AstArgument>> args;
-									for (auto arg : replacement->getArguments()) {
-											args.emplace_back(arg->clone());
-									}
-									auto literalReplacementAtom = std::make_unique<AstAtom>(replacement->getQualifiedName(), std::move(args), replacement->getSrcLoc());
-									return literalReplacementAtom;
-								}
+    // collect references to clause / aggregate pairs
+    // let's just make it for one literal for now. Following Martin's approach is a better idea.
+    std::unique_ptr<AstClause> foundClause = nullptr;
+    std::unique_ptr<AstAggregator> foundAggregate = nullptr;
+    bool found = false;
+    visitDepthFirst(program, [&](const AstClause& clause) {
+        visitDepthFirst(clause, [&](const AstAggregator& agg) {
+            if (found) {
+                return;
+            }
+            if (!isSingleValued(agg)) {
+                return;
+            }
+            found = true;
+            foundAggregate.reset(agg.clone());
+            foundClause.reset(clause.clone());
+        });
+    });
+    if (!found) {
+        return false;
+    }
+    changed = true;
+    auto& aggregate = *foundAggregate;
+    auto& clause = *foundClause;
+		int counter = 0;
+    auto relName = "__agg_rel_" + toString(counter++);
+    while (getRelation(program, relName) != nullptr) {
+        relName = "__agg_rel_" + toString(counter++);
+    }
+    // We have a singleton aggregate term given by agg.
+    // Create a relation __aggRel_n(x) :- x = agg.
+    // replace the term agg in the body of the rule (clause) with a new variable z.
+    // add to the clause the term __aggRel_n(z).
+    // .decl
+    auto* aggRel = new AstRelation();
+    auto* aggHead = new AstAtom();
+    // ... :- ... ?
+    auto* aggClause = new AstClause();
+    // .decl __aggRel_0()
+    aggRel->setQualifiedName(relName);
+    // __aggRel_0 ()
+    aggHead->setQualifiedName(relName);
+    std::string variableName = "z";
+    auto* variable = new AstVariable(variableName);
+    // __aggRel_0(z)
+    aggHead->addArgument(std::unique_ptr<AstArgument>(variable));
+    // __aggRel_0(z) :- ...?
+    aggClause->setHead(std::unique_ptr<AstAtom>(aggHead));
+		
+		std::cout << "found clause before adding: " << *foundClause << std::endl;
+		foundClause->addToBody(std::unique_ptr<AstLiteral>(aggHead->clone()));
+		std::cout << "found clause after adding: " << *foundClause << std::endl;
+    // .decl __aggRel_0(z:number)
+    // __aggRel_0(z) :- z = agg.
+    auto* equalityLiteral = new AstBinaryConstraint(BinaryConstraintOp::EQ,
+            std::unique_ptr<AstArgument>(variable->clone()), std::unique_ptr<AstArgument>(aggregate.clone()));
+    aggClause->addToBody(std::unique_ptr<AstLiteral>(equalityLiteral));
+		aggRel->addAttribute(std::make_unique<AstAttribute>(variableName, "number"));
+		program.addRelation(std::unique_ptr<AstRelation>(aggRel));
+    program.addClause(std::unique_ptr<AstClause>(aggClause));
+		// now transform the other thing
+		clause.addToBody(std::unique_ptr<AstLiteral>(aggHead->clone()));
+		struct replaceAggregate : public AstNodeMapper {
+				const AstAggregator& aggregate;
+				const AstVariable* variable;
+				replaceAggregate(const AstAggregator& aggregate, const AstVariable* variable)
+								: aggregate(aggregate), variable(variable) {}
+				std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+					if (auto* current = dynamic_cast<AstAggregator*>(node.get())) {
+							if (*current == aggregate) {
+									auto replacement = std::unique_ptr<AstVariable>(variable->clone());
+									assert(replacement != nullptr);
+									return replacement;
 							}
+					}
+					node->apply(*this);
+					assert(node != nullptr);
+					return node;
+				}
+		};
+		std::cout << "before applying update..." << std::endl;
+	 	std::cout << program << std::endl;	
+		replaceAggregate update(aggregate, variable);
+		foundClause->addToBody(std::unique_ptr<AstLiteral>(aggHead->clone()));
+		foundClause->apply(update);
 
-							node->apply(*this);
-							return node;
-						}
-					};
-					replaceAggregateLiteral update(literal, head);
-					program.apply(update);
-					std::cout << "program after trying to change old literal to new one: " << program << "\n";
-				
-
-					//auto* newClause = new AstClause();
-					//auto* head = new AstAtom();
-					//head->setQualifiedName("A");
-					//head->addArgument(std::make_unique<AstVariable>("x"));
-					//newClause->setHead(std::unique_ptr<AstAtom>(head));
-					//auto* bodyAtom = new AstAtom();
-					//bodyAtom->setQualifiedName("B");
-					//bodyAtom->addArgument(std::make_unique<AstVariable>("X"));
-					//int i = 0;
-					//for (AstLiteral* lit : clause.getBodyLiterals()) {
-					//	auto* litCopy = lit->clone();
-					//	std::cout << *litCopy << "\n";
-					//	if (i == 0) {
-					//		std::cout << *newClause << "\n";
-					//		newClause->addToBody(std::unique_ptr<AstLiteral>(litCopy));
-					//		std::cout << *newClause << "\n";
-					//	} 
-					//	i++;
-					//}
-					//
-					//// newClause->addToBody(std::unique_ptr<AstLiteral>(bodyAtom));
-					//program.addClause(std::unique_ptr<AstClause>(newClause));
-//					// We are now in this situation
-//					// Head :- Body, x = sum y : {...}.
-//					// The goal is...
-//					// Head :- Body, agg(x).
-//					
-//					/* Steps:
-//					 * 1. Make a new relation __agg_i and a new clause __agg_i(x) :- literal.
-//					 * 2. Update the current clause to replace literal with _agg_i_(x).
-//					 * 3. Add the new relation to the program
-//					 * 4. Add the new clause to the program
-//					 */
-//					 // 1. Make a new relation __agg_i and a new clause __agg_i(x) :- literal.
-//					 auto* newRule = new AstClause();
-//					 newRule->addToBody(std::unique_ptr<AstLiteral>(literal.clone()));
-//					 // now this clause has
-//					 // :- x = sum y : {B(y), C(y)}.
-//					 auto* newRuleHead = new AstAtom();
-//					 newRuleHead->setQualifiedName(relName);
-//					 // add variables to the head (once only)
-//					 std::set<std::string> variables;
-//					 visitDepthFirst(agg, [&](const AstVariable& var) {
-//							variables.insert(var.getName()); 
-//					 });
-//					 for (const auto& var : variables) {
-//							newRuleHead->addArgument(std::make_unique<AstVariable>(var));	
-//					 }
-//					 newRule->setHead(std::unique_ptr<AstAtom>(newRuleHead));
-//////					 // Now we have a full blown __agg_i(x) :- literal. Yay!
-//////					 // Now you need to update the original clause to remove this and replace with head.
-//////					 // You also need to add this relation to the program.
-//					 auto* rel = new AstRelation();
-//					 rel->setQualifiedName(relName);
-//////						
-//////					 // add attributes for type system
-//            std::map<const AstArgument*, TypeSet> argTypes =
-//                    TypeAnalysis::analyseTypes(env, *newRule, &program);
-//            for (const auto& cur : newRuleHead->getArguments()) {
-//                rel->addAttribute(std::make_unique<AstAttribute>(
-//                        toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
-//            }
-//////
-//            program.addClause(std::unique_ptr<AstClause>(newRule));
-//            program.addRelation(std::unique_ptr<AstRelation>(rel));
-//						// now mutate the clause so that we replace the literal with the head __agg_i(x).
-////						struct replaceAggregateLiteral : public AstNodeMapper {
-////							const AstLiteral& literal;
-////							const AstAtom* replacement;
-////							
-////							replaceAggregateLiteral(const AstLiteral& literal, const AstAtom* replacement) 
-////											: literal(literal), replacement(replacement) {}
-////
-////							std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-////								if (auto* lit = dynamic_cast<AstLiteral*>(node.get())) {
-////									if (*lit == literal) {
-////										std::vector<std::unique_ptr<AstArgument>> args;
-////										for (auto arg : replacement->getArguments()) {
-////												args.emplace_back(arg->clone());
-////										}
-////										auto literalReplacement = std::make_unique<AstAtom>(replacement->getQualifiedName(), std::move(args), replacement->getSrcLoc());
-////										return literalReplacement;
-////									}
-////								}
-////								return node;
-////							}
-////						};
-////						replaceAggregateLiteral update(literal, literalClauseHead);
-////						program.apply(update);
-//
-//
-//						//////auto aggAtom =
-//            ////        std::make_unique<AstAtom>(head->getQualifiedName(), std::move(args), head->getSrcLoc());
-//
-//            ////std::vector<std::unique_ptr<AstLiteral>> newBody;
-//            ////newBody.push_back(std::move(aggAtom));
-//            ////const_cast<AstAggregator&>(agg).setBody(std::move(newBody));
-//						//std::vector<std::unique_ptr<AstLiteral>> newClauseBody;
-//						//for (const auto& lit : clause.getBodyLiterals()) {
-//						//		if (lit != &literal) {
-//						//			newClauseBody.push_back(std::move(lit));
-//						//		}
-//						//}
-//            //std::vector<std::unique_ptr<AstArgument>> args;
-//            //for (auto arg : literalClauseHead->getArguments()) {
-//            //    args.emplace_back(arg->clone());
-//            //}
-//
-//						//auto literalReplacement = std::make_unique<AstAtom>(literalClauseHead->getQualifiedName(), std::move(args), literalClauseHead->getSrcLoc());
-//						//newClauseBody.push_back(std::move(literalReplacement));
-//						//const_cast<AstClause&>(clause).setBody(std::move(newClauseBody));
-					});
-				});
-			});
-
-		return changed;
+		std::cout << "after applying update..." << std::endl;
+	 	std::cout << program << std::endl;	
+    return changed;
 }
 
 // An aggregate is single-valued if none of the variables appearing in the body
 // are ungrounded when ignoring the outer scope
 // ie the aggregate only ever evaluates to a single value.
 bool MaterializeSingletonAggregationTransformer::isSingleValued(const AstAggregator& agg) {
-		// Dummy clause to analyse groundedness
-		auto* aggClause = new AstClause();
-		for (const auto& lit : agg.getBodyLiterals()) {
-			 aggClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
-		}
-		for (const auto& argPair : getGroundedTerms(*aggClause)) {
-				const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
-				bool variableIsGrounded = argPair.second;
-				if (variable != nullptr && !variableIsGrounded) {
-						return false;
-				}
-		}
-		return true;
+    // Dummy clause to analyse groundedness
+    auto* aggClause = new AstClause();
+    for (const auto& lit : agg.getBodyLiterals()) {
+        aggClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
+    }
+    for (const auto& argPair : getGroundedTerms(*aggClause)) {
+        const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
+        bool variableIsGrounded = argPair.second;
+        if (variable != nullptr && !variableIsGrounded) {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(

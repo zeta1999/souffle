@@ -105,42 +105,42 @@ TypeConstraint isSubtypeOf(const TypeVar& a, const TypeVar& b) {
  * A constraint factory ensuring that all the types associated to the variable
  * a are subtypes of type b.
  */
-TypeConstraint isSubtypeOf(const TypeVar& a, const Type& b) {
+TypeConstraint isSubtypeOf(const TypeVar& variable, const Type& type) {
     struct C : public Constraint<TypeVar> {
-        TypeVar a;
-        const Type& b;
+        TypeVar variable;
+        const Type& type;
 
-        C(TypeVar a, const Type& b) : a(std::move(a)), b(b) {}
+        C(TypeVar variable, const Type& type) : variable(std::move(variable)), type(type) {}
 
-        bool update(Assignment<TypeVar>& ass) const override {
+        bool update(Assignment<TypeVar>& assignments) const override {
             // get current value of variable a
-            TypeSet& s = ass[a];
+            TypeSet& assignment = assignments[variable];
 
             // remove all types that are not sub-types of b
-            if (s.isAll()) {
-                s = TypeSet(b);
+            if (assignment.isAll()) {
+                assignment = TypeSet(type);
                 return true;
             }
 
-            TypeSet res;
-            for (const Type& t : s) {
-                res.insert(getGreatestCommonSubtypes(t, b));
+            TypeSet newAssignment;
+            for (const Type& t : assignment) {
+                newAssignment.insert(getGreatestCommonSubtypes(t, type));
             }
 
             // check whether there was a change
-            if (res == s) {
+            if (assignment == newAssignment) {
                 return false;
             }
-            s = res;
+            assignment = newAssignment;
             return true;
         }
 
         void print(std::ostream& out) const override {
-            out << a << " <: " << b.getName();
+            out << variable << " <: " << type.getName();
         }
     };
 
-    return std::make_shared<C>(a, b);
+    return std::make_shared<C>(variable, type);
 }
 
 /**
@@ -298,15 +298,15 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
  * A constraint factory ensuring that all the types associated to the variable
  * a are subtypes of type b.
  */
-TypeConstraint isSupertypeOf(const TypeVar& a, const Type& b) {
+TypeConstraint isSupertypeOf(const TypeVar& variable, const Type& type) {
     struct C : public Constraint<TypeVar> {
-        TypeVar a;
-        const Type& b;
+        TypeVar variable;
+        const Type& type;
         mutable bool repeat;
 
-        C(TypeVar a, const Type& b) : a(std::move(a)), b(b), repeat(true) {}
+        C(TypeVar variable, const Type& type) : variable(std::move(variable)), type(type), repeat(true) {}
 
-        bool update(Assignment<TypeVar>& ass) const override {
+        bool update(Assignment<TypeVar>& assignments) const override {
             // don't continually update super type constraints
             if (!repeat) {
                 return false;
@@ -314,33 +314,33 @@ TypeConstraint isSupertypeOf(const TypeVar& a, const Type& b) {
             repeat = false;
 
             // get current value of variable a
-            TypeSet& s = ass[a];
+            TypeSet& assignment = assignments[variable];
 
             // remove all types that are not super-types of b
-            if (s.isAll()) {
-                s = TypeSet(b);
+            if (assignment.isAll()) {
+                assignment = TypeSet(type);
                 return true;
             }
 
-            TypeSet res;
-            for (const Type& t : s) {
-                res.insert(getLeastCommonSupertypes(t, b));
+            TypeSet newAssignment;
+            for (const Type& t : assignment) {
+                newAssignment.insert(getLeastCommonSupertypes(t, type));
             }
 
             // check whether there was a change
-            if (res == s) {
+            if (assignment == newAssignment) {
                 return false;
             }
-            s = res;
+            assignment = newAssignment;
             return true;
         }
 
         void print(std::ostream& out) const override {
-            out << a << " >: " << b.getName();
+            out << variable << " >: " << type.getName();
         }
     };
 
-    return std::make_shared<C>(a, b);
+    return std::make_shared<C>(variable, type);
 }
 
 TypeConstraint isSubtypeOfComponent(const TypeVar& a, const TypeVar& b, int index) {
@@ -538,11 +538,11 @@ std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
             }
 
             // set upper boundary of argument types
-            for (unsigned i = 0; i < atts.size(); i++) {
+            for (size_t i = 0; i < atts.size(); i++) {
                 const auto& typeName = atts[i]->getTypeName();
                 if (env.isType(typeName)) {
-                    // check whether atom is not negated
-                    if (negated.find(&atom) == negated.end()) {
+                    bool notNegated = negated.find(&atom) == negated.end();
+                    if (notNegated) {
                         addConstraint(isSubtypeOf(getVar(args[i]), env.getType(typeName)));
                     } else {
                         addConstraint(isSupertypeOf(getVar(args[i]), env.getType(typeName)));

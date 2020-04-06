@@ -607,8 +607,7 @@ relation_tags
 /* Fact */
 fact
   : atom DOT {
-        $$ = new AstClause();
-        $$->setHead(std::unique_ptr<AstAtom>($atom));
+        $$ = new AstClause(std::unique_ptr<AstAtom>($atom), {}, {});
         $$->setSrcLoc(@$);
 
         $atom = nullptr;

@@ -141,6 +141,12 @@ private:
  */
 class AstClause : public AstNode {
 public:
+    AstClause() = default;
+    AstClause(std::unique_ptr<AstAtom> head, std::vector<std::unique_ptr<AstLiteral>> bodyLiterals,
+            std::unique_ptr<AstExecutionPlan> plan)
+            : AstNode(), head(std::move(head)), bodyLiterals(std::move(bodyLiterals)),
+              plan(std::move(plan)){};
+
     /** Add a Literal to the body of the clause */
     void addToBody(std::unique_ptr<AstLiteral> literal) {
         bodyLiterals.push_back(std::move(literal));
@@ -148,8 +154,12 @@ public:
 
     /** Set the head of clause to @p h */
     void setHead(std::unique_ptr<AstAtom> h) {
-        assert(!head && "Head is already set");
         head = std::move(h);
+    }
+
+    /** Set the bodyLiterals of clause to @p body */
+    void setBodyLiterals(std::vector<std::unique_ptr<AstLiteral>> body) {
+        bodyLiterals = std::move(body);
     }
 
     /** Return the atom that represents the head of the clause */
@@ -183,7 +193,7 @@ public:
         if (getExecutionPlan() != nullptr) {
             res->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(plan->clone()));
         }
-        res->head = (head) ? std::unique_ptr<AstAtom>(head->clone()) : nullptr;
+        res->head = souffle::clone(head);
         for (const auto& lit : bodyLiterals) {
             res->bodyLiterals.emplace_back(lit->clone());
         }

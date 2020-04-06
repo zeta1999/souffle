@@ -207,12 +207,9 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
 
-        if (!isRecordType(types)) {
-            return;
-        }
-
-        if (types.size() != 1) {
+        if (!isRecordType(types) || types.size() != 1) {
             report.addError("Ambiguous record", constant.getSrcLoc());
+            return;
         }
 
         // At this point we know that there is exactly one type in set, so we can take it.
@@ -301,13 +298,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         } else {
             auto checkTyAttr = [&](AstArgument const& side) {
                 auto opMatchesType = any_of(opRamTypes, [&](auto& ramType) {
-                    // HACK: Type-analysis can't represent anonymous record types and reports them as `Top`
-                    // types.
-                    //       See `tests/evaluation/aliases` for an example.
-                    auto& sideTy = typeAnalysis.getTypes(&side);
-                    if (ramType == TypeAttribute::Record && sideTy.isAll()) return true;
-
-                    return eqTypeTypeAttribute(ramType, sideTy);
+                    return eqTypeTypeAttribute(ramType, typeAnalysis.getTypes(&side));
                 });
 
                 if (!opMatchesType) {
@@ -332,7 +323,6 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                                       break;
                               }
                           });
-                    std::cerr << side << " : " << typeAnalysis.getTypes(&side) << "\n";
                     report.addError(ss.str(), side.getSrcLoc());
                 }
             };

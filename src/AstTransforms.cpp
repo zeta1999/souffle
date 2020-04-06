@@ -1414,4 +1414,287 @@ bool AstUserDefinedFunctorsTransformer::transform(AstTranslationUnit& translatio
     return update.changed;
 }
 
+bool FoldAnonymousRecords::isValidRecordConstraint(const AstLiteral* literal) {
+    auto constraint = dynamic_cast<const AstBinaryConstraint*>(literal);
+
+    if (constraint == nullptr) {
+        return false;
+    }
+
+    const auto* left = constraint->getLHS();
+    const auto* right = constraint->getRHS();
+
+    const auto* leftRecord = dynamic_cast<const AstRecordInit*>(left);
+    const auto* rightRecord = dynamic_cast<const AstRecordInit*>(right);
+
+    // Check if arguments are records records.
+    if ((leftRecord == nullptr) || (rightRecord == nullptr)) {
+        return false;
+    }
+
+    // Check if records are of the same size.
+    if (leftRecord->getChildNodes().size() != rightRecord->getChildNodes().size()) {
+        return false;
+    }
+
+    // Check if operator is "=" or "!="
+    auto op = constraint->getOperator();
+
+    return isEqConstraint(op) || isEqConstraint(negatedConstraintOp(op));
+    ;
+}
+
+bool FoldAnonymousRecords::containsValidRecordConstraint(const AstClause& clause) {
+    bool contains = false;
+    visitDepthFirst(clause, [&](const AstBinaryConstraint& binary) {
+        contains = (contains || isValidRecordConstraint(&binary));
+    });
+    return contains;
+}
+
+std::vector<std::unique_ptr<AstLiteral>> FoldAnonymousRecords::expandRecordBinaryConstraint(
+        const AstBinaryConstraint& constraint) {
+    std::vector<std::unique_ptr<AstLiteral>> replacedContraint;
+
+    const auto& left = dynamic_cast<AstRecordInit&>(*constraint.getLHS());
+    const auto& right = dynamic_cast<AstRecordInit&>(*constraint.getRHS());
+
+    auto leftChildren = left.getChildNodes();
+    auto rightChildren = right.getChildNodes();
+
+    assert(leftChildren.size() == rightChildren.size());
+
+    // [a, b..] = [c, d...] → a = c, b = d ...
+    for (size_t i = 0; i < leftChildren.size(); ++i) {
+        auto leftOperand = static_cast<AstArgument*>(leftChildren[i]->clone());
+        auto rightOperand = static_cast<AstArgument*>(rightChildren[i]->clone());
+
+        auto newConstraint = std::make_unique<AstBinaryConstraint>(constraint.getOperator(),
+                std::unique_ptr<AstArgument>(leftOperand), std::unique_ptr<AstArgument>(rightOperand));
+        replacedContraint.push_back(std::move(newConstraint));
+    }
+
+    // Handle edge case. Empty records.
+    if (leftChildren.size() == 0) {
+        if (isEqConstraint(constraint.getOperator())) {
+            replacedContraint.emplace_back(new AstBooleanConstraint(true));
+        } else {
+            replacedContraint.emplace_back(new AstBooleanConstraint(false));
+        }
+    }
+
+    return replacedContraint;
+}
+
+void FoldAnonymousRecords::transformClause(
+        const AstClause& clause, std::vector<std::unique_ptr<AstClause>>& newClauses) {
+    // If we have an inequality constraint, we need to create new clauses
+    // At most one inequality constraint will be expanded in a single pass.
+    AstBinaryConstraint* neqConstraint = nullptr;
+
+    std::vector<std::unique_ptr<AstLiteral>> newBody;
+    for (auto* literal : clause.getBodyLiterals()) {
+        if (isValidRecordConstraint(literal)) {
+            const AstBinaryConstraint& constraint = dynamic_cast<AstBinaryConstraint&>(*literal);
+
+            // Simple case, [a_0, ..., a_n] = [b_0, ..., b_n]
+            if (isEqConstraint(constraint.getOperator())) {
+                auto transformedLiterals = expandRecordBinaryConstraint(constraint);
+                std::move(std::begin(transformedLiterals), std::end(transformedLiterals),
+                        std::back_inserter(newBody));
+
+                // else if: Case [a_0, ..., a_n] != [b_0, ..., b_n].
+                // track single such case, it will be expanded in the end.
+            } else if (neqConstraint == nullptr) {
+                neqConstraint = dynamic_cast<AstBinaryConstraint*>(literal);
+
+                // Else: repeated inequality.
+            } else {
+                newBody.push_back(std::unique_ptr<AstLiteral>(literal->clone()));
+            }
+
+            // else, we simply copy the literal.
+        } else {
+            newBody.push_back(std::unique_ptr<AstLiteral>(literal->clone()));
+        }
+    }
+
+    // If no inequality: create a single modified clause.
+    if (neqConstraint == nullptr) {
+        auto newClause = std::unique_ptr<AstClause>(clause.clone());
+        newClause->setBodyLiterals(std::move(newBody));
+        newClauses.emplace_back(std::move(newClause));
+
+        // Else: For each pair in negation, we need an extra clause.
+    } else {
+        auto transformedLiterals = expandRecordBinaryConstraint(*neqConstraint);
+
+        for (auto it = begin(transformedLiterals); it != end(transformedLiterals); ++it) {
+            auto newClause = std::unique_ptr<AstClause>(clause.clone());
+            auto copyBody = clone(newBody);
+            copyBody.push_back(std::move(*it));
+
+            newClause->setBodyLiterals(std::move(copyBody));
+
+            newClauses.push_back(std::move(newClause));
+        }
+    }
+}
+
+bool FoldAnonymousRecords::transform(AstTranslationUnit& translationUnit) {
+    bool changed = false;
+    AstProgram& program = *translationUnit.getProgram();
+
+    std::vector<std::unique_ptr<AstClause>> newClauses;
+
+    for (const auto* clause : program.getClauses()) {
+        if (containsValidRecordConstraint(*clause)) {
+            changed = true;
+            transformClause(*clause, newClauses);
+        } else {
+            newClauses.emplace_back(clause->clone());
+        }
+    }
+
+    // Update AstProgram.
+    if (changed) {
+        program.setClauses(std::move(newClauses));
+    }
+    return changed;
+}
+
+std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordsAliases::findVariablesRecordMapping(
+        const AstClause& clause, const TypeAnalysis& typeAnalysis) {
+    std::map<std::string, const AstRecordInit*> variableRecordMap;
+
+    auto isVariable = [](AstNode* node) -> bool { return dynamic_cast<AstVariable*>(node) != nullptr; };
+    auto isRecord = [](AstNode* node) -> bool { return dynamic_cast<AstRecordInit*>(node) != nullptr; };
+
+    auto groundedTerms = getGroundedTerms(clause);
+
+    for (auto* literal : clause.getBodyLiterals()) {
+        if (auto constraint = dynamic_cast<AstBinaryConstraint*>(literal)) {
+            if (!isEqConstraint(constraint->getOperator())) {
+                continue;
+            }
+
+            auto left = constraint->getLHS();
+            auto right = constraint->getRHS();
+
+            if (!isVariable(left) && !isVariable(right)) {
+                continue;
+            }
+
+            if (!isRecord(left) && !isRecord(right)) {
+                continue;
+            }
+
+            // TODO (darth_tytus): This should change in the future.
+            // Currently type system assigns to anonymous records {- All types - }
+            // which is inelegant.
+            if (!typeAnalysis.getTypes(left).isAll()) {
+                continue;
+            }
+
+            auto* variable = static_cast<AstVariable*>(isVariable(left) ? left : right);
+            const auto& variableName = variable->getName();
+
+            if (!groundedTerms.find(variable)->second) {
+                continue;
+            }
+
+            // We are interested only in the first mapping.
+            if (variableRecordMap.find(variableName) != variableRecordMap.end()) {
+                continue;
+            }
+
+            auto* record = static_cast<AstRecordInit*>(isRecord(left) ? left : right);
+
+            variableRecordMap.insert({variableName, record});
+        }
+    }
+
+    return variableRecordMap;
+}
+
+bool ResolveAnonymousRecordsAliases::replaceNamedVariables(
+        AstClause& clause, const TypeAnalysis& typeAnalysis) {
+    struct ReplaceVariables : public AstNodeMapper {
+        std::map<std::string, const AstRecordInit*> varToRecordMap;
+
+        ReplaceVariables(std::map<std::string, const AstRecordInit*> varToRecordMap)
+                : varToRecordMap(std::move(varToRecordMap)){};
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            if (auto variable = dynamic_cast<AstVariable*>(node.get())) {
+                auto iteratorToRecord = varToRecordMap.find(variable->getName());
+                if (iteratorToRecord != varToRecordMap.end()) {
+                    return std::unique_ptr<AstNode>(iteratorToRecord->second->clone());
+                }
+            }
+
+            node->apply(*this);
+
+            return node;
+        }
+    };
+    auto variableToRecordMap = findVariablesRecordMapping(clause, typeAnalysis);
+    bool changed = variableToRecordMap.size() > 0;
+    if (changed) {
+        ReplaceVariables update(std::move(variableToRecordMap));
+        clause.apply(update);
+    }
+    return changed;
+}
+
+bool ResolveAnonymousRecordsAliases::replaceUnnamedVariable(AstClause& clause) {
+    struct ReplaceUnnamed : public AstNodeMapper {
+        mutable bool changed{false};
+        ReplaceUnnamed() = default;
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            auto isUnnamed = [](AstNode* node) -> bool {
+                return dynamic_cast<AstUnnamedVariable*>(node) != nullptr;
+            };
+            auto isRecord = [](AstNode* node) -> bool {
+                return dynamic_cast<AstRecordInit*>(node) != nullptr;
+            };
+
+            if (auto constraint = dynamic_cast<AstBinaryConstraint*>(node.get())) {
+                auto left = constraint->getLHS();
+                auto right = constraint->getRHS();
+                bool hasUnnamed = isUnnamed(left) || isUnnamed(right);
+                bool hasRecord = isRecord(left) || isRecord(right);
+                auto op = constraint->getOperator();
+                if (hasUnnamed && hasRecord && isEqConstraint(op)) {
+                    return std::make_unique<AstBooleanConstraint>(true);
+                }
+            }
+
+            node->apply(*this);
+
+            return node;
+        }
+    };
+
+    ReplaceUnnamed update;
+    clause.apply(update);
+
+    return update.changed;
+}
+
+bool ResolveAnonymousRecordsAliases::transform(AstTranslationUnit& translationUnit) {
+    bool changed = false;
+    AstProgram& program = *translationUnit.getProgram();
+
+    const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
+
+    for (auto* clause : program.getClauses()) {
+        changed |= replaceNamedVariables(*clause, typeAnalysis);
+        changed |= replaceUnnamedVariable(*clause);
+    }
+
+    return changed;
+}
+
 }  // end of namespace souffle

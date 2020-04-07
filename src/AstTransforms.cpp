@@ -223,30 +223,29 @@ bool UniqueAggregationVariablesTransformer::transform(AstTranslationUnit& transl
 }
 
 std::string MaterializeSingletonAggregationTransformer::findUniqueVariableName(const AstClause& clause) {
-		int counter = 0;
-		std::set<std::string> variableNames;
-		visitDepthFirst(clause, [&](const AstVariable& variable) {
-				variableNames.insert(variable.getName());
-		});
-		std::string candidateVariableName = "z"; // completely arbitrary
-		while (variableNames.find(candidateVariableName) != variableNames.end()) {
-			candidateVariableName = "z" + toString(counter++);
-		}
-		return candidateVariableName;
+    int counter = 0;
+    std::set<std::string> variableNames;
+    visitDepthFirst(clause, [&](const AstVariable& variable) { variableNames.insert(variable.getName()); });
+    std::string candidateVariableName = "z";  // completely arbitrary
+    while (variableNames.find(candidateVariableName) != variableNames.end()) {
+        candidateVariableName = "z" + toString(counter++);
+    }
+    return candidateVariableName;
 }
 
-std::string MaterializeSingletonAggregationTransformer::findUniqueAggregateRelationName(const AstProgram& program) {
-	int counter = 0;
-	auto candidate = "__agg_rel_" + toString(counter++);
-	while (getRelation(program, candidate) != nullptr) {
-		candidate = "__agg_rel_" + toString(counter++);
-	}
-	return candidate;
+std::string MaterializeSingletonAggregationTransformer::findUniqueAggregateRelationName(
+        const AstProgram& program) {
+    int counter = 0;
+    auto candidate = "__agg_rel_" + toString(counter++);
+    while (getRelation(program, candidate) != nullptr) {
+        candidate = "__agg_rel_" + toString(counter++);
+    }
+    return candidate;
 }
 
 bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
-		std::set<std::pair<AstAggregator*, AstClause*>> pairs;
+    std::set<std::pair<AstAggregator*, AstClause*>> pairs;
     // collect references to clause / aggregate pairs
     // let's just make it for one literal for now. Following Martin's approach is a better idea.
     visitDepthFirst(program, [&](const AstClause& clause) {
@@ -256,63 +255,62 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
             }
             auto* foundAggregate = const_cast<AstAggregator*>(&agg);
             auto* foundClause = const_cast<AstClause*>(&clause);
-						pairs.insert(std::make_pair(foundAggregate, foundClause));
+            pairs.insert(std::make_pair(foundAggregate, foundClause));
         });
     });
-		for (auto pair : pairs) {
-			AstAggregator* aggregate = pair.first;
-			AstClause* clause = pair.second;
-			// synthesise an aggregate relation
-			// __agg_rel_0()
-			auto* aggRel = new AstRelation();
-			auto* aggHead = new AstAtom();
-			auto* aggClause = new AstClause();
-			std::string aggRelName = findUniqueAggregateRelationName(program);
-			aggRel->setQualifiedName(aggRelName);
-			aggHead->setQualifiedName(aggRelName);
-			// create a synthesised variable to replace the aggregate term!
-			std::string variableName = findUniqueVariableName(*clause);
-			auto* variable = new AstVariable(variableName);
-			// __agg_rel_0(z) :- ...
-			aggHead->addArgument(std::unique_ptr<AstArgument>(variable));
-			aggRel->addAttribute(std::make_unique<AstAttribute>(variableName, "number"));
-			aggClause->setHead(std::unique_ptr<AstAtom>(aggHead));
+    for (auto pair : pairs) {
+        AstAggregator* aggregate = pair.first;
+        AstClause* clause = pair.second;
+        // synthesise an aggregate relation
+        // __agg_rel_0()
+        auto* aggRel = new AstRelation();
+        auto* aggHead = new AstAtom();
+        auto* aggClause = new AstClause();
+        std::string aggRelName = findUniqueAggregateRelationName(program);
+        aggRel->setQualifiedName(aggRelName);
+        aggHead->setQualifiedName(aggRelName);
+        // create a synthesised variable to replace the aggregate term!
+        std::string variableName = findUniqueVariableName(*clause);
+        auto* variable = new AstVariable(variableName);
+        // __agg_rel_0(z) :- ...
+        aggHead->addArgument(std::unique_ptr<AstArgument>(variable));
+        aggRel->addAttribute(std::make_unique<AstAttribute>(variableName, "number"));
+        aggClause->setHead(std::unique_ptr<AstAtom>(aggHead));
 
-			//    A(x) :- x = sum .., B(x).
-			// -> A(x) :- x = z, B(x), __agg_rel_0(z).
-			clause->addToBody(std::unique_ptr<AstLiteral>(aggHead->clone()));
-			auto* equalityLiteral = new AstBinaryConstraint(BinaryConstraintOp::EQ,
-											std::unique_ptr<AstArgument>(variable->clone()),
-											std::unique_ptr<AstArgument>(aggregate->clone()));
-			// __agg_rel_0(z) :- z = sum ...
-			aggClause->addToBody(std::unique_ptr<AstLiteral>(equalityLiteral));
-			program.addRelation(std::unique_ptr<AstRelation>(aggRel));
-			program.addClause(std::unique_ptr<AstClause>(aggClause));
+        //    A(x) :- x = sum .., B(x).
+        // -> A(x) :- x = z, B(x), __agg_rel_0(z).
+        clause->addToBody(std::unique_ptr<AstLiteral>(aggHead->clone()));
+        auto* equalityLiteral = new AstBinaryConstraint(BinaryConstraintOp::EQ,
+                std::unique_ptr<AstArgument>(variable->clone()),
+                std::unique_ptr<AstArgument>(aggregate->clone()));
+        // __agg_rel_0(z) :- z = sum ...
+        aggClause->addToBody(std::unique_ptr<AstLiteral>(equalityLiteral));
+        program.addRelation(std::unique_ptr<AstRelation>(aggRel));
+        program.addClause(std::unique_ptr<AstClause>(aggClause));
 
-			// the only thing left to do is just replace the aggregate terms in the original
-			// clause with the synthesised variable
-			struct replaceAggregate : public AstNodeMapper {
-				const AstAggregator& aggregate;
-				const AstVariable* variable;
-				replaceAggregate(const AstAggregator& aggregate, const AstVariable* variable)
-								: aggregate(aggregate), variable(variable) {}
-				std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
-					if (auto* current = dynamic_cast<AstAggregator*>(node.get())) {
-							if (*current == aggregate) {
-									auto replacement = std::unique_ptr<AstVariable>(variable->clone());
-									assert(replacement != nullptr);
-									return replacement;
-							}
-					}
-					node->apply(*this);
-					assert(node != nullptr);
-					return node;
-				}
-			};
-			replaceAggregate update(*aggregate, variable);
-			clause->apply(update);
-			
-		} 
+        // the only thing left to do is just replace the aggregate terms in the original
+        // clause with the synthesised variable
+        struct replaceAggregate : public AstNodeMapper {
+            const AstAggregator& aggregate;
+            const AstVariable* variable;
+            replaceAggregate(const AstAggregator& aggregate, const AstVariable* variable)
+                    : aggregate(aggregate), variable(variable) {}
+            std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+                if (auto* current = dynamic_cast<AstAggregator*>(node.get())) {
+                    if (*current == aggregate) {
+                        auto replacement = std::unique_ptr<AstVariable>(variable->clone());
+                        assert(replacement != nullptr);
+                        return replacement;
+                    }
+                }
+                node->apply(*this);
+                assert(node != nullptr);
+                return node;
+            }
+        };
+        replaceAggregate update(*aggregate, variable);
+        clause->apply(update);
+    }
     return pairs.size() > 0;
 }
 

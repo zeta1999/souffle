@@ -254,7 +254,9 @@ public:
                 std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 };
-
+/** Pattern type for lower/upper bound */
+using RamPattern = std::pair< std::vector<std::unique_ptr<RamExpression>>, std::vector<std::unique_ptr<RamExpression>>>;
+ 
 /**
  * @class Relation Scan with Index
  * @brief An abstract class for performing indexed operations
@@ -262,46 +264,36 @@ public:
 class RamIndexOperation : public RamRelationOperation {
 public:
     RamIndexOperation(std::unique_ptr<RamRelationReference> r, int ident,
-            std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
+            RamPattern queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
             : RamRelationOperation(std::move(r), ident, std::move(nested), std::move(profileText)),
               queryPattern(std::move(queryPattern)) {
-        assert(getRangePattern().size() == getRelation().getArity());
-        for (const auto& pattern : queryPattern) {
+        assert(getRangePattern().first.size() == getRelation().getArity() &&
+               getRangePattern().second.size() == getRelation().getArity());
+        for (const auto& pattern : queryPattern.first) {
+            assert(pattern != nullptr && "pattern is a null-pointer");
+        }
+        for (const auto& pattern : queryPattern.second) {
             assert(pattern != nullptr && "pattern is a null-pointer");
         }
     }
-
+ 
+ 
     /**
      * @brief Get range pattern
-     * @return A std::vector of pointers to RamExpression objects
+     * @return A pair of std::vector of pointers to RamExpression objects
      */
-    std::vector<RamExpression*> getRangePattern() const {
-        return toPtrVector(queryPattern);
+    std::pair<std::vector<RamExpression*>, std::vector<RamExpression*>> getRangePattern() const {
+        return std::make_pair(toPtrVector(queryPattern.first), toPtrVector(queryPattern.second));
     }
-
-    std::vector<const RamNode*> getChildNodes() const override {
-        auto res = RamRelationOperation::getChildNodes();
-        for (auto& pattern : queryPattern) {
-            res.push_back(pattern.get());
-        }
-        return res;
-    }
-
-    void apply(const RamNodeMapper& map) override {
-        RamRelationOperation::apply(map);
-        for (auto& pattern : queryPattern) {
-            pattern = map(std::move(pattern));
-        }
-    }
-
-protected:
+ 
     /** @brief Helper method for printing */
     void printIndex(std::ostream& os) const {
         const auto& attrib = getRelation().getAttributeNames();
         bool first = true;
-        for (unsigned int i = 0; i < queryPattern.size(); ++i) {
-            if (!isRamUndefValue(queryPattern[i].get())) {
+        for (unsigned int i = 0; i < getRelation().getArity(); ++i) {
+            // TODO: print proper upper lower/bound
+            if (!isRamUndefValue(queryPattern.first[i].get())) {
                 if (first) {
                     os << " ON INDEX ";
                     first = false;
@@ -310,18 +302,21 @@ protected:
                 }
                 os << "t" << getTupleId() << ".";
                 os << attrib[i] << " = ";
-                os << *queryPattern[i];
+                os << *(queryPattern.first[i]);
             }
         }
     }
-
+ 
+protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexOperation&>(node);
-        return RamRelationOperation::equal(other) && equal_targets(queryPattern, other.queryPattern);
+        return RamRelationOperation::equal(other) &&
+               equal_targets(queryPattern.first, other.queryPattern.first) &&
+               equal_targets(queryPattern.second, other.queryPattern.second);
     }
-
+ 
     /** Values of index per column of table (if indexable) */
-    std::vector<std::unique_ptr<RamExpression>> queryPattern;
+    RamPattern queryPattern;
 };
 
 /**
@@ -341,8 +336,19 @@ public:
     RamIndexScan(std::unique_ptr<RamRelationReference> r, int ident,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested),
-                      std::move(profileText)) {}
+            : RamIndexOperation(std::move(r), ident, 
+			{ [&]() -> std::vector<std::unique_ptr<RamExpression>> 
+			    {
+			        std::vector<std::unique_ptr<RamExpression>> res;
+                                res.reserve(queryPattern.size());
+				for (const auto& e : queryPattern)
+				{
+				      res.emplace_back(e->clone());
+				}
+				return res;
+			    }()
+			    , std::move(queryPattern)
+			}, std::move(nested), std::move(profileText)) {}
 
     void print(std::ostream& os, int tabpos) const override {
         const RamRelation& rel = getRelation();
@@ -355,9 +361,9 @@ public:
     }
 
     RamIndexScan* clone() const override {
-        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
-        for (unsigned int i = 0; i < queryPattern.size(); ++i) {
-            resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
+        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.first.size());
+        for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
+            resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern.first[i]->clone());
         }
         return new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
@@ -395,9 +401,9 @@ public:
     }
 
     RamParallelIndexScan* clone() const override {
-        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
-        for (unsigned int i = 0; i < queryPattern.size(); ++i) {
-            resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
+        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.first.size());
+        for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
+            resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern.first[i]->clone());
         }
         return new RamParallelIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::move(resQueryPattern),
@@ -550,10 +556,21 @@ public:
     RamIndexChoice(std::unique_ptr<RamRelationReference> r, int ident, std::unique_ptr<RamCondition> cond,
             std::vector<std::unique_ptr<RamExpression>> queryPattern, std::unique_ptr<RamOperation> nested,
             std::string profileText = "")
-            : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested),
-                      std::move(profileText)),
+            : RamIndexOperation(std::move(r), ident,
+                        { [&]() -> std::vector<std::unique_ptr<RamExpression>>
+                            {
+                                std::vector<std::unique_ptr<RamExpression>> res;
+                                res.reserve(queryPattern.size());
+                                for (const auto& e : queryPattern)
+                                {
+                                      res.emplace_back(e->clone());
+                                }
+                                return res;
+                            }()
+                            , std::move(queryPattern)
+                        }, std::move(nested), std::move(profileText)),
               RamAbstractChoice(std::move(cond)) {
-        assert(getRangePattern().size() == getRelation().getArity());
+        assert(getRangePattern().first.size() == getRelation().getArity());
     }
 
     void print(std::ostream& os, int tabpos) const override {
@@ -568,7 +585,7 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
-        for (auto& pattern : queryPattern) {
+        for (auto& pattern : queryPattern.first) {
             pattern = map(std::move(pattern));
         }
         RamAbstractChoice::apply(map);
@@ -581,9 +598,9 @@ public:
     }
 
     RamIndexChoice* clone() const override {
-        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
-        for (size_t i = 0; i < queryPattern.size(); ++i) {
-            resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
+        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.first.size());
+        for (size_t i = 0; i < queryPattern.first.size(); ++i) {
+            resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern.first[i]->clone());
         }
         auto* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
@@ -594,8 +611,8 @@ public:
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexChoice&>(node);
-        return RamRelationOperation::equal(other) && equal_targets(queryPattern, other.queryPattern) &&
-               getCondition() == other.getCondition();
+        return RamRelationOperation::equal(other) && equal_targets(queryPattern.first, other.queryPattern.first) &&
+               equal_targets(queryPattern.first, other.queryPattern.first) && getCondition() == other.getCondition();
     }
 };
 
@@ -631,9 +648,9 @@ public:
     }
 
     RamParallelIndexChoice* clone() const override {
-        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.size());
-        for (size_t i = 0; i < queryPattern.size(); ++i) {
-            resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern[i]->clone());
+        std::vector<std::unique_ptr<RamExpression>> resQueryPattern(queryPattern.first.size());
+        for (size_t i = 0; i < queryPattern.first.size(); ++i) {
+            resQueryPattern[i] = std::unique_ptr<RamExpression>(queryPattern.first[i]->clone());
         }
         auto* res = new RamParallelIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
@@ -795,7 +812,19 @@ public:
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
             int ident)
-            : RamIndexOperation(std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
+            : RamIndexOperation(std::move(relRef), ident, 
+			{ [&]() -> std::vector<std::unique_ptr<RamExpression>> 
+			    {
+			        std::vector<std::unique_ptr<RamExpression>> res;
+                                res.reserve(queryPattern.size());
+				for (const auto& e : queryPattern)
+				{
+				      res.emplace_back(e->clone());
+				}
+				return res;
+			    }()
+			    , std::move(queryPattern)
+			}, std::move(nested)),
               RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
 
     void print(std::ostream& os, int tabpos) const override {
@@ -820,7 +849,7 @@ public:
 
     RamIndexAggregate* clone() const override {
         std::vector<std::unique_ptr<RamExpression>> pattern;
-        for (auto const& e : queryPattern) {
+        for (auto const& e : queryPattern.first) {
             pattern.push_back(std::unique_ptr<RamExpression>(e->clone()));
         }
         return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,

@@ -362,7 +362,7 @@ SearchSignature searchSignature(Seq const& xs) {
 }  // namespace
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {
-    return searchSignature(search->getRangePattern());
+    return searchSignature(search->getRangePattern().first);
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(

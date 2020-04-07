@@ -362,7 +362,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
                 queryPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
         if (indexable) {
             // Merge Index Pattern here
-            const auto prevPattern = iscan->getRangePattern();
+            const auto prevPattern = iscan->getRangePattern().first;
             auto addCondition = [&](std::unique_ptr<RamCondition> c) {
                 if (condition != nullptr) {
                     condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
@@ -465,7 +465,7 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
     if (tupleNotUsed) {
         // replace IndexScan with an Filter/Existence check
         std::vector<std::unique_ptr<RamExpression>> newValues;
-        for (auto& cur : indexScan->getRangePattern()) {
+        for (auto& cur : indexScan->getRangePattern().first) {
             RamExpression* val = nullptr;
             if (cur != nullptr) {
                 val = cur->clone();
@@ -569,7 +569,7 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
         const int identifier = indexScan->getTupleId();
         const RamRelation& rel = indexScan->getRelation();
 
-        for (auto& cur : indexScan->getRangePattern()) {
+        for (auto& cur : indexScan->getRangePattern().first) {
             RamExpression* val = nullptr;
             if (cur != nullptr) {
                 val = cur->clone();
@@ -761,7 +761,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                     changed = true;
                     const RamRelation& rel = indexScan->getRelation();
                     std::vector<std::unique_ptr<RamExpression>> queryPattern;
-                    for (const RamExpression* cur : indexScan->getRangePattern()) {
+                    for (const RamExpression* cur : indexScan->getRangePattern().first) {
                         if (nullptr != cur) {
                             queryPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
                         } else {
@@ -779,7 +779,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                     changed = true;
                     const RamRelation& rel = indexChoice->getRelation();
                     std::vector<std::unique_ptr<RamExpression>> queryPattern;
-                    for (const RamExpression* cur : indexChoice->getRangePattern()) {
+                    for (const RamExpression* cur : indexChoice->getRangePattern().first) {
                         if (nullptr != cur) {
                             queryPattern.push_back(std::unique_ptr<RamExpression>(cur->clone()));
                         } else {

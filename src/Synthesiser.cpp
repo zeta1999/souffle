@@ -640,7 +640,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = iscan.getTupleId();
             auto keys = isa->getSearchSignature(&iscan);
             auto arity = rel.getArity();
-            const auto& rangePattern = iscan.getRangePattern();
+            const auto& rangePattern = iscan.getRangePattern().first;
 
             assert(arity > 0 && "AstTranslator failed/no index scans for nullaries");
 
@@ -667,7 +667,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto arity = rel.getArity();
             auto keys = isa->getSearchSignature(&piscan);
-            const auto& rangePattern = piscan.getRangePattern();
+            const auto& rangePattern = piscan.getRangePattern().first;
 
             assert(piscan.getTupleId() == 0 && "not outer-most loop");
 
@@ -707,7 +707,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto identifier = ichoice.getTupleId();
             auto arity = rel.getArity();
-            const auto& rangePattern = ichoice.getRangePattern();
+            const auto& rangePattern = ichoice.getRangePattern().first;
             auto keys = isa->getSearchSignature(&ichoice);
 
             // check list of keys
@@ -742,7 +742,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const auto& rel = pichoice.getRelation();
             auto relName = synthesiser.getRelationName(rel);
             auto arity = rel.getArity();
-            const auto& rangePattern = pichoice.getRangePattern();
+            const auto& rangePattern = pichoice.getRangePattern().first;
             auto keys = isa->getSearchSignature(&pichoice);
 
             assert(pichoice.getTupleId() == 0 && "not outer-most loop");
@@ -905,7 +905,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
             } else {
-                const auto& patterns = aggregate.getRangePattern();
+                const auto& patterns = aggregate.getRangePattern().first;
                 out << "const " << tuple_type << " key{{";
                 out << join(patterns.begin(), patterns.begin() + arity, ",", recWithDefault);
                 out << "}};\n";

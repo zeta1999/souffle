@@ -247,7 +247,6 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
     AstProgram& program = *translationUnit.getProgram();
     std::set<std::pair<AstAggregator*, AstClause*>> pairs;
     // collect references to clause / aggregate pairs
-    // let's just make it for one literal for now. Following Martin's approach is a better idea.
     visitDepthFirst(program, [&](const AstClause& clause) {
         visitDepthFirst(clause, [&](const AstAggregator& agg) {
             if (!isSingleValued(agg)) {

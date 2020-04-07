@@ -132,6 +132,17 @@ private:
 		 * ie the aggregate does not depend on the outer scope.
 		 */
 		static bool isSingleValued(const AstAggregator& agg); 
+		/**
+		 * findUniqueVariableName returns a variable name that hasn't appeared
+		 * in the given clause.
+		 */
+		static std::string findUniqueVariableName(const AstClause& clause);
+		/**
+		 * findUniqueAggregateRelationName returns a synthesised aggregate
+		 * relation name that hasn't appeared
+		 * in the given clause.
+		 */
+		static std::string findUniqueAggregateRelationName(const AstProgram& program);
 };
 
 /**

@@ -420,12 +420,12 @@ int main(int argc, char** argv) {
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(),
-            std::make_unique<MaterializeSingletonAggregationTransformer>(),
             std::make_unique<AstUserDefinedFunctorsTransformer>(),
             std::make_unique<FixpointTransformer>(
                     std::make_unique<PipelineTransformer>(std::make_unique<ResolveAnonymousRecordsAliases>(),
                             std::make_unique<FoldAnonymousRecords>())),
             std::make_unique<PolymorphicObjectsTransformer>(), std::make_unique<AstSemanticChecker>(),
+            std::make_unique<MaterializeSingletonAggregationTransformer>(),
             std::make_unique<RemoveTypecastsTransformer>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
             std::make_unique<ResolveAliasesTransformer>(), std::make_unique<MinimiseProgramTransformer>(),

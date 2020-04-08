@@ -262,39 +262,41 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
         AstClause* clause = pair.second;
         // synthesise an aggregate relation
         // __agg_rel_0()
-        auto* aggRel = new AstRelation();
-        auto* aggHead = new AstAtom();
-        auto* aggClause = new AstClause();
+        auto aggRel = std::make_unique<AstRelation>();
+        auto aggHead = std::make_unique<AstAtom>();
+        auto aggClause = std::make_unique<AstClause>();
+
         std::string aggRelName = findUniqueAggregateRelationName(program);
         aggRel->setQualifiedName(aggRelName);
         aggHead->setQualifiedName(aggRelName);
+
         // create a synthesised variable to replace the aggregate term!
         std::string variableName = findUniqueVariableName(*clause);
-        auto* variable = new AstVariable(variableName);
+        auto variable = std::make_unique<AstVariable>(variableName);
+
         // __agg_rel_0(z) :- ...
-        aggHead->addArgument(std::unique_ptr<AstArgument>(variable));
+        aggHead->addArgument(souffle::clone(variable));
         aggRel->addAttribute(std::make_unique<AstAttribute>(variableName, "number"));
-        aggClause->setHead(std::unique_ptr<AstAtom>(aggHead));
+        aggClause->setHead(souffle::clone(aggHead));
 
         //    A(x) :- x = sum .., B(x).
         // -> A(x) :- x = z, B(x), __agg_rel_0(z).
-        clause->addToBody(std::unique_ptr<AstLiteral>(aggHead->clone()));
-        auto* equalityLiteral = new AstBinaryConstraint(BinaryConstraintOp::EQ,
-                std::unique_ptr<AstArgument>(variable->clone()),
-                std::unique_ptr<AstArgument>(aggregate->clone()));
+        auto equalityLiteral = std::make_unique<AstBinaryConstraint>(
+                BinaryConstraintOp::EQ, souffle::clone(variable), souffle::clone(aggregate));
         // __agg_rel_0(z) :- z = sum ...
-        aggClause->addToBody(std::unique_ptr<AstLiteral>(equalityLiteral));
-        program.addRelation(std::unique_ptr<AstRelation>(aggRel));
-        program.addClause(std::unique_ptr<AstClause>(aggClause));
+        aggClause->addToBody(std::move(equalityLiteral));
+        program.addRelation(std::move(aggRel));
+        program.addClause(std::move(aggClause));
 
         // the only thing left to do is just replace the aggregate terms in the original
         // clause with the synthesised variable
         struct replaceAggregate : public AstNodeMapper {
             const AstAggregator& aggregate;
-            const AstVariable* variable;
-            replaceAggregate(const AstAggregator& aggregate, const AstVariable* variable)
-                    : aggregate(aggregate), variable(variable) {}
+            const std::unique_ptr<AstVariable> variable;
+            replaceAggregate(const AstAggregator& aggregate, std::unique_ptr<AstVariable> variable)
+                    : aggregate(aggregate), variable(std::move(variable)) {}
             std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+                assert(node != nullptr);
                 if (auto* current = dynamic_cast<AstAggregator*>(node.get())) {
                     if (*current == aggregate) {
                         auto replacement = std::unique_ptr<AstVariable>(variable->clone());
@@ -307,8 +309,9 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
                 return node;
             }
         };
-        replaceAggregate update(*aggregate, variable);
+        replaceAggregate update(*aggregate, std::move(variable));
         clause->apply(update);
+        clause->addToBody(std::move(aggHead));
     }
     return pairs.size() > 0;
 }
@@ -318,7 +321,7 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
 // ie the aggregate only ever evaluates to a single value.
 bool MaterializeSingletonAggregationTransformer::isSingleValued(const AstAggregator& agg) {
     // Dummy clause to analyse groundedness
-    auto* aggClause = new AstClause();
+    auto aggClause = std::make_unique<AstClause>();
     for (const auto& lit : agg.getBodyLiterals()) {
         aggClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
     }

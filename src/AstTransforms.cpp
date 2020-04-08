@@ -258,7 +258,8 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
         });
     });
     for (auto pair : pairs) {
-        AstAggregator* aggregate = pair.first;
+        // Clone the aggregate that we're going to be deleting.
+        auto aggregate = souffle::clone(pair.first);
         AstClause* clause = pair.second;
         // synthesise an aggregate relation
         // __agg_rel_0()

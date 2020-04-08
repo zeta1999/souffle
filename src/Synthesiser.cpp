@@ -640,20 +640,26 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = iscan.getTupleId();
             auto keys = isa->getSearchSignature(&iscan);
             auto arity = rel.getArity();
-            const auto& rangePattern = iscan.getRangePattern().second;
+
+	    const auto& rangePatternLower = iscan.getRangePattern().first;
+            const auto& rangePatternUpper = iscan.getRangePattern().second;
 
             assert(arity > 0 && "AstTranslator failed/no index scans for nullaries");
 
             PRINT_BEGIN_COMMENT(out);
 
-            out << "const Tuple<RamDomain," << arity << "> key{{";
-            out << join(rangePattern.begin(), rangePattern.begin() + arity, ",", recWithDefault);
+            out << "const Tuple<RamDomain," << arity << "> lower{{";
+            out << join(rangePatternLower.begin(), rangePatternLower.begin() + arity, ",", recWithDefault);
+            out << "}};\n";
+
+	    out << "const Tuple<RamDomain," << arity << "> upper{{";
+            out << join(rangePatternUpper.begin(), rangePatternUpper.begin() + arity, ",", recWithDefault);
             out << "}};\n";
 
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
             out << "auto range = " << relName << "->"
-                << "equalRange_" << keys << "(key," << ctxName << ");\n";
+                << "lowerUpperRange_" << keys << "(lower, upper," << ctxName << ");\n";
             out << "for(const auto& env" << identifier << " : range) {\n";
 
             visitTupleOperation(iscan, out);
@@ -667,7 +673,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto arity = rel.getArity();
             auto keys = isa->getSearchSignature(&piscan);
-            const auto& rangePattern = piscan.getRangePattern().second;
+            
+	    const auto& rangePatternLower = piscan.getRangePattern().first;
+	    const auto& rangePatternUpper = piscan.getRangePattern().second;
 
             assert(piscan.getTupleId() == 0 && "not outer-most loop");
 
@@ -678,13 +686,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             PRINT_BEGIN_COMMENT(out);
 
-            out << "const Tuple<RamDomain," << arity << "> key{{";
-            out << join(rangePattern.begin(), rangePattern.begin() + arity, ",", recWithDefault);
+            out << "const Tuple<RamDomain," << arity << "> lower{{";
+            out << join(rangePatternLower.begin(), rangePatternLower.begin() + arity, ",", recWithDefault);
             out << "}};\n";
-            out << "auto range = " << relName
+
+	    out << "const Tuple<RamDomain," << arity << "> upper{{";
+            out << join(rangePatternUpper.begin(), rangePatternUpper.begin() + arity, ",", recWithDefault);
+            out << "}};\n";
+
+	    out << "auto range = " << relName
                 << "->"
                 // TODO (b-scholz): context may be missing here?
-                << "equalRange_" << keys << "(key);\n";
+                << "lowerUpperRange_" << keys << "(lower,upper);\n";
             out << "auto part = range.partition();\n";
             out << "PARALLEL_START;\n";
             out << preamble.str();
@@ -707,20 +720,25 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto relName = synthesiser.getRelationName(rel);
             auto identifier = ichoice.getTupleId();
             auto arity = rel.getArity();
-            const auto& rangePattern = ichoice.getRangePattern().second;
+            const auto& rangePatternLower = ichoice.getRangePattern().first;
+	    const auto& rangePatternUpper = ichoice.getRangePattern().second;
             auto keys = isa->getSearchSignature(&ichoice);
 
             // check list of keys
             assert(arity > 0 && "AstTranslator failed");
 
-            out << "const Tuple<RamDomain," << arity << "> key{{";
-            out << join(rangePattern.begin(), rangePattern.begin() + arity, ",", recWithDefault);
+            out << "const Tuple<RamDomain," << arity << "> lower{{";
+            out << join(rangePatternLower.begin(), rangePatternLower.begin() + arity, ",", recWithDefault);
             out << "}};\n";
 
-            auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
+            out << "const Tuple<RamDomain," << arity << "> upper{{";
+            out << join(rangePatternUpper.begin(), rangePatternUpper.begin() + arity, ",", recWithDefault);
+            out << "}};\n";
+
+           auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
 
             out << "auto range = " << relName << "->"
-                << "equalRange_" << keys << "(key," << ctxName << ");\n";
+                << "lowerUpperRange_" << keys << "(lower,upper," << ctxName << ");\n";
             out << "for(const auto& env" << identifier << " : range) {\n";
             out << "if( ";
 
@@ -742,7 +760,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             const auto& rel = pichoice.getRelation();
             auto relName = synthesiser.getRelationName(rel);
             auto arity = rel.getArity();
-            const auto& rangePattern = pichoice.getRangePattern().second;
+	    const auto& rangePatternLower = pichoice.getRangePattern().first;
+            const auto& rangePatternUpper = pichoice.getRangePattern().second;
             auto keys = isa->getSearchSignature(&pichoice);
 
             assert(pichoice.getTupleId() == 0 && "not outer-most loop");
@@ -754,13 +773,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             PRINT_BEGIN_COMMENT(out);
 
-            out << "const Tuple<RamDomain," << arity << "> key{{";
-            out << join(rangePattern.begin(), rangePattern.begin() + arity, ",", recWithDefault);
+            out << "const Tuple<RamDomain," << arity << "> lower{{";
+            out << join(rangePatternLower.begin(), rangePatternLower.begin() + arity, ",", recWithDefault);
             out << "}};\n";
-            out << "auto range = " << relName
+
+	    out << "const Tuple<RamDomain," << arity << "> upper{{";
+            out << join(rangePatternUpper.begin(), rangePatternUpper.begin() + arity, ",", recWithDefault);
+            out << "}};\n";
+
+	    out << "auto range = " << relName
                 << "->"
                 // TODO (b-scholz): context may be missing here?
-                << "equalRange_" << keys << "(key);\n";
+                << "lowerUpperRange_" << keys << "(lower, upper);\n";
             out << "auto part = range.partition();\n";
             out << "PARALLEL_START;\n";
             out << preamble.str();
@@ -905,12 +929,19 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
             } else {
-                const auto& patterns = aggregate.getRangePattern().second;
-                out << "const " << tuple_type << " key{{";
-                out << join(patterns.begin(), patterns.begin() + arity, ",", recWithDefault);
+		const auto& patternsLower = aggregate.getRangePattern().first;
+                const auto& patternsUpper = aggregate.getRangePattern().second;
+                
+                out << "const " << tuple_type << " lower{{";
+                out << join(patternsLower.begin(), patternsLower.begin() + arity, ",", recWithDefault);
                 out << "}};\n";
+
+	        out << "const " << tuple_type << " upper{{";
+                out << join(patternsUpper.begin(), patternsUpper.begin() + arity, ",", recWithDefault);
+                out << "}};\n";
+
                 out << "auto range = " << relName << "->"
-                    << "equalRange_" << keys << "(key," << ctxName << ");\n";
+                    << "lowerUpperRange_" << keys << "(lower,upper," << ctxName << ");\n";
 
                 // aggregate result
                 out << "for(const auto& env" << identifier << " : range) {\n";
@@ -1321,10 +1352,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // else we conduct a range query
             out << "!" << relName << "->"
-                << "equalRange";
+                << "lowerUpperRange";
             out << "_" << isa->getSearchSignature(&exists);
             out << "(Tuple<RamDomain," << arity << ">{{";
             out << join(exists.getValues(), ",", recWithDefault);
+	    out << ", " << join(exists.getValues(), ",", recWithDefault);
             out << "}}," << ctxName << ").empty()" << after;
             PRINT_END_COMMENT(out);
         }
@@ -1347,8 +1379,17 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">{{";
             auto parts = provExists.getValues().size() - auxiliaryArity + 1;
-            out << join(provExists.getValues().begin(), provExists.getValues().begin() + parts, ",",
+             out << join(provExists.getValues().begin(), provExists.getValues().begin() + parts, ",",
                     recWithDefault);
+            // extra 0 for provenance height annotations
+            for (size_t i = 0; i < auxiliaryArity - 2; i++) {
+                out << "0,";
+            }
+            out << "0";
+
+            // repeat original pattern
+	    out << ",";
+            out << join(provExists.getValues().begin(), provExists.getValues().begin() + parts, ",", recWithDefault);
             // extra 0 for provenance height annotations
             for (size_t i = 0; i < auxiliaryArity - 2; i++) {
                 out << "0,";

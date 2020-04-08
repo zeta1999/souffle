@@ -667,7 +667,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
-        out << "range<t_ind_" << indNum << "::iterator> lowerUpperRange_" << search;
+        out << "range<iterator_" << indNum << "> lowerUpperRange_" << search;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
         
         // count size of search pattern
@@ -680,8 +680,8 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
 
         // use the more efficient find() method if the search pattern is full
         if (indSize == arity) {
-            out << "auto pos = ind_" << indNum << ".find(lower, h.hints_" << indNum << ");\n";
-            out << "auto fin = ind_" << indNum << ".end();\n";
+            out << "auto pos = find(lower, h);\n";
+            out << "auto fin = end();\n";
             out << "if (pos != fin) {fin = pos; ++fin;}\n";
             out << "return make_range(pos, fin);\n";
         } else {
@@ -695,16 +695,16 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
                     out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
             }
-            out << "return make_range(ind_" << indNum << ".lower_bound(low, h.hints_" << indNum << "), ind_"
-                << indNum << ".upper_bound(high, h.hints_" << indNum << "));\n";
+            out << "return range<iterator_" << indNum << ">(ind_" << indNum << ".lower_bound(&low, h.hints_" << indNum << "), ind_"
+                << indNum << ".upper_bound(&high, h.hints_" << indNum << "));\n";
         }
         out << "}\n";
 
-        out << "range<t_ind_" << indNum << "::iterator> lowerUpperRange_" << search;
+        out << "range<iterator_" << indNum << "> lowerUpperRange_" << search;
         out << "(const t_tuple& lower, const t_tuple& upper) const {\n";
         
 	out << "context h;\n";
-        out << "return lowerUpperRange_" << search << "(lower, h);\n";
+        out << "return lowerUpperRange_" << search << "(lower, upper, h);\n";
         out << "}\n";
     }
 
@@ -1186,10 +1186,10 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "return ind_" << masterIndex << ".find(orderIn_" << masterIndex << "(t));\n";
     out << "}\n";
 
-    // equalRange methods, one for each of the 4 possible search patterns
+    // lowerUpperRange methods, one for each of the 4 possible search patterns
     for (int i = 1; i < 4; i++) {
-        out << "range<iterator> equalRange_" << i;
-        out << "(const t_tuple& t, context& h) const {\n";
+        out << "range<iterator> lowerUpperRange_" << i;
+        out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
         // compute size of sub-index
         size_t indSize = 0;
         for (size_t column = 0; column < 2; column++) {
@@ -1198,13 +1198,13 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
             }
         }
         out << "auto r = ind_" << masterIndex << ".template getBoundaries<" << indSize << ">(orderIn_"
-            << masterIndex << "(t), h.hints_" << masterIndex << ");\n";
+            << masterIndex << "(lower), h.hints_" << masterIndex << ");\n";
         out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
         out << "}\n";
 
-        out << "range<iterator> equalRange_" << i;
-        out << "(const t_tuple& t) const {\n";
-        out << "context h; return equalRange_" << i << "(t, h);\n";
+        out << "range<iterator> lowerUpperRange_" << i;
+        out << "(const t_tuple& lower, const t_tuple& upper) const {\n";
+        out << "context h; return lowerUpperRange_" << i << "(lower, upper, h);\n";
         out << "}\n";
     }
 

@@ -1356,7 +1356,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "_" << isa->getSearchSignature(&exists);
             out << "(Tuple<RamDomain," << arity << ">{{";
             out << join(exists.getValues(), ",", recWithDefault);
-	    out << ", " << join(exists.getValues(), ",", recWithDefault);
+	    out << "}},Tuple<RamDomain," << arity << ">{{";
+	    out << join(exists.getValues(), ",", recWithDefault);
             out << "}}," << ctxName << ").empty()" << after;
             PRINT_END_COMMENT(out);
         }

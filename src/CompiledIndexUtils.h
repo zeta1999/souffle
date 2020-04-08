@@ -17,12 +17,7 @@
 
 #pragma once
 
-#include "BTree.h"
-#include "Brie.h"
 #include "CompiledTuple.h"
-#include "EquivalenceRelation.h"
-#include "IterUtils.h"
-#include "RamTypes.h"
 #include "Util.h"
 #include <cassert>
 #include <iterator>
@@ -32,8 +27,6 @@
 #include <vector>
 
 namespace souffle {
-
-namespace ram {
 
 /**
  * A namespace enclosing template-meta-programming utilities for handling
@@ -281,7 +274,5 @@ struct get_full_index<0> {
 };
 
 }  // namespace index_utils
-
-}  // end namespace ram
 
 }  // end namespace souffle

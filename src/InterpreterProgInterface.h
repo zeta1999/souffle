@@ -122,11 +122,21 @@ protected:
 
             // construct the tuple to return
             for (size_t i = 0; i < ramRelationInterface->getArity(); i++) {
-                if (*(ramRelationInterface->getAttrType(i)) == 's') {
-                    std::string s = ramRelationInterface->getSymbolTable().resolve((*it)[i]);
-                    tup << s;
-                } else {
-                    tup << (*it)[i];
+                switch (*(ramRelationInterface->getAttrType(i))) {
+                    case 's': {
+                        std::string s = ramRelationInterface->getSymbolTable().resolve((*it)[i]);
+                        tup << s;
+                        break;
+                    }
+                    case 'f':
+                        tup << ramBitCast<RamFloat>((*it)[i]);
+                        break;
+                    case 'u':
+                        tup << ramBitCast<RamUnsigned>((*it)[i]);
+                        break;
+                    default:
+                        tup << (*it)[i];
+                        break;
                 }
             }
             tup.rewind();
@@ -180,7 +190,7 @@ private:
  */
 class InterpreterProgInterface : public SouffleProgram {
 public:
-    InterpreterProgInterface(InterpreterEngine& interp)
+    explicit InterpreterProgInterface(InterpreterEngine& interp)
             : prog(interp.getTranslationUnit().getProgram()), exec(interp),
               symTable(interp.getTranslationUnit().getSymbolTable()) {
         uint32_t id = 0;

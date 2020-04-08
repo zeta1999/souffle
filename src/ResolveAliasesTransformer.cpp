@@ -211,7 +211,7 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::resolveAliases(const AstCl
     // tests whether a value `a` occurs in a term `b`
     auto occurs = [](const AstArgument& a, const AstArgument& b) {
         bool res = false;
-        visitDepthFirst(b, [&](const AstArgument& arg) { res = res || (arg == a); });
+        visitDepthFirst(b, [&](const AstArgument& arg) { res = (res || (arg == a)); });
         return res;
     };
 

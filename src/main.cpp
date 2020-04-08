@@ -76,6 +76,7 @@ void executeBinary(const std::string& binaryFilename) {
         }
         ldPath.back() = ' ';
         setenv("LD_LIBRARY_PATH", ldPath.c_str(), 1);
+        setenv("DYLD_LIBRARY_PATH", ldPath.c_str(), 1);
     }
 
     int exitCode = system(binaryFilename.c_str());
@@ -420,6 +421,9 @@ int main(int argc, char** argv) {
             std::make_unique<ComponentInstantiationTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(),
             std::make_unique<AstUserDefinedFunctorsTransformer>(),
+            std::make_unique<FixpointTransformer>(
+                    std::make_unique<PipelineTransformer>(std::make_unique<ResolveAnonymousRecordsAliases>(),
+                            std::make_unique<FoldAnonymousRecords>())),
             std::make_unique<PolymorphicObjectsTransformer>(), std::make_unique<AstSemanticChecker>(),
             std::make_unique<MaterializeSingletonAggregationTransformer>(),
             std::make_unique<RemoveTypecastsTransformer>(),

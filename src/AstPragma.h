@@ -49,7 +49,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstPragma*>(&node));
         const auto& other = static_cast<const AstPragma&>(node);
         return other.key == key && other.value == value;
     }

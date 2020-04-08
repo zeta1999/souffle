@@ -19,8 +19,9 @@
 #include "ExplainTree.h"
 #include "RamTypes.h"
 #include "SouffleInterface.h"
+#include "Util.h"
 #include "WriteStreamCSV.h"
-
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <utility>
@@ -76,7 +77,10 @@ public:
         return indices;
     }
 
-    /** Get type of the variable of the equivalence class, 'i' for RamDomain, 's' for symbol */
+    /** Get type of the variable of the equivalence class,
+     * 'i' for RamSigned, 's' for symbol
+     * 'u' for RamUnsigned, 'f' for RamFloat
+     */
     char getType() {
         return type;
     }
@@ -108,12 +112,9 @@ public:
 
     /** Verify if the query product satisfies constant constraint */
     bool verify(const std::vector<tuple>& product) const {
-        for (auto constr : constConstrs) {
-            if (product[constr.first.first][constr.first.second] != constr.second) {
-                return false;
-            }
-        }
-        return true;
+        return std::all_of(constConstrs.begin(), constConstrs.end(), [&product](auto constr) {
+            return product[constr.first.first][constr.first.second] == constr.second;
+        });
     }
 
     /** Get the constant constraint vector */
@@ -167,7 +168,7 @@ public:
 
     virtual std::string getRule(std::string relName, size_t ruleNum) = 0;
 
-    virtual std::vector<std::string> getRules(std::string relName) = 0;
+    virtual std::vector<std::string> getRules(const std::string& relName) = 0;
 
     virtual std::string measureRelation(std::string relName) = 0;
 
@@ -194,21 +195,32 @@ protected:
         }
 
         for (size_t i = 0; i < args.size(); i++) {
-            if (*rel->getAttrType(i) == 's') {
-                // remove quotation marks
-                if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
-                    auto originalStr = args[i].substr(1, args[i].size() - 2);
-                    nums.push_back(symTable.lookup(originalStr));
-                }
-            } else {
-                nums.push_back(std::stoi(args[i]));
+            switch (*(rel->getAttrType(i))) {
+                case 's':
+                    if (args[i].size() >= 2 && args[i][0] == '"' && args[i][args[i].size() - 1] == '"') {
+                        auto originalStr = args[i].substr(1, args[i].size() - 2);
+                        nums.push_back(symTable.lookup(originalStr));
+                    }
+                    break;
+                case 'f':
+                    nums.push_back(ramBitCast(RamFloatFromString(args[i])));
+                    break;
+                case 'u':
+                    nums.push_back(ramBitCast(RamUnsignedFromString(args[i])));
+                    break;
+                default:
+                    nums.push_back(RamSignedFromString(args[i]));
+                    break;
             }
         }
 
         return nums;
     }
 
-    std::vector<std::string> numsToArgs(
+    /**
+     * Decode arguments from their ram representation and return as strings.
+     **/
+    std::vector<std::string> decodeArguments(
             const std::string& relName, const std::vector<RamDomain>& nums) const {
         std::vector<std::string> args;
 
@@ -218,14 +230,28 @@ protected:
         }
 
         for (size_t i = 0; i < nums.size(); i++) {
-            if (*rel->getAttrType(i) == 's') {
-                args.push_back("\"" + std::string(symTable.resolve(nums[i])) + "\"");
-            } else {
-                args.push_back(std::to_string(nums[i]));
-            }
+            args.push_back(RamDomainToArgument(*rel->getAttrType(i), nums[i]));
         }
 
         return args;
+    }
+
+    std::string RamDomainToArgument(const char type, const RamDomain num) const {
+        std::string arg;
+        switch (type) {
+            case 's':
+                arg = "\"" + std::string(symTable.resolve(num)) + "\"";
+                break;
+            case 'f':
+                arg = std::to_string(ramBitCast<RamFloat>(num));
+                break;
+            case 'u':
+                arg = std::to_string(ramBitCast<RamUnsigned>(num));
+                break;
+            default:
+                arg = std::to_string(ramBitCast<RamSigned>(num));
+        }
+        return arg;
     }
 };
 

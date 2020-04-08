@@ -56,7 +56,7 @@ public:
                 RamDomain ruleNum;
                 tuple >> ruleNum;
 
-                for (size_t i = 1; i < rel->getArity() - 1; i++) {
+                for (size_t i = 1; i + 1 < rel->getArity(); i++) {
                     std::string bodyLit;
                     tuple >> bodyLit;
                     bodyLiterals.push_back(bodyLit);
@@ -74,7 +74,7 @@ public:
     std::unique_ptr<TreeNode> explain(std::string relName, std::vector<RamDomain> tuple, int ruleNum,
             int levelNum, std::vector<RamDomain> subtreeLevels, size_t depthLimit) {
         std::stringstream joinedArgs;
-        joinedArgs << join(numsToArgs(relName, tuple), ", ");
+        joinedArgs << join(decodeArguments(relName, tuple), ", ");
         auto joinedArgsStr = joinedArgs.str();
 
         // if fact
@@ -178,7 +178,7 @@ public:
             // for a negation, display the corresponding tuple and do not recurse
             if (bodyRel[0] == '!' && bodyRel != "!=") {
                 std::stringstream joinedTuple;
-                joinedTuple << join(numsToArgs(bodyRelAtomName, subproofTuple), ", ");
+                joinedTuple << join(decodeArguments(bodyRelAtomName, subproofTuple), ", ");
                 auto joinedTupleStr = joinedTuple.str();
                 internalNode->add_child(std::make_unique<LeafNode>(bodyRel + "(" + joinedTupleStr + ")"));
                 internalNode->setSize(internalNode->getSize() + 1);
@@ -186,8 +186,7 @@ public:
             } else if (isConstraint) {
                 std::stringstream joinedConstraint;
 
-                // FIXME: We need type info in order to figure out if the constraint is a string constraint or
-                // not!
+                // FIXME: We need type info in order to figure out how to print arguments.
                 BinaryConstraintOp rawBinOp = toBinaryConstraintOp(bodyRel);
                 if (isOrderedBinaryConstraintOp(rawBinOp)) {
                     joinedConstraint << subproofTuple[0] << " " << bodyRel << " " << subproofTuple[1];
@@ -498,7 +497,7 @@ public:
         }
     }
 
-    std::vector<std::string> getRules(std::string relName) override {
+    std::vector<std::string> getRules(const std::string& relName) override {
         std::vector<std::string> relRules;
         // go through all rules
         for (auto& rule : rules) {
@@ -545,6 +544,14 @@ public:
                     std::string s;
                     tuple >> s;
                     n = symTable.lookupExisting(s);
+                } else if (*rel->getAttrType(i) == 'f') {
+                    RamFloat element;
+                    tuple >> element;
+                    n = ramBitCast(element);
+                } else if (*rel->getAttrType(i) == 'u') {
+                    RamUnsigned element;
+                    tuple >> element;
+                    n = ramBitCast(element);
                 } else {
                     tuple >> n;
                 }
@@ -656,32 +663,50 @@ public:
                     } else {
                         nameToEquivalenceIter->second.push_back(std::make_pair(idx, j));
                     }
-                    // arg is a symbol
-                } else if (std::regex_match(rel.second[j], argsMatcher, symbolRegex)) {
-                    if (*(relation->getAttrType(j)) != 's') {
-                        std::cout << argsMatcher.str(0) << " does not match type defined in relation"
-                                  << std::endl;
-                        return;
-                    }
-                    // find index of symbol and add indices pair to constConstraints
-                    RamDomain rd = prog.getSymbolTable().lookup(argsMatcher[1]);
-                    constConstraints.push_back(std::make_pair(std::make_pair(idx, j), rd));
-                    if (!containVar) {
-                        constTuple.push_back(rd);
-                    }
-                    // arg is number
-                } else if (std::regex_match(rel.second[j], argsMatcher, numberRegex)) {
-                    if (*(relation->getAttrType(j)) != 'i') {
-                        std::cout << argsMatcher.str(0) << " does not match type defined in relation"
-                                  << std::endl;
-                        return;
-                    }
-                    // convert number string to number and add index, number pair to constConstraints
-                    RamDomain rd = std::stoi(argsMatcher[0]);
-                    constConstraints.push_back(std::make_pair(std::make_pair(idx, j), rd));
-                    if (!containVar) {
-                        constTuple.push_back(rd);
-                    }
+                    continue;
+                }
+
+                RamDomain rd;
+                switch (*(relation->getAttrType(j))) {
+                    case 's':
+                        if (!std::regex_match(rel.second[j], argsMatcher, symbolRegex)) {
+                            std::cout << argsMatcher.str(0) << " does not match type defined in relation"
+                                      << std::endl;
+                            return;
+                        }
+                        rd = prog.getSymbolTable().lookup(argsMatcher[1]);
+                        break;
+                    case 'f':
+                        if (!canBeParsedAsRamFloat(rel.second[j])) {
+                            std::cout << rel.second[j] << " does not match type defined in relation"
+                                      << std::endl;
+                            return;
+                        }
+                        rd = ramBitCast(RamFloatFromString(rel.second[j]));
+                        break;
+                    case 'i':
+                        if (!canBeParsedAsRamSigned(rel.second[j])) {
+                            std::cout << rel.second[j] << " does not match type defined in relation"
+                                      << std::endl;
+                            return;
+                        }
+                        rd = ramBitCast(RamSignedFromString(rel.second[j]));
+                        break;
+                    case 'u':
+                        if (!canBeParsedAsRamUnsigned(rel.second[j])) {
+                            std::cout << rel.second[j] << " does not match type defined in relation"
+                                      << std::endl;
+                            return;
+                        }
+                        rd = ramBitCast(RamUnsignedFromString(rel.second[j]));
+                        break;
+                    default:
+                        continue;
+                }
+
+                constConstraints.push_back(std::make_pair(std::make_pair(idx, j), rd));
+                if (!containVar) {
+                    constTuple.push_back(rd);
                 }
             }
 
@@ -737,8 +762,6 @@ private:
             return std::make_tuple(-1, -1, std::vector<RamDomain>());
         }
 
-        // TODO (darth_tytus): update to reflect new types.
-
         // find correct tuple
         for (auto& tuple : *rel) {
             bool match = true;
@@ -750,6 +773,14 @@ private:
                     std::string s;
                     tuple >> s;
                     n = symTable.lookupExisting(s);
+                } else if (*rel->getAttrType(i) == 'f') {
+                    RamFloat element;
+                    tuple >> element;
+                    n = ramBitCast(element);
+                } else if (*rel->getAttrType(i) == 'u') {
+                    RamUnsigned element;
+                    tuple >> element;
+                    n = ramBitCast(element);
                 } else {
                     tuple >> n;
                 }
@@ -832,12 +863,28 @@ private:
                     size_t c = 0;
                     for (auto var : nameToEquivalence) {
                         auto idx = var.second.getFirstIdx();
-                        if (var.second.getType() == 'i') {
-                            solution << var.second.getSymbol() << " = "
-                                     << std::to_string(element[idx.first][idx.second]);
-                        } else {
-                            solution << var.second.getSymbol() << " = "
-                                     << prog.getSymbolTable().resolve(element[idx.first][idx.second]);
+                        switch (var.second.getType()) {
+                            case 'i':
+                                solution << var.second.getSymbol() << " = "
+                                         << std::to_string(
+                                                    ramBitCast<RamSigned>(element[idx.first][idx.second]));
+                                break;
+                            case 'f':
+                                solution << var.second.getSymbol() << " = "
+                                         << std::to_string(
+                                                    ramBitCast<RamFloat>(element[idx.first][idx.second]));
+                                break;
+                            case 'u':
+                                solution << var.second.getSymbol() << " = "
+                                         << std::to_string(
+                                                    ramBitCast<RamUnsigned>(element[idx.first][idx.second]));
+                                break;
+                            case 's':
+                                solution << var.second.getSymbol() << " = "
+                                         << prog.getSymbolTable().resolve(element[idx.first][idx.second]);
+                                break;
+                            default:
+                                assert(false && "Invalid type");
                         }
                         if (++c < nameToEquivalence.size()) {
                             solution << ", ";
@@ -854,12 +901,28 @@ private:
                     size_t c = 0;
                     for (auto var : nameToEquivalence) {
                         auto idx = var.second.getFirstIdx();
-                        if (var.second.getType() == 'i') {
-                            solution << var.second.getSymbol() << " = "
-                                     << std::to_string(element[idx.first][idx.second]);
-                        } else {
-                            solution << var.second.getSymbol() << " = "
-                                     << prog.getSymbolTable().resolve(element[idx.first][idx.second]);
+                        switch (var.second.getType()) {
+                            case 'i':
+                                solution << var.second.getSymbol() << " = "
+                                         << std::to_string(
+                                                    ramBitCast<RamSigned>(element[idx.first][idx.second]));
+                                break;
+                            case 'f':
+                                solution << var.second.getSymbol() << " = "
+                                         << std::to_string(
+                                                    ramBitCast<RamFloat>(element[idx.first][idx.second]));
+                                break;
+                            case 'u':
+                                solution << var.second.getSymbol() << " = "
+                                         << std::to_string(
+                                                    ramBitCast<RamUnsigned>(element[idx.first][idx.second]));
+                                break;
+                            case 's':
+                                solution << var.second.getSymbol() << " = "
+                                         << prog.getSymbolTable().resolve(element[idx.first][idx.second]);
+                                break;
+                            default:
+                                assert(false && "Invalid type");
                         }
                         if (++c < nameToEquivalence.size()) {
                             solution << ", ";

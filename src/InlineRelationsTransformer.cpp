@@ -623,6 +623,8 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                                 return FunctorOp::ADD;
                             case AggregateOp::MEAN:
                                 assert(false && "no translation");
+                            default:
+                                assert(false && "Unsupported aggregate operation");
                         }
                     };
                     // Create the actual overall aggregator that ties the replacement aggregators together.

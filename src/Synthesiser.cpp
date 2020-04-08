@@ -365,8 +365,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitClear(const RamClear& clear, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            out << "if (!isHintsProfilingEnabled()"
-                << (clear.getRelation().isTemp() ? ") " : "&& performIO) ");
+            if (!clear.getRelation().isTemp()) {
+                out << "if (performIO) ";
+            }
             out << synthesiser.getRelationName(clear.getRelation()) << "->"
                 << "purge();\n";
 
@@ -821,10 +822,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = aggregate.getTupleId();
 
             // aggregate tuple storing the result of aggregate
-            std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
+            std::string tuple_type = "Tuple<RamDomain," + toString(arity) + ">";
 
             // declare environment variable
-            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
+            out << "Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // get range to aggregate
             auto keys = isa->getSearchSignature(&aggregate);
@@ -993,7 +994,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = aggregate.getTupleId();
 
             // declare environment variable
-            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
+            out << "Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
             if (aggregate.getFunction() == AggregateOp::COUNT && isRamTrue(&aggregate.getCondition())) {
@@ -1681,7 +1682,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
 
             out << "pack(recordTable,"
-                << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">";
+                << "Tuple<RamDomain," << pack.getArguments().size() << ">";
             if (pack.getArguments().size() == 0) {
                 out << "{{}}";
             } else {
@@ -1746,6 +1747,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     std::string classname = "Sf_" + id;
 
     // generate C++ program
+
+    if (Global::config().has("verbose")) {
+        os << "#define _SOUFFLE_STATS\n";
+    }
     os << "\n#include \"souffle/CompiledSouffle.h\"\n";
     if (Global::config().has("provenance")) {
         os << "#include <mutex>\n";
@@ -1817,7 +1822,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";
     os << "\n";
     os << "namespace souffle {\n";
-    os << "using namespace ram;\n";
     os << "static const RamDomain RAM_BIT_SHIFT_MASK = RAM_DOMAIN_SIZE - 1;\n";
 
     // synthesise data-structures for relations
@@ -2065,15 +2069,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // add code printing hint statistics
     os << "\n// -- relation hint statistics --\n";
-    os << "if(isHintsProfilingEnabled()) {\n";
-    os << "std::cout << \" -- Operation Hint Statistics --\\n\";\n";
-    for (auto rel : prog.getRelations()) {
-        auto name = getRelationName(*rel);
-        os << "std::cout << \"Relation " << name << ":\\n\";\n";
-        os << name << "->printHintStatistics(std::cout,\"  \");\n";
-        os << "std::cout << \"\\n\";\n";
+
+    if (Global::config().has("verbose")) {
+        for (auto rel : prog.getRelations()) {
+            auto name = getRelationName(*rel);
+            os << "std::cout << \"Statistics for Relation " << name << ":\\n\";\n";
+            os << name << "->printStatistics(std::cout);\n";
+            os << "std::cout << \"\\n\";\n";
+        }
     }
-    os << "}\n";
 
     os << "SignalHandler::instance()->reset();\n";
 

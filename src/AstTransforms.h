@@ -133,7 +133,7 @@ private:
      * Determines whether an aggregate is single-valued,
      * ie the aggregate does not depend on the outer scope.
      */
-    static bool isSingleValued(const AstAggregator& agg);
+    static bool isSingleValued(const AstAggregator& agg, const AstClause& clause);
     /**
      * findUniqueVariableName returns a variable name that hasn't appeared
      * in the given clause.

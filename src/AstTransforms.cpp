@@ -252,7 +252,7 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
     // collect references to clause / aggregate pairs
     visitDepthFirst(program, [&](const AstClause& clause) {
         visitDepthFirst(clause, [&](const AstAggregator& agg) {
-            if (!isSingleValued(agg)) {
+            if (!isSingleValued(agg, clause)) {
                 return;
             }
             auto* foundAggregate = const_cast<AstAggregator*>(&agg);
@@ -323,17 +323,29 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
 // An aggregate is single-valued if none of the variables appearing in the body
 // are ungrounded when ignoring the outer scope
 // ie the aggregate only ever evaluates to a single value.
-bool MaterializeSingletonAggregationTransformer::isSingleValued(const AstAggregator& agg) {
+bool MaterializeSingletonAggregationTransformer::isSingleValued(
+        const AstAggregator& agg, const AstClause& clause) {
     // Dummy clause to analyse groundedness
     auto aggClause = std::make_unique<AstClause>();
     for (const auto& lit : agg.getBodyLiterals()) {
         aggClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
     }
     for (const auto& argPair : getGroundedTerms(*aggClause)) {
-        const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
-        bool variableIsGrounded = argPair.second;
-        if (variable != nullptr && !variableIsGrounded) {
-            return false;
+        if (const auto* variable = dynamic_cast<const AstVariable*>(argPair.first)) {
+            // If we have a variable and it's not grounded then we may not be single-valued
+            if (!argPair.second) {
+                return false;
+            }
+            // Variables may get values from outside the aggregate. e.g., A(x), count : B(x)
+            int count = 0;
+            visitDepthFirst(clause, [&](const AstVariable& clauseVariable) {
+                if (*variable == clauseVariable) {
+                    ++count;
+                }
+            });
+            if (count > 1) {
+                return false;
+            }
         }
     }
     return true;

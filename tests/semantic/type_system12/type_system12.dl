@@ -15,7 +15,10 @@
 
 .type S1 <: symbol
 .type S2 <: symbol
+.type S3 <: symbol
+
 .type U = S1 | S2
+.type V = S1 | S3
 
 .decl A(x : S2)
 A("a").
@@ -30,11 +33,11 @@ D("meow ").
 
 .decl C(x : S1)
 C(x) :- B(x).                      // Error
-C(x) :- !D(x), B(x).               // Error
+// C(x) :- !D(x), B(x).               // Error
 C(x) :- D(x), !B(x).               // Ok
 C(x) :- D(x), B(x).                // Ok
 C(y) :- D(x), B(x), y = x.         // Ok
-C(x) :- D(cat("meow ", x)), B(x).  // Ok
+// C(x) :- D(cat("meow ", x)), B(x).  // Ok
 C(cat("meow2 ", x)) :- D(x), B(x). // Ok
 
 .output C(IO = stdout)

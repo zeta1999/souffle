@@ -28,8 +28,6 @@
 
 namespace souffle {
 
-namespace {
-
 /**
  * A variable type to be utilized by AST constraint analysis. Each such variable is
  * associated with an AstArgument which's property it is describing.
@@ -76,24 +74,22 @@ public:
         visitDepthFirstPreOrder(clause, *this);
 
         // solve constraints
-        auto ass = constraints.solve();
+        auto assignment = constraints.solve();
 
         // print debug information if desired
         if (debugOutput != nullptr) {
             *debugOutput << "Clause: " << clause << "\n";
             *debugOutput << "Problem:\n" << constraints << "\n";
-            *debugOutput << "Solution:\n" << ass << "\n";
+            *debugOutput << "Solution:\n" << assignment << "\n";
         }
 
         // convert assignment to result
-        solution_type res;
-        visitDepthFirst(clause, [&](const AstArgument& cur) { res[&cur] = ass[getVar(cur)]; });
-        return res;
+        solution_type solution;
+        visitDepthFirst(clause, [&](const AstArgument& arg) { solution[&arg] = assignment[getVar(arg)]; });
+        return solution;
     }
 
 protected:
-    // a few type definitions
-
     /**
      * A utility function mapping an AstArgument to its associated analysis variable.
      *
@@ -134,7 +130,5 @@ private:
     /** A map mapping variables to unique instances to facilitate the unification of variables */
     std::map<std::string, AnalysisVar> variables;
 };
-
-}  // end namespace
 
 }  // end of namespace souffle

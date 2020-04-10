@@ -343,72 +343,73 @@ TypeConstraint isSupertypeOf(const TypeVar& variable, const Type& type) {
     return std::make_shared<C>(variable, type);
 }
 
-TypeConstraint isSubtypeOfComponent(const TypeVar& a, const TypeVar& b, int index) {
+TypeConstraint isSubtypeOfComponent(
+        const TypeVar& elementVariable, const TypeVar& recordVariable, size_t index) {
     struct C : public Constraint<TypeVar> {
-        TypeVar a;
-        TypeVar b;
+        TypeVar elementVariable;
+        TypeVar recordVariable;
         unsigned index;
 
-        C(TypeVar a, TypeVar b, int index) : a(std::move(a)), b(std::move(b)), index(index) {}
+        C(TypeVar elementVariable, TypeVar recordVariable, int index)
+                : elementVariable(std::move(elementVariable)), recordVariable(std::move(recordVariable)),
+                  index(index) {}
 
-        bool update(Assignment<TypeVar>& ass) const override {
+        bool update(Assignment<TypeVar>& assignment) const override {
             // get list of types for b
-            const TypeSet& recs = ass[b];
+            const TypeSet& recordTypes = assignment[recordVariable];
 
             // if it is (not yet) constrainted => skip
-            if (recs.isAll()) {
+            if (recordTypes.isAll()) {
                 return false;
             }
 
-            // compute new types for a and b
-            TypeSet typesA;
-            TypeSet typesB;
+            // compute new types for element and record
+            TypeSet newElementTypes;
+            TypeSet newRecordTypes;
 
-            // iterate through types of b
-            for (const Type& t : recs) {
+            for (const Type& type : recordTypes) {
                 // only retain records
-                if (!isRecordType(t)) {
+                if (!isRecordType(type)) {
                     continue;
                 }
-                const auto& rec = static_cast<const RecordType&>(t);
+                const auto& typeAsRecord = static_cast<const RecordType&>(type);
 
-                // of proper size
-                if (rec.getFields().size() <= index) {
+                // Wrong size => skip.
+                if (typeAsRecord.getFields().size() <= index) {
                     continue;
                 }
 
-                // this is a valid type for b
-                typesB.insert(rec);
+                // Valid record type
+                newRecordTypes.insert(typeAsRecord);
 
                 // and its corresponding field for a
-                typesA.insert(rec.getFields()[index].type);
+                newElementTypes.insert(typeAsRecord.getFields()[index].type);
             }
 
-            // combine with current types assigned to a
-            typesA = getGreatestCommonSubtypes(ass[a], typesA);
+            // combine with current types assigned to element
+            newElementTypes = getGreatestCommonSubtypes(assignment[elementVariable], newElementTypes);
 
             // update values
             bool changed = false;
-            if (recs != typesB) {
-                ass[b] = typesB;
+            if (newRecordTypes != recordTypes) {
+                assignment[recordVariable] = newRecordTypes;
                 changed = true;
             }
 
-            if (ass[a] != typesA) {
-                ass[a] = typesA;
+            if (assignment[elementVariable] != newElementTypes) {
+                assignment[elementVariable] = newElementTypes;
                 changed = true;
             }
 
-            // done
             return changed;
         }
 
         void print(std::ostream& out) const override {
-            out << a << " <: " << b << "::" << index;
+            out << elementVariable << " <: " << recordVariable << "::" << index;
         }
     };
 
-    return std::make_shared<C>(a, b, index);
+    return std::make_shared<C>(elementVariable, recordVariable, index);
 }
 }  // namespace
 
@@ -510,217 +511,216 @@ void TypeAnalysis::print(std::ostream& os) const {
     }
 }
 
+struct TypeConstraintsAnalysis : public AstConstraintAnalysis<TypeVar> {
+    const TypeEnvironment& typeEnv;
+    const AstProgram* program;
+    std::set<const AstAtom*> negated;
+
+    TypeConstraintsAnalysis(const TypeEnvironment& typeEnv, const AstProgram* program)
+            : typeEnv(typeEnv), program(program) {}
+
+    // predicate
+    void visitAtom(const AstAtom& atom) override {
+        // get relation
+        auto rel = getAtomRelation(&atom, program);
+        if (rel == nullptr) {
+            return;  // error in input program
+        }
+
+        auto atts = rel->getAttributes();
+        auto args = atom.getArguments();
+        if (atts.size() != args.size()) {
+            return;  // error in input program
+        }
+
+        // set upper boundary of argument types
+        for (size_t i = 0; i < atts.size(); i++) {
+            const auto& typeName = atts[i]->getTypeName();
+            if (typeEnv.isType(typeName)) {
+                bool notNegated = negated.find(&atom) == negated.end();
+                if (notNegated) {
+                    addConstraint(isSubtypeOf(getVar(args[i]), typeEnv.getType(typeName)));
+                } else {
+                    addConstraint(isSupertypeOf(getVar(args[i]), typeEnv.getType(typeName)));
+                }
+            }
+        }
+    }
+
+    // negations need to be skipped
+    void visitNegation(const AstNegation& cur) override {
+        // add nested atom to black-list
+        negated.insert(cur.getAtom());
+    }
+
+    // symbol
+    void visitStringConstant(const AstStringConstant& cnst) override {
+        addConstraint(isSubtypeOf(getVar(cnst), typeEnv.getSymbolType()));
+    }
+
+    // Numeric constant
+    void visitNumericConstant(const AstNumericConstant& constant) override {
+        TypeSet possibleTypes;
+
+        // Check if the type is given.
+        if (constant.getType().has_value()) {
+            switch (*constant.getType()) {
+                // Insert a type, but only after checking that parsing is possible.
+                case AstNumericConstant::Type::Int:
+                    if (canBeParsedAsRamSigned(constant.getConstant())) {
+                        possibleTypes.insert(typeEnv.getNumberType());
+                    }
+                    break;
+                case AstNumericConstant::Type::Uint:
+                    if (canBeParsedAsRamUnsigned(constant.getConstant())) {
+                        possibleTypes.insert(typeEnv.getUnsignedType());
+                    }
+                    break;
+                case AstNumericConstant::Type::Float:
+                    if (canBeParsedAsRamFloat(constant.getConstant())) {
+                        possibleTypes.insert(typeEnv.getFloatType());
+                    }
+                    break;
+            }
+            // Else: all numeric types that can be parsed are valid.
+        } else {
+            if (canBeParsedAsRamSigned(constant.getConstant())) {
+                possibleTypes.insert(typeEnv.getNumberType());
+            }
+
+            if (canBeParsedAsRamUnsigned(constant.getConstant())) {
+                possibleTypes.insert(typeEnv.getUnsignedType());
+            }
+
+            if (canBeParsedAsRamFloat(constant.getConstant())) {
+                possibleTypes.insert(typeEnv.getFloatType());
+            }
+        }
+
+        addConstraint(hasSuperTypeInSet(getVar(constant), possibleTypes));
+    }
+
+    // binary constraint
+    void visitBinaryConstraint(const AstBinaryConstraint& rel) override {
+        auto lhs = getVar(rel.getLHS());
+        auto rhs = getVar(rel.getRHS());
+        addConstraint(isSubtypeOf(lhs, rhs));
+        addConstraint(isSubtypeOf(rhs, lhs));
+    }
+
+    // intrinsic functor
+    void visitFunctor(const AstFunctor& fun) override {
+        auto functorVar = getVar(fun);
+
+        // In polymorphic case
+        // We only require arguments to share a base type with a return type.
+        // (instead of, for example, requiring them to be of the same type)
+        // This approach is related to old type semantics
+        // See #1296 and tests/semantic/type_system4
+        if (auto intrinsicFunctor = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+            if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
+                for (auto* argument : intrinsicFunctor->getArguments()) {
+                    auto argumentVar = getVar(argument);
+                    addConstraint(subtypesOfTheSameBaseType(argumentVar, functorVar));
+                }
+
+                return;
+            }
+        }
+
+        try {
+            fun.getReturnType();
+        } catch (std::bad_optional_access& e) {
+            return;
+        }
+
+        // add a constraint for the return type of the functor
+        switch (fun.getReturnType()) {
+            case TypeAttribute::Signed:
+                addConstraint(isSubtypeOf(functorVar, typeEnv.getNumberType()));
+                break;
+            case TypeAttribute::Float:
+                addConstraint(isSubtypeOf(functorVar, typeEnv.getFloatType()));
+                break;
+            case TypeAttribute::Unsigned:
+                addConstraint(isSubtypeOf(functorVar, typeEnv.getUnsignedType()));
+                break;
+            case TypeAttribute::Symbol:
+                addConstraint(isSubtypeOf(functorVar, typeEnv.getSymbolType()));
+                break;
+            default:
+                assert(false && "Invalid return type");
+        }
+
+        // Special case
+        if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
+            if (intrFun->getFunction() == FunctorOp::ORD) {
+                return;
+            }
+        }
+        size_t i = 0;
+        for (auto arg : fun.getArguments()) {
+            auto argumentVar = getVar(arg);
+            switch (fun.getArgType(i)) {
+                case TypeAttribute::Signed:
+                    addConstraint(isSubtypeOf(argumentVar, typeEnv.getNumberType()));
+                    break;
+                case TypeAttribute::Float:
+                    addConstraint(isSubtypeOf(argumentVar, typeEnv.getFloatType()));
+                    break;
+                case TypeAttribute::Unsigned:
+                    addConstraint(isSubtypeOf(argumentVar, typeEnv.getUnsignedType()));
+                    break;
+                case TypeAttribute::Symbol:
+                    addConstraint(isSubtypeOf(argumentVar, typeEnv.getSymbolType()));
+                    break;
+                default:
+                    assert(false && "Invalid argument type");
+            }
+            ++i;
+        }
+    }
+    // counter
+    void visitCounter(const AstCounter& counter) override {
+        // this value must be a number value
+        addConstraint(isSubtypeOf(getVar(counter), typeEnv.getNumberType()));
+    }
+
+    // components of records
+    void visitRecordInit(const AstRecordInit& init) override {
+        // link element types with sub-values
+        auto rec = getVar(init);
+        int i = 0;
+
+        for (const AstArgument* value : init.getArguments()) {
+            addConstraint(isSubtypeOfComponent(getVar(value), rec, i++));
+        }
+    }
+
+    // visit aggregates
+    void visitAggregator(const AstAggregator& agg) override {
+        if (agg.getOperator() == AggregateOp::COUNT) {
+            addConstraint(isSubtypeOf(getVar(agg), typeEnv.getNumberType()));
+        } else if (agg.getOperator() == AggregateOp::MEAN) {
+            addConstraint(isSubtypeOf(getVar(agg), typeEnv.getFloatType()));
+        } else {
+            addConstraint(hasSuperTypeInSet(getVar(agg), typeEnv.getNumericTypes()));
+        }
+
+        // If there is a target expression - it should be of the same type as the aggregator.
+        if (auto expr = agg.getTargetExpression()) {
+            addConstraint(isSubtypeOf(getVar(expr), getVar(agg)));
+            addConstraint(isSubtypeOf(getVar(agg), getVar(expr)));
+        }
+    }
+};
+
 /**
  * Generic type analysis framework for clauses
  */
-
-std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(
-        const TypeEnvironment& env, const AstClause& clause, const AstProgram* program, std::ostream* logs) {
-    struct Analysis : public AstConstraintAnalysis<TypeVar> {
-        const TypeEnvironment& env;
-        const AstProgram* program;
-        std::set<const AstAtom*> negated;
-
-        Analysis(const TypeEnvironment& env, const AstProgram* program) : env(env), program(program) {}
-
-        // predicate
-        void visitAtom(const AstAtom& atom) override {
-            // get relation
-            auto rel = getAtomRelation(&atom, program);
-            if (rel == nullptr) {
-                return;  // error in input program
-            }
-
-            auto atts = rel->getAttributes();
-            auto args = atom.getArguments();
-            if (atts.size() != args.size()) {
-                return;  // error in input program
-            }
-
-            // set upper boundary of argument types
-            for (size_t i = 0; i < atts.size(); i++) {
-                const auto& typeName = atts[i]->getTypeName();
-                if (env.isType(typeName)) {
-                    bool notNegated = negated.find(&atom) == negated.end();
-                    if (notNegated) {
-                        addConstraint(isSubtypeOf(getVar(args[i]), env.getType(typeName)));
-                    } else {
-                        addConstraint(isSupertypeOf(getVar(args[i]), env.getType(typeName)));
-                    }
-                }
-            }
-        }
-
-        // negations need to be skipped
-        void visitNegation(const AstNegation& cur) override {
-            // add nested atom to black-list
-            negated.insert(cur.getAtom());
-        }
-
-        // symbol
-        void visitStringConstant(const AstStringConstant& cnst) override {
-            addConstraint(isSubtypeOf(getVar(cnst), env.getSymbolType()));
-        }
-
-        // Numeric constant
-        void visitNumericConstant(const AstNumericConstant& constant) override {
-            TypeSet possibleTypes;
-
-            // Check if the type is given.
-            if (constant.getType().has_value()) {
-                switch (*constant.getType()) {
-                    // Insert a type, but only after checking that parsing is possible.
-                    case AstNumericConstant::Type::Int:
-                        if (canBeParsedAsRamSigned(constant.getConstant())) {
-                            possibleTypes.insert(env.getNumberType());
-                        }
-                        break;
-                    case AstNumericConstant::Type::Uint:
-                        if (canBeParsedAsRamUnsigned(constant.getConstant())) {
-                            possibleTypes.insert(env.getUnsignedType());
-                        }
-                        break;
-                    case AstNumericConstant::Type::Float:
-                        if (canBeParsedAsRamFloat(constant.getConstant())) {
-                            possibleTypes.insert(env.getFloatType());
-                        }
-                        break;
-                }
-                // Else: all numeric types that can be parsed are valid.
-            } else {
-                if (canBeParsedAsRamSigned(constant.getConstant())) {
-                    possibleTypes.insert(env.getNumberType());
-                }
-
-                if (canBeParsedAsRamUnsigned(constant.getConstant())) {
-                    possibleTypes.insert(env.getUnsignedType());
-                }
-
-                if (canBeParsedAsRamFloat(constant.getConstant())) {
-                    possibleTypes.insert(env.getFloatType());
-                }
-            }
-
-            addConstraint(hasSuperTypeInSet(getVar(constant), possibleTypes));
-        }
-
-        // binary constraint
-        void visitBinaryConstraint(const AstBinaryConstraint& rel) override {
-            auto lhs = getVar(rel.getLHS());
-            auto rhs = getVar(rel.getRHS());
-            addConstraint(isSubtypeOf(lhs, rhs));
-            addConstraint(isSubtypeOf(rhs, lhs));
-        }
-
-        // intrinsic functor
-        void visitFunctor(const AstFunctor& fun) override {
-            auto functorVar = getVar(fun);
-
-            // In polymorphic case
-            // We only require arguments to share a base type with a return type.
-            // (instead of, for example, requiring them to be of the same type)
-            // This approach is related to old type semantics
-            // See #1296 and tests/semantic/type_system4
-            if (auto intrinsicFunctor = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
-                if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
-                    for (auto* argument : intrinsicFunctor->getArguments()) {
-                        auto argumentVar = getVar(argument);
-                        addConstraint(subtypesOfTheSameBaseType(argumentVar, functorVar));
-                    }
-
-                    return;
-                }
-            }
-
-            try {
-                fun.getReturnType();
-            } catch (std::bad_optional_access& e) {
-                return;
-            }
-
-            // add a constraint for the return type of the functor
-            switch (fun.getReturnType()) {
-                case TypeAttribute::Signed:
-                    addConstraint(isSubtypeOf(functorVar, env.getNumberType()));
-                    break;
-                case TypeAttribute::Float:
-                    addConstraint(isSubtypeOf(functorVar, env.getFloatType()));
-                    break;
-                case TypeAttribute::Unsigned:
-                    addConstraint(isSubtypeOf(functorVar, env.getUnsignedType()));
-                    break;
-                case TypeAttribute::Symbol:
-                    addConstraint(isSubtypeOf(functorVar, env.getSymbolType()));
-                    break;
-                default:
-                    assert(false && "Invalid return type");
-            }
-
-            // Special case
-            if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
-                if (intrFun->getFunction() == FunctorOp::ORD) {
-                    return;
-                }
-            }
-            size_t i = 0;
-            for (auto arg : fun.getArguments()) {
-                auto argumentVar = getVar(arg);
-                switch (fun.getArgType(i)) {
-                    case TypeAttribute::Signed:
-                        addConstraint(isSubtypeOf(argumentVar, env.getNumberType()));
-                        break;
-                    case TypeAttribute::Float:
-                        addConstraint(isSubtypeOf(argumentVar, env.getFloatType()));
-                        break;
-                    case TypeAttribute::Unsigned:
-                        addConstraint(isSubtypeOf(argumentVar, env.getUnsignedType()));
-                        break;
-                    case TypeAttribute::Symbol:
-                        addConstraint(isSubtypeOf(argumentVar, env.getSymbolType()));
-                        break;
-                    default:
-                        assert(false && "Invalid argument type");
-                }
-                ++i;
-            }
-        }
-        // counter
-        void visitCounter(const AstCounter& counter) override {
-            // this value must be a number value
-            addConstraint(isSubtypeOf(getVar(counter), env.getNumberType()));
-        }
-
-        // components of records
-        void visitRecordInit(const AstRecordInit& init) override {
-            // link element types with sub-values
-            auto rec = getVar(init);
-            int i = 0;
-
-            for (const AstArgument* value : init.getArguments()) {
-                addConstraint(isSubtypeOfComponent(getVar(value), rec, i++));
-            }
-        }
-
-        // visit aggregates
-        void visitAggregator(const AstAggregator& agg) override {
-            if (agg.getOperator() == AggregateOp::COUNT) {
-                addConstraint(isSubtypeOf(getVar(agg), env.getNumberType()));
-            } else if (agg.getOperator() == AggregateOp::MEAN) {
-                addConstraint(isSubtypeOf(getVar(agg), env.getFloatType()));
-            } else {
-                addConstraint(hasSuperTypeInSet(getVar(agg), env.getNumericTypes()));
-            }
-
-            // If there is a target expression - it should be of the same type as the aggregator.
-            if (auto expr = agg.getTargetExpression()) {
-                addConstraint(isSubtypeOf(getVar(expr), getVar(agg)));
-                addConstraint(isSubtypeOf(getVar(agg), getVar(expr)));
-            }
-        }
-    };
-
-    // run analysis
-    return Analysis(env, program).analyse(clause, logs);
+std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(const TypeEnvironment& typeEnv,
+        const AstClause& clause, const AstProgram* program, std::ostream* logs) {
+    return TypeConstraintsAnalysis(typeEnv, program).analyse(clause, logs);
 }
 
 }  // end of namespace souffle

@@ -221,26 +221,29 @@ bool UniqueAggregationVariablesTransformer::transform(AstTranslationUnit& transl
     });
     return changed;
 }
-
-std::string MaterializeSingletonAggregationTransformer::findUniqueVariableName(const AstClause& clause) {
-    int counter = 0;
-    std::set<std::string> variableNames;
-    visitDepthFirst(clause, [&](const AstVariable& variable) { variableNames.insert(variable.getName()); });
-    std::string candidateVariableName = "z";  // completely arbitrary
-    while (variableNames.find(candidateVariableName) != variableNames.end()) {
-        candidateVariableName = "z" + toString(counter++);
-    }
-    return candidateVariableName;
+namespace {
+  std::string findUniqueVariableName(const AstClause& clause) {
+      int counter = 0;
+      std::set<std::string> variableNames;
+      visitDepthFirst(clause, [&](const AstVariable& variable) { variableNames.insert(variable.getName()); });
+      std::string candidateVariableName = "z";  // completely arbitrary
+      while (variableNames.find(candidateVariableName) != variableNames.end()) {
+          candidateVariableName = "z" + toString(counter++);
+      }
+      return candidateVariableName;
+  }
 }
 
-std::string MaterializeSingletonAggregationTransformer::findUniqueAggregateRelationName(
-        const AstProgram& program) {
-    int counter = 0;
-    auto candidate = "__agg_rel_" + toString(counter++);
-    while (getRelation(program, candidate) != nullptr) {
-        candidate = "__agg_rel_" + toString(counter++);
-    }
-    return candidate;
+namespace {
+  std::string findUniqueAggregateRelationName(
+          const AstProgram& program) {
+      int counter = 0;
+      auto candidate = "__agg_rel_" + toString(counter++);
+      while (getRelation(program, candidate) != nullptr) {
+          candidate = "__agg_rel_" + toString(counter++);
+      }
+      return candidate;
+  }
 }
 
 bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& translationUnit) {

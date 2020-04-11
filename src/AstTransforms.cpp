@@ -221,29 +221,26 @@ bool UniqueAggregationVariablesTransformer::transform(AstTranslationUnit& transl
     });
     return changed;
 }
-namespace {
-  std::string findUniqueVariableName(const AstClause& clause) {
-      int counter = 0;
-      std::set<std::string> variableNames;
-      visitDepthFirst(clause, [&](const AstVariable& variable) { variableNames.insert(variable.getName()); });
-      std::string candidateVariableName = "z";  // completely arbitrary
-      while (variableNames.find(candidateVariableName) != variableNames.end()) {
-          candidateVariableName = "z" + toString(counter++);
-      }
-      return candidateVariableName;
-  }
+
+std::string MaterializeSingletonAggregationTransformer::findUniqueVariableName(const AstClause& clause) {
+    int counter = 0;
+    std::set<std::string> variableNames;
+    visitDepthFirst(clause, [&](const AstVariable& variable) { variableNames.insert(variable.getName()); });
+    std::string candidateVariableName = "z";  // completely arbitrary
+    while (variableNames.find(candidateVariableName) != variableNames.end()) {
+        candidateVariableName = "z" + toString(counter++);
+    }
+    return candidateVariableName;
 }
 
-namespace {
-  std::string findUniqueAggregateRelationName(
-          const AstProgram& program) {
-      int counter = 0;
-      auto candidate = "__agg_rel_" + toString(counter++);
-      while (getRelation(program, candidate) != nullptr) {
-          candidate = "__agg_rel_" + toString(counter++);
-      }
-      return candidate;
-  }
+std::string MaterializeSingletonAggregationTransformer::findUniqueAggregateRelationName(
+        const AstProgram& program) {
+    int counter = 0;
+    auto candidate = "__agg_rel_" + toString(counter++);
+    while (getRelation(program, candidate) != nullptr) {
+        candidate = "__agg_rel_" + toString(counter++);
+    }
+    return candidate;
 }
 
 bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& translationUnit) {
@@ -252,7 +249,7 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
     // collect references to clause / aggregate pairs
     visitDepthFirst(program, [&](const AstClause& clause) {
         visitDepthFirst(clause, [&](const AstAggregator& agg) {
-            if (!isSingleValued(agg)) {
+            if (!isSingleValued(agg, clause)) {
                 return;
             }
             auto* foundAggregate = const_cast<AstAggregator*>(&agg);
@@ -320,19 +317,24 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
     return pairs.size() > 0;
 }
 
-// An aggregate is single-valued if none of the variables appearing in the body
-// are ungrounded when ignoring the outer scope
-// ie the aggregate only ever evaluates to a single value.
-bool MaterializeSingletonAggregationTransformer::isSingleValued(const AstAggregator& agg) {
-    // Dummy clause to analyse groundedness
-    auto aggClause = std::make_unique<AstClause>();
-    for (const auto& lit : agg.getBodyLiterals()) {
-        aggClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
-    }
-    for (const auto& argPair : getGroundedTerms(*aggClause)) {
-        const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
-        bool variableIsGrounded = argPair.second;
-        if (variable != nullptr && !variableIsGrounded) {
+// An aggregate is single-valued if
+// any variable occurring inside the aggregate body never occurs in the outer scope.
+bool MaterializeSingletonAggregationTransformer::isSingleValued(
+        const AstAggregator& agg, const AstClause& clause) {
+    std::map<std::string, int> occurrences;
+    visitDepthFirst(clause, [&](const AstVariable& v) {
+        if (occurrences.find(v.getName()) == occurrences.end()) {
+            occurrences[v.getName()] = 0;
+        }
+        occurrences[v.getName()] = occurrences[v.getName()] + 1;
+    });
+    std::set<std::string> aggVariables;
+    visitDepthFirst(agg, [&](const AstVariable& v) {
+        aggVariables.insert(v.getName());
+        occurrences[v.getName()] = occurrences[v.getName()] - 1;
+    });
+    for (std::string variableName : aggVariables) {
+        if (occurrences[variableName] != 0) {
             return false;
         }
     }

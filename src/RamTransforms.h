@@ -21,6 +21,8 @@
 #include "RamLevelAnalysis.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
+#include "RamOperation.h"
+
 #include <memory>
 #include <string>
 
@@ -376,7 +378,7 @@ public:
      * @param Tuple identifier of the indexable operation
      * @result Remaining conditions that could not be transformed to an index
      */
-    std::unique_ptr<RamCondition> constructPattern(std::vector<std::unique_ptr<RamExpression>>& queryPattern,
+    std::unique_ptr<RamCondition> constructPattern(RamPattern& queryPattern,
             bool& indexable, std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
 
     /**

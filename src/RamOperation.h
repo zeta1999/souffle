@@ -843,21 +843,9 @@ class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate 
 public:
     RamIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
-            std::unique_ptr<RamCondition> condition, std::vector<std::unique_ptr<RamExpression>> queryPattern,
+            std::unique_ptr<RamCondition> condition, RamPattern queryPattern,
             int ident)
-            : RamIndexOperation(std::move(relRef), ident, 
-			{ [&]() -> std::vector<std::unique_ptr<RamExpression>> 
-			    {
-			        std::vector<std::unique_ptr<RamExpression>> res;
-                                res.reserve(queryPattern.size());
-				for (const auto& e : queryPattern)
-				{
-				      res.emplace_back(e->clone());
-				}
-				return res;
-			    }()
-			    , std::move(queryPattern)
-			}, std::move(nested)),
+            : RamIndexOperation(std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
               RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
 
     void print(std::ostream& os, int tabpos) const override {
@@ -881,9 +869,16 @@ public:
     }
 
     RamIndexAggregate* clone() const override {
-        std::vector<std::unique_ptr<RamExpression>> pattern;
-        for (auto const& e : queryPattern.second) {
-            pattern.push_back(std::unique_ptr<RamExpression>(e->clone()));
+        RamPattern pattern;
+	pattern.first.reserve(queryPattern.first.size());
+	pattern.second.reserve(queryPattern.second.size());
+
+        for (auto const& e : queryPattern.first) {
+            pattern.first.push_back(std::unique_ptr<RamExpression>(e->clone()));
+        }
+
+	for (auto const& e : queryPattern.second) {
+            pattern.second.push_back(std::unique_ptr<RamExpression>(e->clone()));
         }
         return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),

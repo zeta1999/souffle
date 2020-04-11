@@ -364,7 +364,9 @@ public:
      * The method retrieves expression the expression of an equivalence constraint of the
      * format t1.x = <expr> or <expr> = t1.x
      */
-    std::unique_ptr<RamExpression> getExpression(RamCondition* c, size_t& element, int level);
+    using ExpressionPair = std::pair<std::unique_ptr<RamExpression>, std::unique_ptr<RamExpression>>;
+
+    ExpressionPair getLowerUpperExpression(RamCondition* c, size_t& element, int level);
 
     /**
      * @brief Construct query patterns for an indexable operation

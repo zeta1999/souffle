@@ -331,6 +331,8 @@ protected:
          */
         base(bool inner) : parent(nullptr), numElements(0), position(0), inner(inner) {}
 
+        virtual ~base() {}
+
         bool isLeaf() const {
             return !inner;
         }

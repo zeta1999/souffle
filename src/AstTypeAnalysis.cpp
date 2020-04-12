@@ -511,13 +511,94 @@ void TypeAnalysis::print(std::ostream& os) const {
     }
 }
 
-struct TypeConstraintsAnalysis : public AstConstraintAnalysis<TypeVar> {
+class TypeConstraintsAnalysis : public AstConstraintAnalysis<TypeVar> {
+public:
+    TypeConstraintsAnalysis(const TypeEnvironment& typeEnv, const AstProgram* program)
+            : typeEnv(typeEnv), program(program) {}
+
+private:
+    /** Collect head variables. It will allow to distinguish between head and body variables later. */
+    void preProcessing(const AstClause& clause) override {
+        visitDepthFirst(
+                *clause.getHead(), [&](const AstVariable& variable) { headVariables.insert(&variable); });
+    }
+
+    // Remove arg.
+    void solveConstraints(const AstClause& clause) override {
+        //        std::cerr << clause << std::endl;
+        assignment = constraints.solve();
+
+        for (auto iteratorToHeadVariable : unifyHeadVariables) {
+            auto name = iteratorToHeadVariable.first;
+            auto headVar = iteratorToHeadVariable.second;
+
+            auto iteratorToBodyVariable = unifyBodyVariables.find(name);
+
+            // No entry -> head solution is correct.
+            if (iteratorToBodyVariable == end(unifyBodyVariables)) {
+                continue;
+            }
+
+            auto bodyVar = iteratorToBodyVariable->second;
+            // std::cerr << "name: " << name << " head: " << assignment[headVar] << " body: " <<
+            // assignment[bodyVar] << std::endl;
+
+            // We need to combine head and body results.
+            auto newAssignment = TypeSet();
+
+            for (auto itHead = assignment[headVar].begin(); itHead != assignment[headVar].end(); ++itHead) {
+                for (auto itBody = assignment[bodyVar].begin(); itBody != assignment[bodyVar].end();
+                        ++itBody) {
+                    if (isSubtypeOf(*itBody, *itHead)) {
+                        newAssignment.insert(*itBody);
+                    }
+                }
+            }
+            if (newAssignment.empty()) {
+                assignment[headVar] = newAssignment;
+                assignment[bodyVar] = newAssignment;
+            }
+            // std::cerr << "New: " << assignment[headVar] << " " << assignment[bodyVar] << std::endl;
+            addConstraint(isSubtypeOf(headVar, bodyVar));
+            addConstraint(isSubtypeOf(bodyVar, headVar));
+        }
+
+        constraints.solve(assignment);
+    }
+
+    virtual TypeVar getVar(const AstArgument& argument) override {
+        auto variable = dynamic_cast<const AstVariable*>(&argument);
+        if (variable == nullptr) {
+            // no mapping required
+            return TypeVar(argument);
+        }
+
+        std::map<std::string, TypeVar>::iterator iteratorToVariable;
+        // The variable is either head variable of body variable.
+        if (isHeadVariable(variable)) {
+            iteratorToVariable = unifyHeadVariables.insert({variable->getName(), TypeVar(variable)}).first;
+        } else {
+            iteratorToVariable = unifyBodyVariables.insert({variable->getName(), TypeVar(variable)}).first;
+        }
+
+        return iteratorToVariable->second;
+    }
+
+    TypeVar getVar(const AstArgument* arg) {
+        return getVar(*arg);
+    }
+
     const TypeEnvironment& typeEnv;
     const AstProgram* program;
     std::set<const AstAtom*> negated;
 
-    TypeConstraintsAnalysis(const TypeEnvironment& typeEnv, const AstProgram* program)
-            : typeEnv(typeEnv), program(program) {}
+    std::set<const AstVariable*> headVariables;
+    std::map<std::string, TypeVar> unifyHeadVariables;
+    std::map<std::string, TypeVar> unifyBodyVariables;
+
+    bool isHeadVariable(const AstVariable* variable) {
+        return headVariables.find(variable) != headVariables.end();
+    }
 
     // predicate
     void visitAtom(const AstAtom& atom) override {

@@ -62,6 +62,12 @@ public:
     using constraint_type = std::shared_ptr<Constraint<AnalysisVar>>;
     using solution_type = std::map<const AstArgument*, value_type>;
 
+    virtual void preProcessing(const AstClause&) {}
+
+    virtual void solveConstraints(const AstClause& clause) {
+        assignment = constraints.solve();
+    }
+
     /**
      * Runs this constraint analysis on the given clause.
      *
@@ -70,11 +76,12 @@ public:
      * @return an assignment mapping a property to each argument in the given clause
      */
     solution_type analyse(const AstClause& clause, std::ostream* debugOutput = nullptr) {
+        preProcessing(clause);
+
         // collect constraints
         visitDepthFirstPreOrder(clause, *this);
 
-        // solve constraints
-        auto assignment = constraints.solve();
+        solveConstraints(clause);
 
         // print debug information if desired
         if (debugOutput != nullptr) {
@@ -96,7 +103,7 @@ protected:
      * @param arg the AST argument to be mapped
      * @return the analysis variable representing its associated value
      */
-    AnalysisVar getVar(const AstArgument& arg) {
+    virtual AnalysisVar getVar(const AstArgument& arg) {
         const auto* var = dynamic_cast<const AstVariable*>(&arg);
         if (var == nullptr) {
             // no mapping required
@@ -104,8 +111,8 @@ protected:
         }
 
         // filter through map => always take the same variable
-        auto res = variables.insert(std::make_pair(var->getName(), AnalysisVar(var)));
-        return res.first->second;
+        auto res = variables.insert({var->getName(), AnalysisVar(var)}).first;
+        return res->second;
     }
 
     /**
@@ -114,7 +121,7 @@ protected:
      * @param arg the AST argument to be mapped
      * @return the analysis variable representing its associated value
      */
-    inline AnalysisVar getVar(const AstArgument* arg) {
+    AnalysisVar getVar(const AstArgument* arg) {
         return getVar(*arg);
     }
 
@@ -123,7 +130,8 @@ protected:
         constraints.add(constraint);
     }
 
-private:
+    Assignment<AnalysisVar> assignment;
+
     /** The list of constraints making underlying this analysis */
     Problem<AnalysisVar> constraints;
 

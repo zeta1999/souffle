@@ -1,0 +1,7 @@
+Error: Unable to deduce type for variable x in file type_system12.dl at line 35
+C(x) :- B(x).                      // Error
+--^-----------------------------------------
+Error: Unable to deduce type for variable x in file type_system12.dl at line 35
+C(x) :- B(x).                      // Error
+----------^---------------------------------
+2 errors generated, evaluation aborted

@@ -31,13 +31,18 @@ B(x) :- A(x).
 D("m").
 D("meow ").
 
+.decl E(x: S3)
+E("n").
+
 .decl C(x : S1)
 C(x) :- B(x).                      // Error
-// C(x) :- !D(x), B(x).               // Error
+// C(x) :- !D(x), B(x).            // Error
 C(x) :- D(x), !B(x).               // Ok
 C(x) :- D(x), B(x).                // Ok
+// C(x) :- B(x), !A(x), !E(x).        // Ok
 C(y) :- D(x), B(x), y = x.         // Ok
 // C(x) :- D(cat("meow ", x)), B(x).  // Ok
 C(cat("meow2 ", x)) :- D(x), B(x). // Ok
+
 
 .output C(IO = stdout)

@@ -413,19 +413,102 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
 	std::unique_ptr<RamExpression> upperExpression;
         std::tie(lowerExpression, upperExpression) = getLowerUpperExpression(cond.get(), element, identifier);
 
+	// we have new bounds if both are not nullptr
         if (lowerExpression && upperExpression) {
+	    // if no previous bounds are set then just assign them, consider both bounds to be set (but not necessarily defined) in all remaining cases
             if (queryPattern.first[element] == nullptr && queryPattern.second[element] == nullptr) {
                 indexable = true;
                 queryPattern.first[element] = std::move(lowerExpression);
 		queryPattern.second[element] = std::move(upperExpression);
-            } 
-	    // TODO: Refactor this whole thing to handle all of the cases
-	    else {
-                // FIXME: `FEQ` handling; need to know if the expr is a float exp or not
-                addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ, std::move(lowerExpression),
-                        std::unique_ptr<RamExpression>(queryPattern.first[element]->clone())));
-            }
-        } else {
+	    // if lower bound is undefined and we have a new lower bound then assign it
+	    } else if (isRamUndefValue(queryPattern.first[element].get()) 
+	           && !isRamUndefValue(lowerExpression.get())
+		   && isRamUndefValue(upperExpression.get())) {
+                queryPattern.first[element] = std::move(lowerExpression);
+	    // if upper bound is undefined and we have a new upper bound then assign it
+	    } else if (isRamUndefValue(queryPattern.second[element].get())
+		   && isRamUndefValue(lowerExpression.get())
+                   && !isRamUndefValue(upperExpression.get())) {
+                queryPattern.second[element] = std::move(upperExpression);		    
+	    // we can now guarantee that all bounds have been defined if we've seen a definition
+	    
+	    // if both bounds are defined ...	
+            // and equal then we have a previous equality constraint i.e. Tuple[level, element] = <expr1>
+	    } else if (!isRamUndefValue(queryPattern.first[element].get()) && !isRamUndefValue(queryPattern.second[element].get())
+	           && (*(queryPattern.first[element]) == *(queryPattern.second[element]))) {
+                // new equality constraint i.e. Tuple[level, element] = <expr2>
+		// simply hoist <expr1> = <expr2> to the outer loop
+		if (!isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
+		    // FIXME: `FEQ` handling; need to know if the expr is a float exp or not
+		    addCondition(std::make_unique<RamConstraint>(
+					     BinaryConstraintOp::EQ
+			                   , std::unique_ptr<RamExpression>(queryPattern.first[element]->clone())
+			      	           , std::move(lowerExpression)));
+		}  
+		// new lower bound i.e. Tuple[level, element] >= <expr2>
+                // we need to hoist <expr1> >= <expr2> to the outer loop
+	        else if (isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
+	            addCondition(std::make_unique<RamConstraint>(
+			  	 	    BinaryConstraintOp::GE
+				          , std::unique_ptr<RamExpression>(queryPattern.first[element]->clone())
+			                  , std::move(lowerExpression))); 
+		}
+                // new upper bound i.e. Tuple[level, element] <= <expr2>
+	        // we need to hoist <expr1> <= <expr2> to the outer loop
+	        else if (!isRamUndefValue(lowerExpression.get()) && isRamUndefValue(upperExpression.get())) {
+		    addCondition(std::make_unique<RamConstraint>(
+	         			    BinaryConstraintOp::LE
+				          , std::unique_ptr<RamExpression>(queryPattern.first[element]->clone())
+				          , std::move(upperExpression)));
+	        }
+	    // if either bound is defined but they aren't equal we must consider the cases for updating them
+	    // note that at this point we know that if we have a lower/upper bound it can't be the first one	
+	    } else if (!isRamUndefValue(queryPattern.first[element].get()) || !isRamUndefValue(queryPattern.second[element].get())) {
+	       // if we have a new equality constraint and previous inequality constraints
+	       if (!isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())
+	        && *lowerExpression == *upperExpression) {
+	           // if Tuple[level, element] >= <expr1> and we see Tuple[level, element] = <expr2>
+		   // need to hoist <expr2> >= <expr1> to the outer loop
+		   if (!isRamUndefValue(queryPattern.first[element].get())) {
+		       addCondition(std::make_unique<RamConstraint>(
+			   		       BinaryConstraintOp::GE
+					     , std::unique_ptr<RamExpression>(lowerExpression.get()->clone())
+					     , std::move(queryPattern.first[element])));
+	           }
+		   // if Tuple[level, element] <= <expr1> and we see Tuple[level, element] = <expr2>
+		   // need to hoist <expr2> <= <expr1> to the outer loop
+		   if (!isRamUndefValue(queryPattern.second[element].get())) {
+			addCondition(std::make_unique<RamConstraint>(
+					       BinaryConstraintOp::LE
+				             , std::unique_ptr<RamExpression>(upperExpression.get()->clone())
+			                     , std::move(queryPattern.second[element])));		     
+		   }
+		   // finally replace bounds with equality constraint
+		   queryPattern.first[element] = std::move(lowerExpression);
+		   queryPattern.second[element] = std::move(upperExpression);
+	       // if we have a new lower bound
+	       } else if (!isRamUndefValue(lowerExpression.get())) {
+	           // we want the tightest lower bound so we take the max
+		   std::vector<std::unique_ptr<RamExpression>> maxArguments(2);
+                   maxArguments.push_back(std::move(queryPattern.first[element]));
+		   maxArguments.push_back(std::move(lowerExpression));
+		   
+		   queryPattern.first[element] = std::make_unique<RamIntrinsicOperator>(
+				   			FunctorOp::MAX
+						      , std::move(maxArguments));
+	       // if we have a new upper bound
+	       } else if (!isRamUndefValue(upperExpression.get())) {
+                  // we want the tightest upper bound so we take the min
+		  std::vector<std::unique_ptr<RamExpression>> minArguments(2);
+		  minArguments.push_back(std::move(queryPattern.second[element]));
+		  minArguments.push_back(std::move(upperExpression));
+
+		  queryPattern.second[element] = std::make_unique<RamIntrinsicOperator>(
+				                         FunctorOp::MIN
+						       , std::move(minArguments));
+	       }
+	    }
+	} else {
             addCondition(std::move(cond));
         }
     }

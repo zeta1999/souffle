@@ -308,35 +308,50 @@ public:
         bool first = true;
         for (unsigned int i = 0; i < getRelation().getArity(); ++i) {
             // TODO: print proper upper lower/bound
-            if (!isRamUndefValue(queryPattern.first[i].get()) 
-	     && !isRamUndefValue(queryPattern.second[i].get())) {    
-                if (first) {
+                
+		// early exit if no upper/lower bounds are defined
+		if (isRamUndefValue(queryPattern.first[i].get())
+	         && isRamUndefValue(queryPattern.second[i].get())) {
+	            continue;
+		}
+
+		if (first) {
                     os << " ON INDEX ";
                     first = false;
                 } else {
                     os << " AND ";
                 }
-
-		// print equality when lower bound = upper bound
-                if(*(queryPattern.first[i]) == *(queryPattern.second[i])) {
-                    os << "t" << getTupleId() << ".";
-		    os << attrib[i] << " = ";
-                    os << *(queryPattern.first[i]);
+                
+                // both bounds defined and equal => equality
+                if (!isRamUndefValue(queryPattern.first[i].get()) 
+	         && !isRamUndefValue(queryPattern.second[i].get())) {    
+            
+		    // print equality when lower bound = upper bound
+                    if (*(queryPattern.first[i]) == *(queryPattern.second[i])) {
+                        os << "t" << getTupleId() << ".";
+		        os << attrib[i] << " = ";
+                        os << *(queryPattern.first[i]);
+			continue;
+		    }
 		}
-		// otherwise print lower and upper bounds
-		else {
-		    // if(*(queryPattern.first[i]) != MIN_RAM_SIGNED) {
-		        os << *(queryPattern.first[i]) << " <= ";
-		    // }
-
-		    os << "t" << getTupleId() << ".";
-		    os << attrib[i];
+		// at least one bound defined => inequality
+		if (!isRamUndefValue(queryPattern.first[i].get())
+		 || !isRamUndefValue(queryPattern.second[i].get())) {
+ 		         
+		         if (!isRamUndefValue(queryPattern.first[i].get())) {
+		            os << *(queryPattern.first[i]) << " <= ";
+		         }
+                    
+		         os << "t" << getTupleId() << ".";
+		         os << attrib[i];
 		   
-		    // if(*(queryPattern.second[i]) != MAX_RAM_SIGNED) {
-			os << " <= " <<  *(queryPattern.second[i]);
-		    //}
+		         if (!isRamUndefValue(queryPattern.second[i].get())) {
+			     os << " <= " <<  *(queryPattern.second[i]);
+		         }
+
+			 continue;
 		}
-            }
+            
         }
     }
  

@@ -2180,7 +2180,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "try {";
         os << "std::map<std::string, std::string> rwOperation;\n";
         os << "rwOperation[\"IO\"] = \"stdout\";\n";
-        os << "rwOperation[\"name\"] = \"" << name << "\";\n";
+        os << R"(rwOperation["name"] = ")" << name << "\";\n";
         os << "rwOperation[\"types\"] = ";
         os << "\"" << escapeJSONstring(types.dump()) << "\"";
         os << ";\n";

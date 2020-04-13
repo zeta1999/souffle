@@ -327,7 +327,7 @@ typename C::value_type getIf(const C& container, std::function<bool(const typena
 template <typename C>
 typename C::mapped_type const& getOr(
         const C& container, typename C::key_type key, const typename C::mapped_type& defaultValue) {
-    typename C::const_iterator it = container.find(key);
+    auto it = container.find(key);
 
     if (it != container.end()) {
         return it->second;

@@ -14,10 +14,10 @@
 
 #pragma once
 
-#include "RWOperation.h"
 #include "RamTypes.h"
 #include "RecordTable.h"
 #include "SymbolTable.h"
+#include "Util.h"
 #include "json11.h"
 
 #include <cassert>
@@ -30,15 +30,15 @@ using json11::Json;
 
 class WriteStream {
 public:
-    WriteStream(
-            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+    WriteStream(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
+            const RecordTable& recordTable)
             : symbolTable(symbolTable), recordTable(recordTable),
-              summary(rwOperation.get("IO") == "stdoutprintsize") {
-        const std::string& relationName{rwOperation.get("name")};
+              summary(rwOperation.at("IO") == "stdoutprintsize") {
+        const std::string& relationName{rwOperation.at("name")};
 
         std::string parseErrors;
 
-        types = Json::parse(rwOperation.get("types"), parseErrors);
+        types = Json::parse(rwOperation.at("types"), parseErrors);
 
         assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
 
@@ -148,7 +148,7 @@ protected:
 
 class WriteStreamFactory {
 public:
-    virtual std::unique_ptr<WriteStream> getWriter(const RWOperation& rwOperation,
+    virtual std::unique_ptr<WriteStream> getWriter(const std::map<std::string, std::string>& rwOperation,
             const SymbolTable& symbolTable, const RecordTable& recordTable) = 0;
 
     virtual const std::string& getName() const = 0;

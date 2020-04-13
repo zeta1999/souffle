@@ -300,6 +300,17 @@ bool contains(const C& container, const typename C::value_type& element) {
 }
 
 /**
+ * Version of contains specialized for maps.
+ *
+ * This workaround is needed because of set container, for which value_type == key_type,
+ * which is ambiguous in this context.
+ */
+template <typename C>
+bool contains(const C& container, const typename C::value_type::first_type& element) {
+    return container.find(element) != container.end();
+}
+
+/**
  * Returns the first element in a container that satisfies a given predicate,
  * nullptr otherwise.
  */
@@ -308,6 +319,21 @@ typename C::value_type getIf(const C& container, std::function<bool(const typena
     auto res = std::find_if(container.begin(), container.end(),
             [&](const typename C::value_type item) { return pred(item); });
     return res == container.end() ? nullptr : *res;
+}
+
+/**
+ * Get value for a given key; if not found, return default value.
+ */
+template <typename C>
+typename C::mapped_type const& getOr(
+        const C& container, typename C::key_type key, const typename C::mapped_type& defaultValue) {
+    typename C::const_iterator it = container.find(key);
+
+    if (it != container.end()) {
+        return it->second;
+    } else {
+        return defaultValue;
+    }
 }
 
 /**

@@ -19,7 +19,6 @@
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
-#include "RWOperation.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
 #include "RamIndexAnalysis.h"
@@ -244,9 +243,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << R"_(if (!inputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
                 out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
-                out << "RWOperation rwOperation(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
-                out << "rwOperation, symTable, recordTable";
+                out << "directiveMap, symTable, recordTable";
                 out << ")->readAll(*" << synthesiser.getRelationName(io.getRelation());
                 out << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() "
@@ -260,9 +258,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << R"_(if (!outputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
                 out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
-                out << "RWOperation rwOperation(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << "rwOperation, symTable, recordTable";
+                out << "directiveMap, symTable, recordTable";
                 out << ")->writeAll(*" << synthesiser.getRelationName(io.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
             } else {
@@ -2124,9 +2121,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
-        os << "RWOperation rwOperation(directiveMap);\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << "rwOperation, symTable, recordTable";
+        os << "directiveMap, symTable, recordTable";
         os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2160,9 +2156,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
-        os << "RWOperation rwOperation(directiveMap);\n";
         os << "IOSystem::getInstance().getReader(";
-        os << "rwOperation, symTable, recordTable";
+        os << "directiveMap, symTable, recordTable";
         os << ")->readAll(*" << getRelationName(load->getRelation());
         os << ");\n";
         os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -2183,12 +2178,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         Json types = Json::object{{name, relJson}};
 
         os << "try {";
-        os << "RWOperation rwOperation;\n";
-        os << "rwOperation.set(\"IO\", \"stdout\");\n";
-        os << R"(rwOperation.set("name", ")" << name << "\");\n";
-        os << "rwOperation.set(\"types\",";
+        os << "std::map<std::string, std::string> rwOperation;\n";
+        os << "rwOperation[\"IO\"] = \"stdout\";\n";
+        os << "rwOperation[\"name\"] = \"" << name << "\";\n";
+        os << "rwOperation[\"types\"] = ";
         os << "\"" << escapeJSONstring(types.dump()) << "\"";
-        os << ");\n";
+        os << ";\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "rwOperation, symTable, recordTable";
         os << ")->writeAll(*" << relName << ");\n";

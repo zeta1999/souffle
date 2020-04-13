@@ -147,7 +147,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     checkInlining();
 
     // Run grounded terms checker
-    GroundedTermsChecker().apply(tu);
+    GroundedTermsChecker().verify(tu);
 
     // get the list of components to be checked
     auto nodes = program.getClauses();
@@ -1469,7 +1469,7 @@ bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
     return false;
 }
 
-bool GroundedTermsChecker::transform(AstTranslationUnit& translationUnit) {
+void GroundedTermsChecker::verify(AstTranslationUnit& translationUnit) {
     auto&& program = *translationUnit.getProgram();
     auto&& report = translationUnit.getErrorReport();
 
@@ -1494,7 +1494,6 @@ bool GroundedTermsChecker::transform(AstTranslationUnit& translationUnit) {
             }
         }
     });
-    return false;
 }
 
 }  // end of namespace souffle

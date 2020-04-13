@@ -49,8 +49,14 @@ public:
         return "GroundedTermsChecker";
     }
 
+    // `apply` but doesn't immediately bail if any errors are found.
+    void verify(AstTranslationUnit& translationUnit);
+
 private:
-    bool transform(AstTranslationUnit& translationUnit) override;
+    bool transform(AstTranslationUnit& translationUnit) override {
+        verify(translationUnit);
+        return false;
+    }
 };
 
 }  // end of namespace souffle

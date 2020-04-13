@@ -311,7 +311,7 @@ int main(int argc, char** argv) {
         }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /**
@@ -378,10 +378,9 @@ int main(int argc, char** argv) {
     // ------- check for parse errors -------------
     if (astTranslationUnit->getErrorReport().getNumErrors() != 0) {
         std::cerr << astTranslationUnit->getErrorReport();
-        std::cerr << std::to_string(astTranslationUnit->getErrorReport().getNumErrors()) +
-                             " errors generated, evaluation aborted"
-                  << std::endl;
-        exit(1);
+        std::cerr << astTranslationUnit->getErrorReport().getNumErrors()
+                  << " errors generated, evaluation aborted" << std::endl;
+        exit(EXIT_FAILURE);
     }
 
     // ------- rewriting / optimizations -------------
@@ -661,7 +660,7 @@ int main(int argc, char** argv) {
         }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        std::exit(1);
+        std::exit(EXIT_FAILURE);
     }
 
     /* Report overall run-time in verbose mode */

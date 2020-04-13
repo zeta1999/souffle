@@ -215,7 +215,7 @@ struct is_convertible
 
 
 // Detect when a type is not a wchar_t string
-template<typename T> struct is_wchar { typedef int tinyformat_wchar_is_not_supported; };
+template<typename T> struct is_wchar { using tinyformat_wchar_is_not_supported = int; };
 template<> struct is_wchar<wchar_t*> {};
 template<> struct is_wchar<const wchar_t*> {};
 template<int n> struct is_wchar<const wchar_t[n]> {};
@@ -326,7 +326,7 @@ inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
 #ifndef TINYFORMAT_ALLOW_WCHAR_STRINGS
     // Since we don't support printing of wchar_t using "%ls", make it fail at
     // compile time in preference to printing as a void* at runtime.
-    typedef typename detail::is_wchar<T>::tinyformat_wchar_is_not_supported DummyType;
+    using DummyType = typename detail::is_wchar<T>::tinyformat_wchar_is_not_supported;
     (void) DummyType(); // avoid unused type warning with gcc-4.8
 #endif
     // The mess here is to support the %c and %p conversions: if these
@@ -501,11 +501,7 @@ namespace detail {
 class FormatArg
 {
     public:
-        FormatArg()
-            : m_value(NULL),
-            m_formatImpl(NULL),
-            m_toIntImpl(NULL)
-        { }
+        FormatArg() = default;
 
         template<typename T>
         FormatArg(const T& value)
@@ -543,10 +539,10 @@ class FormatArg
             return convertToInt<T>::invoke(*static_cast<const T*>(value));
         }
 
-        const void* m_value;
+        const void* m_value = nullptr;
         void (*m_formatImpl)(std::ostream& out, const char* fmtBegin,
-                             const char* fmtEnd, int ntrunc, const void* value);
-        int (*m_toIntImpl)(const void* value);
+                             const char* fmtEnd, int ntrunc, const void* value) = nullptr;
+        int (*m_toIntImpl)(const void* value) = nullptr;
 };
 
 
@@ -910,9 +906,9 @@ inline void formatImpl(std::ostream& out, const char* fmt,
             tmpStream.setf(std::ios::showpos);
             arg.format(tmpStream, fmt, fmtEnd, ntrunc);
             std::string result = tmpStream.str(); // allocates... yuck.
-            for (size_t i = 0, iend = result.size(); i < iend; ++i) {
-                if (result[i] == '+')
-                    result[i] = ' ';
+            for (char & i : result) {
+                if (i == '+')
+                    i = ' ';
             }
             out << result;
         }
@@ -952,7 +948,7 @@ class FormatList
 };
 
 /// Reference to type-opaque format list for passing to vformat()
-typedef const FormatList& FormatListRef;
+using FormatListRef = const FormatList &;
 
 
 namespace detail {
@@ -999,7 +995,7 @@ class FormatListN : public FormatList
 // Special 0-arg version - MSVC says zero-sized C array in struct is nonstandard
 template<> class FormatListN<0> : public FormatList
 {
-    public: FormatListN() : FormatList(0, 0) {}
+    public: FormatListN() : FormatList(nullptr, 0) {}
 };
 
 } // namespace detail

@@ -247,7 +247,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
                 case TypeAttribute::Record:
-                    assert(false && "Invalid return type");
+                    fatal("Invalid return type");
             }
         }
 
@@ -275,7 +275,7 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                         report.addError("Non-float argument for functor", arg->getSrcLoc());
                         break;
                     case TypeAttribute::Record:
-                        assert(false && "Invalid argument type");
+                        fatal("Invalid argument type");
                 }
             }
             ++i;
@@ -421,9 +421,8 @@ static bool hasUnnamedVariable(const AstArgument* arg) {
     if (dynamic_cast<const AstAggregator*>(arg) != nullptr) {
         return false;
     }
-    std::cout << "Unsupported Argument type: " << typeid(*arg).name() << "\n";
-    assert(false && "Unsupported Argument Type!");
-    return false;
+
+    fatal("unsupported argument type: %s", typeid(*arg).name());
 }
 
 static bool hasUnnamedVariable(const AstLiteral* lit) {
@@ -441,9 +440,8 @@ static bool hasUnnamedVariable(const AstLiteral* lit) {
             return hasUnnamedVariable(br->getLHS()) || hasUnnamedVariable(br->getRHS());
         }
     }
-    std::cout << "Unsupported Literal type: " << typeid(lit).name() << "\n";
-    assert(false && "Unsupported Argument Type!");
-    return false;
+
+    fatal("unsupported literal type: %s", typeid(*lit).name());
 }
 
 void AstSemanticChecker::checkLiteral(
@@ -471,8 +469,7 @@ void AstSemanticChecker::checkLiteral(
         } else if (dynamic_cast<const AstBinaryConstraint*>(&literal) != nullptr) {
             report.addError("Underscore in binary relation", literal.getSrcLoc());
         } else {
-            std::cout << "Unsupported Literal type: " << typeid(literal).name() << "\n";
-            assert(false && "Unsupported Argument Type!");
+            fatal("unsupported literal type: %s", typeid(literal).name());
         }
     }
 }
@@ -601,8 +598,7 @@ void AstSemanticChecker::checkConstant(ErrorReport& report, const AstArgument& a
             checkConstant(report, *arg);
         }
     } else {
-        std::cout << "Unsupported Argument: " << typeid(argument).name() << "\n";
-        assert(false && "Unknown case");
+        fatal("unsupported argument type: %s", typeid(argument).name());
     }
 }
 
@@ -953,8 +949,8 @@ void AstSemanticChecker::checkTypes(
                     case TypeAttribute::Symbol:
                         out << "symbol";
                         break;
-                    default:
-                        assert(false && "Invalid type");
+                    case TypeAttribute::Record:
+                        fatal("Invalid type");
                 }
             };
             errorMessage << "Union type " << name << " is defined over {"

@@ -34,8 +34,8 @@ bool AstTransformer::apply(AstTranslationUnit& translationUnit) {
     /* Abort evaluation of the program if errors were encountered */
     if (translationUnit.getErrorReport().getNumErrors() != 0) {
         std::cerr << translationUnit.getErrorReport();
-        std::cerr << std::to_string(translationUnit.getErrorReport().getNumErrors());
-        std::cerr << " errors generated, evaluation aborted" << std::endl;
+        std::cerr << translationUnit.getErrorReport().getNumErrors()
+                  << " errors generated, evaluation aborted" << std::endl;
         exit(EXIT_FAILURE);
     }
 
@@ -51,15 +51,6 @@ bool MetaTransformer::applySubtransformer(AstTranslationUnit& translationUnit, A
         std::string changedString = changed ? "changed" : "unchanged";
         std::cout << transformer->getName() << " time: " << std::chrono::duration<double>(end - start).count()
                   << "sec [" << changedString << "]" << std::endl;
-    }
-
-    /* Abort evaluation of the program if errors were encountered */
-    if (translationUnit.getErrorReport().getNumErrors() != 0) {
-        std::cerr << translationUnit.getErrorReport();
-        std::cerr << std::to_string(translationUnit.getErrorReport().getNumErrors()) +
-                             " errors generated, evaluation aborted"
-                  << std::endl;
-        exit(1);
     }
 
     return changed;

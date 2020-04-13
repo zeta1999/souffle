@@ -110,7 +110,8 @@ size_t getClauseNum(const AstProgram* program, const AstClause* clause) {
             clauseNum++;
         }
     }
-    assert(false && "clause does not exist");
+
+    fatal("clause does not exist");
 }
 
 bool hasClauseWithNegatedRelation(const AstRelation* relation, const AstRelation* negRelation,
@@ -226,7 +227,7 @@ void negateConstraint(AstConstraint* constraint) {
     } else if (auto* cstr = dynamic_cast<AstBinaryConstraint*>(constraint)) {
         cstr->setOperator(souffle::negatedConstraintOp(cstr->getOperator()));
     } else {
-        assert(false && "Unknown ast-constraint type");
+        fatal("Unknown ast-constraint type");
     }
 }
 

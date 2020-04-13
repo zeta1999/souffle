@@ -214,6 +214,7 @@ soufflepublic_HEADERS = \
         WriteStream.h                             \
         WriteStreamCSV.h                          \
         json11.h                                  \
+        tinyformat.h                              \
         $(libz_sources)                           \
         $(sqlite_sources)
 

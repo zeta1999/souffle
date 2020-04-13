@@ -331,7 +331,7 @@ protected:
          */
         base(bool inner) : parent(nullptr), numElements(0), position(0), inner(inner) {}
 
-        virtual ~base() {}
+        virtual ~base() = default;
 
         bool isLeaf() const {
             return !inner;
@@ -377,13 +377,6 @@ protected:
 
         // a simple constructor
         node(bool inner) : base(inner) {}
-
-        // a destructor cleaning up nodes
-        ~node() {
-            if (this->inner) {
-                asInnerNode().cleanup();
-            }
-        }
 
         /**
          * A deep-copy operation creating a clone of this node.
@@ -1068,8 +1061,8 @@ protected:
         // a simple default constructor initializing member fields
         inner_node() : node(true) {}
 
-        // a destruction operation clearing up child nodes recursively
-        void cleanup() {
+        // clear up child nodes recursively
+        ~inner_node() override {
             for (unsigned i = 0; i <= this->numElements; ++i) {
                 delete children[i];
             }

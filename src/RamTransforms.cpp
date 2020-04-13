@@ -416,7 +416,7 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
 	// we have new bounds if both are not nullptr
         if (lowerExpression && upperExpression) {
 	    // if no previous bounds are set then just assign them, consider both bounds to be set (but not necessarily defined) in all remaining cases
-            if (queryPattern.first[element] == nullptr && queryPattern.second[element] == nullptr) {
+            if (queryPattern.first[element].get() == nullptr && queryPattern.second[element].get() == nullptr) {
                 indexable = true;
                 queryPattern.first[element] = std::move(lowerExpression);
 		queryPattern.second[element] = std::move(upperExpression);
@@ -536,10 +536,13 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
         const RamRelation& rel = agg->getRelation();
         int identifier = agg->getTupleId();
 	RamPattern queryPattern;
-        queryPattern.first.reserve(rel.getArity());
-        queryPattern.second.reserve(rel.getArity());
+        for (unsigned int i=0; i<rel.getArity(); ++i)
+	{
+	    queryPattern.first.emplace_back(nullptr);
+	    queryPattern.second.emplace_back(nullptr);
+	}
 
-        bool indexable = false;
+	bool indexable = false;
         std::unique_ptr<RamCondition> condition = constructPattern(
                 queryPattern, indexable, toConjunctionList(&agg->getCondition()), identifier);
         if (indexable) {
@@ -558,8 +561,12 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* s
         const RamRelation& rel = scan->getRelation();
         const int identifier = scan->getTupleId();
         RamPattern queryPattern;
-	queryPattern.first.reserve(rel.getArity());
-	queryPattern.second.reserve(rel.getArity());
+        
+	for (unsigned int i=0; i<rel.getArity(); ++i)
+	{
+	    queryPattern.first.emplace_back(nullptr);
+	    queryPattern.second.emplace_back(nullptr);
+	}
 
         bool indexable = false;
         std::unique_ptr<RamCondition> condition = constructPattern(
@@ -581,8 +588,11 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
         const RamRelation& rel = iscan->getRelation();
         const int identifier = iscan->getTupleId();
         RamPattern queryPattern;
-	queryPattern.first.reserve(rel.getArity());
-        queryPattern.second.reserve(rel.getArity());
+	for (unsigned int i=0; i<rel.getArity(); ++i)
+	{
+	    queryPattern.first.emplace_back(nullptr);
+	    queryPattern.second.emplace_back(nullptr);
+	}
 
         bool indexable = false;
         std::unique_ptr<RamCondition> condition = constructPattern(

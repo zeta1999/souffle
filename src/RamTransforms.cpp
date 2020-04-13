@@ -447,7 +447,7 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
 		}  
 		// new lower bound i.e. Tuple[level, element] >= <expr2>
                 // we need to hoist <expr1> >= <expr2> to the outer loop
-	        else if (isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
+	        else if (!isRamUndefValue(lowerExpression.get()) && isRamUndefValue(upperExpression.get())) {
 	            addCondition(std::make_unique<RamConstraint>(
 			  	 	    BinaryConstraintOp::GE
 				          , std::unique_ptr<RamExpression>(queryPattern.first[element]->clone())
@@ -455,7 +455,7 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
 		}
                 // new upper bound i.e. Tuple[level, element] <= <expr2>
 	        // we need to hoist <expr1> <= <expr2> to the outer loop
-	        else if (!isRamUndefValue(lowerExpression.get()) && isRamUndefValue(upperExpression.get())) {
+	        else if (isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
 		    addCondition(std::make_unique<RamConstraint>(
 	         			    BinaryConstraintOp::LE
 				          , std::unique_ptr<RamExpression>(queryPattern.first[element]->clone())

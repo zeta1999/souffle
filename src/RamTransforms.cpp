@@ -489,7 +489,7 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
 	       // if we have a new lower bound
 	       } else if (!isRamUndefValue(lowerExpression.get())) {
 	           // we want the tightest lower bound so we take the max
-		   std::vector<std::unique_ptr<RamExpression>> maxArguments(2);
+		   std::vector<std::unique_ptr<RamExpression>> maxArguments;
                    maxArguments.push_back(std::move(queryPattern.first[element]));
 		   maxArguments.push_back(std::move(lowerExpression));
 		   
@@ -499,7 +499,7 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(
 	       // if we have a new upper bound
 	       } else if (!isRamUndefValue(upperExpression.get())) {
                   // we want the tightest upper bound so we take the min
-		  std::vector<std::unique_ptr<RamExpression>> minArguments(2);
+		  std::vector<std::unique_ptr<RamExpression>> minArguments;
 		  minArguments.push_back(std::move(queryPattern.second[element]));
 		  minArguments.push_back(std::move(upperExpression));
 

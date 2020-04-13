@@ -327,7 +327,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
                 const RamExpression* rhs = &binRelOp->getRHS();
 		if (lhs->getTupleId() == identifier && rla->getLevel(rhs) < identifier) {
 		    element = lhs->getElement();
-		    std::vector<std::unique_ptr<RamExpression>> expressions(2);
+		    std::vector<std::unique_ptr<RamExpression>> expressions;
 		    expressions.push_back(std::unique_ptr<RamExpression>(rhs->clone()));
 	            expressions.push_back(std::make_unique<RamSignedConstant>(RamDomain(1)));
 		    
@@ -343,7 +343,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
 	        const RamExpression* lhs = &binRelOp->getLHS();
 		if (rhs->getTupleId() == identifier && rla->getLevel(lhs) < identifier) {
 		    element = rhs->getElement();
-		    std::vector<std::unique_ptr<RamExpression>> expressions(2);
+		    std::vector<std::unique_ptr<RamExpression>> expressions;
 		    expressions.push_back(std::unique_ptr<RamExpression>(lhs->clone()));
 		    expressions.push_back(std::make_unique<RamSignedConstant>(RamDomain(1)));
 
@@ -362,7 +362,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
 	        const RamExpression* rhs = &binRelOp->getRHS();
 		if (lhs->getTupleId() == identifier && rla->getLevel(rhs) < identifier) {
 		    element = lhs->getElement();
-		    std::vector<std::unique_ptr<RamExpression>> expressions(2);
+		    std::vector<std::unique_ptr<RamExpression>> expressions;
 		    expressions.push_back(std::unique_ptr<RamExpression>(rhs->clone()));
 		    expressions.push_back(std::make_unique<RamSignedConstant>(RamDomain(1)));
 
@@ -378,7 +378,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
                 const RamExpression* lhs = &binRelOp->getLHS();
 		if (rhs->getTupleId() == identifier && rla->getLevel(lhs) < identifier) {
 		    element = rhs->getElement();
-		    std::vector<std::unique_ptr<RamExpression>> expressions(2);
+		    std::vector<std::unique_ptr<RamExpression>> expressions;
 		    expressions.push_back(std::unique_ptr<RamExpression>(lhs->clone()));
 		    expressions.push_back(std::make_unique<RamSignedConstant>(RamDomain(1)));
 		    

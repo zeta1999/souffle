@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "RWOperation.h"
 #include "RamTypes.h"
 #include "ReadStream.h"
 #include "ReadStreamCSV.h"
@@ -51,9 +50,9 @@ public:
     /**
      * Return a new WriteStream
      */
-    std::unique_ptr<WriteStream> getWriter(const RWOperation& rwOperation, const SymbolTable& symbolTable,
-            const RecordTable& recordTable) const {
-        std::string ioType = rwOperation.get("IO");
+    std::unique_ptr<WriteStream> getWriter(const std::map<std::string, std::string>& rwOperation,
+            const SymbolTable& symbolTable, const RecordTable& recordTable) const {
+        std::string ioType = rwOperation.at("IO");
         if (outputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested output type <" + ioType + "> is not supported.");
         }
@@ -62,9 +61,9 @@ public:
     /**
      * Return a new ReadStream
      */
-    std::unique_ptr<ReadStream> getReader(
-            const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable) const {
-        std::string ioType = rwOperation.get("IO");
+    std::unique_ptr<ReadStream> getReader(const std::map<std::string, std::string>& rwOperation,
+            SymbolTable& symbolTable, RecordTable& recordTable) const {
+        std::string ioType = rwOperation.at("IO");
         if (inputFactories.count(ioType) == 0) {
             throw std::invalid_argument("Requested input type <" + ioType + "> is not supported.");
         }

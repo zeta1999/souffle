@@ -15,9 +15,9 @@
 #pragma once
 
 #include "ParallelUtils.h"
-#include "RWOperation.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
+#include "Util.h"
 #include "WriteStream.h"
 #ifdef USE_LIBZ
 #include "gzfstream.h"
@@ -33,10 +33,10 @@ namespace souffle {
 
 class WriteStreamCSV : public WriteStream {
 protected:
-    WriteStreamCSV(
-            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+    WriteStreamCSV(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
+            const RecordTable& recordTable)
             : WriteStream(rwOperation, symbolTable, recordTable),
-              delimiter(rwOperation.getOr("delimiter", "\t")){};
+              delimiter(getOr(rwOperation, "delimiter", "\t")){};
 
     const std::string delimiter;
 
@@ -76,12 +76,12 @@ protected:
 
 class WriteFileCSV : public WriteStreamCSV {
 public:
-    WriteFileCSV(
-            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+    WriteFileCSV(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
+            const RecordTable& recordTable)
             : WriteStreamCSV(rwOperation, symbolTable, recordTable),
-              file(rwOperation.get("filename"), std::ios::out | std::ios::binary) {
-        if (rwOperation.has("headers") && rwOperation.get("headers") == "true") {
-            file << rwOperation.get("attributeNames") << std::endl;
+              file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {
+        if (getOr(rwOperation, "headers", "false") == "true") {
+            file << rwOperation.at("attributeNames") << std::endl;
         }
     }
 
@@ -102,12 +102,12 @@ protected:
 #ifdef USE_LIBZ
 class WriteGZipFileCSV : public WriteStreamCSV {
 public:
-    WriteGZipFileCSV(
-            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+    WriteGZipFileCSV(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
+            const RecordTable& recordTable)
             : WriteStreamCSV(rwOperation, symbolTable, recordTable),
-              file(rwOperation.get("filename"), std::ios::out | std::ios::binary) {
-        if (rwOperation.has("headers") && rwOperation.get("headers") == "true") {
-            file << rwOperation.get("attributeNames") << std::endl;
+              file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {
+        if (getOr(rwOperation, "headers", "false") == "true") {
+            file << rwOperation.at("attributeNames") << std::endl;
         }
     }
 
@@ -128,12 +128,12 @@ protected:
 
 class WriteCoutCSV : public WriteStreamCSV {
 public:
-    WriteCoutCSV(
-            const RWOperation& rwOperation, const SymbolTable& symbolTable, const RecordTable& recordTable)
+    WriteCoutCSV(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
+            const RecordTable& recordTable)
             : WriteStreamCSV(rwOperation, symbolTable, recordTable) {
-        std::cout << "---------------\n" << rwOperation.get("name");
-        if (rwOperation.has("headers") && rwOperation.get("headers") == "true") {
-            std::cout << "\n" << rwOperation.get("attributeNames");
+        std::cout << "---------------\n" << rwOperation.at("name");
+        if (getOr(rwOperation, "headers", "false") == "true") {
+            std::cout << "\n" << rwOperation.at("attributeNames");
         }
         std::cout << "\n===============\n";
     }
@@ -154,9 +154,9 @@ protected:
 
 class WriteCoutPrintSize : public WriteStream {
 public:
-    explicit WriteCoutPrintSize(const RWOperation& rwOperation)
+    explicit WriteCoutPrintSize(const std::map<std::string, std::string>& rwOperation)
             : WriteStream(rwOperation, {}, {}), lease(souffle::getOutputLock().acquire()) {
-        std::cout << rwOperation.get("name") << "\t";
+        std::cout << rwOperation.at("name") << "\t";
     }
 
     ~WriteCoutPrintSize() override = default;
@@ -179,10 +179,10 @@ protected:
 
 class WriteFileCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const RWOperation& rwOperation, const SymbolTable& symbolTable,
-            const RecordTable& recordTable) override {
+    std::unique_ptr<WriteStream> getWriter(const std::map<std::string, std::string>& rwOperation,
+            const SymbolTable& symbolTable, const RecordTable& recordTable) override {
 #ifdef USE_LIBZ
-        if (rwOperation.has("compress")) {
+        if (contains(rwOperation, "compress")) {
             return std::make_unique<WriteGZipFileCSV>(rwOperation, symbolTable, recordTable);
         }
 #endif
@@ -197,8 +197,8 @@ public:
 
 class WriteCoutCSVFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(const RWOperation& rwOperation, const SymbolTable& symbolTable,
-            const RecordTable& recordTable) override {
+    std::unique_ptr<WriteStream> getWriter(const std::map<std::string, std::string>& rwOperation,
+            const SymbolTable& symbolTable, const RecordTable& recordTable) override {
         return std::make_unique<WriteCoutCSV>(rwOperation, symbolTable, recordTable);
     }
 
@@ -211,8 +211,8 @@ public:
 
 class WriteCoutPrintSizeFactory : public WriteStreamFactory {
 public:
-    std::unique_ptr<WriteStream> getWriter(
-            const RWOperation& rwOperation, const SymbolTable&, const RecordTable&) override {
+    std::unique_ptr<WriteStream> getWriter(const std::map<std::string, std::string>& rwOperation,
+            const SymbolTable&, const RecordTable&) override {
         return std::make_unique<WriteCoutPrintSize>(rwOperation);
     }
     const std::string& getName() const override {

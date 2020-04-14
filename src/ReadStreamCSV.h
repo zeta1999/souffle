@@ -233,15 +233,13 @@ public:
             : ReadStreamCSV(fileHandle, rwOperation, symbolTable, recordTable),
               baseName(souffle::baseName(getFileName(rwOperation))),
               fileHandle(getFileName(rwOperation), std::ios::in | std::ios::binary) {
-        if (rwOperation.find("intermediate") == rwOperation.end()) {
-            if (!fileHandle.is_open()) {
-                throw std::invalid_argument("Cannot open fact file " + baseName + "\n");
-            }
-            // Strip headers if we're using them
-            if (getOr(rwOperation, "headers", "false") == "true") {
-                std::string line;
-                getline(file, line);
-            }
+        if (!fileHandle.is_open()) {
+            throw std::invalid_argument("Cannot open fact file " + baseName + "\n");
+        }
+        // Strip headers if we're using them
+        if (getOr(rwOperation, "headers", "false") == "true") {
+            std::string line;
+            getline(file, line);
         }
     }
 

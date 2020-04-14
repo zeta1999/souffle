@@ -30,14 +30,13 @@ namespace souffle {
 
 bool DebugReporter::transform(AstTranslationUnit& translationUnit) {
     translationUnit.getDebugReport().startSection();
-    std::stringstream datalogSpecOriginal;
-    datalogSpecOriginal << *translationUnit.getProgram();
+    auto datalogSpecOriginal = translationUnit.getProgram()->show();
     auto start = std::chrono::high_resolution_clock::now();
     bool changed = applySubtransformer(translationUnit, wrappedTransformer.get());
     auto end = std::chrono::high_resolution_clock::now();
     std::string runtimeStr = "(" + std::to_string(std::chrono::duration<double>(end - start).count()) + "s)";
     if (changed) {
-        generateDebugReport(translationUnit, datalogSpecOriginal.str());
+        generateDebugReport(translationUnit, datalogSpecOriginal);
         translationUnit.getDebugReport().endSection(
                 wrappedTransformer->getName(), wrappedTransformer->getName() + " " + runtimeStr);
     } else {

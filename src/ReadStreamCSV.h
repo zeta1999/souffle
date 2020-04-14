@@ -88,20 +88,15 @@ protected:
                         tuple[inputMap[column]] = symbolTable.unsafeLookup(element);
                         charactersRead = element.size();
                         break;
-                    case 'r':
-                        tuple[inputMap[column]] = readRecord(element, ty, 0, &charactersRead);
-                        break;
-                    case 'i':
-                        tuple[inputMap[column]] = RamSignedFromString(element, &charactersRead);
-                        break;
+                    case 'r': tuple[inputMap[column]] = readRecord(element, ty, 0, &charactersRead); break;
+                    case 'i': tuple[inputMap[column]] = RamSignedFromString(element, &charactersRead); break;
                     case 'u':
                         tuple[inputMap[column]] = ramBitCast(readRamUnsigned(element, charactersRead));
                         break;
                     case 'f':
                         tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element, &charactersRead));
                         break;
-                    default:
-                        fatal("invalid type attribute: `%c`", ty[0]);
+                    default: fatal("invalid type attribute: `%c`", ty[0]);
                 }
                 // Check if everything was read.
                 if (charactersRead != element.size()) {

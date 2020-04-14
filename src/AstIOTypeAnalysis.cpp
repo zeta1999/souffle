@@ -30,12 +30,8 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
             return;
         }
         switch (io.getType()) {
-            case AstIoType::input:
-                inputRelations.insert(relation);
-                break;
-            case AstIoType::output:
-                outputRelations.insert(relation);
-                break;
+            case AstIoType::input: inputRelations.insert(relation); break;
+            case AstIoType::output: outputRelations.insert(relation); break;
             case AstIoType::printsize:
                 printSizeRelations.insert(relation);
                 outputRelations.insert(relation);

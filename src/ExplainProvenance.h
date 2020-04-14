@@ -226,36 +226,25 @@ protected:
 
     std::string valueShow(const char type, const RamDomain value) const {
         switch (type) {
-            case 'i':
-                return format("%d", ramBitCast<RamSigned>(value));
-            case 'u':
-                return format("%d", ramBitCast<RamUnsigned>(value));
-            case 'f':
-                return format("%f", ramBitCast<RamFloat>(value));
-            case 's':
-                return format("\"%s\"", symTable.resolve(value));
-            case 'r':
-                return format("record #%d", value);
-            default:
-                fatal("unhandled type attr code");
+            case 'i': return format("%d", ramBitCast<RamSigned>(value));
+            case 'u': return format("%d", ramBitCast<RamUnsigned>(value));
+            case 'f': return format("%f", ramBitCast<RamFloat>(value));
+            case 's': return format("\"%s\"", symTable.resolve(value));
+            case 'r': return format("record #%d", value);
+            default: fatal("unhandled type attr code");
         }
     }
 
     RamDomain valueRead(const char type, const std::string& value) const {
         switch (type) {
-            case 'i':
-                return ramBitCast(RamSignedFromString(value));
-            case 'u':
-                return ramBitCast(RamUnsignedFromString(value));
-            case 'f':
-                return ramBitCast(RamFloatFromString(value));
+            case 'i': return ramBitCast(RamSignedFromString(value));
+            case 'u': return ramBitCast(RamUnsignedFromString(value));
+            case 'f': return ramBitCast(RamFloatFromString(value));
             case 's':
                 assert(2 <= value.size() && value[0] == '"' && value.back() == '"');
                 return symTable.lookup(value.substr(1, value.size() - 2));
-            case 'r':
-                fatal("not implemented");
-            default:
-                fatal("unhandled type attr code");
+            case 'r': fatal("not implemented");
+            default: fatal("unhandled type attr code");
         }
     }
 };

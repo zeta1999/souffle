@@ -29,12 +29,9 @@ enum class AstIoType { input, output, printsize };
 // FIXME: I'm going crazy defining these. There has to be a library that does this boilerplate for us.
 inline std::ostream& operator<<(std::ostream& os, AstIoType e) {
     switch (e) {
-        case AstIoType::input:
-            return os << "input";
-        case AstIoType::output:
-            return os << "output";
-        case AstIoType::printsize:
-            return os << "printsize";
+        case AstIoType::input: return os << "input";
+        case AstIoType::output: return os << "output";
+        case AstIoType::printsize: return os << "printsize";
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS

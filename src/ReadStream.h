@@ -89,23 +89,16 @@ protected:
             }
             consumeWhiteSpace(source, pos);
             switch (recordType[0]) {
-                case 's':
-                    recordValues[i] = readStringInRecord(source, pos, &consumed);
-                    break;
-                case 'i':
-                    recordValues[i] = RamSignedFromString(source.substr(pos), &consumed);
-                    break;
+                case 's': recordValues[i] = readStringInRecord(source, pos, &consumed); break;
+                case 'i': recordValues[i] = RamSignedFromString(source.substr(pos), &consumed); break;
                 case 'u':
                     recordValues[i] = ramBitCast(RamUnsignedFromString(source.substr(pos), &consumed));
                     break;
                 case 'f':
                     recordValues[i] = ramBitCast(RamFloatFromString(source.substr(pos), &consumed));
                     break;
-                case 'r':
-                    recordValues[i] = readRecord(source, recordType, pos, &consumed);
-                    break;
-                default:
-                    fatal("Invalid type attribute");
+                case 'r': recordValues[i] = readRecord(source, recordType, pos, &consumed); break;
+                default: fatal("Invalid type attribute");
             }
             pos += consumed;
         }

@@ -54,12 +54,8 @@ protected:
             RamDomain value = 0;  // Silence warning
 
             switch (typeAttributes.at(i)[0]) {
-                case 's':
-                    value = getSymbolTableID(tuple[i]);
-                    break;
-                default:
-                    value = tuple[i];
-                    break;
+                case 's': value = getSymbolTableID(tuple[i]); break;
+                default: value = tuple[i]; break;
             }
 
 #if RAM_DOMAIN_SIZE == 64

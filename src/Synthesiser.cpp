@@ -867,31 +867,17 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case AggregateOp::MIN:
-                    init = "MAX_RAM_SIGNED";
-                    break;
-                case AggregateOp::FMIN:
-                    init = "MAX_RAM_FLOAT";
-                    break;
-                case AggregateOp::UMIN:
-                    init = "MAX_RAM_UNSIGNED";
-                    break;
-                case AggregateOp::MAX:
-                    init = "MIN_RAM_SIGNED";
-                    break;
-                case AggregateOp::FMAX:
-                    init = "MIN_RAM_FLOAT";
-                    break;
-                case AggregateOp::UMAX:
-                    init = "MIN_RAM_UNSIGNED";
-                    break;
+                case AggregateOp::MIN: init = "MAX_RAM_SIGNED"; break;
+                case AggregateOp::FMIN: init = "MAX_RAM_FLOAT"; break;
+                case AggregateOp::UMIN: init = "MAX_RAM_UNSIGNED"; break;
+                case AggregateOp::MAX: init = "MIN_RAM_SIGNED"; break;
+                case AggregateOp::FMAX: init = "MIN_RAM_FLOAT"; break;
+                case AggregateOp::UMAX: init = "MIN_RAM_UNSIGNED"; break;
                 case AggregateOp::COUNT:
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
-                case AggregateOp::MEAN:
-                    init = "0";
-                    break;
+                case AggregateOp::MEAN: init = "0"; break;
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
                 case AggregateOp::SUM:
@@ -902,20 +888,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             std::string type;
             switch (getTypeAttributeAggregate(aggregate.getFunction())) {
-                case TypeAttribute::Signed:
-                    type = "RamSigned";
-                    break;
-                case TypeAttribute::Unsigned:
-                    type = "RamUnsigned";
-                    break;
-                case TypeAttribute::Float:
-                    type = "RamFloat";
-                    break;
+                case TypeAttribute::Signed: type = "RamSigned"; break;
+                case TypeAttribute::Unsigned: type = "RamUnsigned"; break;
+                case TypeAttribute::Float: type = "RamFloat"; break;
 
                 case TypeAttribute::Symbol:
-                case TypeAttribute::Record:
-                    type = "RamDomain";
-                    break;
+                case TypeAttribute::Record: type = "RamDomain"; break;
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
@@ -973,9 +951,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::COUNT:
-                    out << "++res" << identifier << "\n;";
-                    break;
+                case AggregateOp::COUNT: out << "++res" << identifier << "\n;"; break;
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
                 case AggregateOp::SUM:
@@ -1042,32 +1018,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case AggregateOp::MIN:
-                    init = "MAX_RAM_SIGNED";
-                    break;
-                case AggregateOp::FMIN:
-                    init = "MAX_RAM_FLOAT";
-                    break;
-                case AggregateOp::UMIN:
-                    init = "MAX_RAM_UNSIGNED";
-                    break;
-                case AggregateOp::MAX:
-                    init = "MIN_RAM_SIGNED";
-                    break;
-                case AggregateOp::FMAX:
-                    init = "MIN_RAM_FLOAT";
-                    break;
-                case AggregateOp::UMAX:
-                    init = "MIN_RAM_UNSIGNED";
-                    break;
+                case AggregateOp::MIN: init = "MAX_RAM_SIGNED"; break;
+                case AggregateOp::FMIN: init = "MAX_RAM_FLOAT"; break;
+                case AggregateOp::UMIN: init = "MAX_RAM_UNSIGNED"; break;
+                case AggregateOp::MAX: init = "MIN_RAM_SIGNED"; break;
+                case AggregateOp::FMAX: init = "MIN_RAM_FLOAT"; break;
+                case AggregateOp::UMAX: init = "MIN_RAM_UNSIGNED"; break;
                 case AggregateOp::COUNT:
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
 
-                case AggregateOp::MEAN:
-                    init = "0";
-                    break;
+                case AggregateOp::MEAN: init = "0"; break;
 
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
@@ -1079,20 +1041,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             char const* type;
             switch (getTypeAttributeAggregate(aggregate.getFunction())) {
-                case TypeAttribute::Signed:
-                    type = "RamSigned";
-                    break;
-                case TypeAttribute::Unsigned:
-                    type = "RamUnsigned";
-                    break;
-                case TypeAttribute::Float:
-                    type = "RamFloat";
-                    break;
+                case TypeAttribute::Signed: type = "RamSigned"; break;
+                case TypeAttribute::Unsigned: type = "RamUnsigned"; break;
+                case TypeAttribute::Float: type = "RamFloat"; break;
 
                 case TypeAttribute::Symbol:
-                case TypeAttribute::Record:
-                    type = "RamDomain";
-                    break;
+                case TypeAttribute::Record: type = "RamDomain"; break;
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
@@ -1128,9 +1082,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::COUNT:
-                    out << "++res" << identifier << "\n;";
-                    break;
+                case AggregateOp::COUNT: out << "++res" << identifier << "\n;"; break;
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
                 case AggregateOp::SUM:
@@ -1634,11 +1586,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 NARY_OP_ORDERED(MIN, std::min)
                     // clang-format on
 
-                case FunctorOp::SMAX:
-                    MINMAX_SYMBOL(std::max)
+                case FunctorOp::SMAX: MINMAX_SYMBOL(std::max)
 
-                case FunctorOp::SMIN:
-                    MINMAX_SYMBOL(std::min)
+                case FunctorOp::SMIN: MINMAX_SYMBOL(std::min)
 
                 // strings
                 case FunctorOp::CAT: {
@@ -1697,12 +1647,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             };
 
             switch (op.getFunction()) {
-                case RamNestedIntrinsicOp::RANGE:
-                    return emitRange("RamSigned");
-                case RamNestedIntrinsicOp::URANGE:
-                    return emitRange("RamUnsigned");
-                case RamNestedIntrinsicOp::FRANGE:
-                    return emitRange("RamFloat");
+                case RamNestedIntrinsicOp::RANGE: return emitRange("RamSigned");
+                case RamNestedIntrinsicOp::URANGE: return emitRange("RamUnsigned");
+                case RamNestedIntrinsicOp::FRANGE: return emitRange("RamFloat");
             }
 
             UNREACHABLE_BAD_CASE_ANALYSIS
@@ -1744,8 +1691,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         visit(args[i], out);
                         out << ").c_str()";
                         break;
-                    case TypeAttribute::Record:
-                        fatal("unhandled type");
+                    case TypeAttribute::Record: fatal("unhandled type");
                 }
             }
             out << ")";
@@ -1858,16 +1804,11 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
         auto cppTypeDecl = [](TypeAttribute ty) -> char const* {
             switch (ty) {
-                case TypeAttribute::Signed:
-                    return "souffle::RamSigned";
-                case TypeAttribute::Unsigned:
-                    return "souffle::RamUnsigned";
-                case TypeAttribute::Float:
-                    return "souffle::RamFloat";
-                case TypeAttribute::Symbol:
-                    return "const char *";
-                case TypeAttribute::Record:
-                    fatal("records cannot be used by user-defined functors");
+                case TypeAttribute::Signed: return "souffle::RamSigned";
+                case TypeAttribute::Unsigned: return "souffle::RamUnsigned";
+                case TypeAttribute::Float: return "souffle::RamFloat";
+                case TypeAttribute::Symbol: return "const char *";
+                case TypeAttribute::Record: fatal("records cannot be used by user-defined functors");
             }
 
             UNREACHABLE_BAD_CASE_ANALYSIS

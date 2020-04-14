@@ -228,21 +228,11 @@ std::string getTypeQualifier(const Type& type) {
             std::string str;
 
             switch (getTypeAttribute(type)) {
-                case TypeAttribute::Signed:
-                    str.append("i");
-                    break;
-                case TypeAttribute::Unsigned:
-                    str.append("u");
-                    break;
-                case TypeAttribute::Float:
-                    str.append("f");
-                    break;
-                case TypeAttribute::Symbol:
-                    str.append("s");
-                    break;
-                case TypeAttribute::Record:
-                    str.append("r");
-                    break;
+                case TypeAttribute::Signed: str.append("i"); break;
+                case TypeAttribute::Unsigned: str.append("u"); break;
+                case TypeAttribute::Float: str.append("f"); break;
+                case TypeAttribute::Symbol: str.append("s"); break;
+                case TypeAttribute::Record: str.append("r"); break;
             }
             str.append(":");
             str.append(toString(type.getName()));

@@ -105,8 +105,7 @@ Graph<AstQualifiedName> TypeEnvironmentAnalysis::createTypeDependencyGraph(
                 case TypeAttribute::Symbol:
                     typeDependencyGraph.insert(type->getQualifiedName(), "symbol");
                     break;
-                case TypeAttribute::Record:
-                    fatal("invalid type");
+                case TypeAttribute::Record: fatal("invalid type");
             }
         } else if (dynamic_cast<const AstRecordType*>(astType) != nullptr) {
             // do nothing

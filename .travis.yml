@@ -74,7 +74,7 @@ aliases:
 jobs:
   include:
 # Style check stage
-  - stage: Style
+  - stage: Warmup
     name: "Style check"
     os: linux
     sudo: false
@@ -85,13 +85,37 @@ jobs:
         # Check before modifying!
         - clang-format-7
     script: ".travis/run_test_format.sh"
-
+  - stage: Warmup
+    <<: *docker
+    workspaces:
+      create:
+        name: focal_gcc
+        paths: .
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && export CXX=g++ && .travis/init_test_swig.sh"
+    name: "Build Focal g++"
+  - stage: Warmup
+    <<: *docker
+    workspaces:
+      create:
+        name: focal_clang
+        paths: .
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && export CXX=clang++ && .travis/init_test_swig.sh"
+    name: "Build Focal clang++"
 # Testing stage (-j8,-c -j8)
-  - <<: *linuxgcc
-    name: "Linux gcc non-eval"
+  - stage: Testing
+    name: "Linux clang non-eval"
+    workspaces:
+      use: focal_clang
     env:
-    - *gcc_environment
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+  - stage: Testing
+    name: "Linux gcc non-eval"
+    workspaces:
+      use: focal_gcc
+    env:
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && .travis/run_test.sh || (.travis/after_failure.sh && false)"
   - <<: *osxgcc
     name: "OSX gcc non-eval"
     env:
@@ -117,12 +141,13 @@ jobs:
     - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
 
 # Testing stage (-j8,-c -j8)
-  - <<: *linuxgcc
+  - stage: Testing
     name: "Linux gcc fast evaluation tests"
-    before_script: ".travis/init_test_swig.sh"
+    workspaces:
+      use: focal_gcc
     env:
-    - *gcc_environment
     - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && .travis/run_test.sh || (.travis/after_failure.sh && false)"
 
 # Testing stage for clang without OpenMP (,-c)
   - <<: *linuxclang
@@ -140,12 +165,12 @@ jobs:
 # Packaging stage
   # Test make install installs a working souffle.
   - <<: *linuxpackage
-    script: docker run -v `pwd`:/souffle ubuntu:bionic /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/test_make_install.sh"
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/test_make_install.sh"
     name: "Debian make install"
   # Make the linux deb packages and if successful upload to github releases and bintray
   # All PRs go to bintray unstable, tagged releases to bintray stable
   - <<: *linuxpackage
-    script: docker run -v `pwd`:/souffle ubuntu:bionic /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/linux/make_package.sh"
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind ubuntu:bionic /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/linux/make_package.sh"
     name: "Debian package"
     before_deploy:
       - .travis/bintray_json.sh debian
@@ -180,7 +205,7 @@ jobs:
   # All PRs go to bintray unstable, tagged releases to bintray stable
   # Try to build in a raw centos container to test that our dependencies are correct
   - <<: *linuxpackage
-    script: docker run -v `pwd`:/souffle centos:7 /bin/sh -c "cd /souffle && .travis/linux/install_centos_deps.sh && .travis/linux/make_centos_package.sh"
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind centos:7 /bin/sh -c "cd /souffle && .travis/linux/install_centos_deps.sh && .travis/linux/make_centos_package.sh"
     name: "CentOS package"
     before_deploy:
       - .travis/bintray_json.sh centos
@@ -208,7 +233,7 @@ jobs:
   # All PRs go to bintray unstable, tagged releases to bintray stable
   # Try to build in a raw fedora container to test that our dependencies are correct
   - <<: *linuxpackage
-    script: docker run -v `pwd`:/souffle fedora:27 /bin/sh -c "cd /souffle && .travis/linux/install_fedora_deps.sh && .travis/linux/make_fedora_package.sh"
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind fedora:27 /bin/sh -c "cd /souffle && .travis/linux/install_fedora_deps.sh && .travis/linux/make_fedora_package.sh"
     name: "Fedora package"
     before_deploy:
       - .travis/bintray_json.sh fedora

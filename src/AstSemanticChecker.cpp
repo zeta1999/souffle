@@ -149,8 +149,13 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     // Run grounded terms checker
     GroundedTermsChecker().verify(tu);
 
-    // get the list of components to be checked
-    auto nodes = program.getClauses();
+    // get the list of components to be checked (clauses w/ relation decls)
+    std::vector<const AstNode*> nodes;
+    for (const auto& rel : program.getRelations()) {
+        for (const auto& cls : getClauses(program, *rel)) {
+            nodes.push_back(cls);
+        }
+    }
 
     // -- type checks --
 

@@ -147,7 +147,6 @@ souffle_sources = \
         RelationTag.h                             \
         ReorderLiteralsTransformer.cpp            \
         ResolveAliasesTransformer.cpp             \
-        RWOperation.h                             \
         SignalHandler.h                           \
         SrcLocation.cpp    SrcLocation.h          \
         Synthesiser.cpp       Synthesiser.h       \
@@ -194,7 +193,6 @@ soufflepublic_HEADERS = \
         ExplainProvenanceImpl.h                   \
         ExplainTree.h                             \
         EquivalenceRelation.h                     \
-        RWOperation.h                             \
         IOSystem.h                                \
         IterUtils.h                               \
         LambdaBTree.h                             \

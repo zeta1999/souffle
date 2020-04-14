@@ -136,8 +136,12 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     }
 
     // check rules
-    for (auto* rel : program.getRelations()) checkRelation(*rel);
-    for (auto* clause : program.getClauses()) checkClause(*clause);
+    for (auto* rel : program.getRelations()) {
+        checkRelation(*rel);
+    }
+    for (auto* clause : program.getClauses()) {
+        checkClause(*clause);
+    }
 
     checkNamespaces();
     checkIO();

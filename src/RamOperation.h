@@ -974,7 +974,9 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamTupleOperation::getChildNodes();
-        for (auto&& x : args) res.push_back(x.get());
+        for (auto&& x : args) {
+            res.push_back(x.get());
+        }
         return res;
     }
 
@@ -985,7 +987,9 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamTupleOperation::apply(map);
-        for (auto&& x : args) x = map(std::move(x));
+        for (auto&& x : args) {
+            x = map(std::move(x));
+        }
     }
 
 protected:

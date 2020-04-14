@@ -673,7 +673,9 @@ struct JsonParser final {
      * Advance until the current character is non-whitespace.
      */
     void consume_whitespace() {
-        while (str[i] == ' ' || str[i] == '\r' || str[i] == '\n' || str[i] == '\t') i++;
+        while (str[i] == ' ' || str[i] == '\r' || str[i] == '\n' || str[i] == '\t') {
+            i++;
+        }
     }
 
     /* consume_comment()
@@ -864,10 +866,14 @@ struct JsonParser final {
         // Integer part
         if (str[i] == '0') {
             i++;
-            if (in_range(str[i], '0', '9')) return fail("leading 0s not permitted in numbers");
+            if (in_range(str[i], '0', '9')) {
+                return fail("leading 0s not permitted in numbers");
+            }
         } else if (in_range(str[i], '1', '9')) {
             i++;
-            while (in_range(str[i], '0', '9')) i++;
+            while (in_range(str[i], '0', '9')) {
+                i++;
+            }
         } else {
             return fail("invalid " + esc(str[i]) + " in number");
         }
@@ -880,20 +886,29 @@ struct JsonParser final {
         // Decimal part
         if (str[i] == '.') {
             i++;
-            if (!in_range(str[i], '0', '9')) return fail("at least one digit required in fractional part");
+            if (!in_range(str[i], '0', '9')) {
+                return fail("at least one digit required in fractional part");
+            }
 
-            while (in_range(str[i], '0', '9')) i++;
+            while (in_range(str[i], '0', '9')) {
+                i++;
+            }
         }
 
         // Exponent part
         if (str[i] == 'e' || str[i] == 'E') {
             i++;
 
-            if (str[i] == '+' || str[i] == '-') i++;
+            if (str[i] == '+' || str[i] == '-') {
+                i++;
+            }
 
-            if (!in_range(str[i], '0', '9')) return fail("at least one digit required in exponent");
-
-            while (in_range(str[i], '0', '9')) i++;
+            if (!in_range(str[i], '0', '9')) {
+                return fail("at least one digit required in exponent");
+            }
+            while (in_range(str[i], '0', '9')) {
+                i++;
+            }
         }
 
         return std::strtod(str.c_str() + start_pos, nullptr);

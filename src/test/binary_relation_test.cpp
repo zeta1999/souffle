@@ -96,10 +96,14 @@ TEST(EqRelTest, Clear) {
 TEST(EqRelTest, Duplicates) {
     EqRel br;
     // test inserting same pair
-    for (int i = 0; i < 10; ++i) br.insert(0, 0);
+    for (int i = 0; i < 10; ++i) {
+        br.insert(0, 0);
+    }
     EXPECT_EQ(br.size(), 1);
 
-    for (int i = 0; i < 10; ++i) EXPECT_TRUE(br.contains(0, 0));
+    for (int i = 0; i < 10; ++i) {
+        EXPECT_TRUE(br.contains(0, 0));
+    }
     EXPECT_EQ(br.size(), 1);
     EXPECT_FALSE(br.contains(1, 1));
 
@@ -538,8 +542,10 @@ TEST(EqRelTest, ParallelScaling) {
     const int N = 100000;
     std::vector<int> data1;
     std::vector<int> data2;
-    for (int i = 0; i < N; ++i) data1.push_back(i);
-    for (int i = 0; i < N; ++i) data2.push_back(i);
+    for (int i = 0; i < N; ++i)
+        data1.push_back(i);
+    for (int i = 0; i < N; ++i)
+        data2.push_back(i);
 
     std::random_device rd;
     std::mt19937 generator(rd());

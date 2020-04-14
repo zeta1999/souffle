@@ -269,7 +269,9 @@ private:
     static VecOwn<AstArgument> asVec(Operands... ops) {
         Own<AstArgument> ary[] = {std::move(ops)...};
         VecOwn<AstArgument> xs;
-        for (auto&& x : ary) xs.push_back(std::move(x));
+        for (auto&& x : ary) {
+            xs.push_back(std::move(x));
+        }
         return xs;
     }
 };

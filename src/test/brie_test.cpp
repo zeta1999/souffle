@@ -716,7 +716,9 @@ namespace {
 template <typename Iter>
 int card(const range<Iter>& r) {
     int res = 0;
-    for (auto it = r.begin(); it != r.end(); ++it) res++;
+    for (auto it = r.begin(); it != r.end(); ++it) {
+        res++;
+    }
     return res;
 }
 

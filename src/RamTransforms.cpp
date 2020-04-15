@@ -675,6 +675,7 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 	       size_t length = pattern.first.size();
 	       
 	       auto transformedNode = std::unique_ptr<RamIndexOperation>(indexOperation->clone());
+               bool foundRealIndexableOperation = false;
 
 	       for (size_t i=0; i<length; ++i) {
 	           // if both bounds are undefined we don't have a box query
@@ -683,6 +684,7 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 		   }
 		   // if lower and upper bounds are equal its also not a box query
 		   if (*(pattern.first[i]) == *(pattern.second[i])) {
+		       foundRealIndexableOperation = true;
 		       continue;
 		   }
 
@@ -752,8 +754,12 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 					     , transformedNode->getProfileText());
 		  
 	       }
-	       return transformedNode;
-	   }
+	       if (foundRealIndexableOperation) {
+	           return transformedNode;
+	       } else {
+	           return std::unique_ptr<RamOperation>(transformedNode->getOperation().clone());
+	       }
+           }
 	   node->apply(makeLambdaRamMapper(indexToFilterRewriter));
            return node;	   
        };

@@ -10,7 +10,7 @@
  *
  * @file SerialisationStream.h
  *
- * Defines common functions for reading/writing relation serialisation streams.
+ * Defines a common base class for relation serialisation streams.
  *
  ***********************************************************************/
 
@@ -48,7 +48,7 @@ protected:
 
     SerialisationStream(
             RO<SymbolTable>& symTab, RO<RecordTable>& recTab, Json types, char const* const relationName)
-            : symbolTable(symTab), recordTable(recTab), types(types) {
+            : symbolTable(symTab), recordTable(recTab), types(std::move(types)) {
         setupFromJson(relationName);
     }
 

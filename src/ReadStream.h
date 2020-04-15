@@ -44,8 +44,6 @@ public:
         }
     }
 
-    virtual ~ReadStream() = default;
-
 protected:
     /**
      * Read a record from a string.

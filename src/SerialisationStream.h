@@ -24,6 +24,7 @@
 #include <cassert>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {
@@ -41,8 +42,9 @@ protected:
 
     SerialisationStream(RO<SymbolTable>& symTab, RO<RecordTable>& recTab, Json types,
             std::vector<std::string> relTypes, size_t auxArity = 0)
-            : symbolTable(symTab), recordTable(recTab), types(types), typeAttributes(std::move(relTypes)),
-              arity(typeAttributes.size() - auxArity), auxiliaryArity(auxArity) {}
+            : symbolTable(symTab), recordTable(recTab), types(std::move(types)),
+              typeAttributes(std::move(relTypes)), arity(typeAttributes.size() - auxArity),
+              auxiliaryArity(auxArity) {}
 
     SerialisationStream(
             RO<SymbolTable>& symTab, RO<RecordTable>& recTab, Json types, char const* const relationName)

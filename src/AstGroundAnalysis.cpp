@@ -176,10 +176,10 @@ std::map<const AstArgument*, bool> getGroundedTerms(const AstTranslationUnit& tu
 
         // also skip head if we don't have an inline qualifier
         void visitClause(const AstClause& clause) override {
-            // ignore head
             if (auto clauseHead = clause.getHead()) {
                 auto relation = relCache.getRelation(clauseHead->getQualifiedName());
-                // ignore head if we have an inline qualifier
+                // Only skip the head if the relation ISN'T inline. Keeping the head will ground
+                // any mentioned variables, allowing us to pretend they're grounded.
                 if (!(relation && relation->hasQualifier(RelationQualifier::INLINE))) {
                     ignore.insert(clauseHead);
                 }

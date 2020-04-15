@@ -221,29 +221,26 @@ bool UniqueAggregationVariablesTransformer::transform(AstTranslationUnit& transl
     });
     return changed;
 }
-namespace {
-  std::string findUniqueVariableName(const AstClause& clause) {
-      int counter = 0;
-      std::set<std::string> variableNames;
-      visitDepthFirst(clause, [&](const AstVariable& variable) { variableNames.insert(variable.getName()); });
-      std::string candidateVariableName = "z";  // completely arbitrary
-      while (variableNames.find(candidateVariableName) != variableNames.end()) {
-          candidateVariableName = "z" + toString(counter++);
-      }
-      return candidateVariableName;
-  }
+
+std::string MaterializeSingletonAggregationTransformer::findUniqueVariableName(const AstClause& clause) {
+    int counter = 0;
+    std::set<std::string> variableNames;
+    visitDepthFirst(clause, [&](const AstVariable& variable) { variableNames.insert(variable.getName()); });
+    std::string candidateVariableName = "z";  // completely arbitrary
+    while (variableNames.find(candidateVariableName) != variableNames.end()) {
+        candidateVariableName = "z" + toString(counter++);
+    }
+    return candidateVariableName;
 }
 
-namespace {
-  std::string findUniqueAggregateRelationName(
-          const AstProgram& program) {
-      int counter = 0;
-      auto candidate = "__agg_rel_" + toString(counter++);
-      while (getRelation(program, candidate) != nullptr) {
-          candidate = "__agg_rel_" + toString(counter++);
-      }
-      return candidate;
-  }
+std::string MaterializeSingletonAggregationTransformer::findUniqueAggregateRelationName(
+        const AstProgram& program) {
+    int counter = 0;
+    auto candidate = "__agg_rel_" + toString(counter++);
+    while (getRelation(program, candidate) != nullptr) {
+        candidate = "__agg_rel_" + toString(counter++);
+    }
+    return candidate;
 }
 
 bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& translationUnit) {
@@ -318,37 +315,6 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
         clause->addToBody(std::move(aggHead));
     }
     return pairs.size() > 0;
-}
-
-// An aggregate is single-valued if none of the variables appearing in the body
-// are ungrounded when ignoring the outer scope
-// ie the aggregate only ever evaluates to a single value.
-bool MaterializeSingletonAggregationTransformer::isSingleValued(
-        const AstAggregator& agg, const AstClause& clause) {
-    // Dummy clause to analyse groundedness
-    auto aggClause = std::make_unique<AstClause>();
-    for (const auto& lit : agg.getBodyLiterals()) {
-        aggClause->addToBody(std::unique_ptr<AstLiteral>(lit->clone()));
-    }
-    for (const auto& argPair : getGroundedTerms(*aggClause)) {
-        if (const auto* variable = dynamic_cast<const AstVariable*>(argPair.first)) {
-            // If we have a variable and it's not grounded then we may not be single-valued
-            if (!argPair.second) {
-                return false;
-            }
-            // Variables may get values from outside the aggregate. e.g., A(x), count : B(x)
-            int count = 0;
-            visitDepthFirst(clause, [&](const AstVariable& clauseVariable) {
-                if (*variable == clauseVariable) {
-                    ++count;
-                }
-            });
-            if (count > 1) {
-                return false;
-            }
-        }
-    }
-    return true;
 }
 
 std::string MaterializeSingletonAggregationTransformer::findUniqueVariableName(const AstClause& clause) {

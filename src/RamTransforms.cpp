@@ -752,14 +752,42 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 					     , std::move(updatedPattern)
 					     , std::move(filter)
 					     , transformedNode->getProfileText());
-		  
 	       }
-	       if (foundRealIndexableOperation) {
-	           return transformedNode;
+	       
+               if (foundRealIndexableOperation) {
+	           node = std::move(transformedNode);
 	       } else {
-	           return std::unique_ptr<RamOperation>(transformedNode->getOperation().clone());
+		   // need to rewrite the node with a semantically equivalent operation
+		   if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {    
+	               node = std::make_unique<RamScan>(
+				       std::make_unique<RamRelationReference>(iscan->getRelation().clone())
+				     , iscan->getTupleId()
+				     , std::unique_ptr<RamOperation>(transformedNode->getOperation().clone())
+				     , iscan->getProfileText());
+		   } else if (const RamParallelIndexScan* pscan = dynamic_cast<RamParallelIndexScan*>(node.get())) {
+		       node = std::make_unique<RamParallelScan>(
+                                       std::make_unique<RamRelationReference>(pscan->getRelation().clone())
+                                     , pscan->getTupleId()
+                                     , std::unique_ptr<RamOperation>(transformedNode->getOperation().clone())
+				     , pscan->getProfileText());
+		   } else if (const RamIndexChoice* ichoice = dynamic_cast<RamIndexChoice*>(node.get())) {
+		       node = std::make_unique<RamChoice>(
+                                       std::make_unique<RamRelationReference>(ichoice->getRelation().clone())
+                                     , ichoice->getTupleId()
+				     , std::unique_ptr<RamCondition>(ichoice->getCondition().clone())
+                                     , std::unique_ptr<RamOperation>(transformedNode->getOperation().clone())
+				     , ichoice->getProfileText());
+		   } else if (const RamIndexAggregate* iagg = dynamic_cast<RamIndexAggregate*>(node.get())) {
+		       node = std::make_unique<RamAggregate>(
+				       std::unique_ptr<RamOperation>(transformedNode->getOperation().clone())
+				     , iagg->getFunction()
+				     , std::make_unique<RamRelationReference>(iagg->getRelation().clone())
+				     , std::unique_ptr<RamExpression>(iagg->getExpression().clone())
+				     , std::unique_ptr<RamCondition>(iagg->getCondition().clone())
+				     , iagg->getTupleId());
+		   } 
 	       }
-           }
+	   }
 	   node->apply(makeLambdaRamMapper(indexToFilterRewriter));
            return node;	   
        };
@@ -794,6 +822,7 @@ bool ReorderFilterBreak::reorderFilterBreak(RamProgram& program) {
 }
 
 std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const RamIndexScan* indexScan) {
+
     // check whether tuple is used in subsequent operations
     bool tupleNotUsed = true;
     visitDepthFirst(*indexScan, [&](const RamTupleElement& element) {

@@ -672,7 +672,10 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 	   // find a RamIndexOperation
 	   if (const RamIndexOperation* indexOperation = dynamic_cast<RamIndexOperation*>(node.get())) {
 	       auto pattern = indexOperation->getRangePattern();
-	       size_t length = pattern.first.size();  
+	       size_t length = pattern.first.size();
+	       
+	       auto transformedNode = std::unique_ptr<RamIndexOperation>(indexOperation->clone());
+
 	       for (size_t i=0; i<length; ++i) {
 	           // if both bounds are undefined we don't have a box query
 	           if (isRamUndefValue(pattern.first[i]) && isRamUndefValue(pattern.second[i])) {
@@ -691,7 +694,7 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
                    if (!isRamUndefValue(pattern.first[i])) {
 		      lowerBound = std::make_unique<RamConstraint>(
                                             BinaryConstraintOp::GE
-                                          , std::make_unique<RamTupleElement>(indexOperation->getTupleId(), i)
+                                          , std::make_unique<RamTupleElement>(transformedNode->getTupleId(), i)
                                           , std::unique_ptr<RamExpression>(pattern.first[i]->clone()));
 		   }
 
@@ -700,11 +703,11 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
                    if (!isRamUndefValue(pattern.second[i])) {
                        upperBound = std::make_unique<RamConstraint>(
                                              BinaryConstraintOp::LE
-                                           , std::make_unique<RamTupleElement>(indexOperation->getTupleId(), i)
+                                           , std::make_unique<RamTupleElement>(transformedNode->getTupleId(), i)
                                            , std::unique_ptr<RamExpression>(pattern.second[i]->clone()));		   
 		   }
                     
-                   auto nestedOp = std::unique_ptr<RamOperation>(indexOperation->getOperation().clone());
+                   auto nestedOp = std::unique_ptr<RamOperation>(transformedNode->getOperation().clone());
 
                    // if Tuple[level, element] >= lower_bound AND Tuple[level, element] <= upper_bound
 		   std::unique_ptr<RamFilter> filter;
@@ -728,11 +731,11 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 
 		   // 2. Create the updated pattern for the new RamIndexOperation
 		   RamPattern updatedPattern;
-                   for (RamExpression* p : indexOperation->getRangePattern().first)
+                   for (RamExpression* p : transformedNode->getRangePattern().first)
 		   {
 		      updatedPattern.first.emplace_back(p->clone());
 		   }
-		   for (RamExpression* p : indexOperation->getRangePattern().second)
+		   for (RamExpression* p : transformedNode->getRangePattern().second)
 		   {
 		      updatedPattern.second.emplace_back(p->clone());
 		   }
@@ -740,15 +743,16 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 		   updatedPattern.second[i] = std::make_unique<RamUndefValue>();
 	
 		   // 3. Construct the updated RamIndexOperation
-	           auto res = std::make_unique<RamIndexOperation>(
+	           transformedNode = std::make_unique<RamIndexOperation>(
 		                       std::make_unique<RamRelationReference>(
-					       indexOperation->getRelation().clone())
-				             , indexOperation->getTupleId()
+					       transformedNode->getRelation().clone())
+				             , transformedNode->getTupleId()
 					     , std::move(updatedPattern)
 					     , std::move(filter)
-					     , indexOperation->getProfileText());
-		   return res;
+					     , transformedNode->getProfileText());
+		  
 	       }
+	       return transformedNode;
 	   }
 	   node->apply(makeLambdaRamMapper(indexToFilterRewriter));
            return node;	   

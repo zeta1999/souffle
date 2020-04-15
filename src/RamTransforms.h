@@ -420,6 +420,22 @@ protected:
     }
 };
 
+
+// TODO: Add actual documentation for this transformer
+class FilterTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "FilterTransformer";
+    }
+    
+    // converts a box query into a corresponding filter operation
+    bool transformIndexToFilter(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return transformIndexToFilter(translationUnit.getProgram());
+    }
+};
 /**
  * @class IfConversionTransformer
  * @brief Convert IndexScan operations to Filter/Existence Checks

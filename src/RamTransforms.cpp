@@ -664,6 +664,100 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
     return changed;
 }
 
+bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
+    bool changed = false;
+    visitDepthFirst(program, [&](const RamQuery& query) {
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> indexToFilterRewriter =
+	        [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+	   // find a RamIndexOperation
+	   if (const RamIndexOperation* indexOperation = dynamic_cast<RamIndexOperation*>(node.get())) {
+	       auto pattern = indexOperation->getRangePattern();
+	       size_t length = pattern.first.size();  
+	       for (size_t i=0; i<length; ++i) {
+	           // if both bounds are undefined we don't have a box query
+	           if (isRamUndefValue(pattern.first[i]) && isRamUndefValue(pattern.second[i])) {
+		       continue;
+		   }
+		   // if lower and upper bounds are equal its also not a box query
+		   if (*(pattern.first[i]) == *(pattern.second[i])) {
+		       continue;
+		   }
+
+		   changed = true;
+		   // now we know it must be a box query (both bounds defined and unequal)
+                   // 1. Construct a new filter operation based off of these bounds
+		   std::unique_ptr<RamConstraint> lowerBound;
+
+                   if (!isRamUndefValue(pattern.first[i])) {
+		      lowerBound = std::make_unique<RamConstraint>(
+                                            BinaryConstraintOp::GE
+                                          , std::make_unique<RamTupleElement>(indexOperation->getTupleId(), i)
+                                          , std::unique_ptr<RamExpression>(pattern.first[i]->clone()));
+		   }
+
+		   std::unique_ptr<RamConstraint> upperBound;
+
+                   if (!isRamUndefValue(pattern.second[i])) {
+                       upperBound = std::make_unique<RamConstraint>(
+                                             BinaryConstraintOp::LE
+                                           , std::make_unique<RamTupleElement>(indexOperation->getTupleId(), i)
+                                           , std::unique_ptr<RamExpression>(pattern.second[i]->clone()));		   
+		   }
+                    
+                   auto nestedOp = std::unique_ptr<RamOperation>(indexOperation->getOperation().clone());
+
+                   // if Tuple[level, element] >= lower_bound AND Tuple[level, element] <= upper_bound
+		   std::unique_ptr<RamFilter> filter;
+              
+                   if (lowerBound && upperBound) {
+		       filter = std::make_unique<RamFilter>(
+				           std::make_unique<RamConjunction>(
+							   std::move(lowerBound)
+							 , std::move(upperBound))
+				                 , std::move(nestedOp));
+		   } else if (lowerBound && !upperBound) {
+		       filter = std::make_unique<RamFilter>(
+				       std::move(lowerBound)
+				     , std::move(nestedOp));
+		   } else if (!lowerBound && upperBound) {
+		       filter = std::make_unique<RamFilter>(
+				       std::move(upperBound)
+				     , std::move(nestedOp));
+		   }
+
+
+		   // 2. Create the updated pattern for the new RamIndexOperation
+		   RamPattern updatedPattern;
+                   for (RamExpression* p : indexOperation->getRangePattern().first)
+		   {
+		      updatedPattern.first.emplace_back(p->clone());
+		   }
+		   for (RamExpression* p : indexOperation->getRangePattern().second)
+		   {
+		      updatedPattern.second.emplace_back(p->clone());
+		   }
+		   updatedPattern.first[i] = std::make_unique<RamUndefValue>();
+		   updatedPattern.second[i] = std::make_unique<RamUndefValue>();
+	
+		   // 3. Construct the updated RamIndexOperation
+	           auto res = std::make_unique<RamIndexOperation>(
+		                       std::make_unique<RamRelationReference>(
+					       indexOperation->getRelation().clone())
+				             , indexOperation->getTupleId()
+					     , std::move(updatedPattern)
+					     , std::move(filter)
+					     , indexOperation->getProfileText());
+		   return res;
+	       }
+	   }
+	   node->apply(makeLambdaRamMapper(indexToFilterRewriter));
+           return node;	   
+       };
+       const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(indexToFilterRewriter));
+    });
+    return changed;
+}
+
 bool ReorderFilterBreak::reorderFilterBreak(RamProgram& program) {
     bool changed = false;
     visitDepthFirst(program, [&](const RamQuery& query) {

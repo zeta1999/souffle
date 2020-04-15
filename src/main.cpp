@@ -525,7 +525,9 @@ int main(int argc, char** argv) {
                     std::make_unique<RamTransformerSequence>(
 		            std::make_unique<ExpandFilterTransformer>(),
 			    std::make_unique<HoistConditionsTransformer>(),
-			    std::make_unique<MakeIndexTransformer>()
+			    std::make_unique<MakeIndexTransformer>(),
+			    std::make_unique<FilterTransformer>()
+			    // not sure if I need to move out the filter transform
 			    )),
             std::make_unique<IfConversionTransformer>(), std::make_unique<ChoiceConversionTransformer>(),
             std::make_unique<CollapseFiltersTransformer>(), std::make_unique<TupleIdTransformer>(),

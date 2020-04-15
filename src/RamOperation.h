@@ -287,6 +287,7 @@ public:
         return std::make_pair(toPtrVector(queryPattern.first), toPtrVector(queryPattern.second));
     }
 
+    // TODO: does this need to be refactored?
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamRelationOperation::getChildNodes();
         for (auto& pattern : queryPattern.second) {
@@ -297,9 +298,26 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
+	for (auto& pattern : queryPattern.first) {
+	    pattern = map(std::move(pattern));
+	}
         for (auto& pattern : queryPattern.second) {
             pattern = map(std::move(pattern));
         }
+    }
+    
+    RamIndexOperation* clone() const override {
+        RamPattern resQueryPattern;
+
+        for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
+            resQueryPattern.first.emplace_back(queryPattern.first[i]->clone());
+        }
+        for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
+            resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
+        }
+        return new RamIndexOperation(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
+                std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
+                getProfileText());
     }
 
     /** @brief Helper method for printing */
@@ -623,6 +641,9 @@ public:
         for (auto& pattern : queryPattern.first) {
             pattern = map(std::move(pattern));
         }
+	for (auto& pattern : queryPattern.second) {
+	    pattern = map(std::move(pattern));
+	}
         RamAbstractChoice::apply(map);
     }
 

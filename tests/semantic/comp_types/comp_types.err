@@ -1,37 +1,55 @@
-Error: Unable to deduce type for variable x in file comp_types.dl at line 26
+Error: Head argument is not a subtype of its declared type in file comp_types.dl at line 26
 relX(x) :- relY(x).
 -----^--------------
 Error: Unable to deduce type for variable x in file comp_types.dl at line 26
 relX(x) :- relY(x).
+-----^--------------
+Error: Unable to deduce type for variable x in file comp_types.dl at line 26
+relX(x) :- relY(x).
 ----------------^---
-Error: Unable to deduce type for variable x in file comp_types.dl at line 27
+Error: Head argument is not a subtype of its declared type in file comp_types.dl at line 27
 relX(x) :- relZ(x).
 -----^--------------
 Error: Unable to deduce type for variable x in file comp_types.dl at line 27
 relX(x) :- relZ(x).
+-----^--------------
+Error: Unable to deduce type for variable x in file comp_types.dl at line 27
+relX(x) :- relZ(x).
 ----------------^---
-Error: Unable to deduce type for variable x in file comp_types.dl at line 29
+Error: Head argument is not a subtype of its declared type in file comp_types.dl at line 29
 relY(x) :- relX(x).
 -----^--------------
 Error: Unable to deduce type for variable x in file comp_types.dl at line 29
 relY(x) :- relX(x).
+-----^--------------
+Error: Unable to deduce type for variable x in file comp_types.dl at line 29
+relY(x) :- relX(x).
 ----------------^---
-Error: Unable to deduce type for variable x in file comp_types.dl at line 31
+Error: Head argument is not a subtype of its declared type in file comp_types.dl at line 31
 relY(x) :- relZ(x).
 -----^--------------
 Error: Unable to deduce type for variable x in file comp_types.dl at line 31
 relY(x) :- relZ(x).
+-----^--------------
+Error: Unable to deduce type for variable x in file comp_types.dl at line 31
+relY(x) :- relZ(x).
 ----------------^---
+Error: Head argument is not a subtype of its declared type in file comp_types.dl at line 33
+relZ(x) :- relX(x).
+-----^--------------
 Error: Unable to deduce type for variable x in file comp_types.dl at line 33
 relZ(x) :- relX(x).
 -----^--------------
 Error: Unable to deduce type for variable x in file comp_types.dl at line 33
 relZ(x) :- relX(x).
 ----------------^---
+Error: Head argument is not a subtype of its declared type in file comp_types.dl at line 34
+relZ(x) :- relY(x).
+-----^--------------
 Error: Unable to deduce type for variable x in file comp_types.dl at line 34
 relZ(x) :- relY(x).
 -----^--------------
 Error: Unable to deduce type for variable x in file comp_types.dl at line 34
 relZ(x) :- relY(x).
 ----------------^---
-12 errors generated, evaluation aborted
+18 errors generated, evaluation aborted

@@ -102,7 +102,7 @@ struct set_meet_assign_op {
     bool operator()(std::set<T>& a, const std::set<T>& b) {
         bool changed = false;
         for (const auto& cur : b) {
-            changed = a.insert(cur).second || changed;
+            changed |= a.insert(cur).second;
         }
         return changed;
     }

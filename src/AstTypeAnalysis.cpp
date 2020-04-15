@@ -218,7 +218,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             if (!assigmentsLeft.isAll()) {
                 for (const auto& type : assigmentsLeft) {
                     // Predefined type is always a base type.
-                    if (dynamic_cast<const PredefinedType*>(&type) != nullptr) {
+                    if (dynamic_cast<const PrimitiveType*>(&type) != nullptr) {
                         baseTypesLeft.insert(type);
                     } else if (auto* primitive = dynamic_cast<const SubsetType*>(&type)) {
                         baseTypesLeft.insert(primitive->getBaseType());
@@ -229,7 +229,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             if (!assigmentsRight.isAll()) {
                 for (const auto& type : assigmentsRight) {
                     // Predefined type is always a base type.
-                    if (dynamic_cast<const PredefinedType*>(&type) != nullptr) {
+                    if (dynamic_cast<const PrimitiveType*>(&type) != nullptr) {
                         baseTypesRight.insert(type);
                     } else if (auto* primitive = dynamic_cast<const SubsetType*>(&type)) {
                         baseTypesRight.insert(primitive->getBaseType());
@@ -517,91 +517,97 @@ public:
             : typeEnv(typeEnv), program(program) {}
 
 private:
-    /** Collect head variables. It will allow to distinguish between head and body variables later. */
+    // /** Collect head variables. It will allow to distinguish between head and body variables later. */
     void preProcessing(const AstClause& clause) override {
-        visitDepthFirst(
-                *clause.getHead(), [&](const AstVariable& variable) { headVariables.insert(&variable); });
+        head = clause.getHead();
+        // visitDepthFirst(
+        //         *clause.getHead(), [&](const AstVariable& variable) { headVariables.insert(&variable); });
     }
 
-    // Remove arg.
-    void solveConstraints(const AstClause& clause) override {
-        //        std::cerr << clause << std::endl;
-        assignment = constraints.solve();
+    // // Remove arg.
+    // void solveConstraints(const AstClause& clause) override {
+    //     //        std::cerr << clause << std::endl;
+    //     assignment = constraints.solve();
 
-        for (auto iteratorToHeadVariable : unifyHeadVariables) {
-            auto name = iteratorToHeadVariable.first;
-            auto headVar = iteratorToHeadVariable.second;
+    //     for (auto iteratorToHeadVariable : unifyHeadVariables) {
+    //         auto name = iteratorToHeadVariable.first;
+    //         auto headVar = iteratorToHeadVariable.second;
 
-            auto iteratorToBodyVariable = unifyBodyVariables.find(name);
+    //         auto iteratorToBodyVariable = unifyBodyVariables.find(name);
 
-            // No entry -> head solution is correct.
-            if (iteratorToBodyVariable == end(unifyBodyVariables)) {
-                continue;
-            }
+    //         // No entry -> head solution is correct.
+    //         if (iteratorToBodyVariable == end(unifyBodyVariables)) {
+    //             continue;
+    //         }
 
-            auto bodyVar = iteratorToBodyVariable->second;
-            // std::cerr << "name: " << name << " head: " << assignment[headVar] << " body: " <<
-            // assignment[bodyVar] << std::endl;
+    //         auto bodyVar = iteratorToBodyVariable->second;
+    //         // std::cerr << "name: " << name << " head: " << assignment[headVar] << " body: " <<
+    //         // assignment[bodyVar] << std::endl;
 
-            // We need to combine head and body results.
-            auto newAssignment = TypeSet();
+    //         // We need to combine head and body results.
+    //         auto newAssignment = TypeSet();
 
-            for (auto itHead = assignment[headVar].begin(); itHead != assignment[headVar].end(); ++itHead) {
-                for (auto itBody = assignment[bodyVar].begin(); itBody != assignment[bodyVar].end();
-                        ++itBody) {
-                    if (isSubtypeOf(*itBody, *itHead)) {
-                        newAssignment.insert(*itBody);
-                    }
-                }
-            }
-            if (newAssignment.empty()) {
-                assignment[headVar] = newAssignment;
-                assignment[bodyVar] = newAssignment;
-            }
-            // std::cerr << "New: " << assignment[headVar] << " " << assignment[bodyVar] << std::endl;
-            addConstraint(isSubtypeOf(headVar, bodyVar));
-            addConstraint(isSubtypeOf(bodyVar, headVar));
-        }
+    //         for (auto itHead = assignment[headVar].begin(); itHead != assignment[headVar].end(); ++itHead)
+    //         {
+    //             for (auto itBody = assignment[bodyVar].begin(); itBody != assignment[bodyVar].end();
+    //                     ++itBody) {
+    //                 if (isSubtypeOf(*itBody, *itHead)) {
+    //                     newAssignment.insert(*itBody);
+    //                 }
+    //             }
+    //         }
+    //         if (newAssignment.empty()) {
+    //             assignment[headVar] = newAssignment;
+    //             assignment[bodyVar] = newAssignment;
+    //         }
+    //         // std::cerr << "New: " << assignment[headVar] << " " << assignment[bodyVar] << std::endl;
+    //         addConstraint(isSubtypeOf(bodyVar, headVar));
+    //     }
 
-        constraints.solve(assignment);
-    }
+    //     constraints.solve(assignment);
+    // }
 
-    virtual TypeVar getVar(const AstArgument& argument) override {
-        auto variable = dynamic_cast<const AstVariable*>(&argument);
-        if (variable == nullptr) {
-            // no mapping required
-            return TypeVar(argument);
-        }
+    // virtual TypeVar getVar(const AstArgument& argument) override {
+    //     auto variable = dynamic_cast<const AstVariable*>(&argument);
+    //     if (variable == nullptr) {
+    //         // no mapping required
+    //         return TypeVar(argument);
+    //     }
 
-        std::map<std::string, TypeVar>::iterator iteratorToVariable;
-        // The variable is either head variable of body variable.
-        if (isHeadVariable(variable)) {
-            iteratorToVariable = unifyHeadVariables.insert({variable->getName(), TypeVar(variable)}).first;
-        } else {
-            iteratorToVariable = unifyBodyVariables.insert({variable->getName(), TypeVar(variable)}).first;
-        }
+    //     std::map<std::string, TypeVar>::iterator iteratorToVariable;
+    //     // The variable is either head variable of body variable.
+    //     if (isHeadVariable(variable)) {
+    //         iteratorToVariable = unifyHeadVariables.insert({variable->getName(), TypeVar(variable)}).first;
+    //     } else {
+    //         iteratorToVariable = unifyBodyVariables.insert({variable->getName(), TypeVar(variable)}).first;
+    //     }
 
-        return iteratorToVariable->second;
-    }
+    //     return iteratorToVariable->second;
+    // }
 
-    TypeVar getVar(const AstArgument* arg) {
-        return getVar(*arg);
-    }
+    // TypeVar getVar(const AstArgument* arg) {
+    //     return getVar(*arg);
+    // }
 
     const TypeEnvironment& typeEnv;
     const AstProgram* program;
     std::set<const AstAtom*> negated;
+    AstAtom* head;
 
-    std::set<const AstVariable*> headVariables;
-    std::map<std::string, TypeVar> unifyHeadVariables;
-    std::map<std::string, TypeVar> unifyBodyVariables;
+    // std::set<const AstVariable*> headVariables;
+    // std::map<std::string, TypeVar> unifyHeadVariables;
+    // std::map<std::string, TypeVar> unifyBodyVariables;
 
-    bool isHeadVariable(const AstVariable* variable) {
-        return headVariables.find(variable) != headVariables.end();
-    }
+    // bool isHeadVariable(const AstVariable* variable) {
+    //     return headVariables.find(variable) != headVariables.end();
+    // }
 
     // predicate
     void visitAtom(const AstAtom& atom) override {
+        // if (&atom == head) {
+        //     return;
+        // }
+
         // get relation
         auto rel = getAtomRelation(&atom, program);
         if (rel == nullptr) {
@@ -615,10 +621,10 @@ private:
         }
 
         // set upper boundary of argument types
+        bool notNegated = negated.find(&atom) == negated.end();
         for (size_t i = 0; i < atts.size(); i++) {
             const auto& typeName = atts[i]->getTypeName();
             if (typeEnv.isType(typeName)) {
-                bool notNegated = negated.find(&atom) == negated.end();
                 if (notNegated) {
                     addConstraint(isSubtypeOf(getVar(args[i]), typeEnv.getType(typeName)));
                 } else {

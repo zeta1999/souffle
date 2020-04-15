@@ -89,15 +89,17 @@ private:
 };
 
 /**
- * PredefinedType = Number/Unsigned/Float/Symbol
+ * PrimitiveType = Number/Unsigned/Float/Symbol
  */
-struct PredefinedType : public Type {
-    PredefinedType(const TypeEnvironment& environment, const AstQualifiedName& name)
+class PrimitiveType : public Type {
+    PrimitiveType(const TypeEnvironment& environment, const AstQualifiedName& name)
             : Type(environment, name) {}
+
+    friend class TypeEnvironment;
 };
 
 /**
- * A primitive type. The basic type construct to build new types.
+ * A type being a subset of another type.
  */
 class SubsetType : public Type {
 public:
@@ -107,15 +109,22 @@ public:
         return baseType;
     }
 
-private:
-    // only allow type environments to create instances
-    friend class TypeEnvironment;
-
-    /** The base type -- may be symbol or numeric */
-    const Type& baseType;
-
+protected:
     SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type& base)
             : Type(environment, name), baseType(base) {}
+
+private:
+    friend class TypeEnvironment;
+
+    const Type& baseType;
+};
+
+// ConstantType = NumberConstant/UnsignedConstant/FloatConstant/SymbolConstant
+class ConstantType : public Type {
+    ConstantType(const TypeEnvironment& environment, const AstQualifiedName& name)
+            : Type(environment, name) {}
+
+    friend class TypeEnvironment;
 };
 
 /**
@@ -333,19 +342,20 @@ class TypeEnvironment {
 public:
     // -- constructors / destructores --
     TypeEnvironment()
-            : types(), predefinedTypes(initializePredefinedTypes()),
-              predefinedNumericTypes(TypeSet(getType("number"), getType("float"), getType("unsigned"))){};
+            : types(), predefinedTypes(initializePrimitiveTypes()),
+              primitiveTypes(
+                      TypeSet(getType("number"), getType("float"), getType("unsigned"), getType("symbol"))),
+              primitiveNumericTypes(TypeSet(getType("number"), getType("float"), getType("unsigned"))){};
 
     TypeEnvironment(const TypeEnvironment&) = delete;
 
-    ~TypeEnvironment();
+    ~TypeEnvironment() = default;
 
     // -- create types in this environment --
-
     template <typename T, typename... Args>
     T& createType(const AstQualifiedName& name, const Args&... args) {
         auto* res = new T(*this, name, args...);
-        addType(*res);
+        addType(res);
         return *res;
     }
 
@@ -364,16 +374,6 @@ public:
         }
         return createType<SubsetType>(name, getNumberType());
     }
-
-    UnionType& createUnionType(const AstQualifiedName& name) {
-        return createType<UnionType>(name);
-    }
-
-    RecordType& createRecordType(const AstQualifiedName& name) {
-        return createType<RecordType>(name);
-    }
-
-    // -- query type information --
 
     bool isType(const AstQualifiedName&) const;
 
@@ -397,31 +397,27 @@ public:
         return getType("symbol");
     }
 
-    bool isPredefinedType(const AstQualifiedName& identifier) const {
+    bool isPrimitiveType(const AstQualifiedName& identifier) const {
         if (isType(identifier)) {
-            return isPredefinedType(getType(identifier));
+            return isPrimitiveType(getType(identifier));
         } else {
             return false;
         }
     }
 
-    bool isPredefinedType(const Type& typeName) const {
+    bool isPrimitiveType(const Type& typeName) const {
         return predefinedTypes.contains(typeName);
     }
 
-    const TypeSet& getPredefinedTypes() const {
+    const TypeSet& getPrimitiveTypes() const {
         return predefinedTypes;
     }
 
     const TypeSet& getNumericTypes() const {
-        return predefinedNumericTypes;
+        return primitiveNumericTypes;
     }
 
     TypeSet getAllTypes() const;
-
-    Type* getModifiableType(const AstQualifiedName& name);
-
-    void clear();
 
     void print(std::ostream& out) const;
 
@@ -436,16 +432,20 @@ public:
 
 private:
     /** Register types created by one of the factory functions */
-    void addType(Type& type);
+    void addType(Type* type);
 
-    TypeSet initializePredefinedTypes(void);
+    TypeSet initializePrimitiveTypes(void);
 
     /** The list of covered types */
-    std::map<AstQualifiedName, Type*> types;
+    std::map<AstQualifiedName, std::unique_ptr<Type>> types;
 
     const TypeSet predefinedTypes;
 
-    const TypeSet predefinedNumericTypes;
+    const TypeSet primitiveTypes;
+    const TypeSet primitiveNumericTypes;
+
+    // const TypeSet constantTypes;
+    // const TypeSet constantNumericTypes;
 };
 
 // ---------------------------------------------------------------

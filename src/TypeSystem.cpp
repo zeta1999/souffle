@@ -51,31 +51,19 @@ void RecordType::print(std::ostream& out) const {
     }) << " )";
 }
 
-TypeSet TypeEnvironment::initializePredefinedTypes() {
-    // initialize predefined types.
-    createType<PredefinedType>("number");
-    createType<PredefinedType>("float");
-    createType<PredefinedType>("symbol");
-    createType<PredefinedType>("unsigned");
+TypeSet TypeEnvironment::initializePrimitiveTypes() {
+    auto& signedType = createType<PrimitiveType>("number");
+    auto& floatType = createType<PrimitiveType>("float");
+    auto& symbolType = createType<PrimitiveType>("symbol");
+    auto& unsignedType = createType<PrimitiveType>("unsigned");
 
-    return TypeSet(getType("number"), getType("float"), getType("symbol"), getType("unsigned"));
-}
+    // auto& signedConstant = createType<ConstantType>("numberConstant");
+    // auto& floatConstant = createType<ConstantType>("floatConstant");
+    // auto& symbolConstant = createType<ConstantType>("symbolConstant");
+    // auto& unsignedConstant = createType<ConstantType>("unsignedConstant");
 
-TypeEnvironment::~TypeEnvironment() {
-    for (const auto& cur : types) {
-        delete cur.second;
-    }
-}
-
-void TypeEnvironment::clear() {
-    // clear list of stored types
-    for (const auto& cur : types) {
-        delete cur.second;
-    }
-    types.clear();
-
-    // Reinitialize predefined types
-    initializePredefinedTypes();
+    return TypeSet(signedType, floatType, symbolType,
+            unsignedType);  // , signedConstant, floatConstant, symbolConstant, unsignedConstant);
 }
 
 bool TypeEnvironment::isType(const AstQualifiedName& ident) const {
@@ -87,14 +75,10 @@ bool TypeEnvironment::isType(const Type& type) const {
     return t == type;
 }
 
-Type* TypeEnvironment::getModifiableType(const AstQualifiedName& name) {
-    auto pos = types.find(name);
-    return (pos == types.end()) ? nullptr : pos->second;
-}
-
 const Type& TypeEnvironment::getType(const AstQualifiedName& ident) const {
-    assert(isType(ident));
-    return *(types.find(ident)->second);
+    auto it = types.find(ident);
+    assert(it != types.end());
+    return *(it->second);
 }
 
 TypeSet TypeEnvironment::getAllTypes() const {
@@ -105,10 +89,10 @@ TypeSet TypeEnvironment::getAllTypes() const {
     return res;
 }
 
-void TypeEnvironment::addType(Type& type) {
-    const AstQualifiedName& name = type.getName();
+void TypeEnvironment::addType(Type* type) {
+    const AstQualifiedName& name = type->getName();
     assert(types.find(name) == types.end() && "Error: registering present type!");
-    types[name] = &type;
+    types[name] = std::unique_ptr<Type>(type);
 }
 
 namespace {
@@ -126,8 +110,8 @@ struct TypeVisitor {
 
     virtual R visit(const Type& type) const {
         // check all kinds of types and dispatch
-        if (auto* t = dynamic_cast<const PredefinedType*>(&type)) {
-            return visitPredefinedType(*t);
+        if (auto* t = dynamic_cast<const PrimitiveType*>(&type)) {
+            return visitPrimitiveType(*t);
         }
         if (auto* t = dynamic_cast<const SubsetType*>(&type)) {
             return visitSubsetType(*t);
@@ -138,15 +122,23 @@ struct TypeVisitor {
         if (auto* t = dynamic_cast<const RecordType*>(&type)) {
             return visitRecordType(*t);
         }
+        if (auto* t = dynamic_cast<const ConstantType*>(&type)) {
+            return visitConstantType(*t);
+        }
+
         assert(false && "Unsupported type encountered!");
         return R();
     }
 
-    virtual R visitPredefinedType(const PredefinedType& type) const {
+    virtual R visitPrimitiveType(const PrimitiveType& type) const {
         return visitType(type);
     }
 
     virtual R visitSubsetType(const SubsetType& type) const {
+        return visitType(type);
+    }
+
+    virtual R visitConstantType(const ConstantType& type) const {
         return visitType(type);
     }
 
@@ -202,7 +194,7 @@ bool isOfRootType(const Type& type, const Type& root) {
 
         explicit visitor(const Type& root) : root(root) {}
 
-        bool visitPredefinedType(const PredefinedType& type) const override {
+        bool visitPrimitiveType(const PrimitiveType& type) const override {
             return type == root;
         }
         bool visitSubsetType(const SubsetType& type) const override {
@@ -404,7 +396,7 @@ bool isSubtypeOf(const Type& a, const Type& b) {
     }
 
     // check for predefined types
-    if (isA<PredefinedType>(b)) {
+    if (isA<PrimitiveType>(b)) {
         return isOfRootType(a, b);
     }
 

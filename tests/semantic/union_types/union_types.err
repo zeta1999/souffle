@@ -1,6 +1,9 @@
 Warning: No rules/facts defined for relation D in file union_types.dl at line 18
 .decl D (i:three)
 ------^-----------
+Error: Head argument is not a subtype of its declared type in file union_types.dl at line 35
+E(X) :- F(X), A(X), B(X). // error
+--^--------------------------------
 Error: Unable to deduce type for variable X in file union_types.dl at line 35
 E(X) :- F(X), A(X), B(X). // error
 --^--------------------------------
@@ -13,6 +16,9 @@ E(X) :- F(X), A(X), B(X). // error
 Error: Unable to deduce type for variable X in file union_types.dl at line 35
 E(X) :- F(X), A(X), B(X). // error
 ----------------------^------------
+Error: Head argument is not a subtype of its declared type in file union_types.dl at line 37
+C(X) :- D(X), !A(X). // error
+--^---------------------------
 Error: Unable to deduce type for variable X in file union_types.dl at line 37
 C(X) :- D(X), !A(X). // error
 --^---------------------------
@@ -22,4 +28,4 @@ C(X) :- D(X), !A(X). // error
 Error: Unable to deduce type for variable X in file union_types.dl at line 37
 C(X) :- D(X), !A(X). // error
 -----------------^------------
-7 errors generated, evaluation aborted
+9 errors generated, evaluation aborted

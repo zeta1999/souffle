@@ -1,3 +1,6 @@
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 34
+NumberRelation("1").                   // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 34
 NumberRelation("1").                   // error
 ---------------^--------------------------------
@@ -7,16 +10,25 @@ NumberRelation(nil).                   // error
 Error: Ambiguous record in file type_system1.dl at line 37
 NumberRelation([1]).                   // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 37
+NumberRelation([1]).                   // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 37
 NumberRelation([1]).                   // error
 ----------------^-------------------------------
 Error: Ambiguous record in file type_system1.dl at line 38
 NumberRelation([-1]).                  // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 38
+NumberRelation([-1]).                  // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 38
 NumberRelation([-1]).                  // error
 -----------------^------------------------------
 Error: Ambiguous record in file type_system1.dl at line 39
+NumberRelation([1+1]).                 // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 39
 NumberRelation([1+1]).                 // error
 ---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 39
@@ -37,6 +49,9 @@ NumberRelation([1+1]).                 // error
 Error: Ambiguous record in file type_system1.dl at line 41
 NumberRelation([1, 1]).                // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 41
+NumberRelation([1, 1]).                // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 41
 NumberRelation([1, 1]).                // error
 ----------------^-------------------------------
@@ -46,6 +61,9 @@ NumberRelation([1, 1]).                // error
 Error: Ambiguous record in file type_system1.dl at line 42
 NumberRelation([-1, -1]).              // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 42
+NumberRelation([-1, -1]).              // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 42
 NumberRelation([-1, -1]).              // error
 -----------------^------------------------------
@@ -53,6 +71,9 @@ Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at lin
 NumberRelation([-1, -1]).              // error
 ---------------------^--------------------------
 Error: Ambiguous record in file type_system1.dl at line 43
+NumberRelation([1+1, 1+1]).            // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 43
 NumberRelation([1+1, 1+1]).            // error
 ---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 43
@@ -88,6 +109,9 @@ NumberRelation([1+1, 1+1]).            // error
 Error: Ambiguous record in file type_system1.dl at line 45
 NumberRelation([1, 1, 1]).             // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 45
+NumberRelation([1, 1, 1]).             // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 45
 NumberRelation([1, 1, 1]).             // error
 ----------------^-------------------------------
@@ -100,6 +124,9 @@ NumberRelation([1, 1, 1]).             // error
 Error: Ambiguous record in file type_system1.dl at line 46
 NumberRelation([-1, -1, -1]).          // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 46
+NumberRelation([-1, -1, -1]).          // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 46
 NumberRelation([-1, -1, -1]).          // error
 -----------------^------------------------------
@@ -110,6 +137,9 @@ Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at lin
 NumberRelation([-1, -1, -1]).          // error
 -------------------------^----------------------
 Error: Ambiguous record in file type_system1.dl at line 47
+NumberRelation([1+1, 1+1, 1+1]).       // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 47
 NumberRelation([1+1, 1+1, 1+1]).       // error
 ---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 47
@@ -160,10 +190,16 @@ NumberRelation([1+1, 1+1, 1+1]).       // error
 Error: Ambiguous record in file type_system1.dl at line 49
 NumberRelation(["1"]).                 // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 49
+NumberRelation(["1"]).                 // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 49
 NumberRelation(["1"]).                 // error
 ----------------^-------------------------------
 Error: Ambiguous record in file type_system1.dl at line 50
+NumberRelation(["1", "1"]).            // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 50
 NumberRelation(["1", "1"]).            // error
 ---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 50
@@ -173,6 +209,9 @@ Error: Symbol constant (type mismatch) in file type_system1.dl at line 50
 NumberRelation(["1", "1"]).            // error
 ---------------------^--------------------------
 Error: Ambiguous record in file type_system1.dl at line 51
+NumberRelation(["1", "1", "1"]).       // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 51
 NumberRelation(["1", "1", "1"]).       // error
 ---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 51
@@ -187,16 +226,28 @@ NumberRelation(["1", "1", "1"]).       // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 55
 SymbolRelation(0).                     // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 55
+SymbolRelation(0).                     // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 56
 SymbolRelation(1).                     // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 56
+SymbolRelation(1).                     // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 57
+SymbolRelation(-1).                    // error
+----------------^-------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 57
 SymbolRelation(-1).                    // error
 ----------------^-------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 58
 SymbolRelation(1+1).                   // error
 ---------------^--------------------------------
 Error: Non-numeric argument for functor in file type_system1.dl at line 58
+SymbolRelation(1+1).                   // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 58
 SymbolRelation(1+1).                   // error
 ---------------^--------------------------------
 Error: Non-numeric use for numeric functor in file type_system1.dl at line 58
@@ -214,16 +265,25 @@ SymbolRelation(nil).                   // error
 Error: Ambiguous record in file type_system1.dl at line 62
 SymbolRelation([1]).                   // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 62
+SymbolRelation([1]).                   // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 62
 SymbolRelation([1]).                   // error
 ----------------^-------------------------------
 Error: Ambiguous record in file type_system1.dl at line 63
 SymbolRelation([-1]).                  // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 63
+SymbolRelation([-1]).                  // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 63
 SymbolRelation([-1]).                  // error
 -----------------^------------------------------
 Error: Ambiguous record in file type_system1.dl at line 64
+SymbolRelation([1+1]).                 // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 64
 SymbolRelation([1+1]).                 // error
 ---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 64
@@ -244,6 +304,9 @@ SymbolRelation([1+1]).                 // error
 Error: Ambiguous record in file type_system1.dl at line 66
 SymbolRelation([1, 1]).                // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 66
+SymbolRelation([1, 1]).                // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 66
 SymbolRelation([1, 1]).                // error
 ----------------^-------------------------------
@@ -253,6 +316,9 @@ SymbolRelation([1, 1]).                // error
 Error: Ambiguous record in file type_system1.dl at line 67
 SymbolRelation([-1, -1]).              // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 67
+SymbolRelation([-1, -1]).              // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 67
 SymbolRelation([-1, -1]).              // error
 -----------------^------------------------------
@@ -260,6 +326,9 @@ Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at lin
 SymbolRelation([-1, -1]).              // error
 ---------------------^--------------------------
 Error: Ambiguous record in file type_system1.dl at line 68
+SymbolRelation([1+1, 1+1]).            // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 68
 SymbolRelation([1+1, 1+1]).            // error
 ---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 68
@@ -295,6 +364,9 @@ SymbolRelation([1+1, 1+1]).            // error
 Error: Ambiguous record in file type_system1.dl at line 70
 SymbolRelation([1, 1, 1]).             // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 70
+SymbolRelation([1, 1, 1]).             // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 70
 SymbolRelation([1, 1, 1]).             // error
 ----------------^-------------------------------
@@ -307,6 +379,9 @@ SymbolRelation([1, 1, 1]).             // error
 Error: Ambiguous record in file type_system1.dl at line 71
 SymbolRelation([-1, -1, -1]).          // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 71
+SymbolRelation([-1, -1, -1]).          // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 71
 SymbolRelation([-1, -1, -1]).          // error
 -----------------^------------------------------
@@ -317,6 +392,9 @@ Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at lin
 SymbolRelation([-1, -1, -1]).          // error
 -------------------------^----------------------
 Error: Ambiguous record in file type_system1.dl at line 72
+SymbolRelation([1+1, 1+1, 1+1]).       // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 72
 SymbolRelation([1+1, 1+1, 1+1]).       // error
 ---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 72
@@ -367,10 +445,16 @@ SymbolRelation([1+1, 1+1, 1+1]).       // error
 Error: Ambiguous record in file type_system1.dl at line 74
 SymbolRelation(["1"]).                 // error
 ---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 74
+SymbolRelation(["1"]).                 // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 74
 SymbolRelation(["1"]).                 // error
 ----------------^-------------------------------
 Error: Ambiguous record in file type_system1.dl at line 75
+SymbolRelation(["1", "1"]).            // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 75
 SymbolRelation(["1", "1"]).            // error
 ---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 75
@@ -380,6 +464,9 @@ Error: Symbol constant (type mismatch) in file type_system1.dl at line 75
 SymbolRelation(["1", "1"]).            // error
 ---------------------^--------------------------
 Error: Ambiguous record in file type_system1.dl at line 76
+SymbolRelation(["1", "1", "1"]).       // error
+---------------^--------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 76
 SymbolRelation(["1", "1", "1"]).       // error
 ---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 76
@@ -394,16 +481,28 @@ SymbolRelation(["1", "1", "1"]).       // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 80
 SingleNumberRelation(0).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 80
+SingleNumberRelation(0).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 81
 SingleNumberRelation(1).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 81
+SingleNumberRelation(1).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 82
+SingleNumberRelation(-1).              // error
+----------------------^-------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 82
 SingleNumberRelation(-1).              // error
 ----------------------^-------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 83
 SingleNumberRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric argument for functor in file type_system1.dl at line 83
+SingleNumberRelation(1+1).             // error
+---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 83
 SingleNumberRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric use for numeric functor in file type_system1.dl at line 83
@@ -415,6 +514,9 @@ SingleNumberRelation(1+1).             // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 83
 SingleNumberRelation(1+1).             // error
 -----------------------^------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 84
+SingleNumberRelation("1").             // error
+---------------------^--------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 84
 SingleNumberRelation("1").             // error
 ---------------------^--------------------------
@@ -424,16 +526,28 @@ SingleNumberRelation(["1"]).           // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 94
 DoubleNumberRelation(0).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 94
+DoubleNumberRelation(0).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 95
 DoubleNumberRelation(1).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 95
+DoubleNumberRelation(1).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 96
+DoubleNumberRelation(-1).              // error
+----------------------^-------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 96
 DoubleNumberRelation(-1).              // error
 ----------------------^-------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 97
 DoubleNumberRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric argument for functor in file type_system1.dl at line 97
+DoubleNumberRelation(1+1).             // error
+---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 97
 DoubleNumberRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric use for numeric functor in file type_system1.dl at line 97
@@ -445,6 +559,9 @@ DoubleNumberRelation(1+1).             // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 97
 DoubleNumberRelation(1+1).             // error
 -----------------------^------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 98
+DoubleNumberRelation("1").             // error
+---------------------^--------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 98
 DoubleNumberRelation("1").             // error
 ---------------------^--------------------------
@@ -457,16 +574,28 @@ DoubleNumberRelation(["1", "1"]).      // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 107
 TripleNumberRelation(0).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 107
+TripleNumberRelation(0).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 108
 TripleNumberRelation(1).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 108
+TripleNumberRelation(1).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 109
+TripleNumberRelation(-1).              // error
+----------------------^-------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 109
 TripleNumberRelation(-1).              // error
 ----------------------^-------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 110
 TripleNumberRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric argument for functor in file type_system1.dl at line 110
+TripleNumberRelation(1+1).             // error
+---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 110
 TripleNumberRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric use for numeric functor in file type_system1.dl at line 110
@@ -478,6 +607,9 @@ TripleNumberRelation(1+1).             // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 110
 TripleNumberRelation(1+1).             // error
 -----------------------^------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 111
+TripleNumberRelation("1").             // error
+---------------------^--------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 111
 TripleNumberRelation("1").             // error
 ---------------------^--------------------------
@@ -493,16 +625,28 @@ TripleNumberRelation(["1", "1", "1"]). // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 120
 SingleSymbolRelation(0).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 120
+SingleSymbolRelation(0).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 121
 SingleSymbolRelation(1).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 121
+SingleSymbolRelation(1).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 122
+SingleSymbolRelation(-1).              // error
+----------------------^-------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 122
 SingleSymbolRelation(-1).              // error
 ----------------------^-------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 123
 SingleSymbolRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric argument for functor in file type_system1.dl at line 123
+SingleSymbolRelation(1+1).             // error
+---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 123
 SingleSymbolRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric use for numeric functor in file type_system1.dl at line 123
@@ -514,6 +658,9 @@ SingleSymbolRelation(1+1).             // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 123
 SingleSymbolRelation(1+1).             // error
 -----------------------^------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 124
+SingleSymbolRelation("1").             // error
+---------------------^--------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 124
 SingleSymbolRelation("1").             // error
 ---------------------^--------------------------
@@ -541,16 +688,28 @@ SingleSymbolRelation([1+1]).           // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 133
 DoubleSymbolRelation(0).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 133
+DoubleSymbolRelation(0).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 134
 DoubleSymbolRelation(1).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 134
+DoubleSymbolRelation(1).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 135
+DoubleSymbolRelation(-1).              // error
+----------------------^-------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 135
 DoubleSymbolRelation(-1).              // error
 ----------------------^-------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 136
 DoubleSymbolRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric argument for functor in file type_system1.dl at line 136
+DoubleSymbolRelation(1+1).             // error
+---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 136
 DoubleSymbolRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric use for numeric functor in file type_system1.dl at line 136
@@ -562,6 +721,9 @@ DoubleSymbolRelation(1+1).             // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 136
 DoubleSymbolRelation(1+1).             // error
 -----------------------^------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 137
+DoubleSymbolRelation("1").             // error
+---------------------^--------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 137
 DoubleSymbolRelation("1").             // error
 ---------------------^--------------------------
@@ -610,16 +772,28 @@ DoubleSymbolRelation([1+1, 1+1]).      // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 146
 TripleSymbolRelation(0).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 146
+TripleSymbolRelation(0).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 147
 TripleSymbolRelation(1).               // error
 ---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 147
+TripleSymbolRelation(1).               // error
+---------------------^--------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 148
+TripleSymbolRelation(-1).              // error
+----------------------^-------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 148
 TripleSymbolRelation(-1).              // error
 ----------------------^-------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 149
 TripleSymbolRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric argument for functor in file type_system1.dl at line 149
+TripleSymbolRelation(1+1).             // error
+---------------------^--------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 149
 TripleSymbolRelation(1+1).             // error
 ---------------------^--------------------------
 Error: Non-numeric use for numeric functor in file type_system1.dl at line 149
@@ -631,6 +805,9 @@ TripleSymbolRelation(1+1).             // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 149
 TripleSymbolRelation(1+1).             // error
 -----------------------^------------------------
+Error: Head argument is not a subtype of its declared type in file type_system1.dl at line 150
+TripleSymbolRelation("1").             // error
+---------------------^--------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 150
 TripleSymbolRelation("1").             // error
 ---------------------^--------------------------
@@ -697,4 +874,4 @@ TripleSymbolRelation([1+1, 1+1, 1+1]). // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 154
 TripleSymbolRelation([1+1, 1+1, 1+1]). // error
 ----------------------------------^-------------
-233 errors generated, evaluation aborted
+292 errors generated, evaluation aborted

@@ -55,10 +55,10 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
             env.createSubsetType(cur->getQualifiedName(), t->getTypeAttribute());
         } else if (dynamic_cast<const AstUnionType*>(cur) != nullptr) {
             // initialize the union
-            env.createUnionType(cur->getQualifiedName());
+            env.createType<UnionType>(cur->getQualifiedName());
         } else if (dynamic_cast<const AstRecordType*>(cur) != nullptr) {
             // initialize the record
-            env.createRecordType(cur->getQualifiedName());
+            env.createType<RecordType>(cur->getQualifiedName());
         } else {
             std::cout << "Unsupported type construct: " << typeid(cur).name() << "\n";
             assert(false && "Unsupported Type Construct!");
@@ -67,14 +67,13 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
 
     // link symbols in a second step
     for (const auto& cur : program.getTypes()) {
-        Type* type = env.getModifiableType(cur->getQualifiedName());
-        assert(type && "It should be there!");
+        const Type& type = env.getType(cur->getQualifiedName());
 
         if (dynamic_cast<const AstSubsetType*>(cur) != nullptr) {
             // nothing to do here
         } else if (auto* t = dynamic_cast<const AstUnionType*>(cur)) {
             // get type as union type
-            auto* ut = dynamic_cast<UnionType*>(type);
+            auto* ut = dynamic_cast<const UnionType*>(&type);
             if (ut == nullptr) {
                 continue;  // support faulty input
             }
@@ -82,12 +81,12 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
             // add element types
             for (const auto& cur : t->getTypes()) {
                 if (env.isType(cur)) {
-                    ut->add(env.getType(cur));
+                    const_cast<UnionType*>(ut)->add(env.getType(cur));
                 }
             }
         } else if (auto* t = dynamic_cast<const AstRecordType*>(cur)) {
             // get type as record type
-            auto* rt = dynamic_cast<RecordType*>(type);
+            auto* rt = dynamic_cast<const RecordType*>(&type);
             if (rt == nullptr) {
                 continue;  // support faulty input
             }
@@ -95,7 +94,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
             // add fields
             for (const auto& f : t->getFields()) {
                 if (env.isType(f.type)) {
-                    rt->add(f.name, env.getType(f.type));
+                    const_cast<RecordType*>(rt)->add(f.name, env.getType(f.type));
                 }
             }
         } else {

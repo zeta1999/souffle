@@ -56,7 +56,6 @@
 
 namespace souffle {
 
-// Members are defined below in order to minimize the PR diff.
 struct AstSemanticCheckerImpl {
     AstTranslationUnit& tu;
     AstSemanticCheckerImpl(AstTranslationUnit& tu);

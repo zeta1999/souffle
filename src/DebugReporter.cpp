@@ -18,6 +18,7 @@
 #include "AstTranslationUnit.h"
 #include "AstTypeAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
+#include "AstUtils.h"
 #include "DebugReport.h"
 #include "PrecedenceGraph.h"
 #include <chrono>
@@ -30,19 +31,18 @@ namespace souffle {
 
 bool DebugReporter::transform(AstTranslationUnit& translationUnit) {
     translationUnit.getDebugReport().startSection();
-    auto datalogSpecOriginal = translationUnit.getProgram()->show();
+    auto datalogSpecOriginal = pprint(*translationUnit.getProgram());
     auto start = std::chrono::high_resolution_clock::now();
     bool changed = applySubtransformer(translationUnit, wrappedTransformer.get());
     auto end = std::chrono::high_resolution_clock::now();
-    std::string runtimeStr = "(" + std::to_string(std::chrono::duration<double>(end - start).count()) + "s)";
+
     if (changed) {
         generateDebugReport(translationUnit, datalogSpecOriginal);
-        translationUnit.getDebugReport().endSection(
-                wrappedTransformer->getName(), wrappedTransformer->getName() + " " + runtimeStr);
-    } else {
-        translationUnit.getDebugReport().endSection(wrappedTransformer->getName(),
-                wrappedTransformer->getName() + " " + runtimeStr + " (unchanged)");
     }
+
+    auto elapsed = std::to_string(std::chrono::duration<double>(end - start).count());
+    translationUnit.getDebugReport().endSection(wrappedTransformer->getName(),
+            wrappedTransformer->getName() + " (" + elapsed + "s)" + (changed ? "" : " (unchanged)"));
     return changed;
 }
 
@@ -61,15 +61,7 @@ DebugReportSection formatCodeSection(const std::string& id, const std::string& t
 }
 
 void DebugReporter::generateDebugReport(AstTranslationUnit& tu, const std::string& preTransformDatalog) {
-    auto show = [](auto* printablePtr) {
-        std::stringstream ss;
-        if (printablePtr != nullptr) {
-            ss << *printablePtr;
-        }
-        return ss.str();
-    };
-
-    std::string datalogSpec = show(tu.getProgram());
+    auto datalogSpec = pprint(*tu.getProgram());
     tu.getDebugReport().addSection("dl", "Datalog",
             preTransformDatalog.empty() ? std::move(datalogSpec)
                                         : generateDiff(preTransformDatalog, datalogSpec));

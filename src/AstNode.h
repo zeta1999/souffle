@@ -88,12 +88,6 @@ public:
         return out;
     }
 
-    std::string show() const {
-        std::stringstream ss;
-        print(ss);
-        return ss.str();
-    }
-
 protected:
     /** Output to a given output stream */
     virtual void print(std::ostream& os) const = 0;

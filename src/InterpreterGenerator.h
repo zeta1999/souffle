@@ -142,10 +142,10 @@ public:
         std::vector<size_t> data;
         data.push_back(encodeView(&exists));
         // Check if the search signature is a total signature
-        bool isTotal = true;
+        size_t isTotal = 1;
         for (const auto& cur : exists.getValues()) {
             if (isRamUndefValue(cur)) {
-                isTotal = false;
+                isTotal = 0;
             }
         }
         data.push_back(isTotal);

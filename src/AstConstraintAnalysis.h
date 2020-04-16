@@ -62,9 +62,11 @@ public:
     using constraint_type = std::shared_ptr<Constraint<AnalysisVar>>;
     using solution_type = std::map<const AstArgument*, value_type>;
 
-    virtual void preProcessing(const AstClause&) {}
+    virtual void collectConstraints(const AstClause& clause) {
+        visitDepthFirstPreOrder(clause, *this);
+    }
 
-    virtual void solveConstraints(const AstClause& clause) {
+    virtual void solveConstraints(const AstClause&) {
         assignment = constraints.solve();
     }
 
@@ -76,10 +78,7 @@ public:
      * @return an assignment mapping a property to each argument in the given clause
      */
     solution_type analyse(const AstClause& clause, std::ostream* debugOutput = nullptr) {
-        preProcessing(clause);
-
-        // collect constraints
-        visitDepthFirstPreOrder(clause, *this);
+        collectConstraints(clause);
 
         solveConstraints(clause);
 

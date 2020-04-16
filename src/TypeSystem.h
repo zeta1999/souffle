@@ -83,16 +83,16 @@ protected:
     /** A reference to the type environment this type is associated to. */
     const TypeEnvironment& environment;
 
-private:
     /** The name of this type. */
     AstQualifiedName name;
 };
 
 /**
- * PrimitiveType = Number/Unsigned/Float/Symbol
+ * Abstract type, representing the type assigned to a constant.
+ * ConstantType = NumberConstant/UnsignedConstant/FloatConstant/SymbolConstant
  */
-class PrimitiveType : public Type {
-    PrimitiveType(const TypeEnvironment& environment, const AstQualifiedName& name)
+class ConstantType : public Type {
+    ConstantType(const TypeEnvironment& environment, const AstQualifiedName& name)
             : Type(environment, name) {}
 
     friend class TypeEnvironment;
@@ -119,10 +119,19 @@ private:
     const Type& baseType;
 };
 
-// ConstantType = NumberConstant/UnsignedConstant/FloatConstant/SymbolConstant
-class ConstantType : public Type {
-    ConstantType(const TypeEnvironment& environment, const AstQualifiedName& name)
-            : Type(environment, name) {}
+/**
+ * PrimitiveType = Number/Unsigned/Float/Symbol
+ * The class representing pre-built, concrete types.
+ */
+class PrimitiveType : public SubsetType {
+public:
+    void print(std::ostream& out) const override {
+        out << name;
+    }
+
+private:
+    PrimitiveType(const TypeEnvironment& environment, const AstQualifiedName& name, const ConstantType& base)
+            : SubsetType(environment, name, base) {}
 
     friend class TypeEnvironment;
 };
@@ -342,10 +351,10 @@ class TypeEnvironment {
 public:
     // -- constructors / destructores --
     TypeEnvironment()
-            : types(), predefinedTypes(initializePrimitiveTypes()),
-              primitiveTypes(
-                      TypeSet(getType("number"), getType("float"), getType("unsigned"), getType("symbol"))),
-              primitiveNumericTypes(TypeSet(getType("number"), getType("float"), getType("unsigned"))){};
+            : constantTypes(initializeConstantTypes()),
+              constantNumericTypes(TypeSet(
+                      getType("numberConstant"), getType("unsignedConstant"), getType("floatConstant"))),
+              primitiveTypes(initializePrimitiveTypes()){};
 
     TypeEnvironment(const TypeEnvironment&) = delete;
 
@@ -362,17 +371,19 @@ public:
     SubsetType& createSubsetType(const AstQualifiedName& name, TypeAttribute typeAttribute) {
         switch (typeAttribute) {
             case TypeAttribute::Signed:
-                return createType<SubsetType>(name, getNumberType());
+                return createType<SubsetType>(name, getType("number"));
             case TypeAttribute::Unsigned:
-                return createType<SubsetType>(name, getUnsignedType());
+                return createType<SubsetType>(name, getType("unsigned"));
             case TypeAttribute::Float:
-                return createType<SubsetType>(name, getFloatType());
+                return createType<SubsetType>(name, getType("float"));
             case TypeAttribute::Symbol:
-                return createType<SubsetType>(name, getSymbolType());
+                return createType<SubsetType>(name, getType("symbol"));
             case TypeAttribute::Record:
-                assert(false && "Invalid type attribute");
+                break;
         }
-        return createType<SubsetType>(name, getNumberType());
+
+        assert(false && "Invalid type attribute");
+        return createType<SubsetType>(name, getType(""));
     }
 
     bool isType(const AstQualifiedName&) const;
@@ -381,20 +392,24 @@ public:
 
     const Type& getType(const AstQualifiedName&) const;
 
-    const Type& getNumberType() const {
-        return getType("number");
-    }
+    const Type& getConstantType(TypeAttribute type) const {
+        switch (type) {
+            case TypeAttribute::Signed:
+                return getType("numberConstant");
+            case TypeAttribute::Unsigned:
+                return getType("unsignedConstant");
+                ;
+            case TypeAttribute::Float:
+                return getType("floatConstant");
+            case TypeAttribute::Symbol:
+                return getType("symbolConstant");
+                ;
+            case TypeAttribute::Record:
+                break;
+        }
 
-    const Type& getUnsignedType() const {
-        return getType("unsigned");
-    }
-
-    const Type& getFloatType() const {
-        return getType("float");
-    }
-
-    const Type& getSymbolType() const {
-        return getType("symbol");
+        assert(false && "There is no constant record type");
+        return getType("");
     }
 
     bool isPrimitiveType(const AstQualifiedName& identifier) const {
@@ -406,15 +421,19 @@ public:
     }
 
     bool isPrimitiveType(const Type& typeName) const {
-        return predefinedTypes.contains(typeName);
+        return primitiveTypes.contains(typeName);
     }
 
     const TypeSet& getPrimitiveTypes() const {
-        return predefinedTypes;
+        return primitiveTypes;
     }
 
-    const TypeSet& getNumericTypes() const {
-        return primitiveNumericTypes;
+    const TypeSet& getConstantTypes() const {
+        return constantTypes;
+    }
+
+    const TypeSet& getConstantNumericTypes() const {
+        return constantNumericTypes;
     }
 
     TypeSet getAllTypes() const;
@@ -435,17 +454,15 @@ private:
     void addType(Type* type);
 
     TypeSet initializePrimitiveTypes(void);
+    TypeSet initializeConstantTypes(void);
 
     /** The list of covered types */
     std::map<AstQualifiedName, std::unique_ptr<Type>> types;
 
-    const TypeSet predefinedTypes;
+    const TypeSet constantTypes;
+    const TypeSet constantNumericTypes;
 
     const TypeSet primitiveTypes;
-    const TypeSet primitiveNumericTypes;
-
-    // const TypeSet constantTypes;
-    // const TypeSet constantNumericTypes;
 };
 
 // ---------------------------------------------------------------

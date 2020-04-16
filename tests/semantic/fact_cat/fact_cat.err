@@ -1,10 +1,7 @@
-Error: Function in fact in file fact_cat.dl at line 7
+Error: Function in fact in file fact_cat.dl at line 14
 F(cat("x","y"),"AA").
 --^-------------------
-Error: Head argument is not a subtype of its declared type in file fact_cat.dl at line 7
+Error: Head argument is not a subtype of its declared type in file fact_cat.dl at line 14
 F(cat("x","y"),"AA").
 --^-------------------
-Error: Non-symbolic use for symbolic functor in file fact_cat.dl at line 7
-F(cat("x","y"),"AA").
---^-------------------
-3 errors generated, evaluation aborted
+2 errors generated, evaluation aborted

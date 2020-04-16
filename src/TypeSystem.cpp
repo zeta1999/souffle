@@ -51,19 +51,32 @@ void RecordType::print(std::ostream& out) const {
     }) << " )";
 }
 
+TypeSet TypeEnvironment::initializeConstantTypes() {
+    auto& signedConstant = createType<ConstantType>("numberConstant");
+    auto& floatConstant = createType<ConstantType>("floatConstant");
+    auto& symbolConstant = createType<ConstantType>("symbolConstant");
+    auto& unsignedConstant = createType<ConstantType>("unsignedConstant");
+
+    return TypeSet(signedConstant, floatConstant, symbolConstant, unsignedConstant);
+}
+
 TypeSet TypeEnvironment::initializePrimitiveTypes() {
-    auto& signedType = createType<PrimitiveType>("number");
-    auto& floatType = createType<PrimitiveType>("float");
-    auto& symbolType = createType<PrimitiveType>("symbol");
-    auto& unsignedType = createType<PrimitiveType>("unsigned");
+#define CREATE_PRIMITIVE(TYPE) \
+    auto& TYPE##Type =         \
+            createType<PrimitiveType>(#TYPE, static_cast<const ConstantType&>(getType(#TYPE "Constant")));
 
-    // auto& signedConstant = createType<ConstantType>("numberConstant");
-    // auto& floatConstant = createType<ConstantType>("floatConstant");
-    // auto& symbolConstant = createType<ConstantType>("symbolConstant");
-    // auto& unsignedConstant = createType<ConstantType>("unsignedConstant");
+    CREATE_PRIMITIVE(number);
+    CREATE_PRIMITIVE(float);
+    CREATE_PRIMITIVE(symbol);
+    CREATE_PRIMITIVE(unsigned);
+    // auto& signedType = createType<PrimitiveType>("number", getType("numberConstant"));
+    // auto& floatType = createType<PrimitiveType>("float", getType("floatConstant"));
+    // auto& symbolType = createType<PrimitiveType>("symbol", getType("symbolConstant"));
+    // auto& unsignedType = createType<PrimitiveType>("unsigned", getType("unsignedConstant"));
 
-    return TypeSet(signedType, floatType, symbolType,
-            unsignedType);  // , signedConstant, floatConstant, symbolConstant, unsignedConstant);
+    return TypeSet(numberType, floatType, symbolType, unsignedType);
+
+#undef CREATE_PRIMITIVE
 }
 
 bool TypeEnvironment::isType(const AstQualifiedName& ident) const {
@@ -109,9 +122,10 @@ struct TypeVisitor {
     }
 
     virtual R visit(const Type& type) const {
+        //        std::cerr << type << std::endl;
         // check all kinds of types and dispatch
-        if (auto* t = dynamic_cast<const PrimitiveType*>(&type)) {
-            return visitPrimitiveType(*t);
+        if (auto* t = dynamic_cast<const ConstantType*>(&type)) {
+            return visitConstantType(*t);
         }
         if (auto* t = dynamic_cast<const SubsetType*>(&type)) {
             return visitSubsetType(*t);
@@ -122,23 +136,16 @@ struct TypeVisitor {
         if (auto* t = dynamic_cast<const RecordType*>(&type)) {
             return visitRecordType(*t);
         }
-        if (auto* t = dynamic_cast<const ConstantType*>(&type)) {
-            return visitConstantType(*t);
-        }
 
         assert(false && "Unsupported type encountered!");
         return R();
     }
 
-    virtual R visitPrimitiveType(const PrimitiveType& type) const {
+    virtual R visitConstantType(const ConstantType& type) const {
         return visitType(type);
     }
 
     virtual R visitSubsetType(const SubsetType& type) const {
-        return visitType(type);
-    }
-
-    virtual R visitConstantType(const ConstantType& type) const {
         return visitType(type);
     }
 
@@ -194,7 +201,7 @@ bool isOfRootType(const Type& type, const Type& root) {
 
         explicit visitor(const Type& root) : root(root) {}
 
-        bool visitPrimitiveType(const PrimitiveType& type) const override {
+        bool visitConstantType(const ConstantType& type) const override {
             return type == root;
         }
         bool visitSubsetType(const SubsetType& type) const override {
@@ -202,8 +209,9 @@ bool isOfRootType(const Type& type, const Type& root) {
         }
         bool visitUnionType(const UnionType& type) const override {
             return !type.getElementTypes().empty() &&
-                   all_of(type.getElementTypes(), [&](const Type* cur) { return visit(*cur); });
+                   all_of(type.getElementTypes(), [&](const Type* cur) { return this->visit(*cur); });
         }
+
         bool visitType(const Type& /*unused*/) const override {
             return false;
         }
@@ -212,23 +220,30 @@ bool isOfRootType(const Type& type, const Type& root) {
     return visitor(root).visit(type);
 }
 
-bool isUnion(const Type& type) {
-    return isA<UnionType>(type);
-}
-
 bool isSubType(const Type& a, const UnionType& b) {
     // A is a subtype of b if it is in the transitive closure of b
     struct visitor : public VisitOnceTypeVisitor<bool> {
-        const Type& trg;
-        explicit visitor(const Type& trg) : trg(trg) {}
-        bool visit(const Type& type) const override {
-            if (trg == type) {
+        const Type& target;
+        explicit visitor(const Type& target) : target(target) {}
+
+        bool visitConstantType(const ConstantType& type) const override {
+            return target == type;
+        }
+
+        bool visitSubsetType(const SubsetType& type) const override {
+            //            std::cerr << "type: " << type << " target: " << target << std::endl;
+            if (target == type) {
                 return true;
             }
-            return VisitOnceTypeVisitor<bool>::visit(type);
+            return this->visit(type.getBaseType());
         }
+
         bool visitUnionType(const UnionType& type) const override {
             return any_of(type.getElementTypes(), [&](const Type* cur) { return visit(*cur); });
+        }
+
+        bool visitType(const Type& /*type*/) const override {
+            return false;
         }
     };
 
@@ -316,7 +331,7 @@ bool hasFloatType(const TypeSet& types) {
 }
 
 bool isFloatType(const Type& type) {
-    return isOfRootType(type, type.getTypeEnvironment().getFloatType());
+    return isOfRootType(type, type.getTypeEnvironment().getConstantType(TypeAttribute::Float));
 }
 
 bool isFloatType(const TypeSet& s) {
@@ -324,7 +339,7 @@ bool isFloatType(const TypeSet& s) {
 }
 
 bool isNumberType(const Type& type) {
-    return isOfRootType(type, type.getTypeEnvironment().getNumberType());
+    return isOfRootType(type, type.getTypeEnvironment().getConstantType(TypeAttribute::Signed));
 }
 
 bool isNumberType(const TypeSet& s) {
@@ -332,7 +347,7 @@ bool isNumberType(const TypeSet& s) {
 }
 
 bool isUnsignedType(const Type& type) {
-    return isOfRootType(type, type.getTypeEnvironment().getUnsignedType());
+    return isOfRootType(type, type.getTypeEnvironment().getConstantType(TypeAttribute::Unsigned));
 }
 
 bool isUnsignedType(const TypeSet& s) {
@@ -340,7 +355,7 @@ bool isUnsignedType(const TypeSet& s) {
 }
 
 bool isSymbolType(const Type& type) {
-    return isOfRootType(type, type.getTypeEnvironment().getSymbolType());
+    return isOfRootType(type, type.getTypeEnvironment().getConstantType(TypeAttribute::Symbol));
 }
 
 bool isSymbolType(const TypeSet& s) {
@@ -395,21 +410,31 @@ bool isSubtypeOf(const Type& a, const Type& b) {
         return true;
     }
 
-    // check for predefined types
-    if (isA<PrimitiveType>(b)) {
-        return isOfRootType(a, b);
+    // check for subtypes.
+    if (isOfRootType(a, b)) {
+        return true;
     }
 
     // check primitive type chains
-    if (isA<SubsetType>(a)) {
-        if (isSubtypeOf(as<SubsetType>(a).getBaseType(), b)) {
-            return true;
-        }
-    }
+    // if (isA<SubsetType>(b)) {
+    //     if (isSubtypeOf(a, as<SubsetType>(b).getBaseType())) {
+    //         return true;
+    //     }
+    // }
 
     // next - if b is a union type
-    if (isUnion(b)) {
-        return isSubType(a, as<UnionType>(b));
+    if (isRecursiveType(a) || isRecursiveType(b)) {
+        return false;
+    }
+
+    if (isA<UnionType>(b)) {
+        if (!isA<UnionType>(a)) {
+            return any_of(as<UnionType>(b).getElementTypes(),
+                    [&](const Type* type) { return isSubtypeOf(a, *type); });
+        } else {
+            return all_of(as<UnionType>(a).getElementTypes(),
+                    [&](const Type* type) { return isSubtypeOf(*type, b); });
+        }
     }
 
     return false;
@@ -538,7 +563,7 @@ TypeSet getGreatestCommonSubtypes(const Type& a, const Type& b) {
 
     // last option: if both are unions with common sub-types
     TypeSet res;
-    if (isUnion(a) && isUnion(b)) {
+    if (isA<UnionType>(a) && isA<UnionType>(b)) {
         // collect common sub-types of union types
         struct collector : public TypeVisitor<void> {
             const Type& b;

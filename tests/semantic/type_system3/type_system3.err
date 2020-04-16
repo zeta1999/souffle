@@ -1,12 +1,12 @@
+Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 39
+number_primi_relation_1_2_B(X) :- number_relation(X).
+----------------------------^-------------------------
+Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 40
+number_primi_relation_2_3(X) :- number_relation(X).
+--------------------------^-------------------------
 Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 42
 number_primi_relation_1(X) :- number_primi_relation_2(X). // error
 ------------------------^------------------------------------------
-Error: Unable to deduce type for variable X in file type_system3.dl at line 42
-number_primi_relation_1(X) :- number_primi_relation_2(X). // error
-------------------------^------------------------------------------
-Error: Unable to deduce type for variable X in file type_system3.dl at line 42
-number_primi_relation_1(X) :- number_primi_relation_2(X). // error
-------------------------------------------------------^------------
 Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 46
 number_primi_relation_1_2_A(X) :- number_primi_relation_1(X), number_primi_relation_2(X). // error
 ----------------------------^----------------------------------------------------------------------
@@ -19,15 +19,21 @@ number_primi_relation_1_2_A(X) :- number_primi_relation_1(X), number_primi_relat
 Error: Unable to deduce type for variable X in file type_system3.dl at line 46
 number_primi_relation_1_2_A(X) :- number_primi_relation_1(X), number_primi_relation_2(X). // error
 --------------------------------------------------------------------------------------^------------
+Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 47
+number_primi_relation_1_2_A(X) :- number_relation(X), !number_primi_relation_1(X), !number_primi_relation_2(X).
+----------------------------^-----------------------------------------------------------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 50
+number_primi_relation_3(X) :- number_primi_relation_2_3(X).
+------------------------^-----------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 117
+symbol_primi_relation_1_2_B(X) :- symbol_relation(X).
+----------------------------^-------------------------
+Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 118
+symbol_primi_relation_2_3(X) :- symbol_relation(X).
+--------------------------^-------------------------
 Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 120
 symbol_primi_relation_1(X) :- symbol_primi_relation_2(X). // error
 ------------------------^------------------------------------------
-Error: Unable to deduce type for variable X in file type_system3.dl at line 120
-symbol_primi_relation_1(X) :- symbol_primi_relation_2(X). // error
-------------------------^------------------------------------------
-Error: Unable to deduce type for variable X in file type_system3.dl at line 120
-symbol_primi_relation_1(X) :- symbol_primi_relation_2(X). // error
-------------------------------------------------------^------------
 Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 124
 symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1(X), symbol_primi_relation_2(X). // error
 ----------------------------^----------------------------------------------------------------------
@@ -40,6 +46,12 @@ symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1(X), symbol_primi_relat
 Error: Unable to deduce type for variable X in file type_system3.dl at line 124
 symbol_primi_relation_1_2_A(X) :- symbol_primi_relation_1(X), symbol_primi_relation_2(X). // error
 --------------------------------------------------------------------------------------^------------
+Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 125
+symbol_primi_relation_1_2_A(X) :- symbol_relation(X), !symbol_primi_relation_1(X), !symbol_primi_relation_2(X).
+----------------------------^-----------------------------------------------------------------------------------
+Error: Head argument is not a subtype of its declared type in file type_system3.dl at line 128
+symbol_primi_relation_3(X) :- symbol_primi_relation_2_3(X).
+------------------------^-----------------------------------
 Error: Union type number_symbol is defined over {symbol, number} (multiple primitive types in union) in file type_system3.dl at line 167
 .type number_symbol = number | symbol // error
 ^----------------------------------------------
@@ -55,4 +67,4 @@ Error: Union type number_symbol_union is defined over {symbol, number} (multiple
 Error: Union type number_symbol_union_1_2 is defined over {symbol, number} (multiple primitive types in union) in file type_system3.dl at line 173
 .type number_symbol_union_1_2 = number_union_1_2 | symbol_union_1_2 // error
 ^----------------------------------------------------------------------------
-19 errors generated, evaluation aborted
+23 errors generated, evaluation aborted

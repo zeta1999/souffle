@@ -29,7 +29,7 @@ B(3).
 
 F(X) :- A(X). // no error
 F(X) :- B(X). // no error
-G(X) :- E(X). // no error
+G(X) :- E(X). // error
 
 E(X) :- F(X), !A(X), !B(X). // no error
 E(X) :- F(X), A(X), B(X). // error

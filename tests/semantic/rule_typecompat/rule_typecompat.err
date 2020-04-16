@@ -16,12 +16,6 @@ Warning: No rules/facts defined for relation E in file rule_typecompat.dl at lin
 Error: Head argument is not a subtype of its declared type in file rule_typecompat.dl at line 15
 A(x) :- B(x).
 --^-----------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 15
-A(x) :- B(x).
---^-----------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 15
-A(x) :- B(x).
-----------^---
 Error: Head argument is not a subtype of its declared type in file rule_typecompat.dl at line 18
 A(x) :- F(x,x).
 --^-------------
@@ -54,19 +48,7 @@ A(x) :- G(x,y).
 ------------^---
 Error: Head argument is not a subtype of its declared type in file rule_typecompat.dl at line 28
 G(x,x) :- A(x).
---^-------------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 28
-G(x,x) :- A(x).
---^-------------
-Error: Head argument is not a subtype of its declared type in file rule_typecompat.dl at line 28
-G(x,x) :- A(x).
 ----^-----------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 28
-G(x,x) :- A(x).
-----^-----------
-Error: Unable to deduce type for variable x in file rule_typecompat.dl at line 28
-G(x,x) :- A(x).
-------------^---
 Error: Ungrounded variable y in file rule_typecompat.dl at line 30
 G(x,y) :- A(x).
 ----^-----------
@@ -94,12 +76,6 @@ A(x) :- A(x), B(y), C(z).
 Error: Head argument is not a subtype of its declared type in file rule_typecompat.dl at line 39
 F(x,y) :- F(x,z), G(z,y).
 ----^---------------------
-Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 39
-F(x,y) :- F(x,z), G(z,y).
-----^---------------------
-Error: Unable to deduce type for variable y in file rule_typecompat.dl at line 39
-F(x,y) :- F(x,z), G(z,y).
-----------------------^---
 Error: Ungrounded variable y in file rule_typecompat.dl at line 41
 F(x,y) :- F(x,z), G(z,x).
 ----^---------------------
@@ -196,4 +172,4 @@ F(x,y) :- F(x,y),  t < x.
 Warning: Variable t only occurs once in file rule_typecompat.dl at line 63
 F(x,y) :- F(x,y),  t < x.
 -------------------^------
-49 errors generated, evaluation aborted
+41 errors generated, evaluation aborted

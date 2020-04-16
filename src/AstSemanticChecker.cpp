@@ -163,14 +163,22 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
             return;  // error in input program
         }
 
-        for (size_t i = 0; i < atts.size(); i++) {
+        for (size_t i = 0; i < atts.size(); ++i) {
             auto& typeName = atts[i]->getTypeName();
             if (typeEnv.isType(typeName)) {
                 auto argTypes = typeAnalysis.getTypes(args[i]);
                 auto& attributeType = typeEnv.getType(typeName);
-                if (!any_of(argTypes, [&attributeType](const Type& type) {
-                        return isSubtypeOf(type, attributeType);
-                    })) {
+
+                if (argTypes.isAll()) {
+                    continue;
+                }
+
+                bool validAttribute = any_of(argTypes,
+                        [&attributeType](const Type& type) { return isSubtypeOf(type, attributeType); });
+                bool hasConstantType = any_of(argTypes, [&typeEnv, &attributeType](const Type& type) {
+                    return typeEnv.getConstantTypes().contains(type) && isSubtypeOf(attributeType, type);
+                });
+                if (!validAttribute && !hasConstantType) {
                     // std::cerr << "arg: " << argTypes << " attribute: " << attributeType << std::endl;
                     report.addError(
                             "Head argument is not a subtype of its declared type", args[i]->getSrcLoc());
@@ -801,18 +809,19 @@ void AstSemanticChecker::checkUnionType(ErrorReport& report, const AstProgram& p
         const TypeEnvironment& typeEnvironment, const AstUnionType& type) {
     // check presence of all the element types and that all element types are based off a primitive
     for (const AstQualifiedName& sub : type.getTypes()) {
-        if (!typeEnvironment.isPrimitiveType(sub)) {
-            const AstType* subt = getType(program, sub);
-            if (subt == nullptr) {
-                report.addError("Undefined type " + toString(sub) + " in definition of union type " +
-                                        toString(type.getQualifiedName()),
-                        type.getSrcLoc());
-            } else if ((dynamic_cast<const AstUnionType*>(subt) == nullptr) &&
-                       (dynamic_cast<const AstSubsetType*>(subt) == nullptr)) {
-                report.addError("Union type " + toString(type.getQualifiedName()) +
-                                        " contains the non-primitive type " + toString(sub),
-                        type.getSrcLoc());
-            }
+        if (typeEnvironment.isPrimitiveType(sub)) {
+            continue;
+        }
+        const AstType* subt = getType(program, sub);
+        if (subt == nullptr) {
+            report.addError("Undefined type " + toString(sub) + " in definition of union type " +
+                                    toString(type.getQualifiedName()),
+                    type.getSrcLoc());
+        } else if ((dynamic_cast<const AstUnionType*>(subt) == nullptr) &&
+                   (dynamic_cast<const AstSubsetType*>(subt) == nullptr)) {
+            report.addError("Union type " + toString(type.getQualifiedName()) +
+                                    " contains the non-primitive type " + toString(sub),
+                    type.getSrcLoc());
         }
     }
 }

@@ -168,13 +168,12 @@ TypeConstraint hasSuperTypeInSet(const TypeVar& var, TypeSet values) {
 
             TypeSet newAssigments;
             for (const Type& type : assigments) {
-                bool existsSuperTypeInValues = any_of(values.begin(), values.end(),
-                        [&type](const Type& value) { return isSubtypeOf(type, value); });
+                bool existsSuperTypeInValues =
+                        any_of(values, [&type](const Type& value) { return isSubtypeOf(type, value); });
                 if (existsSuperTypeInValues) {
                     newAssigments.insert(type);
                 }
             }
-
             // check whether there was a change
             if (newAssigments == assigments) {
                 return false;
@@ -306,49 +305,6 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
     };
 
     return std::make_shared<C>(left, right);
-}
-
-/**
- * A constraint factory ensuring that all the types associated to the variable
- * a are subtypes of type b.
- */
-TypeConstraint isSupertypeOf(const TypeVar& variable, const Type& type) {
-    struct C : public Constraint<TypeVar> {
-        TypeVar variable;
-        const Type& type;
-        mutable bool repeat;
-
-        C(TypeVar variable, const Type& type) : variable(std::move(variable)), type(type), repeat(true) {}
-
-        bool update(Assignment<TypeVar>& assignments) const override {
-            // get current value of variable a
-            TypeSet& assignment = assignments[variable];
-
-            // remove all types that are not super-types of b
-            if (assignment.isAll()) {
-                assignment = TypeSet(type);
-                return true;
-            }
-
-            TypeSet newAssignment;
-            for (const Type& t : assignment) {
-                newAssignment.insert(getLeastCommonSupertypes(t, type));
-            }
-
-            // check whether there was a change
-            if (assignment == newAssignment) {
-                return false;
-            }
-            assignment = newAssignment;
-            return true;
-        }
-
-        void print(std::ostream& out) const override {
-            out << variable << " >: " << type.getName();
-        }
-    };
-
-    return std::make_shared<C>(variable, type);
 }
 
 TypeConstraint isSubtypeOfComponent(
@@ -552,19 +508,17 @@ private:
                     continue;
                 }
 
-                bool validAttribute = any_of(argAssignment,
-                        [&attributeType](const Type& type) { return isSubtypeOf(type, attributeType); });
-                bool hasConstantType = any_of(argAssignment, [&](const Type& type) {
-                    return typeEnv.getConstantTypes().contains(type) && isSubtypeOf(attributeType, type);
+                bool validAttribute = any_of(argAssignment, [&attributeType](const Type& type) {
+                    return isSubtypeOf(type, attributeType) ||
+                           (dynamic_cast<const ConstantType*>(&type) && isSubtypeOf(attributeType, type));
                 });
 
-                if (validAttribute || hasConstantType) {
+                if (validAttribute) {
                     addConstraint(isSubtypeOf(getVar(args[i]), attributeType));
                 }
             }
-
-            constraints.solve(assignment);
         }
+        constraints.solve(assignment);
     }
 
     // TODO: document
@@ -588,9 +542,9 @@ private:
             return;  // error in input program
         }
 
-        size_t i = 0;
         // Collect constraints from the head.
-        for (auto arg : head.getArguments()) {
+        for (size_t i = 0; i < args.size(); ++i) {
+            auto arg = args[i];
             visitDepthFirstPreOrder(*arg, *this);
 
             const auto& typeName = atts[i]->getTypeName();
@@ -599,10 +553,14 @@ private:
 
                 if (dynamic_cast<const RecordType*>(&type) != nullptr) {
                     addConstraint(isSubtypeOf(getVar(args[i]), type));
+                } else {
+                    for (auto& constantType : typeEnv.getConstantTypes()) {
+                        if (isSubtypeOf(type, constantType)) {
+                            addConstraint(isSubtypeOf(getVar(args[i]), constantType));
+                        }
+                    }
                 }
             }
-
-            ++i;
         }
     }
 
@@ -709,9 +667,9 @@ private:
             if (typeEnv.isType(typeName)) {
                 if (notNegated) {
                     addConstraint(isSubtypeOf(getVar(args[i]), typeEnv.getType(typeName)));
-                } else {
-                    addConstraint(isSupertypeOf(getVar(args[i]), typeEnv.getType(typeName)));
-                }
+                }  // else {
+                //     addConstraint(isSupertypeOf(getVar(args[i]), typeEnv.getType(typeName)));
+                // }
             }
         }
     }
@@ -814,8 +772,7 @@ private:
         }
         size_t i = 0;
         for (auto arg : fun.getArguments()) {
-            auto argumentVar = getVar(arg);
-            addConstraint(isSubtypeOf(argumentVar, typeEnv.getConstantType(fun.getArgType(i))));
+            addConstraint(isSubtypeOf(getVar(arg), typeEnv.getConstantType(fun.getArgType(i))));
             ++i;
         }
     }
@@ -859,7 +816,7 @@ private:
  */
 std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(const TypeEnvironment& typeEnv,
         const AstClause& clause, const AstProgram* program, std::ostream* logs) {
-    return TypeConstraintsAnalysis(typeEnv, program).analyse(clause, &std::cerr);
+    return TypeConstraintsAnalysis(typeEnv, program).analyse(clause, logs);
 }
 
 }  // end of namespace souffle

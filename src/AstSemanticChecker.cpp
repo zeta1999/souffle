@@ -149,16 +149,14 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
     // -- type checks --
 
     // - All types in head
-    visitDepthFirst(nodes, [&](const AstClause& clause) {
-        auto& head = *clause.getHead();
-
-        auto rel = getAtomRelation(&head, &program);
+    visitDepthFirst(nodes, [&](const AstAtom& atom) {
+        auto rel = getAtomRelation(&atom, &program);
         if (rel == nullptr) {
             return;  // error unrelated to types.
         }
 
         auto atts = rel->getAttributes();
-        auto args = head.getArguments();
+        auto args = atom.getArguments();
         if (atts.size() != args.size()) {
             return;  // error in input program
         }
@@ -173,15 +171,11 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
                     continue;
                 }
 
-                bool validAttribute = any_of(argTypes,
+                bool validAttribute = all_of(argTypes,
                         [&attributeType](const Type& type) { return isSubtypeOf(type, attributeType); });
-                bool hasConstantType = any_of(argTypes, [&typeEnv, &attributeType](const Type& type) {
-                    return typeEnv.getConstantTypes().contains(type) && isSubtypeOf(attributeType, type);
-                });
-                if (!validAttribute && !hasConstantType) {
-                    // std::cerr << "arg: " << argTypes << " attribute: " << attributeType << std::endl;
+                if (!validAttribute) {
                     report.addError(
-                            "Head argument is not a subtype of its declared type", args[i]->getSrcLoc());
+                            "Atoms argument is not a subtype of its declared type", args[i]->getSrcLoc());
                 }
             }
         }

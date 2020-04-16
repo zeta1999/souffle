@@ -44,6 +44,7 @@ aliases:
     os: linux
     services: docker
     sudo: false
+    before_script: docker pull souffle/ubuntu:bionic-base
   - &linuxpackage
     <<: *docker
     stage: Packaging
@@ -75,23 +76,16 @@ jobs:
   include:
 # Style check stage
   - stage: Warmup
+    <<: *docker
     name: "Style check"
-    os: linux
-    sudo: false
-    addons:
-      apt:
-        packages:
-        # The formatting may change with different versions of clang-format.
-        # Check before modifying!
-        - clang-format-7
-    script: ".travis/run_test_format.sh"
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test_format.sh"
   - stage: Warmup
     <<: *docker
     workspaces:
       create:
         name: focal_gcc
         paths: .
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && export CXX=g++ && .travis/init_test_swig.sh"
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && export CXX=g++ && .travis/init_test_swig.sh"
     name: "Build Focal g++"
   - stage: Warmup
     <<: *docker
@@ -99,42 +93,47 @@ jobs:
       create:
         name: focal_clang
         paths: .
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && export CXX=clang++ && .travis/init_test_swig.sh"
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && export CXX=clang++ && .travis/init_test_swig.sh"
     name: "Build Focal clang++"
 # Testing stage (-j8,-c -j8)
   - stage: Testing
+    <<: *docker
     name: "Linux clang non-eval"
     workspaces:
       use: focal_clang
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
   - stage: Testing
+    <<: *docker
     name: "Linux gcc non-eval"
     workspaces:
       use: focal_gcc
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
   - <<: *osxgcc
     name: "OSX gcc non-eval"
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
 
 # Testing stage with 64bit RamDomains (-j8,-c -j8)
-  - <<: *linuxgcc
-    before_script: ".travis/init_test_64bit.sh"
+  - stage: Testing
+    <<: *docker
     name: "Linux gcc 64-bit non-eval"
     env:
-    - *gcc_environment
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c -j8"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/init_test_64bit.sh && .travis/run_test.sh || (.travis/after_failure.sh && false)"
 
 # Testing stage for clang without OpenMP (,-c)
-  - <<: *linuxclang
+  - stage: Testing
+    <<: *docker
     name: "Linux clang single threaded"
+    workspaces:
+      use: focal_clang
     env:
-    - *clang_environment
     - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
   - <<: *osxclang
     name: "OSX clang single threaded"
     env:
@@ -142,20 +141,23 @@ jobs:
 
 # Testing stage (-j8,-c -j8)
   - stage: Testing
+    <<: *docker
     name: "Linux gcc fast evaluation tests"
     workspaces:
       use: focal_gcc
     env:
     - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
 
 # Testing stage for clang without OpenMP (,-c)
-  - <<: *linuxclang
+  - stage: Testing
+    <<: *docker
     name: "Linux clang fast evaluation tests"
-    before_script: ".travis/init_test_swig.sh"
+    workspaces:
+      use: focal_clang
     env:
-    - *clang_environment
     - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS=",-c"
+    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
   - <<: *osxclang
     name: "OSX clang fast evaluation tests"
     before_script: ".travis/init_test_swig.sh"
@@ -165,7 +167,7 @@ jobs:
 # Packaging stage
   # Test make install installs a working souffle.
   - <<: *linuxpackage
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind ubuntu:focal /bin/sh -c "cd /souffle && export DEBIAN_FRONTEND=noninteractive && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/test_make_install.sh"
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/init_make_package.sh && .travis/test_make_install.sh"
     name: "Debian make install"
   # Make the linux deb packages and if successful upload to github releases and bintray
   # All PRs go to bintray unstable, tagged releases to bintray stable

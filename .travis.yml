@@ -6,10 +6,12 @@ aliases:
     os: linux
     services: docker
     sudo: false
-    before_script: docker pull souffle/ubuntu:bionic-base
-    after_failure: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/after_failure.sh"
+    before_script:
+      - docker pull souffle/ubuntu:bionic-base
+      - docker run -d -t --name souf -w /souffle --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh
+    after_script: docker container stop souf
+    after_failure: docker exec souf /bin/sh -c ".travis/after_failure.sh"
   - &osxgcc
-    stage: Testing
     os: osx
     osx_image: xcode11.2
     compiler: gcc
@@ -36,41 +38,43 @@ jobs:
   - stage: Warmup
     name: "Style check"
     <<: *docker
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test_format.sh"
+    script: docker exec souf /bin/sh -c ".travis/run_test_format.sh"
   - stage: Warmup
+    name: "Build Bionic g++"
     <<: *docker
     workspaces:
       create:
-        name: focal_gcc
+        name: bionic_gcc
         paths: .
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && export CXX=g++ && .travis/init_test.sh '--enable-swig --enable-host-packaging'"
+    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig --enable-host-packaging'"
   - stage: Warmup
-    name: "Build Focal clang++"
+    name: "Build Bionic clang++"
     <<: *docker
     workspaces:
       create:
-        name: focal_clang
+        name: bionic_clang
         paths: .
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && export CXX=clang++ && .travis/init_test.sh '--enable-swig --enable-host-packaging'"
+    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig --enable-host-packaging'"
 
 # Testing stage without Evaluation tests (-j8,-c -j8)
   - stage: Testing
     name: "Linux clang non-eval"
     <<: *docker
     workspaces:
-      use: focal_clang
+      use: bionic_clang
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+    script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
   - stage: Testing
     name: "Linux gcc non-eval"
     <<: *docker
     workspaces:
-      use: focal_gcc
+      use: bionic_gcc
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
-  - <<: *osxgcc
+    script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
+  - stage: Testing
+    <<: *osxgcc
     name: "OSX gcc non-eval"
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
@@ -80,32 +84,36 @@ jobs:
     name: "Linux gcc fast evaluation tests"
     <<: *docker
     workspaces:
-      use: focal_gcc
+      use: bionic_gcc
     env:
     - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+    script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
   - stage: Testing
     name: "Linux clang fast evaluation tests"
     <<: *docker
     workspaces:
-      use: focal_clang
+      use: bionic_clang
     env:
     - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+    script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
 
 # Testing stage with 64bit RamDomains (-j8,-c -j8)
   - stage: Testing
     name: "Linux gcc 64-bit non-eval"
     <<: *docker
     env:
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/init_test.sh '--enable-64bit-domain' && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
+    script:
+      - docker exec souf /bin/sh -c ".travis/init_test.sh '--enable-64bit-domain'"
+      - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
   - stage: Testing
     name: "Linux gcc 64-bit fast evaluation tests"
     <<: *docker
     env:
     - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/init_test.sh '--enable-64bit-domain' && .travis/run_test.sh || (.travis/after_failure.sh && false)"
+    script:
+      - docker exec souf /bin/sh -c ".travis/init_test.sh '--enable-64bit-domain'"
+      - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
 
 # Testing stage for clang without OpenMP (,-c)
   - stage: Testing
@@ -113,16 +121,20 @@ jobs:
     <<: *docker
     env:
     - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/init_test.sh '--disable-openmp' .travis/run_test.sh || (.travis/after_failure.sh && false)"
-  - <<: *osxclang
+    script:
+      - docker exec souf /bin/sh -c ".travis/init_test.sh '--disable-openmp'"
+      - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
+  - stage: Testing
+    <<: *osxclang
     name: "OSX clang non-eval without OMP"
     env:
-    - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS=",-c"
 
 # Testing stage for clang without OpenMP (,-c)
-  - <<: *osxclang
+  - stage: Testing
+    <<: *osxclang
     name: "OSX clang fast evaluation tests without OMP"
-    before_script: ".travis/init_test_swig.sh"
+    before_script: ".travis/init_test.sh --enable-swig"
     env:
     - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS=",-c"
 
@@ -133,14 +145,17 @@ jobs:
     name: "Debian make install"
     <<: *docker
     workspaces:
-      use: focal_gcc
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && .travis/test_make_install.sh"
+      use: bionic_gcc
+    script: docker exec souf /bin/sh -c ".travis/test_make_install.sh"
   # Make the linux deb packages and if successful upload to github releases and bintray
   # All PRs go to bintray unstable, tagged releases to bintray stable
   - stage: Packaging
     name: "Debian package"
     <<: *docker
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind ubuntu:bionic /bin/sh -c "cd /souffle && .travis/linux/install_debian_deps.sh && .travis/init_make_package.sh && .travis/linux/make_package.sh"
+    script:
+      - docker exec souf /bin/sh -c ".travis/linux/install_debian_deps.sh"
+      - docker exec souf /bin/sh -c ".travis/init_test.sh --enable-host-packaging"
+      - docker exec souf /bin/sh -c ".travis/linux/make_package.sh"
     before_deploy:
       - .travis/bintray_json.sh debian
     # deploy to bintray if we're in the souffle-lang repo
@@ -233,7 +248,7 @@ jobs:
   - stage: Packaging
     name: "OSX package"
     <<: *osxclang
-    before_script: ".travis/init_make_package.sh"
+    before_script: ".travis/init_test.sh --enable-host-packaging"
     script: ".travis/osx/make_package.sh"
     before_deploy: .travis/bintray_json.sh osx
     deploy:
@@ -264,8 +279,8 @@ jobs:
     name: "Documenting"
     <<: *docker
     workspaces:
-      use: focal_gcc
-    script: docker run -e SOUFFLE_CATEGORY --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && make doxygen-doc"
+      use: bionic_gcc
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh -c "cd /souffle && make doxygen-doc"
     # update the gh-pages branch with doxygen output if the required github token has been set
     # https://pages.github.com/
     deploy:

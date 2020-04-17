@@ -72,13 +72,6 @@ public:
         return t.print(out), out;
     }
 
-    friend std::ostream& operator<<(std::ostream& out, const Type* t) {
-        if (t == nullptr) {
-            return out << "-null-";
-        }
-        return t->print(out), out;
-    }
-
 protected:
     /** A reference to the type environment this type is associated to. */
     const TypeEnvironment& environment;
@@ -88,7 +81,7 @@ protected:
 };
 
 /**
- * Abstract type, representing the type assigned to a constant.
+ * Representing the type assigned to a constant.
  * ConstantType = NumberConstant/UnsignedConstant/FloatConstant/SymbolConstant
  */
 class ConstantType : public Type {
@@ -216,11 +209,6 @@ public:
     }
 
     TypeSet& operator=(const TypeSet& other) = default;
-
-    /** A factory function for the all-types set */
-    static TypeSet getAllTypes() {
-        return TypeSet(true);
-    }
 
     /** Emptiness check */
     bool empty() const {
@@ -398,12 +386,10 @@ public:
                 return getType("numberConstant");
             case TypeAttribute::Unsigned:
                 return getType("unsignedConstant");
-                ;
             case TypeAttribute::Float:
                 return getType("floatConstant");
             case TypeAttribute::Symbol:
                 return getType("symbolConstant");
-                ;
             case TypeAttribute::Record:
                 break;
         }
@@ -470,6 +456,11 @@ private:
 // ---------------------------------------------------------------
 
 /**
+ * Determines whether type a is a subtype of type b.
+ */
+bool isSubtypeOf(const Type& a, const Type& b);
+
+/**
  * Returns full type qualifier for a given type
  */
 std::string getTypeQualifier(const Type& type);
@@ -494,6 +485,10 @@ bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
     assert(false && "unhandled `TypeAttribute`");
     exit(EXIT_FAILURE);
 }
+
+// bool isOfKind(const Type& type, TypeAttribute kind) {
+//     return isSubtypeOf(type, type.getTypeEnvironment().getConstantType(kind));
+// }
 
 /**
  * Convert a type analysis' type/set of type to the the TypeAttribute
@@ -595,46 +590,6 @@ bool isRecordType(const Type& type);
  * Determines whether all the types in the given set are record types.
  */
 bool isRecordType(const TypeSet& s);
-
-/**
- * Determines whether the given type is a recursive type.
- */
-bool isRecursiveType(const Type& type);
-
-/**
- * Determines whether type a is a subtype of type b.
- */
-bool isSubtypeOf(const Type& a, const Type& b);
-
-/**
- * Determines whether all types in s are subtypes of type b.
- */
-bool areSubtypesOf(const TypeSet& s, const Type& b);
-
-// -- Least Common Super Types ----------------------------------------
-
-/**
- * Computes the least common super types of the two given types.
- */
-TypeSet getLeastCommonSupertypes(const Type& a, const Type& b);
-
-/**
- * Computes the least common super types of all the types in the given set.
- */
-TypeSet getLeastCommonSupertypes(const TypeSet& set);
-
-/**
- * The set of pair-wise least common super types of the types in the two given sets.
- */
-TypeSet getLeastCommonSupertypes(const TypeSet& a, const TypeSet& b);
-
-/**
- * Computes the least common super types of the given types.
- */
-template <typename... Types>
-TypeSet getLeastCommonSupertypes(const Types&... types) {
-    return getLeastCommonSupertypes(TypeSet(types...));
-}
 
 // -- Greatest Common Sub Types --------------------------------------
 

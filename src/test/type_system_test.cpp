@@ -64,8 +64,8 @@ TEST(TypeSystem, isNumberType) {
     // check the union type
     {
         auto& U = env.createType<UnionType>("U");
-        EXPECT_FALSE(isNumberType(U));
-        EXPECT_FALSE(isSymbolType(U));
+        EXPECT_TRUE(isNumberType(U));
+        EXPECT_TRUE(isSymbolType(U));
         U.add(A);
         EXPECT_TRUE(isNumberType(U));
         EXPECT_FALSE(isSymbolType(U));
@@ -81,63 +81,13 @@ TEST(TypeSystem, isNumberType) {
     {
         auto& U = env.createType<UnionType>("U2");
 
-        EXPECT_FALSE(isNumberType(U));
+        EXPECT_TRUE(isNumberType(U));
         U.add(A);
         EXPECT_TRUE(isNumberType(U));
 
         U.add(U);
         EXPECT_FALSE(isNumberType(U));
     }
-}
-
-TEST(TypeSystem, isRecursiveType) {
-    TypeEnvironment env;
-
-    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
-
-    auto& U = env.createType<UnionType>("U");
-    auto& R = env.createType<RecordType>("R");
-    R.add("h", A);
-    R.add("t", U);
-
-    U.add(R);  // a not-really recursive union type
-
-    // primitive types are never recursive
-    EXPECT_FALSE(isRecursiveType(A)) << A;
-
-    // neither are union types
-    EXPECT_FALSE(isRecursiveType(U)) << U;
-
-    // but R = [ h : A , t : U = R ] is
-    EXPECT_TRUE(isRecursiveType(R)) << R;
-
-    // create a real recursive type
-    auto& List = env.createType<RecordType>("List");
-    EXPECT_FALSE(isRecursiveType(List));
-    List.add("head", A);
-    EXPECT_FALSE(isRecursiveType(List));
-    List.add("tail", List);
-    EXPECT_TRUE(isRecursiveType(List));
-
-    // a mutual recursive type
-    auto& E = env.createType<RecordType>("E");
-    auto& O = env.createType<RecordType>("O");
-
-    EXPECT_FALSE(isRecursiveType(E));
-    EXPECT_FALSE(isRecursiveType(O));
-
-    E.add("head", A);
-    E.add("tail", O);
-
-    EXPECT_FALSE(isRecursiveType(E));
-    EXPECT_FALSE(isRecursiveType(O));
-
-    O.add("head", B);
-    O.add("tail", E);
-
-    EXPECT_TRUE(isRecursiveType(E));
-    EXPECT_TRUE(isRecursiveType(O));
 }
 
 bool isNotSubtypeOf(const Type& a, const Type& b) {
@@ -300,58 +250,5 @@ TEST(TypeSystem, GreatestCommonSubtype) {
     //     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
     //     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
 }
-
-TEST(TypeSystem, LeastCommonSupertype) {
-    TypeEnvironment env;
-
-    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
-    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
-    auto& D = env.createSubsetType("D", TypeAttribute::Symbol);
-
-    auto& U = env.createType<UnionType>("U");
-    U.add(A);
-
-    auto& V = env.createType<UnionType>("V");
-    V.add(U);
-    V.add(B);
-
-    auto& W = env.createType<UnionType>("W");
-    W.add(V);
-    W.add(C);
-
-    EXPECT_TRUE(isSubtypeOf(A, env.getType("number")));
-    EXPECT_TRUE(isSubtypeOf(U, env.getType("number")));
-    EXPECT_TRUE(isSubtypeOf(V, env.getType("number")));
-
-    EXPECT_EQ("{}", toString(getLeastCommonSupertypes()));
-    EXPECT_EQ("{A}", toString(getLeastCommonSupertypes(A)));
-    EXPECT_EQ("{V}", toString(getLeastCommonSupertypes(A, B)));
-    EXPECT_EQ("{W}", toString(getLeastCommonSupertypes(A, B, C)));
-    EXPECT_EQ("{}", toString(getLeastCommonSupertypes(A, B, C, D)));
-
-    EXPECT_EQ("{symbol}", toString(getLeastCommonSupertypes(C, D)));
-    EXPECT_EQ("{}", toString(getLeastCommonSupertypes(A, D)));
-
-    EXPECT_EQ("{V}", toString(getLeastCommonSupertypes(U, B)));
-}
-
-// TODO:
-// TEST(TypeSystem, MultipleLeastCommonSupertype) {
-//     TypeEnvironment env;
-
-//     auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-//     auto& B = env.createSubsetType("B", TypeAttribute::Signed);
-
-//     auto& U = env.createType<UnionType>("U");
-//     U.add(A);
-//     U.add(B);
-
-//     auto& V = env.createType<UnionType>("V");
-//     V.add(A);
-//     V.add(B);
-
-//     EXPECT_EQ("{U,V}", toString(getLeastCommonSupertypes(A, B)));
-// }
 
 }  // namespace souffle::test

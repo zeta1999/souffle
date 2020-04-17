@@ -116,45 +116,35 @@ struct TypeVisitor {
         return visit(type);
     }
 
+#define FORWARD(TYPE) \
+    if (auto* t = dynamic_cast<const TYPE##Type*>(&type)) return visit##TYPE##Type(*t);
+
     virtual R visit(const Type& type) const {
-        //        std::cerr << type << std::endl;
-        // check all kinds of types and dispatch
-        if (auto* t = dynamic_cast<const ConstantType*>(&type)) {
-            return visitConstantType(*t);
-        }
-        if (auto* t = dynamic_cast<const SubsetType*>(&type)) {
-            return visitSubsetType(*t);
-        }
-        if (auto* t = dynamic_cast<const UnionType*>(&type)) {
-            return visitUnionType(*t);
-        }
-        if (auto* t = dynamic_cast<const RecordType*>(&type)) {
-            return visitRecordType(*t);
-        }
+        FORWARD(Constant);
+        FORWARD(Subset);
+        FORWARD(Union);
+        FORWARD(Record);
 
         assert(false && "Unsupported type encountered!");
         return R();
     }
+#undef FORWARD
 
-    virtual R visitConstantType(const ConstantType& type) const {
-        return visitType(type);
+#define VISIT(TYPE)                                             \
+    virtual R visit##TYPE##Type(const TYPE##Type& type) const { \
+        return visitType(type);                                 \
     }
 
-    virtual R visitSubsetType(const SubsetType& type) const {
-        return visitType(type);
-    }
-
-    virtual R visitUnionType(const UnionType& type) const {
-        return visitType(type);
-    }
-
-    virtual R visitRecordType(const RecordType& type) const {
-        return visitType(type);
-    }
+    VISIT(Constant)
+    VISIT(Subset)
+    VISIT(Union)
+    VISIT(Record)
 
     virtual R visitType(const Type& /*type*/) const {
         return R();
     }
+
+#undef VISIT
 };
 
 /**
@@ -203,7 +193,7 @@ bool isOfRootType(const Type& type, const Type& root) {
             return type == root || isOfRootType(type.getBaseType(), root);
         }
         bool visitUnionType(const UnionType& type) const override {
-            return !type.getElementTypes().empty() &&
+            return type == root ||
                    all_of(type.getElementTypes(), [&](const Type* cur) { return this->visit(*cur); });
         }
 
@@ -340,71 +330,24 @@ bool isRecordType(const TypeSet& s) {
     return !s.empty() && !s.isAll() && all_of(s, isA<RecordType>);
 }
 
-bool isRecursiveType(const Type& type) {
-    struct visitor : public VisitOnceTypeVisitor<bool> {
-        const Type& trg;
-        explicit visitor(const Type& trg) : trg(trg) {}
-        bool visit(const Type& type) const override {
-            if (trg == type) {
-                return true;
-            }
-            return VisitOnceTypeVisitor<bool>::visit(type);
-        }
-        bool visitUnionType(const UnionType& type) const override {
-            auto reachesTrg = [&](const Type* cur) { return this->visit(*cur); };
-            return any_of(type.getElementTypes(), reachesTrg);
-        }
-        bool visitRecordType(const RecordType& type) const override {
-            auto reachesTrg = [&](const RecordType::Field& cur) { return this->visit(cur.type); };
-            return any_of(type.getFields(), reachesTrg);
-        }
-    };
-
-    // record types are recursive if they contain themselves
-    if (const auto* r = dynamic_cast<const RecordType*>(&type)) {
-        auto reachesOrigin = visitor(type);
-        return any_of(r->getFields(),
-                [&](const RecordType::Field& field) -> bool { return reachesOrigin(field.type); });
-    }
-
-    return false;
-}
-
 bool isSubtypeOf(const Type& a, const Type& b) {
-    // make sure they are both in the same environment
-    auto& environment = a.getTypeEnvironment();
-    assert(environment.isType(a) && environment.isType(b));
+    assert(&a.getTypeEnvironment() == &b.getTypeEnvironment() &&
+            "Types must be in the same type environment");
 
-    // sub-type relation is reflexive
-    if (a == b) {
-        return true;
-    }
-
-    // check for subtypes.
     if (isOfRootType(a, b)) {
         return true;
     }
 
-    // next - if b is a union type
-    if (isRecursiveType(a) || isRecursiveType(b)) {
-        return false;
-    }
-
-    if (isA<UnionType>(b)) {
-        if (!isA<UnionType>(a)) {
-            return any_of(as<UnionType>(b).getElementTypes(),
-                    [&](const Type* type) { return isSubtypeOf(a, *type); });
-        } else {
-            return all_of(as<UnionType>(a).getElementTypes(),
-                    [&](const Type* type) { return isSubtypeOf(*type, b); });
-        }
+    // TODO: handle recursive unions here?
+    if (isA<UnionType>(a)) {
+        return all_of(
+                as<UnionType>(a).getElementTypes(), [&](const Type* type) { return isSubtypeOf(*type, b); });
+    } else if (isA<UnionType>(b)) {
+        return any_of(
+                as<UnionType>(b).getElementTypes(), [&](const Type* type) { return isSubtypeOf(a, *type); });
     }
 
     return false;
-}
-
-bool areSubtypesOf(const TypeSet& s, const Type& b) {
-    return all_of(s, [&](const Type& t) { return isSubtypeOf(t, b); });
 }
 
 void TypeEnvironment::print(std::ostream& out) const {
@@ -414,108 +357,9 @@ void TypeEnvironment::print(std::ostream& out) const {
     }
 }
 
-TypeSet getLeastCommonSupertypes(const Type& a, const Type& b) {
-    // make sure they are in the same type environment
-    assert(a.getTypeEnvironment().isType(a) && a.getTypeEnvironment().isType(b));
-
-    // supertype relation is reflexive.
-    if (a == b) {
-        return TypeSet(a);
-    }
-
-    // equally simple - check whether one is a sub-type of the other
-    if (isSubtypeOf(a, b)) {
-        return TypeSet(b);
-    }
-    if (isSubtypeOf(b, a)) {
-        return TypeSet(a);
-    }
-
-    // Compute all types t, such that a <: t and b <: t.
-    TypeSet superTypes;
-    TypeSet all = a.getTypeEnvironment().getAllTypes();
-    for (const Type& type : all) {
-        if (isSubtypeOf(a, type) && isSubtypeOf(b, type)) {
-            superTypes.insert(type);
-        }
-    }
-
-    // Find all T such that, such that for any t, t <: T implies t = T.
-    TypeSet leastSuperType;
-    for (const Type& type : superTypes) {
-        bool isLeast = all_of(superTypes, [&](const Type& t) { return !isSubtypeOf(t, type) || t == type; });
-        if (isLeast) {
-            leastSuperType.insert(type);
-        }
-    }
-
-    return leastSuperType;
-}
-
-TypeSet getLeastCommonSupertypes(const TypeSet& set) {
-    // handle the empty set
-    if (set.empty()) {
-        return set;
-    }
-
-    // handle the all set => empty set (since no common super-type)
-    if (set.isAll()) {
-        return TypeSet();
-    }
-
-    TypeSet res;
-    auto it = set.begin();
-    res.insert(*it);
-    ++it;
-
-    // refine sub-set step by step
-    for (; it != set.end(); ++it) {
-        TypeSet tmp;
-        for (const Type& cur : res) {
-            tmp.insert(getLeastCommonSupertypes(cur, *it));
-        }
-        res = tmp;
-    }
-
-    // done
-    return res;
-}
-
-// pairwise
-TypeSet getLeastCommonSupertypes(const TypeSet& a, const TypeSet& b) {
-    // special cases
-    if (a.empty()) {
-        return a;
-    }
-    if (b.empty()) {
-        return b;
-    }
-
-    if (a.isAll()) {
-        return b;
-    }
-    if (b.isAll()) {
-        return a;
-    }
-
-    // compute pairwise least common super types
-    TypeSet res;
-    for (const Type& x : a) {
-        for (const Type& y : b) {
-            res.insert(getLeastCommonSupertypes(x, y));
-        }
-    }
-    return res;
-}
-
 TypeSet getGreatestCommonSubtypes(const Type& a, const Type& b) {
-    assert(a.getTypeEnvironment().isType(a) && a.getTypeEnvironment().isType(b) &&
+    assert(&a.getTypeEnvironment() == &b.getTypeEnvironment() &&
             "Types must be in the same type environment");
-
-    // subtype is reflexive.
-    if (a == b) {
-        return TypeSet(a);
-    }
 
     if (isSubtypeOf(a, b)) {
         return TypeSet(a);

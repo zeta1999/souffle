@@ -75,7 +75,7 @@ struct sub_type {
  */
 struct all_type_factory {
     TypeSet operator()() const {
-        return TypeSet::getAllTypes();
+        return TypeSet(true);
     }
 };
 
@@ -213,9 +213,6 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             TypeSet& assigmentsLeft = assigment[left];
             TypeSet& assigmentsRight = assigment[right];
 
-            // std::cerr << "Left ass: " << assigmentsLeft << std::endl;
-            // std::cerr << "Right ass: " << assigmentsRight << std::endl;
-
             // Base types common to left and right variables.
             TypeSet baseTypes;
 
@@ -223,32 +220,25 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             TypeSet baseTypesLeft;
             TypeSet baseTypesRight;
 
-            // std::cerr << "base left: " << baseTypesLeft << std::endl;
-
             // Iterate over possible types extracting base types.
             // Left
             if (!assigmentsLeft.isAll()) {
                 for (const auto& type : assigmentsLeft) {
-                    // std::cerr << type << std::endl;
                     if (dynamic_cast<const SubsetType*>(&type) != nullptr ||
                             dynamic_cast<const ConstantType*>(&type) != nullptr) {
                         baseTypesLeft.insert(getBaseType(&type));
                     }
-                    // std::cerr << "base left after inserting: " << baseTypesLeft << std::endl;
                 }
             }
             // Right
             if (!assigmentsRight.isAll()) {
                 for (const auto& type : assigmentsRight) {
-                    //                    std::cerr << type << std::endl;
                     if (dynamic_cast<const SubsetType*>(&type) != nullptr ||
                             dynamic_cast<const ConstantType*>(&type) != nullptr) {
                         baseTypesRight.insert(getBaseType(&type));
                     }
                 }
             }
-
-            // std::cerr << "base left: " << baseTypesLeft << std::endl;
 
             TypeSet resultLeft;
             TypeSet resultRight;
@@ -481,14 +471,10 @@ public:
             : typeEnv(typeEnv), program(program) {}
 
 private:
-    void solveConstraints(const AstClause& clause) override {
+    void solveConstraints(const AstClause&) override {
         assignment = constraints.solve();
 
-        std::vector<const AstAtom*> atoms;
-        copy(negated.begin(), negated.end(), std::back_inserter(atoms));
-        atoms.push_back(clause.getHead());
-
-        for (auto* atom : atoms) {
+        for (auto* atom : sinks) {
             auto atomRelation = getAtomRelation(atom, program);
             if (atomRelation == nullptr) {
                 return;  // error in input program
@@ -512,8 +498,7 @@ private:
                     }
 
                     bool validAttribute = any_of(argAssignment, [&attributeType](const Type& type) {
-                        return isSubtypeOf(type, attributeType) ||
-                               (dynamic_cast<const ConstantType*>(&type) && isSubtypeOf(attributeType, type));
+                        return dynamic_cast<const ConstantType*>(&type) && isSubtypeOf(attributeType, type);
                     });
 
                     if (validAttribute) {
@@ -526,13 +511,13 @@ private:
     }
 
     void collectConstraints(const AstClause& clause) override {
-        negated.insert(clause.getHead());
+        sinks.insert(clause.getHead());
         visitDepthFirstPreOrder(clause, *this);
     }
 
     const TypeEnvironment& typeEnv;
     const AstProgram* program;
-    std::set<const AstAtom*> negated;
+    std::set<const AstAtom*> sinks;
 
     void visitNegatedAtomOrHead(const AstAtom& atom) {
         auto atomRelation = getAtomRelation(&atom, program);
@@ -548,20 +533,18 @@ private:
 
         // Collect constraints from the atom.
         for (size_t i = 0; i < args.size(); ++i) {
-            auto arg = args[i];
-            visitDepthFirstPreOrder(*arg, *this);
-
             const auto& typeName = atts[i]->getTypeName();
-            if (typeEnv.isType(typeName)) {
-                auto& type = typeEnv.getType(typeName);
+            if (!typeEnv.isType(typeName)) {
+                continue;
+            }
+            auto& type = typeEnv.getType(typeName);
 
-                if (dynamic_cast<const RecordType*>(&type) != nullptr) {
-                    addConstraint(isSubtypeOf(getVar(args[i]), type));
-                } else {
-                    for (auto& constantType : typeEnv.getConstantTypes()) {
-                        if (isSubtypeOf(type, constantType)) {
-                            addConstraint(isSubtypeOf(getVar(args[i]), constantType));
-                        }
+            if (dynamic_cast<const RecordType*>(&type) != nullptr) {
+                addConstraint(isSubtypeOf(getVar(args[i]), type));
+            } else {
+                for (auto& constantType : typeEnv.getConstantTypes()) {
+                    if (isSubtypeOf(type, constantType)) {
+                        addConstraint(isSubtypeOf(getVar(args[i]), constantType));
                     }
                 }
             }
@@ -570,7 +553,7 @@ private:
 
     // predicate
     void visitAtom(const AstAtom& atom) override {
-        if (contains(negated, &atom)) {
+        if (contains(sinks, &atom)) {
             visitNegatedAtomOrHead(atom);
             return;
         }
@@ -598,7 +581,7 @@ private:
     // negations need to be skipped
     void visitNegation(const AstNegation& cur) override {
         // add nested atom to black-list
-        negated.insert(cur.getAtom());
+        sinks.insert(cur.getAtom());
     }
 
     // symbol

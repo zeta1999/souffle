@@ -207,6 +207,10 @@ bool isOfRootType(const Type& type, const Type& root) {
                    all_of(type.getElementTypes(), [&](const Type* cur) { return this->visit(*cur); });
         }
 
+        bool visitRecordType(const RecordType& type) const override {
+            return type == root;
+        }
+
         bool visitType(const Type& /*unused*/) const override {
             return false;
         }
@@ -215,35 +219,6 @@ bool isOfRootType(const Type& type, const Type& root) {
     return visitor(root).visit(type);
 }
 
-bool isSubType(const Type& a, const UnionType& b) {
-    // A is a subtype of b if it is in the transitive closure of b
-    struct visitor : public VisitOnceTypeVisitor<bool> {
-        const Type& target;
-        explicit visitor(const Type& target) : target(target) {}
-
-        bool visitConstantType(const ConstantType& type) const override {
-            return target == type;
-        }
-
-        bool visitSubsetType(const SubsetType& type) const override {
-            //            std::cerr << "type: " << type << " target: " << target << std::endl;
-            if (target == type) {
-                return true;
-            }
-            return this->visit(type.getBaseType());
-        }
-
-        bool visitUnionType(const UnionType& type) const override {
-            return any_of(type.getElementTypes(), [&](const Type* cur) { return visit(*cur); });
-        }
-
-        bool visitType(const Type& /*type*/) const override {
-            return false;
-        }
-    };
-
-    return visitor(a).visit(b);
-}
 }  // namespace
 
 /* generate unique type qualifier string for a type */

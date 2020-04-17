@@ -376,13 +376,7 @@ int main(int argc, char** argv) {
     }
 
     // ------- check for parse errors -------------
-    if (astTranslationUnit->getErrorReport().getNumErrors() != 0) {
-        std::cerr << astTranslationUnit->getErrorReport();
-        std::cerr << std::to_string(astTranslationUnit->getErrorReport().getNumErrors()) +
-                             " errors generated, evaluation aborted"
-                  << std::endl;
-        exit(1);
-    }
+    astTranslationUnit->getErrorReport().exitIfErrors();
 
     // ------- rewriting / optimizations -------------
 
@@ -428,7 +422,8 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveTypecastsTransformer>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
             std::make_unique<ResolveAliasesTransformer>(), std::make_unique<MinimiseProgramTransformer>(),
-            std::make_unique<InlineRelationsTransformer>(), std::make_unique<ResolveAliasesTransformer>(),
+            std::make_unique<InlineRelationsTransformer>(), std::make_unique<GroundedTermsChecker>(),
+            std::make_unique<ResolveAliasesTransformer>(),
             std::make_unique<RemoveRedundantRelationsTransformer>(),
             std::make_unique<RemoveRelationCopiesTransformer>(),
             std::make_unique<RemoveEmptyRelationsTransformer>(),

@@ -20,322 +20,323 @@
 
 namespace souffle::test {
 
-// TEST(TypeSystem, Basic) {
-//     TypeEnvironment env;
-
-//     auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-//     auto& B = env.createSubsetType("B", TypeAttribute::Symbol);
-
-//     auto& U = env.createType<UnionType>("U");
-//     U.add(A);
-//     U.add(B);
-
-//     auto& R = env.createType<RecordType>("R");
-//     R.add("a", A);
-//     R.add("b", B);
-
-//     EXPECT_EQ("A <: number", toString(A));
-//     EXPECT_EQ("B <: symbol", toString(B));
+TEST(TypeSystem, Basic) {
+    TypeEnvironment env;
+
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Symbol);
+
+    auto& U = env.createType<UnionType>("U");
+    U.add(A);
+    U.add(B);
+
+    auto& R = env.createType<RecordType>("R");
+    R.add("a", A);
+    R.add("b", B);
+
+    EXPECT_EQ("A <: number", toString(A));
+    EXPECT_EQ("B <: symbol", toString(B));
 
-//     EXPECT_EQ("U = A | B", toString(U));
-//     EXPECT_EQ("R = ( a : A , b : B )", toString(R));
+    EXPECT_EQ("U = A | B", toString(U));
+    EXPECT_EQ("R = ( a : A , b : B )", toString(R));
+}
 
-// }
+TEST(TypeSystem, isNumberType) {
+    TypeEnvironment env;
+
+    auto& N = env.getType("number");
+
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
-// TEST(TypeSystem, isNumberType) {
-//     TypeEnvironment env;
+    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
 
-//     auto& N = env.getType("number");
+    EXPECT_TRUE(isNumberType(N));
+    EXPECT_TRUE(isNumberType(A));
+    EXPECT_TRUE(isNumberType(B));
+    EXPECT_TRUE(isSymbolType(C));
 
-//     auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-//     auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    EXPECT_FALSE(isSymbolType(N));
+    EXPECT_FALSE(isSymbolType(A));
+    EXPECT_FALSE(isSymbolType(B));
+    EXPECT_FALSE(isNumberType(C));
 
-//     auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
+    // check the union type
+    {
+        auto& U = env.createType<UnionType>("U");
+        EXPECT_FALSE(isNumberType(U));
+        EXPECT_FALSE(isSymbolType(U));
+        U.add(A);
+        EXPECT_TRUE(isNumberType(U));
+        EXPECT_FALSE(isSymbolType(U));
+        U.add(B);
+        EXPECT_TRUE(isNumberType(U));
+        EXPECT_FALSE(isSymbolType(U));
+        U.add(C);
+        EXPECT_FALSE(isNumberType(U));
+        EXPECT_FALSE(isSymbolType(U));
+    }
 
-//     EXPECT_TRUE(isNumberType(N));
-//     EXPECT_TRUE(isNumberType(A));
-//     EXPECT_TRUE(isNumberType(B));
-//     EXPECT_TRUE(isSymbolType(C));
+    // make type recursive
+    {
+        auto& U = env.createType<UnionType>("U2");
 
-//     EXPECT_FALSE(isSymbolType(N));
-//     EXPECT_FALSE(isSymbolType(A));
-//     EXPECT_FALSE(isSymbolType(B));
-//     EXPECT_FALSE(isNumberType(C));
+        EXPECT_FALSE(isNumberType(U));
+        U.add(A);
+        EXPECT_TRUE(isNumberType(U));
 
-//     // check the union type
-//     {
-//         auto& U = env.createType<UnionType>("U");
-//         EXPECT_FALSE(isNumberType(U));
-//         EXPECT_FALSE(isSymbolType(U));
-//         U.add(A);
-//         EXPECT_TRUE(isNumberType(U));
-//         EXPECT_FALSE(isSymbolType(U));
-//         U.add(B);
-//         EXPECT_TRUE(isNumberType(U));
-//         EXPECT_FALSE(isSymbolType(U));
-//         U.add(C);
-//         EXPECT_FALSE(isNumberType(U));
-//         EXPECT_FALSE(isSymbolType(U));
-//     }
+        U.add(U);
+        EXPECT_FALSE(isNumberType(U));
+    }
+}
 
-//     // make type recursive
-//     {
-//         auto& U = env.createType<UnionType>("U2");
+TEST(TypeSystem, isRecursiveType) {
+    TypeEnvironment env;
 
-//         EXPECT_FALSE(isNumberType(U));
-//         U.add(A);
-//         EXPECT_TRUE(isNumberType(U));
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
-//         U.add(U);
-//         EXPECT_FALSE(isNumberType(U));
-//     }
-// }
+    auto& U = env.createType<UnionType>("U");
+    auto& R = env.createType<RecordType>("R");
+    R.add("h", A);
+    R.add("t", U);
 
-// TEST(TypeSystem, isRecursiveType) {
-//     TypeEnvironment env;
+    U.add(R);  // a not-really recursive union type
 
-//     auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-//     auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    // primitive types are never recursive
+    EXPECT_FALSE(isRecursiveType(A)) << A;
 
-//     auto& U = env.createType<UnionType>("U");
-//     auto& R = env.createType<RecordType>("R");
-//     R.add("h", A);
-//     R.add("t", U);
+    // neither are union types
+    EXPECT_FALSE(isRecursiveType(U)) << U;
 
-//     U.add(R);  // a not-really recursive union type
+    // but R = [ h : A , t : U = R ] is
+    EXPECT_TRUE(isRecursiveType(R)) << R;
 
-//     // primitive types are never recursive
-//     EXPECT_FALSE(isRecursiveType(A)) << A;
+    // create a real recursive type
+    auto& List = env.createType<RecordType>("List");
+    EXPECT_FALSE(isRecursiveType(List));
+    List.add("head", A);
+    EXPECT_FALSE(isRecursiveType(List));
+    List.add("tail", List);
+    EXPECT_TRUE(isRecursiveType(List));
 
-//     // neither are union types
-//     EXPECT_FALSE(isRecursiveType(U)) << U;
+    // a mutual recursive type
+    auto& E = env.createType<RecordType>("E");
+    auto& O = env.createType<RecordType>("O");
 
-//     // but R = [ h : A , t : U = R ] is
-//     EXPECT_TRUE(isRecursiveType(R)) << R;
+    EXPECT_FALSE(isRecursiveType(E));
+    EXPECT_FALSE(isRecursiveType(O));
 
-//     // create a real recursive type
-//     auto& List = env.createType<RecordType>("List");
-//     EXPECT_FALSE(isRecursiveType(List));
-//     List.add("head", A);
-//     EXPECT_FALSE(isRecursiveType(List));
-//     List.add("tail", List);
-//     EXPECT_TRUE(isRecursiveType(List));
+    E.add("head", A);
+    E.add("tail", O);
 
-//     // a mutual recursive type
-//     auto& E = env.createType<RecordType>("E");
-//     auto& O = env.createType<RecordType>("O");
+    EXPECT_FALSE(isRecursiveType(E));
+    EXPECT_FALSE(isRecursiveType(O));
 
-//     EXPECT_FALSE(isRecursiveType(E));
-//     EXPECT_FALSE(isRecursiveType(O));
+    O.add("head", B);
+    O.add("tail", E);
 
-//     E.add("head", A);
-//     E.add("tail", O);
+    EXPECT_TRUE(isRecursiveType(E));
+    EXPECT_TRUE(isRecursiveType(O));
+}
 
-//     EXPECT_FALSE(isRecursiveType(E));
-//     EXPECT_FALSE(isRecursiveType(O));
+bool isNotSubtypeOf(const Type& a, const Type& b) {
+    return !isSubtypeOf(a, b);
+}
 
-//     O.add("head", B);
-//     O.add("tail", E);
+TEST(TypeSystem, isSubtypeOf_Basic) {
+    TypeEnvironment env;
 
-//     EXPECT_TRUE(isRecursiveType(E));
-//     EXPECT_TRUE(isRecursiveType(O));
-// }
+    // start with the two predefined types
 
-// bool isNotSubtypeOf(const Type& a, const Type& b) {
-//     return !isSubtypeOf(a, b);
-// }
+    auto& N = env.getType("number");
+    auto& S = env.getType("symbol");
 
-// TEST(TypeSystem, isSubtypeOf_Basic) {
-//     TypeEnvironment env;
+    EXPECT_PRED2(isSubtypeOf, N, N);
+    EXPECT_PRED2(isSubtypeOf, S, S);
 
-//     // start with the two predefined types
+    EXPECT_PRED2(isNotSubtypeOf, N, S);
+    EXPECT_PRED2(isNotSubtypeOf, S, N);
 
-//     auto& N = env.getType("number");
-//     auto& S = env.getType("symbol");
+    // check primitive type
 
-//     EXPECT_PRED2(isSubtypeOf, N, N);
-//     EXPECT_PRED2(isSubtypeOf, S, S);
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
-//     EXPECT_PRED2(isNotSubtypeOf, N, S);
-//     EXPECT_PRED2(isNotSubtypeOf, S, N);
+    EXPECT_PRED2(isSubtypeOf, A, A);
+    EXPECT_PRED2(isSubtypeOf, B, B);
 
-//     // check primitive type
+    EXPECT_PRED2(isNotSubtypeOf, A, B);
+    EXPECT_PRED2(isNotSubtypeOf, B, A);
 
-//     auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-//     auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    EXPECT_PRED2(isSubtypeOf, A, N);
+    EXPECT_PRED2(isSubtypeOf, B, N);
 
-//     EXPECT_PRED2(isSubtypeOf, A, A);
-//     EXPECT_PRED2(isSubtypeOf, B, B);
+    EXPECT_PRED2(isNotSubtypeOf, A, S);
+    EXPECT_PRED2(isNotSubtypeOf, B, S);
 
-//     EXPECT_PRED2(isNotSubtypeOf, A, B);
-//     EXPECT_PRED2(isNotSubtypeOf, B, A);
+    // check union types
 
-//     EXPECT_PRED2(isSubtypeOf, A, N);
-//     EXPECT_PRED2(isSubtypeOf, B, N);
+    auto& U = env.createType<UnionType>("U");
+    U.add(A);
+    U.add(B);
 
-//     EXPECT_PRED2(isNotSubtypeOf, A, S);
-//     EXPECT_PRED2(isNotSubtypeOf, B, S);
+    EXPECT_PRED2(isSubtypeOf, U, U);
+    EXPECT_PRED2(isSubtypeOf, A, U);
+    EXPECT_PRED2(isSubtypeOf, B, U);
+    EXPECT_PRED2(isSubtypeOf, U, N);
 
-//     // check union types
+    EXPECT_PRED2(isNotSubtypeOf, U, A);
+    EXPECT_PRED2(isNotSubtypeOf, U, B);
+    EXPECT_PRED2(isNotSubtypeOf, N, U);
 
-//     auto& U = env.createType<UnionType>("U");
-//     U.add(A);
-//     U.add(B);
+    auto& V = env.createType<UnionType>("V");
+    EXPECT_PRED2(isSubtypeOf, V, U);
+    EXPECT_PRED2(isNotSubtypeOf, U, V);
 
-//     EXPECT_PRED2(isSubtypeOf, U, U);
-//     EXPECT_PRED2(isSubtypeOf, A, U);
-//     EXPECT_PRED2(isSubtypeOf, B, U);
-//     EXPECT_PRED2(isSubtypeOf, U, N);
+    V.add(A);
+    EXPECT_PRED2(isSubtypeOf, V, U);
+    EXPECT_PRED2(isNotSubtypeOf, U, V);
 
-//     EXPECT_PRED2(isNotSubtypeOf, U, A);
-//     EXPECT_PRED2(isNotSubtypeOf, U, B);
-//     EXPECT_PRED2(isNotSubtypeOf, N, U);
+    V.add(B);
+    EXPECT_PRED2(isSubtypeOf, V, U);
+    EXPECT_PRED2(isSubtypeOf, U, V);
 
-//     auto& V = env.createType<UnionType>("V");
-//     // EXPECT_PRED2(isNotSubtypeOf, V, U);
-//     EXPECT_PRED2(isNotSubtypeOf, U, V);
+    V.add(U);
+    EXPECT_PRED2(isSubtypeOf, V, U);
+    EXPECT_PRED2(isSubtypeOf, U, V);
+}
 
-//     V.add(A);
-//     // EXPECT_PRED2(isNotSubtypeOf, V, U);
-//     EXPECT_PRED2(isNotSubtypeOf, U, V);
+TEST(TypeSystem, isSubtypeOf_Records) {
+    TypeEnvironment env;
 
-//     V.add(B);
-//     // EXPECT_PRED2(isNotSubtypeOf, V, U);
-//     EXPECT_PRED2(isNotSubtypeOf, U, V);
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
 
-//     V.add(U);
-//     // EXPECT_PRED2(isNotSubtypeOf, V, U);
-//     EXPECT_PRED2(isSubtypeOf, U, V);
-// }
+    auto& R1 = env.createType<RecordType>("R1");
+    auto& R2 = env.createType<RecordType>("R2");
 
-// TEST(TypeSystem, isSubtypeOf_Records) {
-//     TypeEnvironment env;
+    EXPECT_FALSE(isSubtypeOf(R1, R2));
+    EXPECT_FALSE(isSubtypeOf(R2, R1));
 
-//     auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-//     auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    R1.add("a", A);
+    R2.add("b", B);
+    EXPECT_FALSE(isSubtypeOf(R1, R2));
+    EXPECT_FALSE(isSubtypeOf(R2, R1));
+}
 
-//     auto& R1 = env.createType<RecordType>("R1");
-//     auto& R2 = env.createType<RecordType>("R2");
+TEST(TypeSystem, GreatestCommonSubtype) {
+    TypeEnvironment env;
 
-//     EXPECT_FALSE(isSubtypeOf(R1, R2));
-//     EXPECT_FALSE(isSubtypeOf(R2, R1));
+    auto& N = env.getType("number");
 
-//     R1.add("a", A);
-//     R2.add("b", B);
-//     EXPECT_FALSE(isSubtypeOf(R1, R2));
-//     EXPECT_FALSE(isSubtypeOf(R2, R1));
-// }
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
 
-// TEST(TypeSystem, GreatestCommonSubtype) {
-//     TypeEnvironment env;
+    EXPECT_EQ("{number}", toString(getGreatestCommonSubtypes(N, N)));
 
-//     auto& N = env.getType("number");
+    EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(A, A)));
+    EXPECT_EQ("{B}", toString(getGreatestCommonSubtypes(B, B)));
+    EXPECT_EQ("{C}", toString(getGreatestCommonSubtypes(C, C)));
 
-//     auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-//     auto& B = env.createSubsetType("B", TypeAttribute::Signed);
-//     auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
+    EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(A, B)));
+    EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(A, C)));
+    EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(B, C)));
 
-//     EXPECT_EQ("{number}", toString(getGreatestCommonSubtypes(N, N)));
+    EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(A, B, C)));
 
-//     EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(A, A)));
-//     EXPECT_EQ("{B}", toString(getGreatestCommonSubtypes(B, B)));
-//     EXPECT_EQ("{C}", toString(getGreatestCommonSubtypes(C, C)));
+    EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(A, N)));
+    EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(N, A)));
 
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(A, B)));
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(A, C)));
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(B, C)));
+    EXPECT_EQ("{B}", toString(getGreatestCommonSubtypes(B, N)));
+    EXPECT_EQ("{B}", toString(getGreatestCommonSubtypes(N, B)));
 
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(A, B, C)));
+    EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(C, N)));
+    EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(N, C)));
 
-//     EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(A, N)));
-//     EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(N, A)));
+    // bring in unions
 
-//     EXPECT_EQ("{B}", toString(getGreatestCommonSubtypes(B, N)));
-//     EXPECT_EQ("{B}", toString(getGreatestCommonSubtypes(N, B)));
+    auto& U = env.createType<UnionType>("U");
+    auto& S = env.createType<UnionType>("S");
 
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(C, N)));
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(N, C)));
+    U.add(A);
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
 
-//     // bring in unions
+    S.add(A);
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
 
-//     auto& U = env.createType<UnionType>("U");
-//     auto& S = env.createType<UnionType>("S");
+    U.add(B);
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S, N)));
 
-//     U.add(A);
-//     // EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(U, S)));
+    S.add(B);
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S, N)));
 
-//     S.add(A);
-//     EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(U, S)));
+    // bring in a union of unions
+    auto& R = env.createType<UnionType>("R");
 
-//     U.add(B);
-//     EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(U, S)));
-//     EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(U, S, N)));
+    EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R)));
+    EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R)));
 
-//     S.add(B);
-//     EXPECT_EQ("{A,B}", toString(getGreatestCommonSubtypes(U, S)));
-//     EXPECT_EQ("{A,B}", toString(getGreatestCommonSubtypes(U, S, N)));
+    // TODO
+    // EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R, N)));
+    // EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R, N)));
 
-//     // bring in a union of unions
-//     auto& R = env.createType<UnionType>("R");
+    //     R.add(U);
 
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(U, R)));
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(S, R)));
+    //     EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R)));
+    //     EXPECT_EQ("{A,B}", toString(getGreatestCommonSubtypes(S, R)));
 
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(U, R, N)));
-//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(S, R, N)));
+    //     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
+    //     EXPECT_EQ("{A,B}", toString(getGreatestCommonSubtypes(S, R, N)));
 
-//     R.add(U);
+    //     R.add(S);
 
-//     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
-//     EXPECT_EQ("{A,B}", toString(getGreatestCommonSubtypes(S, R)));
+    //     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
+    //     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
 
-//     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
-//     EXPECT_EQ("{A,B}", toString(getGreatestCommonSubtypes(S, R, N)));
+    //     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
+    //     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
+}
 
-//     R.add(S);
+TEST(TypeSystem, LeastCommonSupertype) {
+    TypeEnvironment env;
 
-//     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
-//     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
+    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
+    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
+    auto& D = env.createSubsetType("D", TypeAttribute::Symbol);
 
-//     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
-//     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
-// }
+    auto& U = env.createType<UnionType>("U");
+    U.add(A);
 
-// TEST(TypeSystem, LeastCommonSupertype) {
-//     TypeEnvironment env;
+    auto& V = env.createType<UnionType>("V");
+    V.add(U);
+    V.add(B);
 
-//     auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-//     auto& B = env.createSubsetType("B", TypeAttribute::Signed);
-//     auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
-//     auto& D = env.createSubsetType("D", TypeAttribute::Symbol);
+    auto& W = env.createType<UnionType>("W");
+    W.add(V);
+    W.add(C);
 
-//     auto& U = env.createType<UnionType>("U");
-//     U.add(A);
+    EXPECT_TRUE(isSubtypeOf(A, env.getType("number")));
+    EXPECT_TRUE(isSubtypeOf(U, env.getType("number")));
+    EXPECT_TRUE(isSubtypeOf(V, env.getType("number")));
 
-//     auto& V = env.createType<UnionType>("V");
-//     V.add(U);
-//     V.add(B);
+    EXPECT_EQ("{}", toString(getLeastCommonSupertypes()));
+    EXPECT_EQ("{A}", toString(getLeastCommonSupertypes(A)));
+    EXPECT_EQ("{V}", toString(getLeastCommonSupertypes(A, B)));
+    EXPECT_EQ("{W}", toString(getLeastCommonSupertypes(A, B, C)));
+    EXPECT_EQ("{}", toString(getLeastCommonSupertypes(A, B, C, D)));
 
-//     auto& W = env.createType<UnionType>("W");
-//     W.add(V);
-//     W.add(C);
+    EXPECT_EQ("{symbol}", toString(getLeastCommonSupertypes(C, D)));
+    EXPECT_EQ("{}", toString(getLeastCommonSupertypes(A, D)));
 
-//     EXPECT_TRUE(isSubtypeOf(A, env.getType("number")));
-//     EXPECT_TRUE(isSubtypeOf(U, env.getType("number")));
-//     EXPECT_TRUE(isSubtypeOf(V, env.getType("number")));
+    EXPECT_EQ("{V}", toString(getLeastCommonSupertypes(U, B)));
+}
 
-//     EXPECT_EQ("{}", toString(getLeastCommonSupertypes()));
-//     EXPECT_EQ("{A}", toString(getLeastCommonSupertypes(A)));
-//     EXPECT_EQ("{V}", toString(getLeastCommonSupertypes(A, B)));
-//     EXPECT_EQ("{W}", toString(getLeastCommonSupertypes(A, B, C)));
-//     EXPECT_EQ("{}", toString(getLeastCommonSupertypes(A, B, C, D)));
-
-//     EXPECT_EQ("{symbol}", toString(getLeastCommonSupertypes(C, D)));
-//     EXPECT_EQ("{}", toString(getLeastCommonSupertypes(A, D)));
-
-//     EXPECT_EQ("{V}", toString(getLeastCommonSupertypes(U, B)));
-// }
-
+// TODO:
 // TEST(TypeSystem, MultipleLeastCommonSupertype) {
 //     TypeEnvironment env;
 

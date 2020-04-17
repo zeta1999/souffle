@@ -497,7 +497,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
 
 bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(const AstAggregator& agg) {
     // everything with at least 1 body literal => materialize
-    if (agg.getBodyLiterals().size() >= 1) {
+    if (agg.getBodyLiterals().size() > 1) {
         return true;
     }
 

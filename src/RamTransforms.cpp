@@ -689,7 +689,7 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 		   }
 
 		   changed = true;
-		   // now we know it must be a box query (both bounds defined and unequal)
+		   // now we know it must be a box query (one of the bounds is defined and they are not equal)
                    // 1. Construct a new filter operation based off of these bounds
 		   std::unique_ptr<RamConstraint> lowerBound;
 
@@ -720,10 +720,12 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 							   std::move(lowerBound)
 							 , std::move(upperBound))
 				                 , std::move(nestedOp));
+		   // if Tuple[level, element] >= lower_bound
 		   } else if (lowerBound && !upperBound) {
 		       filter = std::make_unique<RamFilter>(
 				       std::move(lowerBound)
 				     , std::move(nestedOp));
+		   // if Tuple[level, element] <= upper_bound
 		   } else if (!lowerBound && upperBound) {
 		       filter = std::make_unique<RamFilter>(
 				       std::move(upperBound)
@@ -741,11 +743,12 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
 		   {
 		      updatedPattern.second.emplace_back(p->clone());
 		   }
+		   // Set the current index pattern to RamUndefValue
 		   updatedPattern.first[i] = std::make_unique<RamUndefValue>();
 		   updatedPattern.second[i] = std::make_unique<RamUndefValue>();
 	
 		   // 3. Construct the updated RamIndexOperation
-	           // need to rewrite the node with a semantically equivalent operation
+	           // need to rewrite the node with the same index operation
                    if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(transformedNode.get())) {
                        transformedNode = std::make_unique<RamIndexScan>(
                                        std::make_unique<RamRelationReference>(iscan->getRelation().clone())
@@ -783,7 +786,8 @@ bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
                if (foundRealIndexableOperation) {
 	           node = std::move(transformedNode);
 	       } else {
-		   // need to rewrite the node with a semantically equivalent operation
+		   // need to rewrite the node with a semantically equivalent operation to get rid of the index operation
+		   // i.e. RamIndexScan with no indexable attributes -> RamScan
 		   if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(transformedNode.get())) {    
 	               node = std::make_unique<RamScan>(
 				       std::make_unique<RamRelationReference>(iscan->getRelation().clone())

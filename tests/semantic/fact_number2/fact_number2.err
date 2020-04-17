@@ -1,4 +1,4 @@
-Error: Head argument is not a subtype of its declared type in file fact_number2.dl at line 8
+Error: Symbol constant (type mismatch) in file fact_number2.dl at line 8
 F("1000","0002").
 ---------^--------
 1 errors generated, evaluation aborted

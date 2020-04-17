@@ -35,3 +35,7 @@ E(X) :- F(X), !A(X), !B(X). // no error
 E(X) :- F(X), A(X), B(X). // error
 
 C(X) :- D(X), !A(X). // error
+
+
+
+// TODO: investigate correct semantics

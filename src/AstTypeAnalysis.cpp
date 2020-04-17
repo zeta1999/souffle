@@ -484,65 +484,69 @@ private:
     void solveConstraints(const AstClause& clause) override {
         assignment = constraints.solve();
 
-        auto& head = *clause.getHead();
+        std::vector<const AstAtom*> atoms;
+        copy(negated.begin(), negated.end(), std::back_inserter(atoms));
+        atoms.push_back(clause.getHead());
 
-        auto headRelation = getAtomRelation(&head, program);
-        if (headRelation == nullptr) {
-            return;  // error in input program
-        }
+        for (auto* atom : atoms) {
+            auto atomRelation = getAtomRelation(atom, program);
+            if (atomRelation == nullptr) {
+                return;  // error in input program
+            }
 
-        auto atts = headRelation->getAttributes();
-        auto args = head.getArguments();
-        if (atts.size() != args.size()) {
-            return;  // error in input program
-        }
+            auto atts = atomRelation->getAttributes();
+            auto args = atom->getArguments();
+            if (atts.size() != args.size()) {
+                return;  // error in input program
+            }
 
-        for (size_t i = 0; i < atts.size(); i++) {
-            const auto& typeName = atts[i]->getTypeName();
-            if (typeEnv.isType(typeName)) {
-                auto& attributeType = typeEnv.getType(typeName);
-                auto argVar = getVar(args[i]);
-                auto argAssignment = assignment[argVar];
+            for (size_t i = 0; i < atts.size(); i++) {
+                const auto& typeName = atts[i]->getTypeName();
+                if (typeEnv.isType(typeName)) {
+                    auto& attributeType = typeEnv.getType(typeName);
+                    auto argVar = getVar(args[i]);
+                    auto argAssignment = assignment[argVar];
 
-                if (argAssignment.isAll()) {
-                    continue;
-                }
+                    if (argAssignment.isAll()) {
+                        continue;
+                    }
 
-                bool validAttribute = any_of(argAssignment, [&attributeType](const Type& type) {
-                    return isSubtypeOf(type, attributeType) ||
-                           (dynamic_cast<const ConstantType*>(&type) && isSubtypeOf(attributeType, type));
-                });
+                    bool validAttribute = any_of(argAssignment, [&attributeType](const Type& type) {
+                        return isSubtypeOf(type, attributeType) ||
+                               (dynamic_cast<const ConstantType*>(&type) && isSubtypeOf(attributeType, type));
+                    });
 
-                if (validAttribute) {
-                    addConstraint(isSubtypeOf(getVar(args[i]), attributeType));
+                    if (validAttribute) {
+                        addConstraint(isSubtypeOf(getVar(args[i]), attributeType));
+                    }
                 }
             }
         }
         constraints.solve(assignment);
     }
 
-    // TODO: document
     void collectConstraints(const AstClause& clause) override {
-        // Collect constraints from the body.
-        auto body = clause.getBodyLiterals();
-        for (auto* literal : body) {
-            visitDepthFirstPreOrder(*literal, *this);
-        }
+        negated.insert(clause.getHead());
+        visitDepthFirstPreOrder(clause, *this);
+    }
 
-        auto& head = *clause.getHead();
+    const TypeEnvironment& typeEnv;
+    const AstProgram* program;
+    std::set<const AstAtom*> negated;
 
-        auto headRelation = getAtomRelation(&head, program);
-        if (headRelation == nullptr) {
+    void visitNegatedAtomOrHead(const AstAtom& atom) {
+        auto atomRelation = getAtomRelation(&atom, program);
+        if (atomRelation == nullptr) {
             return;  // error in input program
         }
 
-        auto atts = headRelation->getAttributes();
-        auto args = head.getArguments();
+        auto atts = atomRelation->getAttributes();
+        auto args = atom.getArguments();
         if (atts.size() != args.size()) {
             return;  // error in input program
         }
 
-        // Collect constraints from the head.
+        // Collect constraints from the atom.
         for (size_t i = 0; i < args.size(); ++i) {
             auto arg = args[i];
             visitDepthFirstPreOrder(*arg, *this);
@@ -564,90 +568,13 @@ private:
         }
     }
 
-    // visitDepthFirst(
-    //         *clause.getHead(), [&](const AstVariable& variable) { headVariables.insert(&variable); });
-    // }
-
-    // // Remove arg.
-    // void solveConstraints(const AstClause& clause) override {
-    //     //        std::cerr << clause << std::endl;
-    //     assignment = constraints.solve();
-
-    //     for (auto iteratorToHeadVariable : unifyHeadVariables) {
-    //         auto name = iteratorToHeadVariable.first;
-    //         auto headVar = iteratorToHeadVariable.second;
-
-    //         auto iteratorToBodyVariable = unifyBodyVariables.find(name);
-
-    //         // No entry -> head solution is correct.
-    //         if (iteratorToBodyVariable == end(unifyBodyVariables)) {
-    //             continue;
-    //         }
-
-    //         auto bodyVar = iteratorToBodyVariable->second;
-    //         // std::cerr << "name: " << name << " head: " << assignment[headVar] << " body: " <<
-    //         // assignment[bodyVar] << std::endl;
-
-    //         // We need to combine head and body results.
-    //         auto newAssignment = TypeSet();
-
-    //         for (auto itHead = assignment[headVar].begin(); itHead != assignment[headVar].end(); ++itHead)
-    //         {
-    //             for (auto itBody = assignment[bodyVar].begin(); itBody != assignment[bodyVar].end();
-    //                     ++itBody) {
-    //                 if (isSubtypeOf(*itBody, *itHead)) {
-    //                     newAssignment.insert(*itBody);
-    //                 }
-    //             }
-    //         }
-    //         if (newAssignment.empty()) {
-    //             assignment[headVar] = newAssignment;
-    //             assignment[bodyVar] = newAssignment;
-    //         }
-    //         // std::cerr << "New: " << assignment[headVar] << " " << assignment[bodyVar] << std::endl;
-    //         addConstraint(isSubtypeOf(bodyVar, headVar));
-    //     }
-
-    //     constraints.solve(assignment);
-    // }
-
-    // virtual TypeVar getVar(const AstArgument& argument) override {
-    //     auto variable = dynamic_cast<const AstVariable*>(&argument);
-    //     if (variable == nullptr) {
-    //         // no mapping required
-    //         return TypeVar(argument);
-    //     }
-
-    //     std::map<std::string, TypeVar>::iterator iteratorToVariable;
-    //     // The variable is either head variable of body variable.
-    //     if (isHeadVariable(variable)) {
-    //         iteratorToVariable = unifyHeadVariables.insert({variable->getName(), TypeVar(variable)}).first;
-    //     } else {
-    //         iteratorToVariable = unifyBodyVariables.insert({variable->getName(), TypeVar(variable)}).first;
-    //     }
-
-    //     return iteratorToVariable->second;
-    // }
-
-    // TypeVar getVar(const AstArgument* arg) {
-    //     return getVar(*arg);
-    // }
-
-    const TypeEnvironment& typeEnv;
-    const AstProgram* program;
-    std::set<const AstAtom*> negated;
-    // AstAtom* head;
-
-    // std::set<const AstVariable*> headVariables;
-    // std::map<std::string, TypeVar> unifyHeadVariables;
-    // std::map<std::string, TypeVar> unifyBodyVariables;
-
-    // bool isHeadVariable(const AstVariable* variable) {
-    //     return headVariables.find(variable) != headVariables.end();
-    // }
-
     // predicate
     void visitAtom(const AstAtom& atom) override {
+        if (contains(negated, &atom)) {
+            visitNegatedAtomOrHead(atom);
+            return;
+        }
+
         // get relation
         auto rel = getAtomRelation(&atom, program);
         if (rel == nullptr) {
@@ -660,16 +587,10 @@ private:
             return;  // error in input program
         }
 
-        // set upper boundary of argument types
-        bool notNegated = negated.find(&atom) == negated.end();
         for (size_t i = 0; i < atts.size(); i++) {
             const auto& typeName = atts[i]->getTypeName();
             if (typeEnv.isType(typeName)) {
-                if (notNegated) {
-                    addConstraint(isSubtypeOf(getVar(args[i]), typeEnv.getType(typeName)));
-                }  // else {
-                //     addConstraint(isSupertypeOf(getVar(args[i]), typeEnv.getType(typeName)));
-                // }
+                addConstraint(isSubtypeOf(getVar(args[i]), typeEnv.getType(typeName)));
             }
         }
     }

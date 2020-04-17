@@ -1,4 +1,10 @@
-Error: Head argument is not a subtype of its declared type in file type_system12.dl at line 38
+Error: Atoms argument is not a subtype of its declared type in file type_system12.dl at line 38
 C(x) :- B(x).                      // Error
 --^-----------------------------------------
-2 errors generated, evaluation aborted
+Error: Atoms argument is not a subtype of its declared type in file type_system12.dl at line 39
+C(x) :- !D(x), B(x).               // Error
+--^-----------------------------------------
+Error: Atoms argument is not a subtype of its declared type in file type_system12.dl at line 39
+C(x) :- !D(x), B(x).               // Error
+-----------^--------------------------------
+3 errors generated, evaluation aborted

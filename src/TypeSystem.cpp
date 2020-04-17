@@ -69,10 +69,6 @@ TypeSet TypeEnvironment::initializePrimitiveTypes() {
     CREATE_PRIMITIVE(float);
     CREATE_PRIMITIVE(symbol);
     CREATE_PRIMITIVE(unsigned);
-    // auto& signedType = createType<PrimitiveType>("number", getType("numberConstant"));
-    // auto& floatType = createType<PrimitiveType>("float", getType("floatConstant"));
-    // auto& symbolType = createType<PrimitiveType>("symbol", getType("symbolConstant"));
-    // auto& unsignedType = createType<PrimitiveType>("unsigned", getType("unsignedConstant"));
 
     return TypeSet(numberType, floatType, symbolType, unsignedType);
 
@@ -84,8 +80,7 @@ bool TypeEnvironment::isType(const AstQualifiedName& ident) const {
 }
 
 bool TypeEnvironment::isType(const Type& type) const {
-    const Type& t = getType(type.getName());
-    return t == type;
+    return type == getType(type.getName());
 }
 
 const Type& TypeEnvironment::getType(const AstQualifiedName& ident) const {
@@ -414,13 +409,6 @@ bool isSubtypeOf(const Type& a, const Type& b) {
     if (isOfRootType(a, b)) {
         return true;
     }
-
-    // check primitive type chains
-    // if (isA<SubsetType>(b)) {
-    //     if (isSubtypeOf(a, as<SubsetType>(b).getBaseType())) {
-    //         return true;
-    //     }
-    // }
 
     // next - if b is a union type
     if (isRecursiveType(a) || isRecursiveType(b)) {

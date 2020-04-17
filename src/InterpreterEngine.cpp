@@ -615,7 +615,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 reads[cur.getRelation().getName()]++;
             }
             // for total we use the exists test
-            if (isa->isTotalSignature(&cur)) {
+            if (node->getData(1) == 1) {
                 RamDomain tuple[arity];
                 for (size_t i = 0; i < arity; i++) {
                     tuple[i] = execute(node->getChild(i), ctxt);

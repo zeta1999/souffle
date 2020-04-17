@@ -370,8 +370,8 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             for (const auto& cur : agg.getBodyLiterals()) {
                 aggClause->addToBody(std::unique_ptr<AstLiteral>(cur->clone()));
             }
-            // find variables for which we need a grounding
-            for (const auto& argPair : getGroundedTerms(*aggClause)) {
+            // find stuff for which we need a grounding
+            for (const auto& argPair : getGroundedTerms(translationUnit, *aggClause)) {
                 const auto* variable = dynamic_cast<const AstVariable*>(argPair.first);
                 bool variableIsGrounded = argPair.second;
                 // if it's not even a variable type or the term is grounded
@@ -1684,13 +1684,14 @@ bool FoldAnonymousRecords::transform(AstTranslationUnit& translationUnit) {
 }
 
 std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordsAliases::findVariablesRecordMapping(
-        const AstClause& clause, const TypeAnalysis& typeAnalysis) {
+        AstTranslationUnit& tu, const AstClause& clause) {
     std::map<std::string, const AstRecordInit*> variableRecordMap;
 
     auto isVariable = [](AstNode* node) -> bool { return dynamic_cast<AstVariable*>(node) != nullptr; };
     auto isRecord = [](AstNode* node) -> bool { return dynamic_cast<AstRecordInit*>(node) != nullptr; };
 
-    auto groundedTerms = getGroundedTerms(clause);
+    auto& typeAnalysis = *tu.getAnalysis<TypeAnalysis>();
+    auto groundedTerms = getGroundedTerms(tu, clause);
 
     for (auto* literal : clause.getBodyLiterals()) {
         if (auto constraint = dynamic_cast<AstBinaryConstraint*>(literal)) {
@@ -1737,8 +1738,7 @@ std::map<std::string, const AstRecordInit*> ResolveAnonymousRecordsAliases::find
     return variableRecordMap;
 }
 
-bool ResolveAnonymousRecordsAliases::replaceNamedVariables(
-        AstClause& clause, const TypeAnalysis& typeAnalysis) {
+bool ResolveAnonymousRecordsAliases::replaceNamedVariables(AstTranslationUnit& tu, AstClause& clause) {
     struct ReplaceVariables : public AstNodeMapper {
         std::map<std::string, const AstRecordInit*> varToRecordMap;
 
@@ -1758,7 +1758,8 @@ bool ResolveAnonymousRecordsAliases::replaceNamedVariables(
             return node;
         }
     };
-    auto variableToRecordMap = findVariablesRecordMapping(clause, typeAnalysis);
+
+    auto variableToRecordMap = findVariablesRecordMapping(tu, clause);
     bool changed = variableToRecordMap.size() > 0;
     if (changed) {
         ReplaceVariables update(std::move(variableToRecordMap));
@@ -1805,12 +1806,8 @@ bool ResolveAnonymousRecordsAliases::replaceUnnamedVariable(AstClause& clause) {
 
 bool ResolveAnonymousRecordsAliases::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
-    AstProgram& program = *translationUnit.getProgram();
-
-    const TypeAnalysis& typeAnalysis = *translationUnit.getAnalysis<TypeAnalysis>();
-
-    for (auto* clause : program.getClauses()) {
-        changed |= replaceNamedVariables(*clause, typeAnalysis);
+    for (auto* clause : translationUnit.getProgram()->getClauses()) {
+        changed |= replaceNamedVariables(translationUnit, *clause);
         changed |= replaceUnnamedVariable(*clause);
     }
 

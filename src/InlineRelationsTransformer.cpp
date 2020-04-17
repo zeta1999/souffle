@@ -351,7 +351,7 @@ AstLiteral* negateLiteral(AstLiteral* lit) {
         return atom;
     } else if (auto* cons = dynamic_cast<AstConstraint*>(lit)) {
         AstConstraint* newCons = cons->clone();
-        negateConstraint(newCons);
+        negateConstraintInPlace(*newCons);
         return newCons;
     } else {
         assert(false && "Unsupported literal type!");

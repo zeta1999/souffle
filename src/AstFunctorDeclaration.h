@@ -32,10 +32,11 @@ namespace souffle {
 
 class AstFunctorDeclaration : public AstNode {
 public:
-    AstFunctorDeclaration(
-            const std::string& name, std::vector<TypeAttribute> argsTypes, TypeAttribute returnType)
-            : name(name), argsTypes(std::move(argsTypes)), returnType(returnType) {
-        assert(name.length() > 0 && "functor name is empty");
+    AstFunctorDeclaration(std::string name, std::vector<TypeAttribute> argsTypes, TypeAttribute returnType,
+            SrcLocation loc = {})
+            : name(std::move(name)), argsTypes(std::move(argsTypes)), returnType(returnType) {
+        assert(this->name.length() > 0 && "functor name is empty");
+        setSrcLoc(std::move(loc));
     }
 
     /** get name */
@@ -59,9 +60,7 @@ public:
 
     /** clone */
     AstFunctorDeclaration* clone() const override {
-        auto* res = new AstFunctorDeclaration(name, argsTypes, returnType);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstFunctorDeclaration(name, argsTypes, returnType, getSrcLoc());
     }
 
 protected:

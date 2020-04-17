@@ -32,10 +32,12 @@ class AstIO : public AstNode {
 public:
     enum AstIOType { UndefinedIO, InputIO, OutputIO, PrintsizeIO };
 
-    AstIO(const AstIO& io) : type(io.type), name(io.name), directives(io.directives) {
-        this->setSrcLoc(io.getSrcLoc());
+    AstIO(AstIOType type, AstQualifiedName name, SrcLocation loc = {}) : type(type), name(std::move(name)) {
+        setSrcLoc(std::move(loc));
     }
-    AstIO() = default;
+
+    AstIO(AstQualifiedName name, SrcLocation loc = {})
+            : AstIO(UndefinedIO, std::move(name), std::move(loc)) {}
 
     /** get I/O type */
     AstIOType getType() const {
@@ -53,8 +55,8 @@ public:
     }
 
     /** set relation name */
-    void setQualifiedName(const AstQualifiedName& name) {
-        this->name = name;
+    void setQualifiedName(AstQualifiedName name) {
+        this->name = std::move(name);
     }
 
     /** get value of I/O directive */
@@ -63,8 +65,8 @@ public:
     }
 
     /** add new I/O directive */
-    void addDirective(const std::string& key, const std::string& value) {
-        directives[key] = value;
+    void addDirective(const std::string& key, std::string value) {
+        directives[key] = std::move(value);
     }
 
     /** check for I/O directive */
@@ -78,11 +80,9 @@ public:
     }
 
     AstIO* clone() const override {
-        auto res = new AstIO();
+        auto res = new AstIO(name, getSrcLoc());
         res->type = type;
-        res->name = name;
         res->directives = directives;
-        res->setSrcLoc(getSrcLoc());
         return res;
     }
 

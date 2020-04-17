@@ -42,13 +42,13 @@ public:
     virtual ~AstNode() = default;
 
     /** Return source location of the AstNode */
-    SrcLocation getSrcLoc() const {
+    const SrcLocation& getSrcLoc() const {
         return location;
     }
 
     /** Set source location for the AstNode */
-    void setSrcLoc(const SrcLocation& l) {
-        location = l;
+    void setSrcLoc(SrcLocation l) {
+        location = std::move(l);
     }
 
     /** Return source location of the syntactic element */

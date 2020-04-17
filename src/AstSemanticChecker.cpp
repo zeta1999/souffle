@@ -345,6 +345,13 @@ void AstSemanticChecker::checkProgram(AstTranslationUnit& translationUnit) {
         }
     });
 
+    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& func) {
+        auto n_args = func.getArguments().size();
+        if (!isValidFunctorOpArity(func.getFunction(), n_args)) {
+            report.addError("invalid overload (arity mismatch)", func.getSrcLoc());
+        }
+    });
+
     // - stratification --
 
     // check for cyclic dependencies
@@ -707,15 +714,15 @@ void AstSemanticChecker::checkRelationDeclaration(ErrorReport& report, const Typ
 
         /* check whether type exists */
         if (!typeEnvironment.isPredefinedType(typeName) && (getType(program, typeName) == nullptr)) {
-            report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
-                                    toString(attr->getTypeName()),
+            report.addError(
+                    "Undefined type in attribute " + attr->getName() + ":" + toString(attr->getTypeName()),
                     attr->getSrcLoc());
         }
 
         /* check whether name occurs more than once */
         for (size_t j = 0; j < i; j++) {
-            if (attr->getAttributeName() == attributes[j]->getAttributeName()) {
-                report.addError("Doubly defined attribute name " + attr->getAttributeName() + ":" +
+            if (attr->getName() == attributes[j]->getName()) {
+                report.addError("Doubly defined attribute name " + attr->getName() + ":" +
                                         toString(attr->getTypeName()),
                         attr->getSrcLoc());
             }
@@ -790,22 +797,23 @@ void AstSemanticChecker::checkRecordType(ErrorReport& report, const AstProgram& 
         const TypeEnvironment& typeEnvironment, const AstRecordType& type) {
     // check proper definition of all field types
     for (const auto& field : type.getFields()) {
-        if (!typeEnvironment.isPredefinedType(field.type) && (getType(program, field.type) == nullptr)) {
-            report.addError(
-                    "Undefined type " + toString(field.type) + " in definition of field " + field.name,
-                    type.getSrcLoc());
+        if (!typeEnvironment.isPredefinedType(field->getTypeName()) &&
+                (getType(program, field->getTypeName()) == nullptr)) {
+            report.addError("Undefined type " + toString(field->getTypeName()) + " in definition of field " +
+                                    field->getName(),
+                    field->getSrcLoc());
         }
     }
 
     // check that field names are unique
-    auto& fields = type.getFields();
+    auto&& fields = type.getFields();
     for (std::size_t i = 0; i < fields.size(); i++) {
-        const std::string& cur_name = fields[i].name;
+        auto&& cur_name = fields[i]->getName();
         for (std::size_t j = 0; j < i; j++) {
-            if (fields[j].name == cur_name) {
+            if (fields[j]->getName() == cur_name) {
                 report.addError("Doubly defined field name " + cur_name + " in definition of type " +
                                         toString(type.getQualifiedName()),
-                        type.getSrcLoc());
+                        fields[j]->getSrcLoc());
             }
         }
     }

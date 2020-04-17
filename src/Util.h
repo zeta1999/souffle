@@ -290,6 +290,17 @@ inline bool isNumber(const char* str) {
 //                           General Container Utilities
 // -------------------------------------------------------------------------------
 
+template <typename A>
+using Own = std::unique_ptr<A>;
+
+template <typename A>
+using VecOwn = std::vector<Own<A>>;
+
+template <typename A, typename B = A, typename... Args>
+Own<A> mk(Args&&... xs) {
+    return Own<A>(new B(std::forward<Args>(xs)...));
+}
+
 /**
  * A utility to check generically whether a given element is contained in a given
  * container.
@@ -472,8 +483,8 @@ std::unique_ptr<A> clone(const std::unique_ptr<A>& node) {
 }
 
 template <typename A>
-std::vector<std::unique_ptr<A>> clone(const std::vector<std::unique_ptr<A>>& xs) {
-    std::vector<std::unique_ptr<A>> ys;
+auto clone(const std::vector<A>& xs) {
+    std::vector<decltype(clone(xs[0]))> ys;
     ys.reserve(xs.size());
     for (auto&& x : xs) {
         ys.emplace_back(clone(x));
@@ -593,6 +604,15 @@ bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
 // -------------------------------------------------------------------------------
 //                           General Print Utilities
 // -------------------------------------------------------------------------------
+
+template <typename A>
+struct isPtrLike : std::is_pointer<A> {};
+template <typename A>
+struct isPtrLike<std::unique_ptr<A>> : std::true_type {};
+template <typename A>
+struct isPtrLike<std::shared_ptr<A>> : std::true_type {};
+template <typename A>
+struct isPtrLike<std::weak_ptr<A>> : std::true_type {};
 
 namespace detail {
 
@@ -734,8 +754,16 @@ detail::joined_sequence<Iter, Printer> join(const Container& c, const std::strin
  */
 template <typename Container, typename Iter = typename Container::const_iterator,
         typename T = typename Iter::value_type>
-detail::joined_sequence<Iter, detail::print<id<T>>> join(const Container& c, const std::string& sep = ",") {
+std::enable_if_t<!isPtrLike<T>::value, detail::joined_sequence<Iter, detail::print<id<T>>>> join(
+        const Container& c, const std::string& sep = ",") {
     return join(c.begin(), c.end(), sep, detail::print<id<T>>());
+}
+
+template <typename Container, typename Iter = typename Container::const_iterator,
+        typename T = typename Iter::value_type>
+std::enable_if_t<isPtrLike<T>::value, detail::joined_sequence<Iter, detail::print<deref<T>>>> join(
+        const Container& c, const std::string& sep = ",") {
+    return join(c.begin(), c.end(), sep, detail::print<deref<T>>());
 }
 
 }  // end namespace souffle

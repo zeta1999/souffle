@@ -93,9 +93,9 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
             }
 
             // add fields
-            for (const auto& f : t->getFields()) {
-                if (env.isType(f.type)) {
-                    rt->add(f.name, env.getType(f.type));
+            for (auto&& f : t->getFields()) {
+                if (env.isType(f->getTypeName())) {
+                    rt->add(f->getName(), env.getType(f->getTypeName()));
                 }
             }
         } else {

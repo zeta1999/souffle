@@ -17,15 +17,12 @@
 #pragma once
 
 #include "AstNode.h"
-#include "AstType.h"
+#include "AstQualifiedName.h"
 
-#include <iostream>
-#include <set>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <cctype>
 
 namespace souffle {
 
@@ -36,10 +33,13 @@ namespace souffle {
  */
 class AstAttribute : public AstNode {
 public:
-    AstAttribute(std::string n, AstQualifiedName t) : name(std::move(n)), typeName(std::move(t)) {}
+    AstAttribute(std::string n, AstQualifiedName t, SrcLocation loc = {})
+            : name(std::move(n)), typeName(std::move(t)) {
+        setSrcLoc(std::move(loc));
+    }
 
     /** get attribute name */
-    const std::string& getAttributeName() const {
+    const std::string& getName() const {
         return name;
     }
 
@@ -49,14 +49,12 @@ public:
     }
 
     /** set type name */
-    void setTypeName(const AstQualifiedName& name) {
-        typeName = name;
+    void setTypeName(AstQualifiedName name) {
+        typeName = std::move(name);
     }
 
     AstAttribute* clone() const override {
-        auto* res = new AstAttribute(name, typeName);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstAttribute(name, typeName, getSrcLoc());
     }
 
 protected:

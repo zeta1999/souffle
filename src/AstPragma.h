@@ -30,12 +30,13 @@ namespace souffle {
  */
 class AstPragma : public AstNode {
 public:
-    AstPragma(std::string key, std::string value) : key(std::move(key)), value(std::move(value)) {}
+    AstPragma(std::string key, std::string value, SrcLocation loc = {})
+            : key(std::move(key)), value(std::move(value)) {
+        setSrcLoc(std::move(loc));
+    }
 
     AstPragma* clone() const override {
-        auto res = new AstPragma(key, value);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstPragma(key, value, getSrcLoc());
     }
 
     /* Get kvp */

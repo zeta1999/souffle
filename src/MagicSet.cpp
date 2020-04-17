@@ -209,18 +209,12 @@ std::string getNextEdbName(AstProgram* program) {
 
 // create a new relation with a given name based on a previous relation
 AstRelation* createNewRelation(AstRelation* original, const AstQualifiedName& newName) {
+    // duplicate the relation, but without any qualifiers
     auto* newRelation = new AstRelation();
     newRelation->setSrcLoc(nextSrcLoc(original->getSrcLoc()));
     newRelation->setQualifiedName(newName);
-
-    // copy over the attributes from the original relation
-    for (AstAttribute* attr : original->getAttributes()) {
-        newRelation->addAttribute(std::unique_ptr<AstAttribute>(attr->clone()));
-    }
-
-    // copy over internal representation
+    newRelation->setAttributes(clone(original->getAttributes()));
     newRelation->setRepresentation(original->getRepresentation());
-
     return newRelation;
 }
 

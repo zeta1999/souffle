@@ -25,14 +25,13 @@
 #include "AstType.h"
 #include "Global.h"
 #include "RelationTag.h"
+#include "Util.h"
 
-#include <iostream>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <string>
 #include <vector>
-
-#include <cctype>
 
 namespace souffle {
 
@@ -47,6 +46,9 @@ namespace souffle {
 class AstRelation : public AstNode {
 public:
     AstRelation() = default;
+    AstRelation(AstQualifiedName name, SrcLocation loc = {}) : name(std::move(name)) {
+        setSrcLoc(std::move(loc));
+    }
 
     /** get qualified relation name */
     const AstQualifiedName& getQualifiedName() const {
@@ -54,8 +56,8 @@ public:
     }
 
     /** Set name for this relation */
-    void setQualifiedName(const AstQualifiedName& n) {
-        name = n;
+    void setQualifiedName(AstQualifiedName n) {
+        name = std::move(n);
     }
 
     /** Add a new used type to this relation */
@@ -67,6 +69,11 @@ public:
     /** Return the arity of this relation */
     size_t getArity() const {
         return attributes.size();
+    }
+
+    /** Set relation attributes */
+    void setAttributes(VecOwn<AstAttribute> attrs) {
+        attributes = std::move(attrs);
     }
 
     /** Get relation attributes */
@@ -105,15 +112,9 @@ public:
     }
 
     AstRelation* clone() const override {
-        auto res = new AstRelation();
-        res->name = name;
-        res->setSrcLoc(getSrcLoc());
-        for (const auto& cur : attributes) {
-            res->attributes.emplace_back(cur->clone());
-        }
-        for (auto cur : qualifiers) {
-            res->qualifiers.insert(cur);
-        }
+        auto res = new AstRelation(name, getSrcLoc());
+        res->attributes = souffle::clone(attributes);
+        res->qualifiers = qualifiers;
         return res;
     }
 
@@ -133,18 +134,8 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        os << ".decl " << this->getQualifiedName() << "(";
-        if (!attributes.empty()) {
-            os << attributes[0]->getAttributeName() << ":" << attributes[0]->getTypeName();
-
-            for (size_t i = 1; i < attributes.size(); ++i) {
-                os << "," << attributes[i]->getAttributeName() << ":" << attributes[i]->getTypeName();
-            }
-        }
-        os << ") ";
-
-        os << join(qualifiers, " ") << " ";
-        os << representation;
+        os << ".decl " << getQualifiedName() << "(" << join(attributes, ", ") << ")" << join(qualifiers, " ")
+           << " " << representation;
     }
 
     bool equal(const AstNode& node) const override {

@@ -21,6 +21,7 @@
 #include "AstNode.h"
 #include "AstRelation.h"
 #include "AstType.h"
+#include "Util.h"
 
 #include <memory>
 #include <string>
@@ -39,9 +40,10 @@ namespace souffle {
  */
 class AstComponentType : public AstNode {
 public:
-    AstComponentType(
-            std::string name = "", std::vector<AstQualifiedName> params = std::vector<AstQualifiedName>())
-            : name(std::move(name)), typeParams(std::move(params)) {}
+    AstComponentType(std::string name = "", std::vector<AstQualifiedName> params = {}, SrcLocation loc = {})
+            : name(std::move(name)), typeParams(std::move(params)) {
+        setSrcLoc(std::move(loc));
+    }
 
     /** get component name */
     const std::string& getName() const {
@@ -49,8 +51,8 @@ public:
     }
 
     /** set component name */
-    void setName(const std::string& n) {
-        name = n;
+    void setName(std::string n) {
+        name = std::move(n);
     }
 
     /** get component type parameters */
@@ -64,9 +66,7 @@ public:
     }
 
     AstComponentType* clone() const override {
-        auto* res = new AstComponentType(name, typeParams);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstComponentType(name, typeParams, getSrcLoc());
     }
 
 protected:
@@ -95,14 +95,19 @@ private:
  */
 class AstComponentInit : public AstNode {
 public:
+    AstComponentInit(std::string name, Own<AstComponentType> type, SrcLocation loc = {})
+            : instanceName(std::move(name)), componentType(std::move(type)) {
+        setSrcLoc(std::move(loc));
+    }
+
     /** get instance name */
     const std::string& getInstanceName() const {
         return instanceName;
     }
 
     /** set instance name */
-    void setInstanceName(const std::string& name) {
-        instanceName = name;
+    void setInstanceName(std::string name) {
+        instanceName = std::move(name);
     }
 
     /** get component type */
@@ -116,10 +121,7 @@ public:
     }
 
     AstComponentInit* clone() const override {
-        auto res = new AstComponentInit();
-        res->setComponentType(std::unique_ptr<AstComponentType>(componentType->clone()));
-        res->setInstanceName(instanceName);
-        return res;
+        return new AstComponentInit(instanceName, souffle::clone(componentType), getSrcLoc());
     }
 
     void apply(const AstNodeMapper& mapper) override {
@@ -185,11 +187,8 @@ public:
     }
 
     /** copy base components */
-    void copyBaseComponents(const AstComponent* other) {
-        baseComponents.clear();
-        for (const auto& baseComponent : other->getBaseComponents()) {
-            baseComponents.emplace_back(baseComponent->clone());
-        }
+    void copyBaseComponents(const AstComponent& other) {
+        baseComponents = souffle::clone(other.baseComponents);
     }
 
     /** add relation */

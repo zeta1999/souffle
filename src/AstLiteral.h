@@ -192,7 +192,9 @@ protected:
  */
 class AstBooleanConstraint : public AstConstraint {
 public:
-    AstBooleanConstraint(bool truthValue) : truthValue(truthValue) {}
+    AstBooleanConstraint(bool truthValue, SrcLocation loc = {}) : truthValue(truthValue) {
+        setSrcLoc(std::move(loc));
+    }
 
     /** check whether constraint holds */
     bool isTrue() const {
@@ -205,9 +207,7 @@ public:
     }
 
     AstBooleanConstraint* clone() const override {
-        auto* res = new AstBooleanConstraint(truthValue);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstBooleanConstraint(truthValue, getSrcLoc());
     }
 
 protected:
@@ -231,9 +231,11 @@ protected:
  */
 class AstBinaryConstraint : public AstConstraint {
 public:
-    AstBinaryConstraint(
-            BinaryConstraintOp o, std::unique_ptr<AstArgument> ls, std::unique_ptr<AstArgument> rs)
-            : operation(o), lhs(std::move(ls)), rhs(std::move(rs)) {}
+    AstBinaryConstraint(BinaryConstraintOp o, std::unique_ptr<AstArgument> ls,
+            std::unique_ptr<AstArgument> rs, SrcLocation loc = {})
+            : operation(o), lhs(std::move(ls)), rhs(std::move(rs)) {
+        setSrcLoc(std::move(loc));
+    }
 
     /** get LHS argument */
     AstArgument* getLHS() const {
@@ -256,10 +258,7 @@ public:
     }
 
     AstBinaryConstraint* clone() const override {
-        auto* res = new AstBinaryConstraint(operation, std::unique_ptr<AstArgument>(lhs->clone()),
-                std::unique_ptr<AstArgument>(rhs->clone()));
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstBinaryConstraint(operation, souffle::clone(lhs), souffle::clone(rhs), getSrcLoc());
     }
 
     void apply(const AstNodeMapper& map) override {

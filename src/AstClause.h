@@ -36,21 +36,19 @@ namespace souffle {
  */
 class AstExecutionOrder : public AstNode {
 public:
-    /** appends index of an atom */
-    void appendAtomIndex(int index) {
-        order.push_back(index);
+    using ExecOrder = std::vector<unsigned int>;
+
+    AstExecutionOrder(ExecOrder order = {}, SrcLocation loc = {}) : order(std::move(order)) {
+        setSrcLoc(std::move(loc));
     }
 
     /** get order */
-    const std::vector<unsigned int>& getOrder() const {
+    const ExecOrder& getOrder() const {
         return order;
     }
 
     AstExecutionOrder* clone() const override {
-        auto res = new AstExecutionOrder();
-        res->setSrcLoc(getSrcLoc());
-        res->order = order;
-        return res;
+        return new AstExecutionOrder(order, getSrcLoc());
     }
 
 protected:
@@ -65,7 +63,7 @@ protected:
 
 private:
     /** literal order of body (starting from 1) */
-    std::vector<unsigned int> order;
+    ExecOrder order;
 };
 
 /**
@@ -141,11 +139,11 @@ private:
  */
 class AstClause : public AstNode {
 public:
-    AstClause() = default;
-    AstClause(std::unique_ptr<AstAtom> head, std::vector<std::unique_ptr<AstLiteral>> bodyLiterals,
-            std::unique_ptr<AstExecutionPlan> plan)
-            : AstNode(), head(std::move(head)), bodyLiterals(std::move(bodyLiterals)),
-              plan(std::move(plan)){};
+    AstClause(Own<AstAtom> head = {}, VecOwn<AstLiteral> bodyLiterals = {}, Own<AstExecutionPlan> plan = {},
+            SrcLocation loc = {})
+            : head(std::move(head)), bodyLiterals(std::move(bodyLiterals)), plan(std::move(plan)) {
+        setSrcLoc(std::move(loc));
+    };
 
     /** Add a Literal to the body of the clause */
     void addToBody(std::unique_ptr<AstLiteral> literal) {

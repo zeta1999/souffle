@@ -31,6 +31,7 @@ class AstFunctorDeclaration;
 class AstPragma;
 class AstRelation;
 class AstIO;
+class AstSubsetType;
 class AstTranslationUnit;
 class AstType;
 class DebugReport;
@@ -47,8 +48,7 @@ struct scanner_data {
 
 class ParserDriver {
 public:
-    ParserDriver();
-    virtual ~ParserDriver();
+    virtual ~ParserDriver() = default;
 
     std::unique_ptr<AstTranslationUnit> translationUnit;
 
@@ -60,6 +60,9 @@ public:
     void addComponent(std::unique_ptr<AstComponent> c);
     void addInstantiation(std::unique_ptr<AstComponentInit> ci);
     void addPragma(std::unique_ptr<AstPragma> p);
+
+    void addDeprecatedIoModifiers(AstRelation& r);
+    Own<AstSubsetType> mkDeprecatedSubType(AstQualifiedName name, TypeAttribute attr, SrcLocation loc);
 
     bool trace_scanning = false;
 

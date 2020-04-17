@@ -17,7 +17,6 @@
 #include "AstTranslator.h"
 #include "AggregateOp.h"
 #include "AstArgument.h"
-#include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstFunctorDeclaration.h"
 #include "AstIO.h"
@@ -241,7 +240,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
             }
             std::vector<std::string> attributeNames;
             for (const auto* attribute : rel->getAttributes()) {
-                attributeNames.push_back(attribute->getAttributeName());
+                attributeNames.push_back(attribute->getName());
             }
 
             if (Global::config().has("provenance")) {
@@ -1598,7 +1597,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             std::vector<std::string> attributeNames;
             std::vector<std::string> attributeTypeQualifiers;
             for (size_t i = 0; i < rel->getArity(); ++i) {
-                attributeNames.push_back(attributes[i]->getAttributeName());
+                attributeNames.push_back(attributes[i]->getName());
                 if (typeEnv != nullptr) {
                     attributeTypeQualifiers.push_back(
                             getTypeQualifier(typeEnv->getType(attributes[i]->getTypeName())));
@@ -1714,8 +1713,8 @@ const Json AstTranslator::getRecordsTypes(void) {
 
             recordType = getTypeQualifier(typeEnv->getType(elementType->getQualifiedName()));
 
-            for (auto field : elementType->getFields()) {
-                types.push_back(getTypeQualifier(typeEnv->getType(field.type)));
+            for (auto&& field : elementType->getFields()) {
+                types.push_back(getTypeQualifier(typeEnv->getType(field->getTypeName())));
             }
             const size_t recordArity = types.size();
             Json recordInfo =

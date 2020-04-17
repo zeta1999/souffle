@@ -39,10 +39,6 @@ extern void yyset_in(FILE* in_str, yyscan_t scanner);
 
 namespace souffle {
 
-ParserDriver::ParserDriver() = default;
-
-ParserDriver::~ParserDriver() = default;
-
 std::unique_ptr<AstTranslationUnit> ParserDriver::parse(
         const std::string& filename, FILE* in, ErrorReport& errorReport, DebugReport& debugReport) {
     translationUnit =
@@ -156,6 +152,26 @@ void ParserDriver::addComponent(std::unique_ptr<AstComponent> c) {
 }
 void ParserDriver::addInstantiation(std::unique_ptr<AstComponentInit> ci) {
     translationUnit->getProgram()->addInstantiation(std::move(ci));
+}
+
+void ParserDriver::addDeprecatedIoModifiers(AstRelation& rel) {
+    if (rel.hasQualifier(RelationQualifier::INPUT)) {
+        addIO(mk<AstIO>(AstIO::InputIO, rel.getQualifiedName(), rel.getSrcLoc()));
+    }
+
+    if (rel.hasQualifier(RelationQualifier::OUTPUT)) {
+        addIO(mk<AstIO>(AstIO::OutputIO, rel.getQualifiedName(), rel.getSrcLoc()));
+    }
+
+    if (rel.hasQualifier(RelationQualifier::PRINTSIZE)) {
+        addIO(mk<AstIO>(AstIO::PrintsizeIO, rel.getQualifiedName(), rel.getSrcLoc()));
+    }
+}
+
+Own<AstSubsetType> ParserDriver::mkDeprecatedSubType(
+        AstQualifiedName name, TypeAttribute attr, SrcLocation loc) {
+    warning(loc, "Deprecated type declaration used");
+    return mk<AstSubsetType>(std::move(name), attr, std::move(loc));
 }
 
 void ParserDriver::warning(const SrcLocation& loc, const std::string& msg) {

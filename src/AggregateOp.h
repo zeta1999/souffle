@@ -38,6 +38,28 @@ enum class AggregateOp {
     COUNT,
 };
 
+// `[min, max]` # of arguments for each function
+inline std::pair<uint8_t, uint8_t> aggregateArity(AggregateOp op) {
+    switch (op) {
+        case AggregateOp::COUNT:
+            return {0, 0};
+
+        case AggregateOp::FMAX:
+        case AggregateOp::FMIN:
+        case AggregateOp::FSUM:
+        case AggregateOp::MAX:
+        case AggregateOp::MEAN:
+        case AggregateOp::MIN:
+        case AggregateOp::SUM:
+        case AggregateOp::UMAX:
+        case AggregateOp::UMIN:
+        case AggregateOp::USUM:
+            return {1, 1};
+    }
+
+    abort();
+}
+
 /**
  * Get return type of the aggregate.
  */

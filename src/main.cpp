@@ -376,13 +376,7 @@ int main(int argc, char** argv) {
     }
 
     // ------- check for parse errors -------------
-    if (astTranslationUnit->getErrorReport().getNumErrors() != 0) {
-        std::cerr << astTranslationUnit->getErrorReport();
-        std::cerr << std::to_string(astTranslationUnit->getErrorReport().getNumErrors()) +
-                             " errors generated, evaluation aborted"
-                  << std::endl;
-        exit(1);
-    }
+    astTranslationUnit->getErrorReport().exitIfErrors();
 
     // ------- rewriting / optimizations -------------
 

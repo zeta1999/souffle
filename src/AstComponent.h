@@ -41,9 +41,7 @@ namespace souffle {
 class AstComponentType : public AstNode {
 public:
     AstComponentType(std::string name = "", std::vector<AstQualifiedName> params = {}, SrcLocation loc = {})
-            : name(std::move(name)), typeParams(std::move(params)) {
-        setSrcLoc(std::move(loc));
-    }
+            : AstNode(std::move(loc)), name(std::move(name)), typeParams(std::move(params)) {}
 
     /** get component name */
     const std::string& getName() const {
@@ -73,7 +71,7 @@ protected:
     void print(std::ostream& os) const override {
         os << name;
         if (!typeParams.empty()) {
-            os << "<" << join(typeParams, ",") << ">";
+            os << "<" << join(typeParams) << ">";
         }
     }
 
@@ -96,9 +94,7 @@ private:
 class AstComponentInit : public AstNode {
 public:
     AstComponentInit(std::string name, Own<AstComponentType> type, SrcLocation loc = {})
-            : instanceName(std::move(name)), componentType(std::move(type)) {
-        setSrcLoc(std::move(loc));
-    }
+            : AstNode(std::move(loc)), instanceName(std::move(name)), componentType(std::move(type)) {}
 
     /** get instance name */
     const std::string& getInstanceName() const {
@@ -116,7 +112,7 @@ public:
     }
 
     /** set component type */
-    void setComponentType(std::unique_ptr<AstComponentType> type) {
+    void setComponentType(Own<AstComponentType> type) {
         componentType = std::move(type);
     }
 
@@ -129,9 +125,7 @@ public:
     }
 
     std::vector<const AstNode*> getChildNodes() const override {
-        std::vector<const AstNode*> res;
-        res.push_back(componentType.get());
-        return res;
+        return {componentType.get()};
     }
 
 protected:
@@ -148,7 +142,7 @@ protected:
     std::string instanceName;
 
     /** actual component arguments for instantiation */
-    std::unique_ptr<AstComponentType> componentType;
+    Own<AstComponentType> componentType;
 };
 
 /**
@@ -162,7 +156,7 @@ public:
     }
 
     /** set component type */
-    void setComponentType(std::unique_ptr<AstComponentType> other) {
+    void setComponentType(Own<AstComponentType> other) {
         componentType = std::move(other);
     }
 
@@ -172,12 +166,12 @@ public:
     }
 
     /** add base components */
-    void addBaseComponent(std::unique_ptr<AstComponentType> component) {
+    void addBaseComponent(Own<AstComponentType> component) {
         baseComponents.push_back(std::move(component));
     }
 
     /** add type */
-    void addType(std::unique_ptr<AstType> t) {
+    void addType(Own<AstType> t) {
         types.push_back(std::move(t));
     }
 
@@ -192,7 +186,7 @@ public:
     }
 
     /** add relation */
-    void addRelation(std::unique_ptr<AstRelation> r) {
+    void addRelation(Own<AstRelation> r) {
         relations.push_back(std::move(r));
     }
 
@@ -202,7 +196,7 @@ public:
     }
 
     /** add clause */
-    void addClause(std::unique_ptr<AstClause> c) {
+    void addClause(Own<AstClause> c) {
         clauses.push_back(std::move(c));
     }
 
@@ -212,7 +206,7 @@ public:
     }
 
     /** add IO */
-    void addIO(std::unique_ptr<AstIO> directive) {
+    void addIO(Own<AstIO> directive) {
         ios.push_back(std::move(directive));
     }
 
@@ -222,7 +216,7 @@ public:
     }
 
     /** add components */
-    void addComponent(std::unique_ptr<AstComponent> c) {
+    void addComponent(Own<AstComponent> c) {
         components.push_back(std::move(c));
     }
 
@@ -232,7 +226,7 @@ public:
     }
 
     /** add instantiation */
-    void addInstantiation(std::unique_ptr<AstComponentInit> i) {
+    void addInstantiation(Own<AstComponentInit> i) {
         instantiations.push_back(std::move(i));
     }
 
@@ -253,33 +247,15 @@ public:
 
     AstComponent* clone() const override {
         auto* res = new AstComponent();
-
-        res->setComponentType(std::unique_ptr<AstComponentType>(componentType->clone()));
-        for (const auto& cur : baseComponents) {
-            res->baseComponents.emplace_back(cur->clone());
-        }
-        for (const auto& cur : components) {
-            res->components.emplace_back(cur->clone());
-        }
-        for (const auto& cur : instantiations) {
-            res->instantiations.emplace_back(cur->clone());
-        }
-        for (const auto& cur : types) {
-            res->types.emplace_back(cur->clone());
-        }
-        for (const auto& cur : relations) {
-            res->relations.emplace_back(cur->clone());
-        }
-        for (const auto& cur : clauses) {
-            res->clauses.emplace_back(cur->clone());
-        }
-        for (const auto& cur : ios) {
-            res->ios.emplace_back(cur->clone());
-        }
-        for (const auto& cur : overrideRules) {
-            res->overrideRules.insert(cur);
-        }
-
+        res->componentType = souffle::clone(componentType);
+        res->baseComponents = souffle::clone(baseComponents);
+        res->components = souffle::clone(components);
+        res->instantiations = souffle::clone(instantiations);
+        res->types = souffle::clone(types);
+        res->relations = souffle::clone(relations);
+        res->clauses = souffle::clone(clauses);
+        res->ios = souffle::clone(ios);
+        res->overrideRules = overrideRules;
         return res;
     }
 
@@ -338,34 +314,21 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        os << ".comp " << *componentType << " ";
-        if (!baseComponents.empty()) {
-            os << ": " << join(baseComponents, ",", print_deref<std::unique_ptr<AstComponentType>>()) << " ";
-        }
-        os << "{\n";
-        if (!components.empty()) {
-            os << join(components, "\n", print_deref<std::unique_ptr<AstComponent>>()) << "\n";
-        }
-        if (!instantiations.empty()) {
-            os << join(instantiations, "\n", print_deref<std::unique_ptr<AstComponentInit>>()) << "\n";
-        }
-        if (!types.empty()) {
-            os << join(types, "\n", print_deref<std::unique_ptr<AstType>>()) << "\n";
-        }
-        if (!relations.empty()) {
-            os << join(relations, "\n", print_deref<std::unique_ptr<AstRelation>>()) << "\n";
-        }
-        if (!overrideRules.empty()) {
-            os << ".override ";
-            os << join(overrideRules, ",") << "\n";
-        }
-        if (!clauses.empty()) {
-            os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
-        }
-        if (!ios.empty()) {
-            os << join(ios, "\n\n", print_deref<std::unique_ptr<AstIO>>()) << "\n";
-        }
+        auto show = [&](auto&& xs, char const* sep = "\n", char const* prefix = "") {
+            if (xs.empty()) return;
+            os << prefix << join(xs, sep) << "\n";
+        };
 
+        os << ".comp " << *componentType << " ";
+        show(baseComponents, ",", ": ");
+        os << "{\n";
+        show(components);
+        show(instantiations);
+        show(types);
+        show(relations);
+        show(overrideRules, ",", ".override ");
+        show(clauses, "\n\n");
+        show(ios, "\n\n");
         os << "}\n";
     }
 
@@ -403,28 +366,28 @@ protected:
     }
 
     /** name of component and its formal component arguments. */
-    std::unique_ptr<AstComponentType> componentType;
+    Own<AstComponentType> componentType;
 
     /** base components of component */
-    std::vector<std::unique_ptr<AstComponentType>> baseComponents;
+    VecOwn<AstComponentType> baseComponents;
 
     /** types declarations */
-    std::vector<std::unique_ptr<AstType>> types;
+    VecOwn<AstType> types;
 
     /** relations */
-    std::vector<std::unique_ptr<AstRelation>> relations;
+    VecOwn<AstRelation> relations;
 
     /** clauses */
-    std::vector<std::unique_ptr<AstClause>> clauses;
+    VecOwn<AstClause> clauses;
 
     /** I/O directives */
-    std::vector<std::unique_ptr<AstIO>> ios;
+    VecOwn<AstIO> ios;
 
     /** nested components */
-    std::vector<std::unique_ptr<AstComponent>> components;
+    VecOwn<AstComponent> components;
 
     /** nested component instantiations. */
-    std::vector<std::unique_ptr<AstComponentInit>> instantiations;
+    VecOwn<AstComponentInit> instantiations;
 
     /** clauses of relations that are overwritten by this component */
     std::set<std::string> overrideRules;

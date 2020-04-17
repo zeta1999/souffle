@@ -27,6 +27,7 @@
 #include "Util.h"
 #include <cassert>
 #include <cstddef>
+#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -41,9 +42,8 @@ namespace souffle {
  */
 class AstVariable : public AstArgument {
 public:
-    AstVariable(std::string name, SrcLocation loc = {}) : name(std::move(name)) {
-        setSrcLoc(std::move(loc));
-    }
+    AstVariable(std::string name, SrcLocation loc = {})
+            : AstArgument(std::move(loc)), name(std::move(name)) {}
 
     /** set variable name */
     void setName(std::string name) {
@@ -78,9 +78,7 @@ protected:
  */
 class AstUnnamedVariable : public AstArgument {
 public:
-    AstUnnamedVariable(SrcLocation loc = {}) {
-        setSrcLoc(std::move(loc));
-    }
+    using AstArgument::AstArgument;
 
     AstUnnamedVariable* clone() const override {
         return new AstUnnamedVariable(getSrcLoc());
@@ -97,9 +95,7 @@ protected:
  */
 class AstCounter : public AstArgument {
 public:
-    AstCounter(SrcLocation loc = {}) {
-        setSrcLoc(std::move(loc));
-    }
+    using AstArgument::AstArgument;
 
     AstCounter* clone() const override {
         return new AstCounter(getSrcLoc());
@@ -133,7 +129,8 @@ protected:
         return constant == other.constant;
     }
 
-    AstConstant(std::string value) : constant(std::move(value)){};
+    AstConstant(std::string value, SrcLocation loc = {})
+            : AstArgument(std::move(loc)), constant(std::move(value)){};
 
 private:
     const std::string constant;
@@ -211,9 +208,7 @@ private:
  */
 class AstNilConstant : public AstConstant {
 public:
-    AstNilConstant(SrcLocation loc = {}) : AstConstant("nil") {
-        setSrcLoc(std::move(loc));
-    }
+    AstNilConstant(SrcLocation loc = {}) : AstConstant("nil", std::move(loc)) {}
 
     AstNilConstant* clone() const override {
         return new AstNilConstant(getSrcLoc());
@@ -225,10 +220,15 @@ public:
  */
 class AstTerm : public AstArgument {
 protected:
-    AstTerm() = default;
-    AstTerm(VecOwn<AstArgument> operands, SrcLocation loc = {}) : args(std::move(operands)) {
-        setSrcLoc(std::move(loc));
-    }
+    template <typename... Operands>
+    AstTerm(Operands&&... operands) : AstTerm(asVec(std::forward<Operands>(operands)...)) {}
+
+    template <typename... Operands>
+    AstTerm(SrcLocation loc, Operands&&... operands)
+            : AstTerm(asVec(std::forward<Operands>(operands)...), std::move(loc)) {}
+
+    AstTerm(VecOwn<AstArgument> operands, SrcLocation loc = {})
+            : AstArgument(std::move(loc)), args(std::move(operands)) {}
 
 public:
     /** get arguments */
@@ -237,7 +237,7 @@ public:
     }
 
     /** add argument to argument list */
-    void addArgument(std::unique_ptr<AstArgument> arg) {
+    void addArgument(Own<AstArgument> arg) {
         args.push_back(std::move(arg));
     }
 
@@ -262,7 +262,16 @@ protected:
     }
 
     /** Arguments */
-    std::vector<std::unique_ptr<AstArgument>> args;
+    VecOwn<AstArgument> args;
+
+private:
+    template <typename... Operands>
+    static VecOwn<AstArgument> asVec(Operands... ops) {
+        Own<AstArgument> ary[] = {std::move(ops)...};
+        VecOwn<AstArgument> xs;
+        for (auto&& x : ary) xs.push_back(std::move(x));
+        return xs;
+    }
 };
 
 /**
@@ -275,8 +284,7 @@ public:
     virtual TypeAttribute getArgType(const size_t arg) const = 0;
 
 protected:
-    AstFunctor() = default;
-    explicit AstFunctor(std::vector<std::unique_ptr<AstArgument>> operands) : AstTerm(std::move(operands)) {}
+    using AstTerm::AstTerm;
 };
 
 /**
@@ -284,25 +292,20 @@ protected:
  */
 class AstIntrinsicFunctor : public AstFunctor {
 public:
+    // used by transformers. do sanchecks
     template <typename... Operands>
-    AstIntrinsicFunctor(FunctorOp function, Operands... operands) : function(function) {
-        std::unique_ptr<AstArgument> tmp[] = {std::move(operands)...};
-        for (auto& cur : tmp) {
-            addArgument(std::move(cur));
-        }
+    AstIntrinsicFunctor(FunctorOp op, Operands&&... operands)
+            : AstFunctor(std::forward<Operands>(operands)...), function(op) {
         assert(isValidFunctorOpArity(function, args.size()) && "invalid number of arguments for functor");
     }
 
+    // used by parser. defer sanchecks to semantic checker
     template <typename... Operands>
-    AstIntrinsicFunctor(SrcLocation loc, FunctorOp function, Operands... operands)
-            : AstIntrinsicFunctor(function, std::forward<Operands>(operands)...) {
-        setSrcLoc(std::move(loc));
-    }
+    AstIntrinsicFunctor(SrcLocation loc, FunctorOp op, Operands&&... operands)
+            : AstFunctor(std::move(loc), std::forward<Operands>(operands)...), function(op) {}
 
     AstIntrinsicFunctor(FunctorOp op, VecOwn<AstArgument> args, SrcLocation loc = {})
-            : AstFunctor(std::move(args)), function(op) {
-        setSrcLoc(std::move(loc));
-    }
+            : AstFunctor(std::move(args), std::move(loc)), function(op) {}
 
     /** get function */
     FunctorOp getFunction() const {
@@ -331,14 +334,10 @@ public:
 protected:
     void print(std::ostream& os) const override {
         if (isInfixFunctorOp(function)) {
-            os << "(";
-            os << join(args, getSymbolForFunctorOp(function), print_deref<std::unique_ptr<AstArgument>>());
-            os << ")";
+            os << "(" << join(args, getSymbolForFunctorOp(function)) << ")";
         } else {
             os << getSymbolForFunctorOp(function);
-            os << "(";
-            os << join(args, ",", print_deref<std::unique_ptr<AstArgument>>());
-            os << ")";
+            os << "(" << join(args) << ")";
         }
     }
 
@@ -356,11 +355,10 @@ protected:
  */
 class AstUserDefinedFunctor : public AstFunctor {
 public:
-    explicit AstUserDefinedFunctor(std::string name) : AstFunctor(), name(std::move(name)){};
+    explicit AstUserDefinedFunctor(std::string name) : AstFunctor({}, {}), name(std::move(name)){};
+
     AstUserDefinedFunctor(std::string name, VecOwn<AstArgument> args, SrcLocation loc = {})
-            : AstFunctor(std::move(args)), name(std::move(name)) {
-        setSrcLoc(std::move(loc));
-    };
+            : AstFunctor(std::move(args), std::move(loc)), name(std::move(name)){};
 
     /** get name */
     const std::string& getName() const {
@@ -379,7 +377,7 @@ public:
 
     void setTypes(std::vector<TypeAttribute> argumentsTypes, TypeAttribute retType) {
         assert(argumentsTypes.size() == args.size() && "Size of types must match size of arguments");
-        argTypes = argumentsTypes;
+        argTypes = std::move(argumentsTypes);
         returnType = retType;
     }
 
@@ -398,7 +396,7 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        os << '@' << name << "(" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << ")";
+        os << '@' << name << "(" << join(args) << ")";
     }
 
     bool equal(const AstNode& node) const override {
@@ -418,8 +416,7 @@ protected:
  */
 class AstRecordInit : public AstTerm {
 public:
-    AstRecordInit() = default;
-    AstRecordInit(VecOwn<AstArgument> operands, SrcLocation loc = {})
+    AstRecordInit(VecOwn<AstArgument> operands = {}, SrcLocation loc = {})
             : AstTerm(std::move(operands), std::move(loc)) {}
 
     AstRecordInit* clone() const override {
@@ -428,7 +425,7 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        os << "[" << join(args, ",", print_deref<std::unique_ptr<AstArgument>>()) << "]";
+        os << "[" << join(args) << "]";
     }
 };
 
@@ -437,10 +434,8 @@ protected:
  */
 class AstTypeCast : public AstArgument {
 public:
-    AstTypeCast(std::unique_ptr<AstArgument> value, AstQualifiedName type, SrcLocation loc = {})
-            : value(std::move(value)), type(std::move(type)) {
-        setSrcLoc(std::move(loc));
-    }
+    AstTypeCast(Own<AstArgument> value, AstQualifiedName type, SrcLocation loc = {})
+            : AstArgument(std::move(loc)), value(std::move(value)), type(std::move(type)) {}
 
     /** Get value */
     AstArgument* getValue() const {
@@ -482,7 +477,7 @@ protected:
     }
 
     /** The value to be casted */
-    std::unique_ptr<AstArgument> value;
+    Own<AstArgument> value;
 
     /** The target type name */
     AstQualifiedName type;
@@ -495,9 +490,8 @@ class AstAggregator : public AstArgument {
 public:
     AstAggregator(AggregateOp fun, Own<AstArgument> expr = nullptr, VecOwn<AstLiteral> body = {},
             SrcLocation loc = {})
-            : fun(fun), targetExpression(std::move(expr)), body(std::move(body)) {
-        setSrcLoc(std::move(loc));
-    }
+            : AstArgument(std::move(loc)), fun(fun), targetExpression(std::move(expr)),
+              body(std::move(body)) {}
 
     /** Get aggregate operator */
     AggregateOp getOperator() const {
@@ -519,7 +513,7 @@ public:
         return toPtrVector(body);
     }
 
-    void setBody(std::vector<std::unique_ptr<AstLiteral>> bodyLiterals) {
+    void setBody(VecOwn<AstLiteral> bodyLiterals) {
         body = std::move(bodyLiterals);
     }
 
@@ -549,40 +543,11 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        switch (fun) {
-            case AggregateOp::SUM:
-            case AggregateOp::FSUM:
-            case AggregateOp::USUM:
-                os << "sum";
-                break;
-            case AggregateOp::MIN:
-            case AggregateOp::FMIN:
-            case AggregateOp::UMIN:
-                os << "min";
-                break;
-            case AggregateOp::MAX:
-            case AggregateOp::FMAX:
-            case AggregateOp::UMAX:
-                os << "max";
-                break;
-            case AggregateOp::COUNT:
-                os << "count";
-                break;
-            case AggregateOp::MEAN:
-                os << "mean";
-                break;
-        }
+        os << fun;
         if (targetExpression) {
             os << " " << *targetExpression;
         }
-        os << " : ";
-        if (body.size() > 1) {
-            os << "{ ";
-        }
-        os << join(body, ", ", print_deref<std::unique_ptr<AstLiteral>>());
-        if (body.size() > 1) {
-            os << " }";
-        }
+        os << " : { " << join(body) << " }";
     }
 
     bool equal(const AstNode& node) const override {
@@ -596,10 +561,10 @@ private:
     AggregateOp fun;
 
     /** Aggregation expression */
-    std::unique_ptr<AstArgument> targetExpression;
+    Own<AstArgument> targetExpression;
 
     /** Body literal of sub-query */
-    std::vector<std::unique_ptr<AstLiteral>> body;
+    VecOwn<AstLiteral> body;
 };
 
 /**
@@ -607,7 +572,7 @@ private:
  */
 class AstSubroutineArgument : public AstArgument {
 public:
-    AstSubroutineArgument(size_t index) : index(index) {}
+    AstSubroutineArgument(size_t index, SrcLocation loc = {}) : AstArgument(std::move(loc)), index(index) {}
 
     /** Return argument index */
     size_t getNumber() const {
@@ -615,9 +580,7 @@ public:
     }
 
     AstSubroutineArgument* clone() const override {
-        auto* res = new AstSubroutineArgument(index);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstSubroutineArgument(index, getSrcLoc());
     }
 
 protected:

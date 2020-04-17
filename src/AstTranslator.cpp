@@ -151,7 +151,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirective
 
     std::vector<const AstIO*> relLoads;
     for (const auto* io : program->getIOs()) {
-        if (io->getQualifiedName() == rel->getQualifiedName() && io->getType() == AstIO::InputIO) {
+        if (io->getQualifiedName() == rel->getQualifiedName() && io->getType() == AstIoType::input) {
             relLoads.push_back(io);
         }
     }
@@ -185,7 +185,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
     std::vector<const AstIO*> relStores;
     for (const auto* store : program->getIOs()) {
         if (store->getQualifiedName() == rel->getQualifiedName() &&
-                (store->getType() == AstIO::OutputIO || store->getType() == AstIO::PrintsizeIO)) {
+                (store->getType() == AstIoType::output || store->getType() == AstIoType::printsize)) {
             relStores.push_back(store);
         }
     }
@@ -195,7 +195,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
         bool hasOutput = false;
         for (const auto* current : relStores) {
             std::map<std::string, std::string> directives;
-            if (current->getType() == AstIO::PrintsizeIO) {
+            if (current->getType() == AstIoType::printsize) {
                 directives["operation"] = "printsize";
                 directives["IO"] = "stdoutprintsize";
                 outputDirectives.push_back(directives);
@@ -213,7 +213,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
             for (const auto& currentPair : current->getDirectives()) {
                 directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
             }
-            if (current->getType() == AstIO::PrintsizeIO) {
+            if (current->getType() == AstIoType::printsize) {
                 directives["operation"] = "printsize";
                 directives["IO"] = "stdoutprintsize";
             } else {

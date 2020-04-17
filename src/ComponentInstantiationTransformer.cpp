@@ -91,7 +91,7 @@ struct ComponentContent {
         // if yes, add error
         if (foundItem != ios.end()) {
             auto type = (*foundItem)->getType();
-            if (type == newIO->getType() && newIO->getType() != AstIO::OutputIO) {
+            if (type == newIO->getType() && newIO->getType() != AstIoType::output) {
                 Diagnostic err(Diagnostic::ERROR,
                         DiagnosticMessage("Redefinition I/O operation " + toString(newIO->getQualifiedName()),
                                 newIO->getSrcLoc()),

@@ -250,6 +250,10 @@ inline std::string toBinaryConstraintSymbol(const BinaryConstraintOp op) {
     exit(EXIT_FAILURE);
 }
 
+inline std::ostream& operator<<(std::ostream& os, BinaryConstraintOp e) {
+    return os << toBinaryConstraintSymbol(e);
+}
+
 /**
  * Converts symbolic representation of an operator to the operator.
  * Note that this won't tell you which polymorphic overload is actually used.

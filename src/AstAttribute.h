@@ -34,9 +34,7 @@ namespace souffle {
 class AstAttribute : public AstNode {
 public:
     AstAttribute(std::string n, AstQualifiedName t, SrcLocation loc = {})
-            : name(std::move(n)), typeName(std::move(t)) {
-        setSrcLoc(std::move(loc));
-    }
+            : AstNode(std::move(loc)), name(std::move(n)), typeName(std::move(t)) {}
 
     /** get attribute name */
     const std::string& getName() const {

@@ -34,9 +34,9 @@ class AstFunctorDeclaration : public AstNode {
 public:
     AstFunctorDeclaration(std::string name, std::vector<TypeAttribute> argsTypes, TypeAttribute returnType,
             SrcLocation loc = {})
-            : name(std::move(name)), argsTypes(std::move(argsTypes)), returnType(returnType) {
+            : AstNode(std::move(loc)), name(std::move(name)), argsTypes(std::move(argsTypes)),
+              returnType(returnType) {
         assert(this->name.length() > 0 && "functor name is empty");
-        setSrcLoc(std::move(loc));
     }
 
     /** get name */
@@ -79,12 +79,11 @@ protected:
                     abort();
             }
         };
-        out << ".declfun " << name << "(";
+
         std::vector<std::string> args(argsTypes.size());
         std::transform(argsTypes.begin(), argsTypes.end(), args.begin(), convert);
 
-        out << join(args, ",");
-        out << "):" << convert(returnType) << std::endl;
+        out << ".declfun " << name << "(" << join(args) << "):" << convert(returnType) << "\n";
     }
 
     bool equal(const AstNode& node) const override {

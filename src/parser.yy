@@ -70,12 +70,11 @@
             (Cur).filenames     = YYRHSLOC(Rhs, 0).filenames;   \
         }                                                       \
     } while (0)
-
-    using std::move;
 }
 
 %code {
     #include "ParserDriver.h"
+    using std::move;
 }
 
 %param { ParserDriver &driver }
@@ -199,7 +198,7 @@
 %type <std::vector<std::string>>            identifier
 %type <VecOwn<AstIO>>                       io_directive_list
 %type <VecOwn<AstIO>>                       io_head
-%type <AstIO::AstIOType>                    io_head_decl
+%type <AstIoType>                           io_head_decl
 %type <VecOwn<AstIO>>                       io_relation_list
 %type <std::string>                         kvp_value
 %type <VecOwn<AstArgument>>                 non_empty_arg_list
@@ -765,9 +764,9 @@ io_head
   ;
 
 io_head_decl
-  : INPUT_DECL      { $$ = AstIO::InputIO;      }
-  | OUTPUT_DECL     { $$ = AstIO::OutputIO;     }
-  | PRINTSIZE_DECL  { $$ = AstIO::PrintsizeIO;  }
+  : INPUT_DECL      { $$ = AstIoType::input;      }
+  | OUTPUT_DECL     { $$ = AstIoType::output;     }
+  | PRINTSIZE_DECL  { $$ = AstIoType::printsize;  }
   ;
 
 /* IO directive list */
@@ -785,9 +784,10 @@ io_directive_list
   ;
 
 /* IO relation list */
+/* use a dummy `AstIoType` for now. `io_head` will replace it */
 io_relation_list
-  :                         identifier { $$.push_back(mk<AstIO>(move($1), @1)); }
-  | io_relation_list COMMA  identifier { $1.push_back(mk<AstIO>(move($3), @3)); $$ = move($1); }
+  :                         identifier { $$.push_back(mk<AstIO>(AstIoType::input, move($1), @1)); }
+  | io_relation_list COMMA  identifier { $1.push_back(mk<AstIO>(AstIoType::input, move($3), @3)); $$ = move($1); }
   ;
 
 /* Key-value pairs */

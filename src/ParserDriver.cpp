@@ -116,9 +116,9 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
 }
 
 void ParserDriver::addIO(std::unique_ptr<AstIO> d) {
-    if (d->getType() == AstIO::PrintsizeIO) {
+    if (d->getType() == AstIoType::printsize) {
         for (const auto& cur : translationUnit->getProgram()->getIOs()) {
-            if (cur->getQualifiedName() == d->getQualifiedName() && cur->getType() == AstIO::PrintsizeIO) {
+            if (cur->getQualifiedName() == d->getQualifiedName() && cur->getType() == AstIoType::printsize) {
                 Diagnostic err(Diagnostic::ERROR,
                         DiagnosticMessage("Redefinition of printsize directives for relation " +
                                                   toString(d->getQualifiedName()),
@@ -156,15 +156,15 @@ void ParserDriver::addInstantiation(std::unique_ptr<AstComponentInit> ci) {
 
 void ParserDriver::addDeprecatedIoModifiers(AstRelation& rel) {
     if (rel.hasQualifier(RelationQualifier::INPUT)) {
-        addIO(mk<AstIO>(AstIO::InputIO, rel.getQualifiedName(), rel.getSrcLoc()));
+        addIO(mk<AstIO>(AstIoType::input, rel.getQualifiedName(), rel.getSrcLoc()));
     }
 
     if (rel.hasQualifier(RelationQualifier::OUTPUT)) {
-        addIO(mk<AstIO>(AstIO::OutputIO, rel.getQualifiedName(), rel.getSrcLoc()));
+        addIO(mk<AstIO>(AstIoType::output, rel.getQualifiedName(), rel.getSrcLoc()));
     }
 
     if (rel.hasQualifier(RelationQualifier::PRINTSIZE)) {
-        addIO(mk<AstIO>(AstIO::PrintsizeIO, rel.getQualifiedName(), rel.getSrcLoc()));
+        addIO(mk<AstIO>(AstIoType::printsize, rel.getQualifiedName(), rel.getSrcLoc()));
     }
 }
 

@@ -61,7 +61,7 @@ public:
     }
 
     /** Add a new used type to this relation */
-    void addAttribute(std::unique_ptr<AstAttribute> attr) {
+    void addAttribute(Own<AstAttribute> attr) {
         assert(attr && "Undefined attribute");
         attributes.push_back(std::move(attr));
     }
@@ -147,7 +147,7 @@ protected:
     AstQualifiedName name;
 
     /** Attributes of the relation */
-    std::vector<std::unique_ptr<AstAttribute>> attributes;
+    VecOwn<AstAttribute> attributes;
 
     /** Qualifiers of relation */
     std::set<RelationQualifier> qualifiers;

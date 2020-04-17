@@ -38,6 +38,34 @@ enum class AggregateOp {
     COUNT,
 };
 
+inline std::ostream& operator<<(std::ostream& os, AggregateOp op) {
+    switch (op) {
+        case AggregateOp::COUNT:
+            return os << "count";
+
+        case AggregateOp::MEAN:
+            return os << "mean";
+
+        case AggregateOp::MAX:
+        case AggregateOp::UMAX:
+        case AggregateOp::FMAX:
+            return os << "max";
+
+        case AggregateOp::MIN:
+        case AggregateOp::UMIN:
+        case AggregateOp::FMIN:
+            return os << "min";
+
+        case AggregateOp::SUM:
+        case AggregateOp::USUM:
+        case AggregateOp::FSUM:
+            return os << "sum";
+    }
+
+    assert(false && "invalid argument");
+    exit(EXIT_FAILURE);
+}
+
 // `[min, max]` # of arguments for each function
 inline std::pair<uint8_t, uint8_t> aggregateArity(AggregateOp op) {
     switch (op) {

@@ -73,7 +73,7 @@ private:
 class AstExecutionPlan : public AstNode {
 public:
     /** updates execution order for rule version */
-    void setOrderFor(int version, std::unique_ptr<AstExecutionOrder> plan) {
+    void setOrderFor(int version, Own<AstExecutionOrder> plan) {
         plans[version] = std::move(plan);
     }
 
@@ -90,7 +90,7 @@ public:
         auto res = new AstExecutionPlan();
         res->setSrcLoc(getSrcLoc());
         for (auto& plan : plans) {
-            res->setOrderFor(plan.first, std::unique_ptr<AstExecutionOrder>(plan.second->clone()));
+            res->setOrderFor(plan.first, Own<AstExecutionOrder>(plan.second->clone()));
         }
         return res;
     }
@@ -125,7 +125,7 @@ protected:
 
 private:
     /** mapping versions of clauses to execution plans */
-    std::map<int, std::unique_ptr<AstExecutionOrder>> plans;
+    std::map<int, Own<AstExecutionOrder>> plans;
 };
 
 /**
@@ -141,22 +141,21 @@ class AstClause : public AstNode {
 public:
     AstClause(Own<AstAtom> head = {}, VecOwn<AstLiteral> bodyLiterals = {}, Own<AstExecutionPlan> plan = {},
             SrcLocation loc = {})
-            : head(std::move(head)), bodyLiterals(std::move(bodyLiterals)), plan(std::move(plan)) {
-        setSrcLoc(std::move(loc));
-    };
+            : AstNode(std::move(loc)), head(std::move(head)), bodyLiterals(std::move(bodyLiterals)),
+              plan(std::move(plan)) {}
 
     /** Add a Literal to the body of the clause */
-    void addToBody(std::unique_ptr<AstLiteral> literal) {
+    void addToBody(Own<AstLiteral> literal) {
         bodyLiterals.push_back(std::move(literal));
     }
 
     /** Set the head of clause to @p h */
-    void setHead(std::unique_ptr<AstAtom> h) {
+    void setHead(Own<AstAtom> h) {
         head = std::move(h);
     }
 
     /** Set the bodyLiterals of clause to @p body */
-    void setBodyLiterals(std::vector<std::unique_ptr<AstLiteral>> body) {
+    void setBodyLiterals(VecOwn<AstLiteral> body) {
         bodyLiterals = std::move(body);
     }
 
@@ -176,7 +175,7 @@ public:
     }
 
     /** Updates the execution plan associated to this clause */
-    void setExecutionPlan(std::unique_ptr<AstExecutionPlan> plan) {
+    void setExecutionPlan(Own<AstExecutionPlan> plan) {
         this->plan = std::move(plan);
     }
 
@@ -186,16 +185,8 @@ public:
     }
 
     AstClause* clone() const override {
-        auto res = new AstClause();
-        res->setSrcLoc(getSrcLoc());
-        if (getExecutionPlan() != nullptr) {
-            res->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(plan->clone()));
-        }
-        res->head = souffle::clone(head);
-        for (const auto& lit : bodyLiterals) {
-            res->bodyLiterals.emplace_back(lit->clone());
-        }
-        return res;
+        return new AstClause(
+                souffle::clone(head), souffle::clone(bodyLiterals), souffle::clone(plan), getSrcLoc());
     }
 
     void apply(const AstNodeMapper& map) override {
@@ -219,8 +210,7 @@ protected:
             os << *head;
         }
         if (!bodyLiterals.empty()) {
-            os << " :- \n   ";
-            os << join(getBodyLiterals(), ",\n   ", print_deref<AstLiteral*>());
+            os << " :- \n   " << join(bodyLiterals, ",\n   ");
         }
         os << ".";
         if (plan != nullptr) {
@@ -235,13 +225,13 @@ protected:
     }
 
     /** head of the clause */
-    std::unique_ptr<AstAtom> head;
+    Own<AstAtom> head;
 
     /** body literals of clause */
-    std::vector<std::unique_ptr<AstLiteral>> bodyLiterals;
+    VecOwn<AstLiteral> bodyLiterals;
 
     /** user defined execution plan (if not defined, plan is null) */
-    std::unique_ptr<AstExecutionPlan> plan;
+    Own<AstExecutionPlan> plan;
 };
 
 }  // end of namespace souffle

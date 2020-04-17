@@ -47,12 +47,8 @@ class AstAtom;
  */
 class AstAtom : public AstLiteral {
 public:
-    AstAtom(AstQualifiedName name = AstQualifiedName()) : name(std::move(name)) {}
-
-    AstAtom(AstQualifiedName name, std::vector<std::unique_ptr<AstArgument>> args, SrcLocation srcLoc)
-            : name(std::move(name)), arguments(std::move(args)) {
-        setSrcLoc(srcLoc);
-    }
+    AstAtom(AstQualifiedName name = {}, VecOwn<AstArgument> args = {}, SrcLocation loc = {})
+            : AstLiteral(std::move(loc)), name(std::move(name)), arguments(std::move(args)) {}
 
     /** get qualified name */
     const AstQualifiedName& getQualifiedName() const {
@@ -65,12 +61,12 @@ public:
     }
 
     /** set qualified name */
-    void setQualifiedName(const AstQualifiedName& n) {
-        name = n;
+    void setQualifiedName(AstQualifiedName n) {
+        name = std::move(n);
     }
 
     /** add argument to the atom */
-    void addArgument(std::unique_ptr<AstArgument> arg) {
+    void addArgument(Own<AstArgument> arg) {
         arguments.push_back(std::move(arg));
     }
 
@@ -80,12 +76,7 @@ public:
     }
 
     AstAtom* clone() const override {
-        auto res = new AstAtom(name);
-        res->setSrcLoc(getSrcLoc());
-        for (const auto& cur : arguments) {
-            res->arguments.emplace_back(cur->clone());
-        }
-        return res;
+        return new AstAtom(name, souffle::clone(arguments), getSrcLoc());
     }
 
     void apply(const AstNodeMapper& map) override {
@@ -104,9 +95,7 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        os << getQualifiedName() << "(";
-        os << join(arguments, ",", print_deref<std::unique_ptr<AstArgument>>());
-        os << ")";
+        os << getQualifiedName() << "(" << join(arguments) << ")";
     }
 
     bool equal(const AstNode& node) const override {
@@ -118,7 +107,7 @@ protected:
     AstQualifiedName name;
 
     /** arguments */
-    std::vector<std::unique_ptr<AstArgument>> arguments;
+    VecOwn<AstArgument> arguments;
 };
 
 /**
@@ -127,7 +116,8 @@ protected:
  */
 class AstNegation : public AstLiteral {
 public:
-    AstNegation(std::unique_ptr<AstAtom> atom) : atom(std::move(atom)) {}
+    AstNegation(Own<AstAtom> atom, SrcLocation loc = {})
+            : AstLiteral(std::move(loc)), atom(std::move(atom)) {}
 
     /** get negated atom */
     AstAtom* getAtom() const {
@@ -135,9 +125,7 @@ public:
     }
 
     AstNegation* clone() const override {
-        auto* res = new AstNegation(std::unique_ptr<AstAtom>(atom->clone()));
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstNegation(souffle::clone(atom), getSrcLoc());
     }
 
     void apply(const AstNodeMapper& map) override {
@@ -160,7 +148,7 @@ protected:
     }
 
     /** negated atom */
-    std::unique_ptr<AstAtom> atom;
+    Own<AstAtom> atom;
 };
 
 /**
@@ -171,12 +159,10 @@ protected:
  */
 class AstProvenanceNegation : public AstNegation {
 public:
-    AstProvenanceNegation(std::unique_ptr<AstAtom> atom) : AstNegation(std::move(atom)) {}
+    using AstNegation::AstNegation;
 
     AstProvenanceNegation* clone() const override {
-        auto* res = new AstProvenanceNegation(std::unique_ptr<AstAtom>(atom->clone()));
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstProvenanceNegation(souffle::clone(atom), getSrcLoc());
     }
 
 protected:
@@ -192,9 +178,8 @@ protected:
  */
 class AstBooleanConstraint : public AstConstraint {
 public:
-    AstBooleanConstraint(bool truthValue, SrcLocation loc = {}) : truthValue(truthValue) {
-        setSrcLoc(std::move(loc));
-    }
+    AstBooleanConstraint(bool truthValue, SrcLocation loc = {})
+            : AstConstraint(std::move(loc)), truthValue(truthValue) {}
 
     /** check whether constraint holds */
     bool isTrue() const {
@@ -231,11 +216,8 @@ protected:
  */
 class AstBinaryConstraint : public AstConstraint {
 public:
-    AstBinaryConstraint(BinaryConstraintOp o, std::unique_ptr<AstArgument> ls,
-            std::unique_ptr<AstArgument> rs, SrcLocation loc = {})
-            : operation(o), lhs(std::move(ls)), rhs(std::move(rs)) {
-        setSrcLoc(std::move(loc));
-    }
+    AstBinaryConstraint(BinaryConstraintOp o, Own<AstArgument> ls, Own<AstArgument> rs, SrcLocation loc = {})
+            : AstConstraint(std::move(loc)), operation(o), lhs(std::move(ls)), rhs(std::move(rs)) {}
 
     /** get LHS argument */
     AstArgument* getLHS() const {
@@ -272,9 +254,7 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        os << *lhs;
-        os << " " << toBinaryConstraintSymbol(operation) << " ";
-        os << *rhs;
+        os << *lhs << " " << operation << " " << *rhs;
     }
 
     bool equal(const AstNode& node) const override {
@@ -287,10 +267,10 @@ protected:
     BinaryConstraintOp operation;
 
     /** left-hand side of binary constraint */
-    std::unique_ptr<AstArgument> lhs;
+    Own<AstArgument> lhs;
 
     /** right-hand side of binary constraint */
-    std::unique_ptr<AstArgument> rhs;
+    Own<AstArgument> rhs;
 };
 
 }  // end of namespace souffle

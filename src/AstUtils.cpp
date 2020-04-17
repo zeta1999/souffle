@@ -25,6 +25,10 @@
 
 namespace souffle {
 
+std::string pprint(const AstNode& node) {
+    return toString(node);
+}
+
 std::vector<const AstVariable*> getVariables(const AstNode& root) {
     // simply collect the list of all variables by visiting all variables
     std::vector<const AstVariable*> vars;

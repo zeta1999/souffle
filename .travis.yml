@@ -46,7 +46,7 @@ jobs:
       create:
         name: bionic_gcc
         paths: .
-    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig --enable-host-packaging'"
+    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig'"
   - stage: Warmup
     name: "Build Bionic clang++"
     <<: *docker
@@ -54,7 +54,7 @@ jobs:
       create:
         name: bionic_clang
         paths: .
-    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig --enable-host-packaging'"
+    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig'"
 
 # Testing stage without Evaluation tests (-j8,-c -j8)
   - stage: Testing
@@ -154,8 +154,7 @@ jobs:
     <<: *docker
     script:
       - docker exec souf /bin/sh -c ".travis/linux/install_debian_deps.sh"
-      - docker exec souf /bin/sh -c ".travis/init_test.sh --enable-host-packaging"
-      - docker exec souf /bin/sh -c ".travis/linux/make_package.sh"
+      - docker exec souf /bin/sh -c ".travis/linux/make_debian_package.sh"
     before_deploy:
       - .travis/bintray_json.sh debian
     # deploy to bintray if we're in the souffle-lang repo
@@ -248,7 +247,6 @@ jobs:
   - stage: Packaging
     name: "OSX package"
     <<: *osxclang
-    before_script: ".travis/init_test.sh --enable-host-packaging"
     script: ".travis/osx/make_package.sh"
     before_deploy: .travis/bintray_json.sh osx
     deploy:

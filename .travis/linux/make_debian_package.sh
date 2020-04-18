@@ -8,6 +8,11 @@ set -x
 # create deployment directory
 mkdir deploy
 
+git fetch --tags --unshallow || true
+
+./bootstrap
+./configure --enable-host-packaging
+
 JOBS=$(nproc)
 make -j$JOBS package
 

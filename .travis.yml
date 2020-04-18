@@ -48,9 +48,17 @@ jobs:
         paths: .
     script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig'"
   - stage: Warmup
-    name: "Build Bionic clang++"
+    name: "Build Bionic g++ 64bit"
     <<: *docker
     workspaces:
+      create:
+        name: bionic_gcc_64
+        paths: .
+    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig --enable-64bit-domain'"
+  - stage: Warmup
+    name: "Build Bionic clang++"
+    <<: *docker
+    workspaces :
       create:
         name: bionic_clang
         paths: .
@@ -101,18 +109,29 @@ jobs:
   - stage: Testing
     name: "Linux gcc 64-bit non-eval"
     <<: *docker
+    workspaces:
+      use: bionic_gcc_64
     env:
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
     script:
-      - docker exec souf /bin/sh -c ".travis/init_test.sh '--enable-64bit-domain'"
+      - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
+  - stage: Testing
+    name: "Linux gcc 64-bit provenance"
+    <<: *docker
+    workspaces:
+      use: bionic_gcc_64
+    env:
+    - SOUFFLE_CATEGORY=Provenance SOUFFLE_CONFS=",-c"
+    script:
       - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
   - stage: Testing
     name: "Linux gcc 64-bit fast evaluation tests"
     <<: *docker
+    workspaces:
+      use: bionic_gcc_64
     env:
     - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
     script:
-      - docker exec souf /bin/sh -c ".travis/init_test.sh '--enable-64bit-domain'"
       - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
 
 # Testing stage for clang without OpenMP (,-c)

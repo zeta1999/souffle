@@ -338,13 +338,14 @@ bool isSubtypeOf(const Type& a, const Type& b) {
         return true;
     }
 
-    // TODO: handle recursive unions here?
     if (isA<UnionType>(a)) {
         return all_of(
-                as<UnionType>(a).getElementTypes(), [&](const Type* type) { return isSubtypeOf(*type, b); });
-    } else if (isA<UnionType>(b)) {
+                as<UnionType>(a).getElementTypes(), [&b](const Type* type) { return isSubtypeOf(*type, b); });
+    }
+
+    if (isA<UnionType>(b)) {
         return any_of(
-                as<UnionType>(b).getElementTypes(), [&](const Type* type) { return isSubtypeOf(a, *type); });
+                as<UnionType>(b).getElementTypes(), [&a](const Type* type) { return isSubtypeOf(a, *type); });
     }
 
     return false;
@@ -400,32 +401,19 @@ TypeSet getGreatestCommonSubtypes(const Type& a, const Type& b) {
 }
 
 TypeSet getGreatestCommonSubtypes(const TypeSet& set) {
-    // handle the empty set
-    if (set.empty()) {
-        return set;
-    }
-
-    // handle the all set => empty set (since no common sub-type)
-    if (set.isAll()) {
+    // Edge cases.
+    if (set.empty() || set.isAll()) {
         return TypeSet();
     }
 
-    TypeSet res;
-    auto it = set.begin();
-    res.insert(*it);
-    ++it;
+    TypeSet greatestCommonSubtypes;
+    greatestCommonSubtypes.insert(*set.begin());
 
-    // refine sub-set step by step
-    for (; it != set.end(); ++it) {
-        TypeSet tmp;
-        for (const Type& cur : res) {
-            tmp.insert(getGreatestCommonSubtypes(cur, *it));
-        }
-        res = tmp;
+    for (auto& type : set) {
+        greatestCommonSubtypes = getGreatestCommonSubtypes(TypeSet(type), greatestCommonSubtypes);
     }
 
-    // done
-    return res;
+    return greatestCommonSubtypes;
 }
 
 TypeSet getGreatestCommonSubtypes(const TypeSet& a, const TypeSet& b) {

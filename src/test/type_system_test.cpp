@@ -210,19 +210,19 @@ TEST(TypeSystem, GreatestCommonSubtype) {
     auto& U = env.createType<UnionType>("U");
     auto& S = env.createType<UnionType>("S");
 
-    U.add(A);
+    U.add(A);  // U = {A}
     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
 
-    S.add(A);
-    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
+    S.add(A);  // S = {A} = U
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S)));
 
-    U.add(B);
+    U.add(B);  // U = {A, B}
     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S, N)));
 
-    S.add(B);
-    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
-    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S, N)));
+    S.add(B);  // S = {A, B} = U
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S, N)));
 
     // bring in a union of unions
     auto& R = env.createType<UnionType>("R");
@@ -230,25 +230,54 @@ TEST(TypeSystem, GreatestCommonSubtype) {
     EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R)));
     EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R)));
 
-    // TODO
-    // EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R, N)));
-    // EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R, N)));
+    EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R, N)));
+    EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R, N)));
 
-    //     R.add(U);
+    R.add(U);  // R = U = S
 
-    //     EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R)));
-    //     EXPECT_EQ("{A,B}", toString(getGreatestCommonSubtypes(S, R)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
 
-    //     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
-    //     EXPECT_EQ("{A,B}", toString(getGreatestCommonSubtypes(S, R, N)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
 
-    //     R.add(S);
+    R.add(S);
 
-    //     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
-    //     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
 
-    //     EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
-    //     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
 }
+
+// TEST(TypeSystem, complexSubsetTypes) {
+//     TypeEnvironment env;
+
+//     auto& A = env.createSubsetType("A", TypeAttribute::Float);
+//     auto& BfromA = env.createType<SubsetType>("B", A);
+//     auto& CfromA = env.createType<SubsetType>("C", A);
+
+//     EXPECT_EQ("{B}", toString(getGreatestCommonSubtypes(A, BfromA)));
+//     EXPECT_EQ("{C}", toString(getGreatestCommonSubtypes(A, CfromA)));
+//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(A, BfromA, CfromA)));
+//     EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(BfromA, CfromA)));
+
+//     auto* base = &env.createType<SubsetType>("B0", BfromA);
+//     for (size_t i = 1; i <= 10; ++i) {
+//         base = &env.createType<SubsetType>("B" + std::to_string(i), *base);
+//         EXPECT_PRED2(isSubtypeOf, *base, A);
+//     }
+// }
+
+// TEST(TypeSystem, RecordSubsets) {
+//     TypeEnvironment env;
+
+//     auto& R = env.createType<RecordType>("R");
+
+//     auto& A = env.createType<SubsetType>("A", R);
+//     EXPECT_PRED2(isSubtypeOf, A, R);
+
+//     EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(A, R)));
+// }
 
 }  // namespace souffle::test

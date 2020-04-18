@@ -57,15 +57,15 @@ namespace {
 struct sub_type {
     bool operator()(TypeSet& a, const TypeSet& b) const {
         // compute result set
-        TypeSet res = getGreatestCommonSubtypes(a, b);
+        TypeSet greatestCommonSubtypes = getGreatestCommonSubtypes(a, b);
 
         // check whether a should change
-        if (res == a) {
+        if (greatestCommonSubtypes == a) {
             return false;
         }
 
         // update a
-        a = res;
+        a = greatestCommonSubtypes;
         return true;
     }
 };
@@ -439,19 +439,16 @@ void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     }
     const auto& program = *translationUnit.getProgram();
     auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
-    for (const AstRelation* rel : translationUnit.getProgram()->getRelations()) {
-        for (const AstClause* clause : getClauses(program, *rel)) {
-            // Perform the type analysis
-            std::map<const AstArgument*, TypeSet> clauseArgumentTypes =
-                    analyseTypes(typeEnvAnalysis->getTypeEnvironment(), *clause, translationUnit.getProgram(),
-                            debugStream);
-            argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+    for (const AstClause* clause : program.getClauses()) {
+        // Perform the type analysis
+        std::map<const AstArgument*, TypeSet> clauseArgumentTypes = analyseTypes(
+                typeEnvAnalysis->getTypeEnvironment(), *clause, translationUnit.getProgram(), debugStream);
+        argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
 
-            if (debugStream != nullptr) {
-                // Store an annotated clause for printing purposes
-                AstClause* annotatedClause = createAnnotatedClause(clause, clauseArgumentTypes);
-                annotatedClauses.emplace_back(annotatedClause);
-            }
+        if (debugStream != nullptr) {
+            // Store an annotated clause for printing purposes
+            AstClause* annotatedClause = createAnnotatedClause(clause, clauseArgumentTypes);
+            annotatedClauses.emplace_back(annotatedClause);
         }
     }
 }
@@ -471,41 +468,29 @@ public:
             : typeEnv(typeEnv), program(program) {}
 
 private:
+    const TypeEnvironment& typeEnv;
+    const AstProgram* program;
+    std::set<const AstAtom*> sinks;
+
     void solveConstraints(const AstClause&) override {
         assignment = constraints.solve();
 
         for (auto* atom : sinks) {
-            auto atomRelation = getAtomRelation(atom, program);
-            if (atomRelation == nullptr) {
-                return;  // error in input program
-            }
+            iterateOverAtom(*atom, [&](const AstArgument& argument, const Type& attributeType) {
+                auto argVar = getVar(argument);
+                auto argAssignment = assignment[argVar];
 
-            auto atts = atomRelation->getAttributes();
-            auto args = atom->getArguments();
-            if (atts.size() != args.size()) {
-                return;  // error in input program
-            }
-
-            for (size_t i = 0; i < atts.size(); i++) {
-                const auto& typeName = atts[i]->getTypeName();
-                if (typeEnv.isType(typeName)) {
-                    auto& attributeType = typeEnv.getType(typeName);
-                    auto argVar = getVar(args[i]);
-                    auto argAssignment = assignment[argVar];
-
-                    if (argAssignment.isAll()) {
-                        continue;
-                    }
-
-                    bool validAttribute = any_of(argAssignment, [&attributeType](const Type& type) {
-                        return dynamic_cast<const ConstantType*>(&type) && isSubtypeOf(attributeType, type);
-                    });
-
-                    if (validAttribute) {
-                        addConstraint(isSubtypeOf(getVar(args[i]), attributeType));
-                    }
+                if (argAssignment.isAll()) {
+                    return;
                 }
-            }
+
+                bool hasConstantType = any_of(argAssignment,
+                        [](const Type& type) { return dynamic_cast<const ConstantType*>(&type) != nullptr; });
+
+                if (hasConstantType) {
+                    addConstraint(isSubtypeOf(getVar(argument), attributeType));
+                }
+            });
         }
         constraints.solve(assignment);
     }
@@ -515,81 +500,39 @@ private:
         visitDepthFirstPreOrder(clause, *this);
     }
 
-    const TypeEnvironment& typeEnv;
-    const AstProgram* program;
-    std::set<const AstAtom*> sinks;
-
-    void visitNegatedAtomOrHead(const AstAtom& atom) {
-        auto atomRelation = getAtomRelation(&atom, program);
-        if (atomRelation == nullptr) {
-            return;  // error in input program
-        }
-
-        auto atts = atomRelation->getAttributes();
-        auto args = atom.getArguments();
-        if (atts.size() != args.size()) {
-            return;  // error in input program
-        }
-
-        // Collect constraints from the atom.
-        for (size_t i = 0; i < args.size(); ++i) {
-            const auto& typeName = atts[i]->getTypeName();
-            if (!typeEnv.isType(typeName)) {
-                continue;
-            }
-            auto& type = typeEnv.getType(typeName);
-
-            if (dynamic_cast<const RecordType*>(&type) != nullptr) {
-                addConstraint(isSubtypeOf(getVar(args[i]), type));
+    void visitSink(const AstAtom& atom) {
+        iterateOverAtom(atom, [&](const AstArgument& argument, const Type& attributeType) {
+            if (dynamic_cast<const RecordType*>(&attributeType) != nullptr) {
+                addConstraint(isSubtypeOf(getVar(argument), attributeType));
             } else {
                 for (auto& constantType : typeEnv.getConstantTypes()) {
-                    if (isSubtypeOf(type, constantType)) {
-                        addConstraint(isSubtypeOf(getVar(args[i]), constantType));
+                    if (isSubtypeOf(attributeType, constantType)) {
+                        addConstraint(isSubtypeOf(getVar(argument), constantType));
                     }
                 }
             }
-        }
+        });
     }
 
-    // predicate
     void visitAtom(const AstAtom& atom) override {
         if (contains(sinks, &atom)) {
-            visitNegatedAtomOrHead(atom);
+            visitSink(atom);
             return;
         }
 
-        // get relation
-        auto rel = getAtomRelation(&atom, program);
-        if (rel == nullptr) {
-            return;  // error in input program
-        }
-
-        auto atts = rel->getAttributes();
-        auto args = atom.getArguments();
-        if (atts.size() != args.size()) {
-            return;  // error in input program
-        }
-
-        for (size_t i = 0; i < atts.size(); i++) {
-            const auto& typeName = atts[i]->getTypeName();
-            if (typeEnv.isType(typeName)) {
-                addConstraint(isSubtypeOf(getVar(args[i]), typeEnv.getType(typeName)));
-            }
-        }
+        iterateOverAtom(atom, [&](const AstArgument& argument, const Type& attributeType) {
+            addConstraint(isSubtypeOf(getVar(argument), attributeType));
+        });
     }
 
-    // negations need to be skipped
     void visitNegation(const AstNegation& cur) override {
-        // add nested atom to black-list
         sinks.insert(cur.getAtom());
     }
 
-    // symbol
     void visitStringConstant(const AstStringConstant& cnst) override {
         addConstraint(isSubtypeOf(getVar(cnst), typeEnv.getConstantType(TypeAttribute::Symbol)));
     }
 
-    // Numeric constant
     void visitNumericConstant(const AstNumericConstant& constant) override {
         TypeSet possibleTypes;
 
@@ -639,7 +582,6 @@ private:
         addConstraint(isSubtypeOf(rhs, lhs));
     }
 
-    // intrinsic functor
     void visitFunctor(const AstFunctor& fun) override {
         auto functorVar = getVar(fun);
 
@@ -659,6 +601,8 @@ private:
             }
         }
 
+        // Debug report does not run the standard transformers.
+        // Because of this, the type of the user-defined function might not be set at this stage.
         try {
             fun.getReturnType();
         } catch (std::bad_optional_access& e) {
@@ -668,36 +612,30 @@ private:
         // add a constraint for the return type of the functor
         addConstraint(isSubtypeOf(functorVar, typeEnv.getConstantType(fun.getReturnType())));
 
-        // Special case
+        // Special case. Ord returns the ram representation of any object.
         if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
             if (intrFun->getFunction() == FunctorOp::ORD) {
                 return;
             }
         }
-        size_t i = 0;
-        for (auto arg : fun.getArguments()) {
-            addConstraint(isSubtypeOf(getVar(arg), typeEnv.getConstantType(fun.getArgType(i))));
-            ++i;
+        auto arguments = fun.getArguments();
+        for (size_t i = 0; i < arguments.size(); ++i) {
+            addConstraint(isSubtypeOf(getVar(arguments[i]), typeEnv.getConstantType(fun.getArgType(i))));
         }
     }
-    // counter
+
     void visitCounter(const AstCounter& counter) override {
         // this value must be a number value
         addConstraint(isSubtypeOf(getVar(counter), typeEnv.getConstantType(TypeAttribute::Signed)));
     }
 
-    // components of records
-    void visitRecordInit(const AstRecordInit& init) override {
-        // link element types with sub-values
-        auto rec = getVar(init);
-        int i = 0;
-
-        for (const AstArgument* value : init.getArguments()) {
-            addConstraint(isSubtypeOfComponent(getVar(value), rec, i++));
+    void visitRecordInit(const AstRecordInit& record) override {
+        auto arguments = record.getArguments();
+        for (size_t i = 0; i < arguments.size(); ++i) {
+            addConstraint(isSubtypeOfComponent(getVar(arguments[i]), getVar(record), i));
         }
     }
 
-    // visit aggregates
     void visitAggregator(const AstAggregator& agg) override {
         if (agg.getOperator() == AggregateOp::COUNT) {
             addConstraint(isSubtypeOf(getVar(agg), typeEnv.getConstantType(TypeAttribute::Signed)));
@@ -711,6 +649,32 @@ private:
         if (auto expr = agg.getTargetExpression()) {
             addConstraint(isSubtypeOf(getVar(expr), getVar(agg)));
             addConstraint(isSubtypeOf(getVar(agg), getVar(expr)));
+        }
+    }
+
+    /**
+     * Utility function.
+     * Iterate over atoms valid pairs of (argument, type-attribute) and apply procedure `map` for its
+     * side-effects.
+     */
+    void iterateOverAtom(const AstAtom& atom, std::function<void(const AstArgument&, const Type&)> map) {
+        // get relation
+        auto rel = getAtomRelation(&atom, program);
+        if (rel == nullptr) {
+            return;  // error in input program
+        }
+
+        auto atts = rel->getAttributes();
+        auto args = atom.getArguments();
+        if (atts.size() != args.size()) {
+            return;  // error in input program
+        }
+
+        for (size_t i = 0; i < atts.size(); i++) {
+            const auto& typeName = atts[i]->getTypeName();
+            if (typeEnv.isType(typeName)) {
+                map(*args[i], typeEnv.getType(typeName));
+            }
         }
     }
 };

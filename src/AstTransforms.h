@@ -666,14 +666,14 @@ private:
      * Use mapping found by findVariablesRecordMapping to substitute
      * a records for each variable that operates on records.
      **/
-    bool replaceNamedVariables(AstClause&, const TypeAnalysis&);
+    bool replaceNamedVariables(AstTranslationUnit&, AstClause&);
 
     /**
      * For each variable equal to some anonymous record,
      * assign a value of that record.
      **/
     std::map<std::string, const AstRecordInit*> findVariablesRecordMapping(
-            const AstClause&, const TypeAnalysis&);
+            AstTranslationUnit&, const AstClause&);
 
     /**
      * For unnamed variables, replace each equation _ op record with true.

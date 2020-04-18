@@ -32,12 +32,7 @@ bool AstTransformer::apply(AstTranslationUnit& translationUnit) {
     }
 
     /* Abort evaluation of the program if errors were encountered */
-    if (translationUnit.getErrorReport().getNumErrors() != 0) {
-        std::cerr << translationUnit.getErrorReport();
-        std::cerr << translationUnit.getErrorReport().getNumErrors()
-                  << " errors generated, evaluation aborted" << std::endl;
-        exit(EXIT_FAILURE);
-    }
+    translationUnit.getErrorReport().exitIfErrors();
 
     return changed;
 }

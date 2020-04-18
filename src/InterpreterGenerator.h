@@ -141,6 +141,14 @@ public:
         }
         std::vector<size_t> data;
         data.push_back(encodeView(&exists));
+        // Check if the search signature is a total signature
+        size_t isTotal = 1;
+        for (const auto& cur : exists.getValues()) {
+            if (isRamUndefValue(cur)) {
+                isTotal = 0;
+            }
+        }
+        data.push_back(isTotal);
         return std::make_unique<InterpreterNode>(
                 I_ExistenceCheck, &exists, std::move(children), nullptr, std::move(data));
     }

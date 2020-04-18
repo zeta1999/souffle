@@ -32,7 +32,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 dnl Do not set default CFLAGS and CXXFLAGS
 ENV_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS=""
+CXXFLAGS=" -fwrapv "
 
 # Disable provenance
 AC_ARG_ENABLE(
@@ -166,9 +166,8 @@ if test -n "$SOUFFLE_PACKAGING"; then
       DISTRIBUTION=osx
     ;;
     linux*)
-      AC_CHECK_PROG(LSB_RELEASE, lsb_release, lsb_release)
-      AS_IF([test -z "$LSB_RELEASE"], [AC_MSG_ERROR([lsb_release required to detect LINUX distribution not found.])])
-      DISTRIBUTION=[`lsb_release -i | sed 's/^.*:[ \t]\+//' | tr '[A-Z]' '[a-z]'`]
+      DISTRIBUTION=[`. /etc/os-release; echo $ID`]
+      AS_IF([test -z "$DISTRIBUTION"], [DISTRIBUTION=unknown])
     ;;
     *BSD* | *bsd* )
       DISTRIBUTION=bsd
@@ -287,7 +286,6 @@ AC_CONFIG_LINKS([include/souffle/ExplainProvenance.h:src/ExplainProvenance.h])
 AC_CONFIG_LINKS([include/souffle/ExplainProvenanceImpl.h:src/ExplainProvenanceImpl.h])
 AC_CONFIG_LINKS([include/souffle/ExplainTree.h:src/ExplainTree.h])
 AC_CONFIG_LINKS([include/souffle/EquivalenceRelation.h:src/EquivalenceRelation.h])
-AC_CONFIG_LINKS([include/souffle/RWOperation.h:src/RWOperation.h])
 AC_CONFIG_LINKS([include/souffle/IOSystem.h:src/IOSystem.h])
 AC_CONFIG_LINKS([include/souffle/IterUtils.h:src/IterUtils.h])
 AC_CONFIG_LINKS([include/souffle/LambdaBTree.h:src/LambdaBTree.h])

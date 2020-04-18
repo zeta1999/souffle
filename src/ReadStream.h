@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include "RWOperation.h"
 #include "RamTypes.h"
 #include "RecordTable.h"
 #include "SymbolTable.h"
@@ -31,13 +30,14 @@ using json11::Json;
 
 class ReadStream {
 protected:
-    ReadStream(const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable)
+    ReadStream(const std::map<std::string, std::string>& rwOperation, SymbolTable& symbolTable,
+            RecordTable& recordTable)
             : symbolTable(symbolTable), recordTable(recordTable) {
-        const std::string& relationName{rwOperation.get("name")};
+        const std::string& relationName{rwOperation.at("name")};
 
         std::string parseErrors;
 
-        types = Json::parse(rwOperation.get("types"), parseErrors);
+        types = Json::parse(rwOperation.at("types"), parseErrors);
 
         assert(parseErrors.size() == 0 && "Internal JSON parsing failed.");
 
@@ -189,7 +189,8 @@ protected:
 
 class ReadStreamFactory {
 public:
-    virtual std::unique_ptr<ReadStream> getReader(const RWOperation&, SymbolTable&, RecordTable&) = 0;
+    virtual std::unique_ptr<ReadStream> getReader(
+            const std::map<std::string, std::string>&, SymbolTable&, RecordTable&) = 0;
     virtual const std::string& getName() const = 0;
     virtual ~ReadStreamFactory() = default;
 };

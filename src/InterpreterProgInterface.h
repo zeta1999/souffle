@@ -217,8 +217,8 @@ public:
             auto* interface = new InterpreterRelInterface(
                     interpreterRel, symTable, rel.getName(), types, attrNames, id);
             interfaces.push_back(interface);
-            bool input;
-            bool output;
+            bool input = false;
+            bool output = false;
             visitDepthFirst(prog, [&](const RamIO& io) {
                 if (io.getRelation() == rel) {
                     const std::string& op = io.get("operation");

@@ -22,7 +22,9 @@
 %define api.value.type variant
 %define parse.assert
 %define api.location.type {SrcLocation}
-// Defined in version 3.2. This would solve a lot of the verbose `move`s.
+// Defined in version 3.2. This would solve a lot of the verbose `std::move`s.
+// NOTE:  Turns out becaue of another unspeakable hack (see below),
+//        we dont need as many of these `std::move`s anymore.
 // %define api.value.automove
 
 %locations
@@ -51,7 +53,103 @@
 
     namespace souffle {
         class ParserDriver;
+
+        namespace parser {
+          // FIXME: (when we can finally use Bison 3.2) Expunge this abombination.
+          // HACK:  Bison 3.0.2 is stupid and ugly and doesn't support move semantics
+          //        with the `lalr1.cc` skeleton and that makes me very mad.
+          //        Thankfully (or not) two can play stupid games:
+          //          Behold! std::auto_ptr 2: The Revengening
+          // NOTE:  Bison 3.2 came out in 2019. `std::unique_ptr` appeared in C++11.
+          //        How timely.
+          // NOTE:  There are specialisations wrappers that'll allow us to (almost)
+          //        transparently remove `Mov` once we switch to Bison 3.2+.
+
+          template<typename A>
+          struct Mov {
+            mutable A value;
+
+            Mov() = default;
+            Mov(Mov&&) = default;
+            template<typename B>
+            Mov(B value) : value(std::move(value)) {}
+
+            // CRIMES AGAINST COMPUTING HAPPENS HERE
+            // HACK: Pretend you can copy it, but actually move it. Keeps Bison 3.0.2 happy.
+            Mov(const Mov& x) : value(std::move(x.value)) {}
+            Mov& operator=(Mov x) { value = std::move(x.value); return *this; }
+            // detach/convert implicitly.
+            operator A() { return std::move(value); }
+
+            // support ptr-like behaviour
+            A* operator->() { return &value; }
+            A operator*() { return std::move(value); }
+          };
+
+          template<typename A>
+          A unwrap(Mov<A> x) { return *x; }
+
+          template<typename A>
+          A unwrap(A x) { return x; }
+
+          template<typename A>
+          struct Mov<Own<A>> {
+            mutable Own<A> value;
+
+            Mov() = default;
+            Mov(Mov&&) = default;
+            template<typename B>
+            Mov(B value) : value(std::move(value)) {}
+
+            // CRIMES AGAINST COMPUTING HAPPENS HERE
+            // HACK: Pretend you can copy it, but actually move it. Keeps Bison 3.0.2 happy.
+            Mov(const Mov& x) : value(std::move(x.value)) {}
+            Mov& operator=(Mov x) { value = std::move(x.value); return *this; }
+            // detach/convert implicitly.
+            operator Own<A>() { return std::move(value); }
+            Own<A> operator*() { return std::move(value); }
+
+            // support ptr-like behaviour
+            A* operator->() { return value.get(); }
+          };
+
+          template<typename A>
+          struct Mov<std::vector<A>> {
+            mutable std::vector<A> value;
+
+            Mov() = default;
+            Mov(Mov&&) = default;
+            template<typename B>
+            Mov(B value) : value(std::move(value)) {}
+
+            // CRIMES AGAINST COMPUTING HAPPENS HERE
+            // HACK: Pretend you can copy it, but actually move it. Keeps Bison 3.0.2 happy.
+            Mov(const Mov& x) : value(std::move(x.value)) {}
+            Mov& operator=(Mov x) { value = std::move(x.value); return *this; }
+            // detach/convert implicitly.
+            operator std::vector<A>() { return std::move(value); }
+            auto operator*() {
+              std::vector<decltype(unwrap(std::declval<A>()))> ys;
+              for (auto&& x : value) ys.push_back(unwrap(std::move(x)));
+              return ys;
+            }
+
+            // basic ops
+            using iterator = typename std::vector<A>::iterator;
+            typename std::vector<A>::value_type& operator[](size_t i) { return value[i]; }
+            iterator begin() { return value.begin(); }
+            iterator end() { return value.end(); }
+            void push_back(A x) { value.push_back(std::move(x)); }
+            size_t size() const { return value.size(); }
+            bool empty() const { return value.empty(); }
+          };
+        }
+
+        template<typename A>
+        parser::Mov<A> clone(const parser::Mov<A>& x) { return clone(x.value); }
     }
+
+    using namespace souffle::parser;
 
     using yyscan_t = void*;
 
@@ -74,7 +172,6 @@
 
 %code {
     #include "ParserDriver.h"
-    using std::move;
 }
 
 %param { ParserDriver &driver }
@@ -172,54 +269,54 @@
 %token L_NOT                     "lnot"
 
 /* -- Non-Terminal Types -- */
-%type <RuleBody>                            aggregate_body
+%type <Mov<RuleBody>>                       aggregate_body
 %type <AggregateOp>                         aggregate_func
-%type <Own<AstArgument>>                    arg
-%type <VecOwn<AstArgument>>                 arg_list
-%type <Own<AstAtom>>                        atom
-%type <VecOwn<AstAttribute>>                attributes_list
-%type <RuleBody>                            body
-%type <Own<AstComponentType>>               comp_type
-%type <Own<AstComponentInit>>               comp_init
-%type <Own<AstComponent>>                   component
-%type <Own<AstComponent>>                   component_body
-%type <Own<AstComponent>>                   component_head
-%type <RuleBody>                            conjunction
-%type <Own<AstConstraint>>                  constraint
-%type <RuleBody>                            disjunction
-%type <Own<AstExecutionOrder>>              exec_order
-%type <Own<AstExecutionPlan>>               exec_plan
-%type <Own<AstExecutionPlan>>               exec_plan_list
-%type <Own<AstClause>>                      fact
-%type <std::vector<TypeAttribute>>          functor_arg_type_list
+%type <Mov<Own<AstArgument>>>               arg
+%type <Mov<VecOwn<AstArgument>>>            arg_list
+%type <Mov<Own<AstAtom>>>                   atom
+%type <Mov<VecOwn<AstAttribute>>>           attributes_list
+%type <Mov<RuleBody>>                       body
+%type <Mov<Own<AstComponentType>>>          comp_type
+%type <Mov<Own<AstComponentInit>>>          comp_init
+%type <Mov<Own<AstComponent>>>              component
+%type <Mov<Own<AstComponent>>>              component_body
+%type <Mov<Own<AstComponent>>>              component_head
+%type <Mov<RuleBody>>                       conjunction
+%type <Mov<Own<AstConstraint>>>             constraint
+%type <Mov<RuleBody>>                       disjunction
+%type <Mov<Own<AstExecutionOrder>>>         exec_order
+%type <Mov<Own<AstExecutionPlan>>>          exec_plan
+%type <Mov<Own<AstExecutionPlan>>>          exec_plan_list
+%type <Mov<Own<AstClause>>>                 fact
+%type <Mov<std::vector<TypeAttribute>>>     functor_arg_type_list
 %type <FunctorOp>                           functor_built_in
-%type <Own<AstFunctorDeclaration>>          functor_decl
-%type <VecOwn<AstAtom>>                     head
-%type <std::vector<std::string>>            identifier
-%type <VecOwn<AstIO>>                       io_directive_list
-%type <VecOwn<AstIO>>                       io_head
+%type <Mov<Own<AstFunctorDeclaration>>>     functor_decl
+%type <Mov<VecOwn<AstAtom>>>                head
+%type <Mov<AstQualifiedName>>               identifier
+%type <Mov<VecOwn<AstIO>>>                  io_directive_list
+%type <Mov<VecOwn<AstIO>>>                  io_head
 %type <AstIoType>                           io_head_decl
-%type <VecOwn<AstIO>>                       io_relation_list
-%type <std::string>                         kvp_value
-%type <VecOwn<AstArgument>>                 non_empty_arg_list
-%type <VecOwn<AstAttribute>>                non_empty_attributes
-%type <AstExecutionOrder::ExecOrder>        non_empty_exec_order_list
-%type <std::vector<TypeAttribute>>          non_empty_functor_arg_type_list
-%type <std::vector<std::pair
-            <std::string, std::string>>>    non_empty_key_value_pairs
-%type <VecOwn<AstRelation>>                 non_empty_relation_list
-%type <Own<AstPragma>>                      pragma
+%type <Mov<VecOwn<AstIO>>>                  io_relation_list
+%type <Mov<std::string>>                    kvp_value
+%type <Mov<VecOwn<AstArgument>>>            non_empty_arg_list
+%type <Mov<VecOwn<AstAttribute>>>           non_empty_attributes
+%type <Mov<AstExecutionOrder::ExecOrder>>   non_empty_exec_order_list
+%type <Mov<std::vector<TypeAttribute>>>     non_empty_functor_arg_type_list
+%type <Mov<std::vector<std::pair
+            <std::string, std::string>>>>   non_empty_key_value_pairs
+%type <Mov<VecOwn<AstRelation>>>            non_empty_relation_list
+%type <Mov<Own<AstPragma>>>                 pragma
 %type <TypeAttribute>                       predefined_type
-%type <VecOwn<AstAttribute>>                record_type_list
-%type <VecOwn<AstRelation>>                 relation_decl
+%type <Mov<VecOwn<AstAttribute>>>           record_type_list
+%type <Mov<VecOwn<AstRelation>>>            relation_decl
 %type <std::set<RelationTag>>               relation_tags
-%type <VecOwn<AstClause>>                   rule
-%type <VecOwn<AstClause>>                   rule_def
-%type <RuleBody>                            term
-%type <Own<AstType>>                        type
-%type <std::vector<AstQualifiedName>>       type_params
-%type <std::vector<AstQualifiedName>>       type_param_list
-%type <std::vector<AstQualifiedName>>       union_type_list
+%type <Mov<VecOwn<AstClause>>>              rule
+%type <Mov<VecOwn<AstClause>>>              rule_def
+%type <Mov<RuleBody>>                       term
+%type <Mov<Own<AstType>>>                   type
+%type <Mov<std::vector<AstQualifiedName>>>  type_params
+%type <Mov<std::vector<AstQualifiedName>>>  type_param_list
+%type <Mov<std::vector<AstQualifiedName>>>  union_type_list
 
 /* -- Operator precedence -- */
 %left L_OR
@@ -246,18 +343,18 @@ program
 /* Top-level statement */
 unit
   : %empty              { }
-  | unit io_head        { for (auto&& cur : $io_head) driver.addIO(move(cur)); }
-  | unit rule           { for (auto&& cur : $rule   ) driver.addClause(move(cur)); }
-  | unit fact           { driver.addClause            (move($fact)); }
-  | unit component      { driver.addComponent         (move($component)); }
-  | unit comp_init      { driver.addInstantiation     (move($comp_init)); }
-  | unit pragma         { driver.addPragma            (move($pragma)); }
-  | unit type           { driver.addType              (move($type)); }
-  | unit functor_decl   { driver.addFunctorDeclaration(move($functor_decl)); }
+  | unit io_head        { for (auto&& cur : $io_head) driver.addIO(std::move(cur)); }
+  | unit rule           { for (auto&& cur : $rule   ) driver.addClause(std::move(cur)); }
+  | unit fact           { driver.addClause            ($fact); }
+  | unit component      { driver.addComponent         ($component); }
+  | unit comp_init      { driver.addInstantiation     ($comp_init); }
+  | unit pragma         { driver.addPragma            ($pragma); }
+  | unit type           { driver.addType              ($type); }
+  | unit functor_decl   { driver.addFunctorDeclaration($functor_decl); }
   | unit relation_decl  {
         for (auto&& rel : $relation_decl) {
-            driver.addDeprecatedIoModifiers(*rel);
-            driver.addRelation(move(rel));
+            driver.addIoFromDeprecatedTag(*rel);
+            driver.addRelation(std::move(rel));
         }
     }
   ;
@@ -267,9 +364,9 @@ unit
  */
 
 identifier
-  : IDENT                 { $$.push_back(move($IDENT)); }
+  :                 IDENT { $$ = $IDENT; }
     /* TODO (azreika): in next version: DOT -> DOUBLECOLON */
-  | identifier DOT IDENT  { $1.push_back(move($IDENT)); $$ = move($1); }
+  | identifier DOT  IDENT { $$ = $1; $$->append($IDENT); }
   ;
 
 /**
@@ -278,19 +375,19 @@ identifier
 
 /* Type declarations */
 type
-  : TYPE IDENT SUBTYPE  predefined_type   { $$ = mk<AstSubsetType>(move($2), move($4), @$); }
-  | TYPE IDENT EQUALS   union_type_list   { $$ = mk<AstUnionType >(move($2), move($4), @$); }
-  | TYPE IDENT EQUALS   record_type_list  { $$ = mk<AstRecordType>(move($2), move($4), @$); }
+  : TYPE IDENT SUBTYPE  predefined_type   { $$ = mk<AstSubsetType>($2, $4, @$); }
+  | TYPE IDENT EQUALS    union_type_list  { $$ = mk<AstUnionType >($2, $4, @$); }
+  | TYPE IDENT EQUALS   record_type_list  { $$ = mk<AstRecordType>($2, $4, @$); }
     /* deprecated subset type forms */
-  | NUMBER_TYPE IDENT { $$ = driver.mkDeprecatedSubType(move($IDENT), TypeAttribute::Signed, @$); }
-  | SYMBOL_TYPE IDENT { $$ = driver.mkDeprecatedSubType(move($IDENT), TypeAttribute::Symbol, @$); }
-  | TYPE        IDENT { $$ = driver.mkDeprecatedSubType(move($IDENT), TypeAttribute::Symbol, @$); }
+  | NUMBER_TYPE IDENT { $$ = driver.mkDeprecatedSubType($IDENT, TypeAttribute::Signed, @$); }
+  | SYMBOL_TYPE IDENT { $$ = driver.mkDeprecatedSubType($IDENT, TypeAttribute::Symbol, @$); }
+  | TYPE        IDENT { $$ = driver.mkDeprecatedSubType($IDENT, TypeAttribute::Symbol, @$); }
   ;
 
 /* Union type argument declarations */
 union_type_list
-  :                       identifier { $$.push_back(move($identifier)); }
-  | union_type_list PIPE  identifier { $1.push_back(move($identifier)); $$ = move($1); }
+  :                       identifier {          $$.push_back($identifier); }
+  | union_type_list PIPE  identifier { $$ = $1; $$.push_back($identifier); }
   ;
 
 /**
@@ -300,8 +397,11 @@ union_type_list
 /* Relation declaration */
 relation_decl
   : DECL non_empty_relation_list attributes_list relation_tags {
-        for (auto&& rel : $non_empty_relation_list) {
-            for (auto tag : $relation_tags) {
+        auto tags = $relation_tags;
+        auto attributes_list = $attributes_list;
+        $$ = $non_empty_relation_list;
+        for (auto&& rel : $$) {
+            for (auto tag : tags) {
                 if (isRelationQualifierTag(tag)) {
                     rel->addQualifier(getRelationQualifierFromTag(tag));
                 } else if (isRelationRepresentationTag(tag)) {
@@ -311,96 +411,48 @@ relation_decl
                 }
             }
 
-            rel->setAttributes(clone($attributes_list));
+            rel->setAttributes(clone(attributes_list));
         }
-
-        $$ = move($non_empty_relation_list);
     }
   ;
 
 /* List of relation names to declare */
 non_empty_relation_list
-  :                               IDENT { $$.push_back(mk<AstRelation>(move($1), @1)); }
-  | non_empty_relation_list COMMA IDENT { $1.push_back(mk<AstRelation>(move($3), @3)); $$ = move($1); }
+  :                               IDENT {          $$.push_back(mk<AstRelation>($1, @1)); }
+  | non_empty_relation_list COMMA IDENT { $$ = $1; $$.push_back(mk<AstRelation>($3, @3)); }
   ;
 
 /* Attribute definition of a relation */
 /* specific wrapper to ensure the err msg says "expected ',' or ')'" */
 record_type_list
   : LBRACKET RBRACKET                       { }
-  | LBRACKET non_empty_attributes RBRACKET  { $$ = move($2); }
+  | LBRACKET non_empty_attributes RBRACKET  { $$ = $2; }
   ;
 attributes_list
   : LPAREN RPAREN                       { }
-  | LPAREN non_empty_attributes RPAREN  { $$ = move($2); }
+  | LPAREN non_empty_attributes RPAREN  { $$ = $2; }
   ;
 non_empty_attributes
   :                            IDENT COLON identifier
-    { $$.push_back(mk<AstAttribute>(move($IDENT), move($identifier), @identifier)); }
+    {           $$.push_back(mk<AstAttribute>($IDENT, $identifier, @identifier)); }
   | non_empty_attributes COMMA IDENT COLON identifier
-    { $1.push_back(mk<AstAttribute>(move($IDENT), move($identifier), @identifier)); $$ = move($1); }
+    { $$ = $1;  $$.push_back(mk<AstAttribute>($IDENT, $identifier, @identifier)); }
   ;
 
 /* Relation tags */
 relation_tags
   : %empty { }
-  | relation_tags OUTPUT_QUALIFIER {
-        driver.warning(@2, "Deprecated output qualifier used");
-        if ($1.find(RelationTag::OUTPUT) != $1.end())
-            driver.error(@2, "output qualifier already set");
-        $1.insert(RelationTag::OUTPUT);
-        $$ = move($1);
-    }
-  | relation_tags INPUT_QUALIFIER {
-        driver.warning(@2, "Deprecated input qualifier was used");
-        if ($1.find(RelationTag::INPUT) != $1.end())
-            driver.error(@2, "input qualifier already set");
-        $1.insert(RelationTag::INPUT);
-        $$ = move($1);
-    }
-  | relation_tags PRINTSIZE_QUALIFIER {
-        driver.warning(@2, "Deprecated printsize qualifier was used");
-        if ($1.find(RelationTag::PRINTSIZE) != $1.end())
-            driver.error(@2, "printsize qualifier already set");
-        $1.insert(RelationTag::PRINTSIZE);
-        $$ = move($1);
-    }
-  | relation_tags OVERRIDABLE_QUALIFIER {
-        if ($1.find(RelationTag::OVERRIDABLE) != $1.end())
-            driver.error(@2, "overridable qualifier already set");
-        $1.insert(RelationTag::OVERRIDABLE);
-        $$ = move($1);
-    }
-  | relation_tags INLINE_QUALIFIER {
-        if ($1.find(RelationTag::INLINE) != $1.end())
-            driver.error(@2, "inline qualifier already set");
-        $1.insert(RelationTag::INLINE);
-        $$ = move($1);
-    }
-  | relation_tags BRIE_QUALIFIER {
-        if ($1.find(RelationTag::BRIE) != $1.end() ||
-            $1.find(RelationTag::BTREE) != $1.end() ||
-            $1.find(RelationTag::EQREL) != $1.end())
-                driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $1.insert(RelationTag::BRIE);
-        $$ = move($1);
-    }
-  | relation_tags BTREE_QUALIFIER {
-        if ($1.find(RelationTag::BRIE) != $1.end() ||
-            $1.find(RelationTag::BTREE) != $1.end() ||
-            $1.find(RelationTag::EQREL) != $1.end())
-                driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $1.insert(RelationTag::BTREE);
-        $$ = move($1);
-    }
-  | relation_tags EQREL_QUALIFIER {
-        if ($1.find(RelationTag::BRIE) != $1.end() ||
-            $1.find(RelationTag::BTREE) != $1.end() ||
-            $1.find(RelationTag::EQREL) != $1.end())
-                driver.error(@2, "btree/brie/eqrel qualifier already set");
-        $1.insert(RelationTag::EQREL);
-        $$ = move($1);
-    }
+  | relation_tags      OUTPUT_QUALIFIER
+    { $$ = driver.addDeprecatedTag(RelationTag::OUTPUT, @2, $1); }
+  | relation_tags       INPUT_QUALIFIER
+    { $$ = driver.addDeprecatedTag(RelationTag::INPUT, @2, $1); }
+  | relation_tags   PRINTSIZE_QUALIFIER
+    { $$ = driver.addDeprecatedTag(RelationTag::PRINTSIZE, @2, $1); }
+  | relation_tags OVERRIDABLE_QUALIFIER { $$ = driver.addTag(RelationTag::OVERRIDABLE , @2, $1); }
+  | relation_tags      INLINE_QUALIFIER { $$ = driver.addTag(RelationTag::INLINE      , @2, $1); }
+  | relation_tags        BRIE_QUALIFIER { $$ = driver.addReprTag(RelationTag::BRIE    , @2, $1); }
+  | relation_tags       BTREE_QUALIFIER { $$ = driver.addReprTag(RelationTag::BTREE   , @2, $1); }
+  | relation_tags       EQREL_QUALIFIER { $$ = driver.addReprTag(RelationTag::EQREL   , @2, $1); }
   ;
 
 /**
@@ -408,17 +460,18 @@ relation_tags
  */
 
 /* Fact */
-fact : atom DOT { $$ = mk<AstClause>(move($atom), VecOwn<AstLiteral> {}, nullptr, @$); };
+fact : atom DOT { $$ = mk<AstClause>($atom, Mov<VecOwn<AstLiteral>> {}, nullptr, @$); };
 
 /* Rule */
 rule
   : rule_def {
-        $$ = move($rule_def);
+        $$ = $rule_def;
     }
   | rule_def exec_plan {
-        $$ = move($rule_def);
+        $$ = $rule_def;
+        auto exec_plan = $exec_plan;
         for (auto&& rule : $$) {
-            rule->setExecutionPlan(clone($exec_plan));
+            rule->setExecutionPlan(clone(exec_plan));
         }
     }
   ;
@@ -426,7 +479,7 @@ rule
 /* Rule definition */
 rule_def
   : head[heads] IF body DOT {
-        auto bodies = $body.toClauseBodies();
+        auto bodies = $body->toClauseBodies();
 
         for (auto&& head : $heads) {
             for (auto&& body : bodies) {
@@ -441,46 +494,46 @@ rule_def
 
 /* Rule head */
 head
-  :            atom { $$.push_back(move($atom)); }
-  | head COMMA atom { $1.push_back(move($atom)); $$ = move($1); }
+  :            atom {          $$.push_back($atom); }
+  | head COMMA atom { $$ = $1; $$.push_back($atom); }
   ;
 
 /* Rule body */
-body : disjunction { $$ = move($disjunction); };
+body : disjunction { $$ = $disjunction; };
 
 disjunction
-  :                       conjunction { $$ = move($conjunction); }
-  | disjunction SEMICOLON conjunction { $1.disjunct(move($conjunction)); $$ = move($1); }
+  :                       conjunction { $$ = $conjunction; }
+  | disjunction SEMICOLON conjunction { $$ = $1; $$->disjunct($conjunction); }
   ;
 
 conjunction
-  :                   term { $$ = move($term); }
-  | conjunction COMMA term { $1.conjunct(move($term)); $$ = move($1); }
+  :                   term { $$ = $term; }
+  | conjunction COMMA term { $$ = $1; $$->conjunct($term); }
   ;
 
 /* Rule execution plan */
-exec_plan : PLAN exec_plan_list { $$ = move($exec_plan_list); };
+exec_plan : PLAN exec_plan_list { $$ = $exec_plan_list; };
 
 /* Rule execution plan list */
 exec_plan_list
   : NUMBER COLON exec_order {
         $$ = mk<AstExecutionPlan>();
-        $$->setOrderFor(RamSignedFromString($NUMBER), move($exec_order));
+        $$->setOrderFor(RamSignedFromString($NUMBER), Own<AstExecutionOrder>($exec_order));
     }
   | exec_plan_list[curr_list] COMMA NUMBER COLON exec_order {
-        $$ = move($curr_list);
-        $$->setOrderFor(RamSignedFromString($NUMBER), move($exec_order));
+        $$ = $curr_list;
+        $$->setOrderFor(RamSignedFromString($NUMBER), $exec_order);
     }
   ;
 
 /* Rule execution order */
 exec_order
   : LPAREN RPAREN                           { $$ = mk<AstExecutionOrder>(AstExecutionOrder::ExecOrder(), @$); }
-  | LPAREN non_empty_exec_order_list RPAREN { $$ = mk<AstExecutionOrder>(move($2), @$); }
+  | LPAREN non_empty_exec_order_list RPAREN { $$ = mk<AstExecutionOrder>($2, @$); }
   ;
 non_empty_exec_order_list
-  :                                 NUMBER { $$.push_back(RamUnsignedFromString($NUMBER)); }
-  | non_empty_exec_order_list COMMA NUMBER { $1.push_back(RamUnsignedFromString($NUMBER)); $$ = move($1); }
+  :                                 NUMBER {          $$.push_back(RamUnsignedFromString($NUMBER)); }
+  | non_empty_exec_order_list COMMA NUMBER { $$ = $1; $$.push_back(RamUnsignedFromString($NUMBER)); }
   ;
 
 /**
@@ -489,30 +542,30 @@ non_empty_exec_order_list
 
 /* Rule body term */
 term
-  : atom                      { $$ = RuleBody::atom(move($atom)); }
-  | constraint                { $$ = RuleBody::constraint(move($constraint)); }
-  | LPAREN disjunction RPAREN { $$ = move($disjunction); }
-  | EXCLAMATION term          { $$ = $2.negated(); }
+  : atom                      { $$ = RuleBody::atom($atom); }
+  | constraint                { $$ = RuleBody::constraint($constraint); }
+  | LPAREN disjunction RPAREN { $$ = $disjunction; }
+  | EXCLAMATION term          { $$ = $2->negated(); }
   ;
 
 /* Rule body atom */
-atom : identifier LPAREN arg_list RPAREN { $$ = mk<AstAtom>(move($identifier), move($arg_list), @$); };
+atom : identifier LPAREN arg_list RPAREN { $$ = mk<AstAtom>($identifier, $arg_list, @$); };
 
 /* Rule literal constraints */
 constraint
     /* binary infix constraints */
-  : arg LT      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::LT, move($1), move($3), @$); }
-  | arg GT      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::GT, move($1), move($3), @$); }
-  | arg LE      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::LE, move($1), move($3), @$); }
-  | arg GE      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::GE, move($1), move($3), @$); }
-  | arg EQUALS  arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::EQ, move($1), move($3), @$); }
-  | arg NE      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::NE, move($1), move($3), @$); }
+  : arg LT      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::LT, $1, $3, @$); }
+  | arg GT      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::GT, $1, $3, @$); }
+  | arg LE      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::LE, $1, $3, @$); }
+  | arg GE      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::GE, $1, $3, @$); }
+  | arg EQUALS  arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::EQ, $1, $3, @$); }
+  | arg NE      arg { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::NE, $1, $3, @$); }
 
     /* binary prefix constraints */
   | TMATCH    LPAREN arg[a0] COMMA arg[a1] RPAREN
-    { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::MATCH   , move($a0), move($a1), @$); }
+    { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::MATCH   , $a0, $a1, @$); }
   | TCONTAINS LPAREN arg[a0] COMMA arg[a1] RPAREN
-    { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::CONTAINS, move($a0), move($a1), @$); }
+    { $$ = mk<AstBinaryConstraint>(BinaryConstraintOp::CONTAINS, $a0, $a1, @$); }
 
     /* zero-arity constraints */
   | TRUE  { $$ = mk<AstBooleanConstraint>(true , @$); }
@@ -520,35 +573,35 @@ constraint
   ;
 
 /* Argument list */
-arg_list : %empty { } | non_empty_arg_list { $$ = move($1); } ;
+arg_list : %empty { } | non_empty_arg_list { $$ = $1; } ;
 non_empty_arg_list
-  :                           arg { $$.push_back(move($arg)); }
-  | non_empty_arg_list COMMA  arg { $1.push_back(move($arg)); $$ = move($1); }
+  :                           arg {          $$.push_back($arg); }
+  | non_empty_arg_list COMMA  arg { $$ = $1; $$.push_back($arg); }
   ;
 
 /* Atom argument */
 arg
-  : STRING      { $$ = mk<AstStringConstant >(move($STRING), @$); }
-  | FLOAT       { $$ = mk<AstNumericConstant>(move($FLOAT), AstNumericConstant::Type::Float, @$); }
-  | NUMBER      { $$ = mk<AstNumericConstant>(move($NUMBER), @$); }
+  : STRING      { $$ = mk<AstStringConstant >($STRING, @$); }
+  | FLOAT       { $$ = mk<AstNumericConstant>($FLOAT, AstNumericConstant::Type::Float, @$); }
+  | NUMBER      { $$ = mk<AstNumericConstant>($NUMBER, @$); }
   | UNDERSCORE  { $$ = mk<AstUnnamedVariable>(@$); }
   | DOLLAR      { $$ = mk<AstCounter        >(@$); }
-  | IDENT       { $$ = mk<AstVariable       >(move($IDENT), @$); }
+  | IDENT       { $$ = mk<AstVariable       >($IDENT, @$); }
   | NIL         { $$ = mk<AstNilConstant    >(@$); }
 
   /* TODO (azreika): in next version: prepend records with identifiers */
-  | LBRACKET arg_list RBRACKET { $$ = mk<AstRecordInit>(move($arg_list), @$); }
+  | LBRACKET arg_list RBRACKET { $$ = mk<AstRecordInit>($arg_list, @$); }
 
-  |     LPAREN arg                  RPAREN { $$ = move($2); }
-  | AS  LPAREN arg COMMA identifier RPAREN { $$ = mk<AstTypeCast>(move($3), move($identifier), @$); }
+  |     LPAREN arg                  RPAREN { $$ = $2; }
+  | AS  LPAREN arg COMMA identifier RPAREN { $$ = mk<AstTypeCast>($3, $identifier, @$); }
 
-  | AT IDENT         LPAREN arg_list RPAREN { $$ = mk<AstUserDefinedFunctor>(move($IDENT), move($arg_list), @$); }
-  | functor_built_in LPAREN arg_list RPAREN { $$ = mk<AstIntrinsicFunctor>($functor_built_in, move($arg_list), @$); }
+  | AT IDENT         LPAREN arg_list RPAREN { $$ = mk<AstUserDefinedFunctor>($IDENT, *$arg_list, @$); }
+  | functor_built_in LPAREN arg_list RPAREN { $$ = mk<AstIntrinsicFunctor>($functor_built_in, *$arg_list, @$); }
 
     /* some aggregates have the same name as functors */
   | aggregate_func LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
-        auto arg_list = move($rest);
-        arg_list.insert(arg_list.begin(), move($first));
+        VecOwn<AstArgument> arg_list = $rest;
+        arg_list.insert(arg_list.begin(), $first);
 
         auto agg_2_func = [](AggregateOp op) -> std::optional<FunctorOp> {
           switch (op) {
@@ -564,7 +617,7 @@ arg
         };
 
         if (auto func_op = agg_2_func($aggregate_func)) {
-          $$ = mk<AstIntrinsicFunctor>(*func_op, move(arg_list), @$);
+          $$ = mk<AstIntrinsicFunctor>(*func_op, std::move(arg_list), @$);
         } else {
           driver.error(@$, "aggregate operation has no functor equivalent");
           $$ = mk<AstUnnamedVariable>(@$);
@@ -575,35 +628,36 @@ arg
     /* unary functors */
   | MINUS arg[nested_arg] %prec NEG {
         // If we have a constant, that is not already negated we create a mk<constant>.
-        const auto* asNumeric = dynamic_cast<const AstNumericConstant*>(&*$nested_arg);
+        auto nested_arg = *$nested_arg;
+        const auto* asNumeric = dynamic_cast<const AstNumericConstant*>(&*nested_arg);
         if (asNumeric && !isPrefix("-", asNumeric->getConstant())) {
             $$ = mk<AstNumericConstant>("-" + asNumeric->getConstant(), asNumeric->getType(), @nested_arg);
         } else { // Otherwise, create a functor.
-            $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::NEG, move($nested_arg));
+            $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::NEG, std::move(nested_arg));
         }
     }
-  | BW_NOT  arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BNOT, move($2)); }
-  | L_NOT   arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::LNOT, move($2)); }
+  | BW_NOT  arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BNOT, $2); }
+  | L_NOT   arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::LNOT, $2); }
 
     /* binary infix functors */
-  | arg PLUS                arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::ADD     , move($1), move($3)); }
-  | arg MINUS               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::SUB     , move($1), move($3)); }
-  | arg STAR                arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::MUL     , move($1), move($3)); }
-  | arg SLASH               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::DIV     , move($1), move($3)); }
-  | arg PERCENT             arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::MOD     , move($1), move($3)); }
-  | arg CARET               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::EXP     , move($1), move($3)); }
-  | arg BW_OR               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BOR     , move($1), move($3)); }
-  | arg BW_XOR              arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BXOR    , move($1), move($3)); }
-  | arg BW_AND              arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BAND    , move($1), move($3)); }
-  | arg BW_SHIFT_L          arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BSHIFT_L, move($1), move($3)); }
-  | arg BW_SHIFT_R          arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BSHIFT_R, move($1), move($3)); }
-  | arg BW_SHIFT_R_UNSIGNED arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BSHIFT_R_UNSIGNED , move($1), move($3)); }
-  | arg L_OR                arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::LOR     , move($1), move($3)); }
-  | arg L_AND               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::LAND    , move($1), move($3)); }
+  | arg PLUS                arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::ADD     , $1, $3); }
+  | arg MINUS               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::SUB     , $1, $3); }
+  | arg STAR                arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::MUL     , $1, $3); }
+  | arg SLASH               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::DIV     , $1, $3); }
+  | arg PERCENT             arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::MOD     , $1, $3); }
+  | arg CARET               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::EXP     , $1, $3); }
+  | arg BW_OR               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BOR     , $1, $3); }
+  | arg BW_XOR              arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BXOR    , $1, $3); }
+  | arg BW_AND              arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BAND    , $1, $3); }
+  | arg BW_SHIFT_L          arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BSHIFT_L, $1, $3); }
+  | arg BW_SHIFT_R          arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BSHIFT_R, $1, $3); }
+  | arg BW_SHIFT_R_UNSIGNED arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::BSHIFT_R_UNSIGNED , $1, $3); }
+  | arg L_OR                arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::LOR     , $1, $3); }
+  | arg L_AND               arg { $$ = mk<AstIntrinsicFunctor>(@$, FunctorOp::LAND    , $1, $3); }
 
     /* -- aggregators -- */
   | aggregate_func arg_list COLON aggregate_body {
-        auto bodies = $aggregate_body.toClauseBodies();
+        auto bodies = $aggregate_body->toClauseBodies();
         if (bodies.size() != 1) {
             driver.error("ERROR: disjunctions in aggregation clauses are currently not supported");
         }
@@ -645,8 +699,8 @@ aggregate_func
   ;
 
 aggregate_body
-  : LBRACE body RBRACE  { $$ = move($body); }
-  | atom                { $$ = RuleBody::atom(move($atom)); }
+  : LBRACE body RBRACE  { $$ = $body; }
+  | atom                { $$ = RuleBody::atom($atom); }
   ;
 
 /**
@@ -656,49 +710,50 @@ aggregate_body
 /* Component */
 component
   : component_head LBRACE component_body RBRACE {
-        $$ = move($component_body);
-        $$->setComponentType(clone($component_head->getComponentType()));
-        $$->copyBaseComponents(*$component_head);
+        auto head = $component_head;
+        $$ = $component_body;
+        $$->setComponentType(clone(head->getComponentType()));
+        $$->copyBaseComponents(**head);
         $$->setSrcLoc(@$);
     }
   ;
 
 /* Component head */
 component_head
-  : COMPONENT             comp_type { $$ = mk<AstComponent>(); $$->setComponentType(move($comp_type)); }
-  | component_head COLON  comp_type { $$ = move($1);           $$->addBaseComponent(move($comp_type)); }
-  | component_head COMMA  comp_type { $$ = move($1);           $$->addBaseComponent(move($comp_type)); }
+  : COMPONENT             comp_type { $$ = mk<AstComponent>();  $$->setComponentType($comp_type); }
+  | component_head COLON  comp_type { $$ = $1;                  $$->addBaseComponent($comp_type); }
+  | component_head COMMA  comp_type { $$ = $1;                  $$->addBaseComponent($comp_type); }
   ;
 
 /* Component type */
-comp_type : IDENT type_params { $$ = mk<AstComponentType>(move($IDENT), move($type_params), @$); };
+comp_type : IDENT type_params { $$ = mk<AstComponentType>($IDENT, $type_params, @$); };
 
 /* Component type parameters */
 type_params
   : %empty                { }
-  | LT type_param_list GT { $$ = move($type_param_list); }
+  | LT type_param_list GT { $$ = $type_param_list; }
   ;
 
 /* Component type parameter list */
 type_param_list
-  :                       IDENT { $$.push_back(move($IDENT)); }
-  | type_param_list COMMA IDENT { $1.push_back(move($IDENT)); $$ = move($1); }
+  :                       IDENT {          $$.push_back($IDENT); }
+  | type_param_list COMMA IDENT { $$ = $1; $$.push_back($IDENT); }
   ;
 
 /* Component body */
 component_body
   : %empty                        { $$ = mk<AstComponent>(); }
-  | component_body io_head        { $$ = move($1); for (auto&& x : $2) $$->addIO    (move(x)); }
-  | component_body rule           { $$ = move($1); for (auto&& x : $2) $$->addClause(move(x)); }
-  | component_body fact           { $$ = move($1); $$->addClause       (move($2)); }
-  | component_body OVERRIDE IDENT { $$ = move($1); $$->addOverride     (move($3)); }
-  | component_body comp_init      { $$ = move($1); $$->addInstantiation(move($2)); }
-  | component_body component      { $$ = move($1); $$->addComponent    (move($2)); }
-  | component_body type           { $$ = move($1); $$->addType         (move($2)); }
+  | component_body io_head        { $$ = $1; for (auto&& x : $2) $$->addIO    (move(x)); }
+  | component_body rule           { $$ = $1; for (auto&& x : $2) $$->addClause(move(x)); }
+  | component_body fact           { $$ = $1; $$->addClause       ($2); }
+  | component_body OVERRIDE IDENT { $$ = $1; $$->addOverride     ($3); }
+  | component_body comp_init      { $$ = $1; $$->addInstantiation($2); }
+  | component_body component      { $$ = $1; $$->addComponent    ($2); }
+  | component_body type           { $$ = $1; $$->addType         ($2); }
   | component_body relation_decl  {
-        $$ = move($1);
+        $$ = $1;
         for (auto&& rel : $relation_decl) {
-            driver.addDeprecatedIoModifiers(*rel);
+            driver.addIoFromDeprecatedTag(*rel);
             $$->addRelation(move(rel));
         }
     }
@@ -706,7 +761,7 @@ component_body
 
 /* Component initialisation */
 comp_init
-  : INSTANTIATE IDENT EQUALS comp_type { $$ = mk<AstComponentInit>(move($IDENT), move($comp_type), @$); }
+  : INSTANTIATE IDENT EQUALS comp_type { $$ = mk<AstComponentInit>($IDENT, $comp_type, @$); }
   ;
 
 /**
@@ -716,14 +771,14 @@ comp_init
 /* Functor declaration */
 functor_decl
   : FUNCTOR IDENT LPAREN functor_arg_type_list[args] RPAREN COLON predefined_type
-    { $$ = mk<AstFunctorDeclaration>(move($IDENT), move($args), $predefined_type, @$); }
+    { $$ = mk<AstFunctorDeclaration>($IDENT, $args, $predefined_type, @$); }
   ;
 
 /* Functor argument list type */
-functor_arg_type_list : %empty { } | non_empty_functor_arg_type_list { $$ = move($1); };
+functor_arg_type_list : %empty { } | non_empty_functor_arg_type_list { $$ = $1; };
 non_empty_functor_arg_type_list
-  :                                        predefined_type { $$.push_back($predefined_type); }
-  | non_empty_functor_arg_type_list COMMA  predefined_type { $1.push_back($predefined_type); $$ = move($1); }
+  :                                        predefined_type {          $$.push_back($predefined_type); }
+  | non_empty_functor_arg_type_list COMMA  predefined_type { $$ = $1; $$.push_back($predefined_type); }
   ;
 
 /* Predefined type */
@@ -749,8 +804,8 @@ predefined_type
 
 /* Pragma directives */
 pragma
-  : PRAGMA STRING[key   ] STRING[value] { $$ = mk<AstPragma>(move($key   ), move($value), @$); }
-  | PRAGMA STRING[option]               { $$ = mk<AstPragma>(move($option), ""          , @$); }
+  : PRAGMA STRING[key   ] STRING[value] { $$ = mk<AstPragma>($key   , $value, @$); }
+  | PRAGMA STRING[option]               { $$ = mk<AstPragma>($option, ""          , @$); }
   ;
 
 /* io directives */
@@ -771,10 +826,10 @@ io_head_decl
 
 /* IO directive list */
 io_directive_list
-  : io_relation_list                { $$ = move($io_relation_list); }
-  | io_relation_list LPAREN RPAREN  { $$ = move($io_relation_list); }
+  : io_relation_list                { $$ = $io_relation_list; }
+  | io_relation_list LPAREN RPAREN  { $$ = $io_relation_list; }
   | io_relation_list LPAREN non_empty_key_value_pairs RPAREN {
-        $$ = move($io_relation_list);
+        $$ = $io_relation_list;
         for (auto&& io : $$) {
             for (const auto& kvp : $non_empty_key_value_pairs) {
                 io->addDirective(kvp.first, kvp.second);
@@ -786,18 +841,18 @@ io_directive_list
 /* IO relation list */
 /* use a dummy `AstIoType` for now. `io_head` will replace it */
 io_relation_list
-  :                         identifier { $$.push_back(mk<AstIO>(AstIoType::input, move($1), @1)); }
-  | io_relation_list COMMA  identifier { $1.push_back(mk<AstIO>(AstIoType::input, move($3), @3)); $$ = move($1); }
+  :                         identifier {          $$.push_back(mk<AstIO>(AstIoType::input, $1, @1)); }
+  | io_relation_list COMMA  identifier { $$ = $1; $$.push_back(mk<AstIO>(AstIoType::input, $3, @3)); }
   ;
 
 /* Key-value pairs */
 non_empty_key_value_pairs
-  :                                 IDENT EQUALS kvp_value { $$.emplace_back(move($1), move($3)); }
-  | non_empty_key_value_pairs COMMA IDENT EQUALS kvp_value { $1.emplace_back(move($3), move($5)); $$ = move($1); }
+  :                                 IDENT EQUALS kvp_value {          $$.push_back({ $1, $3 }); }
+  | non_empty_key_value_pairs COMMA IDENT EQUALS kvp_value { $$ = $1; $1.push_back({ $3, $5 }); }
   ;
 kvp_value
-  : STRING  { $$ = move($STRING); }
-  | IDENT   { $$ = move($IDENT); }
+  : STRING  { $$ = $STRING; }
+  | IDENT   { $$ = $IDENT; }
   | TRUE    { $$ = "true"; }
   | FALSE   { $$ = "false"; }
   ;

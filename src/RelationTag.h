@@ -119,6 +119,31 @@ inline RelationRepresentation getRelationRepresentationFromTag(const RelationTag
     }
 }
 
+inline std::ostream& operator<<(std::ostream& os, RelationTag qualifier) {
+    switch (qualifier) {
+        case RelationTag::INPUT:
+            return os << "input";
+        case RelationTag::OUTPUT:
+            return os << "output";
+        case RelationTag::PRINTSIZE:
+            return os << "printsize";
+        case RelationTag::OVERRIDABLE:
+            return os << "overridable";
+        case RelationTag::INLINE:
+            return os << "inline";
+        case RelationTag::SUPPRESSED:
+            return os << "suppressed";
+        case RelationTag::BRIE:
+            return os << "brie";
+        case RelationTag::BTREE:
+            return os << "btree";
+        case RelationTag::EQREL:
+            return os << "eqrel";
+    }
+
+    abort();
+}
+
 inline std::ostream& operator<<(std::ostream& os, RelationQualifier qualifier) {
     switch (qualifier) {
         case RelationQualifier::INPUT:

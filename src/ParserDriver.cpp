@@ -154,7 +154,7 @@ void ParserDriver::addInstantiation(std::unique_ptr<AstComponentInit> ci) {
     translationUnit->getProgram()->addInstantiation(std::move(ci));
 }
 
-void ParserDriver::addDeprecatedIoModifiers(AstRelation& rel) {
+void ParserDriver::addIoFromDeprecatedTag(AstRelation& rel) {
     if (rel.hasQualifier(RelationQualifier::INPUT)) {
         addIO(mk<AstIO>(AstIoType::input, rel.getQualifiedName(), rel.getSrcLoc()));
     }
@@ -166,6 +166,36 @@ void ParserDriver::addDeprecatedIoModifiers(AstRelation& rel) {
     if (rel.hasQualifier(RelationQualifier::PRINTSIZE)) {
         addIO(mk<AstIO>(AstIoType::printsize, rel.getQualifiedName(), rel.getSrcLoc()));
     }
+}
+
+std::set<RelationTag> ParserDriver::addDeprecatedTag(
+        RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
+    std::ostringstream os;
+    os << "Deprecated " << tag << " qualifier used";
+    warning(tagLoc, os.str());
+    return addTag(tag, std::move(tagLoc), std::move(tags));
+}
+
+std::set<RelationTag> ParserDriver::addReprTag(
+        RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
+    return addTag(tag, {RelationTag::BTREE, RelationTag::BRIE, RelationTag::EQREL}, std::move(tagLoc),
+            std::move(tags));
+}
+
+std::set<RelationTag> ParserDriver::addTag(RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
+    return addTag(tag, {tag}, std::move(tagLoc), std::move(tags));
+}
+
+std::set<RelationTag> ParserDriver::addTag(RelationTag tag, std::vector<RelationTag> incompatible,
+        SrcLocation tagLoc, std::set<RelationTag> tags) {
+    if (any_of(incompatible, [&](auto&& x) { return contains(tags, x); })) {
+        std::ostringstream os;
+        os << join(incompatible, "/") << " qualifier already set";
+        error(tagLoc, os.str());
+    }
+
+    tags.insert(tag);
+    return tags;
 }
 
 Own<AstSubsetType> ParserDriver::mkDeprecatedSubType(

@@ -310,6 +310,12 @@ bool contains(const C& container, const typename C::value_type& element) {
     return std::find(container.begin(), container.end(), element) != container.end();
 }
 
+// TODO: Detect and generalise to other set types?
+template <typename A>
+bool contains(const std::set<A>& container, const A& element) {
+    return container.find(element) != container.end();
+}
+
 /**
  * Version of contains specialized for maps.
  *
@@ -606,13 +612,13 @@ bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
 // -------------------------------------------------------------------------------
 
 template <typename A>
-struct isPtrLike : std::is_pointer<A> {};
+struct IsPtrLike : std::is_pointer<A> {};
 template <typename A>
-struct isPtrLike<std::unique_ptr<A>> : std::true_type {};
+struct IsPtrLike<std::unique_ptr<A>> : std::true_type {};
 template <typename A>
-struct isPtrLike<std::shared_ptr<A>> : std::true_type {};
+struct IsPtrLike<std::shared_ptr<A>> : std::true_type {};
 template <typename A>
-struct isPtrLike<std::weak_ptr<A>> : std::true_type {};
+struct IsPtrLike<std::weak_ptr<A>> : std::true_type {};
 
 namespace detail {
 
@@ -754,14 +760,14 @@ detail::joined_sequence<Iter, Printer> join(const Container& c, const std::strin
  */
 template <typename Container, typename Iter = typename Container::const_iterator,
         typename T = typename Iter::value_type>
-std::enable_if_t<!isPtrLike<T>::value, detail::joined_sequence<Iter, detail::print<id<T>>>> join(
+std::enable_if_t<!IsPtrLike<T>::value, detail::joined_sequence<Iter, detail::print<id<T>>>> join(
         const Container& c, const std::string& sep = ",") {
     return join(c.begin(), c.end(), sep, detail::print<id<T>>());
 }
 
 template <typename Container, typename Iter = typename Container::const_iterator,
         typename T = typename Iter::value_type>
-std::enable_if_t<isPtrLike<T>::value, detail::joined_sequence<Iter, detail::print<deref<T>>>> join(
+std::enable_if_t<IsPtrLike<T>::value, detail::joined_sequence<Iter, detail::print<deref<T>>>> join(
         const Container& c, const std::string& sep = ",") {
     return join(c.begin(), c.end(), sep, detail::print<deref<T>>());
 }

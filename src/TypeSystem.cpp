@@ -167,16 +167,6 @@ public:
     }
 };
 
-template <typename T>
-bool isA(const Type& type) {
-    return dynamic_cast<const T*>(&type);
-}
-
-template <typename T>
-const T& as(const Type& type) {
-    return static_cast<const T&>(type);
-}
-
 /**
  * Determines whether the given type is a sub-type of the given root type.
  */

@@ -66,10 +66,6 @@ public:
         visitDepthFirstPreOrder(clause, *this);
     }
 
-    virtual void solveConstraints(const AstClause&) {
-        assignment = constraints.solve();
-    }
-
     /**
      * Runs this constraint analysis on the given clause.
      *
@@ -80,7 +76,7 @@ public:
     solution_type analyse(const AstClause& clause, std::ostream* debugOutput = nullptr) {
         collectConstraints(clause);
 
-        solveConstraints(clause);
+        assignment = constraints.solve();
 
         // print debug information if desired
         if (debugOutput != nullptr) {

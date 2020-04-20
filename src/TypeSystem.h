@@ -486,10 +486,6 @@ bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
     exit(EXIT_FAILURE);
 }
 
-// bool isOfKind(const Type& type, TypeAttribute kind) {
-//     return isSubtypeOf(type, type.getTypeEnvironment().getConstantType(kind));
-// }
-
 /**
  * Convert a type analysis' type/set of type to the the TypeAttribute
  */
@@ -524,6 +520,17 @@ inline bool isNumericType(const T& type) {
 template <typename T>  // T = Type or T = Typeset
 inline bool isOrderableType(const T& type) {
     return isNumericType(type) || isSymbolType(type);
+}
+
+// Utilities for casting types.
+template <typename T>
+bool isA(const Type& type) {
+    return dynamic_cast<const T*>(&type) != nullptr;
+}
+
+template <typename T>
+const T& as(const Type& type) {
+    return static_cast<const T&>(type);
 }
 
 /**

@@ -472,29 +472,6 @@ private:
     const AstProgram* program;
     std::set<const AstAtom*> sinks;
 
-    void solveConstraints(const AstClause&) override {
-        assignment = constraints.solve();
-
-        for (auto* atom : sinks) {
-            iterateOverAtom(*atom, [&](const AstArgument& argument, const Type& attributeType) {
-                auto argVar = getVar(argument);
-                auto argAssignment = assignment[argVar];
-
-                if (argAssignment.isAll()) {
-                    return;
-                }
-
-                bool hasConstantType = any_of(argAssignment,
-                        [](const Type& type) { return dynamic_cast<const ConstantType*>(&type) != nullptr; });
-
-                if (hasConstantType) {
-                    addConstraint(isSubtypeOf(getVar(argument), attributeType));
-                }
-            });
-        }
-        constraints.solve(assignment);
-    }
-
     void collectConstraints(const AstClause& clause) override {
         sinks.insert(clause.getHead());
         visitDepthFirstPreOrder(clause, *this);

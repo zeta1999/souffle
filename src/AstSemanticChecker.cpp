@@ -158,7 +158,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
     // -- type checks --
 
-    // - All types in head
+    // - All types atoms.
     visitDepthFirst(nodes, [&](const AstAtom& atom) {
         auto rel = getAtomRelation(&atom, &program);
         if (rel == nullptr) {
@@ -181,8 +181,10 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     continue;
                 }
 
-                bool validAttribute = all_of(argTypes,
-                        [&attributeType](const Type& type) { return isSubtypeOf(type, attributeType); });
+                bool validAttribute = all_of(argTypes, [&attributeType](const Type& type) {
+                    return isSubtypeOf(type, attributeType) ||
+                           (isA<ConstantType>(type) && isSubtypeOf(attributeType, type));
+                });
                 if (!validAttribute) {
                     report.addError(
                             "Atoms argument is not a subtype of its declared type", args[i]->getSrcLoc());

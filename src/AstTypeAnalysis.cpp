@@ -431,45 +431,17 @@ AstClause* createAnnotatedClause(
     return annotatedClause;
 }
 
-void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
-    // Check if debugging information is being generated and note where logs should be sent
-    std::ostream* debugStream = nullptr;
-    if (Global::config().has("debug-report") || Global::config().get("show") == "type-analysis") {
-        debugStream = &analysisLogs;
-    }
-    const auto& program = *translationUnit.getProgram();
-    auto* typeEnvAnalysis = translationUnit.getAnalysis<TypeEnvironmentAnalysis>();
-    for (const AstClause* clause : program.getClauses()) {
-        // Perform the type analysis
-        std::map<const AstArgument*, TypeSet> clauseArgumentTypes = analyseTypes(
-                typeEnvAnalysis->getTypeEnvironment(), *clause, translationUnit.getProgram(), debugStream);
-        argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
-
-        if (debugStream != nullptr) {
-            // Store an annotated clause for printing purposes
-            AstClause* annotatedClause = createAnnotatedClause(clause, clauseArgumentTypes);
-            annotatedClauses.emplace_back(annotatedClause);
-        }
-    }
-}
-
-void TypeAnalysis::print(std::ostream& os) const {
-    os << "-- Analysis logs --" << std::endl;
-    os << analysisLogs.str() << std::endl;
-    os << "-- Result --" << std::endl;
-    for (const auto& cur : annotatedClauses) {
-        os << *cur << std::endl;
-    }
-}
-
+/**
+ * Constraint analysis framework for types.
+ */
 class TypeConstraintsAnalysis : public AstConstraintAnalysis<TypeVar> {
 public:
-    TypeConstraintsAnalysis(const TypeEnvironment& typeEnv, const AstProgram* program)
+    TypeConstraintsAnalysis(const TypeEnvironment& typeEnv, const AstProgram& program)
             : typeEnv(typeEnv), program(program) {}
 
 private:
     const TypeEnvironment& typeEnv;
-    const AstProgram* program;
+    const AstProgram& program;
     std::set<const AstAtom*> sinks;
 
     void collectConstraints(const AstClause& clause) override {
@@ -636,7 +608,7 @@ private:
      */
     void iterateOverAtom(const AstAtom& atom, std::function<void(const AstArgument&, const Type&)> map) {
         // get relation
-        auto rel = getAtomRelation(&atom, program);
+        auto rel = getAtomRelation(&atom, &program);
         if (rel == nullptr) {
             return;  // error in input program
         }
@@ -656,12 +628,40 @@ private:
     }
 };
 
-/**
- * Generic type analysis framework for clauses
- */
 std::map<const AstArgument*, TypeSet> TypeAnalysis::analyseTypes(const TypeEnvironment& typeEnv,
-        const AstClause& clause, const AstProgram* program, std::ostream* logs) {
+        const AstClause& clause, const AstProgram& program, std::ostream* logs) {
     return TypeConstraintsAnalysis(typeEnv, program).analyse(clause, logs);
+}
+
+void TypeAnalysis::print(std::ostream& os) const {
+    os << "-- Analysis logs --" << std::endl;
+    os << analysisLogs.str() << std::endl;
+    os << "-- Result --" << std::endl;
+    for (const auto& cur : annotatedClauses) {
+        os << *cur << std::endl;
+    }
+}
+
+void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
+    // Check if debugging information is being generated
+    std::ostream* debugStream = nullptr;
+    if (Global::config().has("debug-report") || Global::config().get("show") == "type-analysis") {
+        debugStream = &analysisLogs;
+    }
+    const auto& program = *translationUnit.getProgram();
+    auto& typeEnv = translationUnit.getAnalysis<TypeEnvironmentAnalysis>()->getTypeEnvironment();
+
+    // Analyse types, clause by clause.
+    for (const AstClause* clause : program.getClauses()) {
+        auto clauseArgumentTypes = analyseTypes(typeEnv, *clause, program, debugStream);
+        argumentTypes.insert(clauseArgumentTypes.begin(), clauseArgumentTypes.end());
+
+        if (debugStream != nullptr) {
+            // Store an annotated clause for printing purposes
+            AstClause* annotatedClause = createAnnotatedClause(clause, clauseArgumentTypes);
+            annotatedClauses.emplace_back(annotatedClause);
+        }
+    }
 }
 
 }  // end of namespace souffle

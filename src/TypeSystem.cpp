@@ -80,7 +80,7 @@ bool TypeEnvironment::isType(const AstQualifiedName& ident) const {
 }
 
 bool TypeEnvironment::isType(const Type& type) const {
-    return type == getType(type.getName());
+    return this == &type.getTypeEnvironment();
 }
 
 const Type& TypeEnvironment::getType(const AstQualifiedName& ident) const {

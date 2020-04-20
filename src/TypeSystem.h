@@ -37,9 +37,6 @@ class TypeEnvironment;
  */
 class Type {
 public:
-    Type(const TypeEnvironment& environment, AstQualifiedName name)
-            : environment(environment), name(std::move(name)) {}
-
     Type(const Type& other) = delete;
 
     virtual ~Type() = default;
@@ -73,6 +70,9 @@ public:
     }
 
 protected:
+    Type(const TypeEnvironment& environment, AstQualifiedName name)
+            : environment(environment), name(std::move(name)) {}
+
     /** A reference to the type environment this type is associated to. */
     const TypeEnvironment& environment;
 

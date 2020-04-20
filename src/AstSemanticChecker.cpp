@@ -186,8 +186,13 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                            (isA<ConstantType>(type) && isSubtypeOf(attributeType, type));
                 });
                 if (!validAttribute) {
-                    report.addError(
-                            "Atoms argument is not a subtype of its declared type", args[i]->getSrcLoc());
+                    if (Global::config().has("legacy")) {
+                        report.addWarning(
+                                "Atoms argument is not a subtype of its declared type", args[i]->getSrcLoc());
+                    } else {
+                        report.addError(
+                                "Atoms argument is not a subtype of its declared type", args[i]->getSrcLoc());
+                    }
                 }
             }
         }

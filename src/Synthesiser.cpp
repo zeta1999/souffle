@@ -1625,10 +1625,44 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")))";
                     break;
                 }
+
+                case FunctorOp::RANGE:
+                case FunctorOp::URANGE:
+                case FunctorOp::FRANGE:
+                    fatal("ICE: functor `%s` must map onto `RamNestedIntrinsicOperator`", op.getOperator());
             }
             PRINT_END_COMMENT(out);
 
 #undef MINMAX_SYMBOL
+        }
+
+        void visitNestedIntrinsicOperator(const RamNestedIntrinsicOperator& op, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+
+            auto emitHelper = [&](auto&& func) {
+                format(out, "%s(%s, [&](auto&& env%d) {\n", func,
+                        join(op.getArguments(), ",", [&](auto& os, auto* arg) { return visit(arg, os); }),
+                        op.getTupleId());
+                visitTupleOperation(op, out);
+                out << "});\n";
+
+                PRINT_END_COMMENT(out);
+            };
+
+            auto emitRange = [&](char const* ty) {
+                return emitHelper(format("souffle::evaluator::runRange<%s>", ty));
+            };
+
+            switch (op.getFunction()) {
+                case RamNestedIntrinsicOp::RANGE:
+                    return emitRange("RamSigned");
+                case RamNestedIntrinsicOp::URANGE:
+                    return emitRange("RamUnsigned");
+                case RamNestedIntrinsicOp::FRANGE:
+                    return emitRange("RamFloat");
+            }
+
+            UNREACHABLE_BAD_CASE_ANALYSIS
         }
 
         void visitUserDefinedOperator(const RamUserDefinedOperator& op, std::ostream& out) override {

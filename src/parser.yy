@@ -95,6 +95,7 @@
 %token TCONTAINS                 "checks whether substring is contained in a string"
 %token CAT                       "concatenation of strings"
 %token ORD                       "ordinal number of a string"
+%token RANGE                     "range"
 %token STRLEN                    "length of a string"
 %token SUBSTR                    "sub-string of a string"
 %token MEAN                      "mean aggregator"
@@ -1269,6 +1270,21 @@ arg
         }
 
         $$ = new AstIntrinsicFunctor(FunctorOp::CAT, std::move(args));
+        $$->setSrcLoc(@$);
+
+        $first = nullptr;
+        $rest.clear();
+    }
+
+  | RANGE LPAREN arg[first] COMMA non_empty_arg_list[rest] RPAREN {
+        std::vector<std::unique_ptr<AstArgument>> args;
+        args.emplace_back($first);
+
+        for (auto* arg : $rest) {
+            args.emplace_back(arg);
+        }
+
+        $$ = new AstIntrinsicFunctor(FunctorOp::RANGE, std::move(args));
         $$->setSrcLoc(@$);
 
         $first = nullptr;

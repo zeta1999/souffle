@@ -310,6 +310,24 @@ inline bool isNumber(const char* str) {
 // -------------------------------------------------------------------------------
 
 /**
+ * Use to range-for iterate in reverse.
+ * Assumes `std::rbegin` and `std::rend` are defined for type `A`.
+ */
+template <typename A>
+struct reverse {
+    reverse(A& iterable) : iterable(iterable) {}
+    A& iterable;
+
+    auto begin() {
+        return std::rbegin(iterable);
+    }
+
+    auto end() {
+        return std::rend(iterable);
+    }
+};
+
+/**
  * A utility to check generically whether a given element is contained in a given
  * container.
  */

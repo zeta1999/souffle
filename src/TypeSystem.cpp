@@ -89,20 +89,6 @@ const Type& TypeEnvironment::getType(const AstQualifiedName& ident) const {
     return *(it->second);
 }
 
-TypeSet TypeEnvironment::getAllTypes() const {
-    TypeSet res;
-    for (const auto& cur : types) {
-        res.insert(*cur.second);
-    }
-    return res;
-}
-
-void TypeEnvironment::addType(Type* type) {
-    const AstQualifiedName& name = type->getName();
-    assert(types.find(name) == types.end() && "Error: registering present type!");
-    types[name] = std::unique_ptr<Type>(type);
-}
-
 namespace {
 
 /**

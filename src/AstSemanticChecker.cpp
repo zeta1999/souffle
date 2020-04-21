@@ -158,27 +158,27 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
     // -- type checks --
 
-    // - All types atoms.
+    // check if in all atoms the arguments are subtypes of declared types or of constant type.
     visitDepthFirst(nodes, [&](const AstAtom& atom) {
-        auto rel = getAtomRelation(&atom, &program);
-        if (rel == nullptr) {
+        auto relation = getAtomRelation(&atom, &program);
+        if (relation == nullptr) {
             return;  // error unrelated to types.
         }
 
-        auto atts = rel->getAttributes();
-        auto args = atom.getArguments();
-        if (atts.size() != args.size()) {
+        auto attributes = relation->getAttributes();
+        auto arguments = atom.getArguments();
+        if (attributes.size() != arguments.size()) {
             return;  // error in input program
         }
 
-        for (size_t i = 0; i < atts.size(); ++i) {
-            auto& typeName = atts[i]->getTypeName();
+        for (size_t i = 0; i < attributes.size(); ++i) {
+            auto& typeName = attributes[i]->getTypeName();
             if (typeEnv.isType(typeName)) {
-                auto argTypes = typeAnalysis.getTypes(args[i]);
+                auto argTypes = typeAnalysis.getTypes(arguments[i]);
                 auto& attributeType = typeEnv.getType(typeName);
 
                 if (argTypes.isAll()) {
-                    continue;
+                    continue;  // This will be reported later.
                 }
 
                 bool validAttribute = all_of(argTypes, [&attributeType](const Type& type) {
@@ -187,11 +187,11 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                 });
                 if (!validAttribute) {
                     if (Global::config().has("legacy")) {
-                        report.addWarning(
-                                "Atoms argument is not a subtype of its declared type", args[i]->getSrcLoc());
+                        report.addWarning("Atoms argument is not a subtype of its declared type",
+                                arguments[i]->getSrcLoc());
                     } else {
-                        report.addError(
-                                "Atoms argument is not a subtype of its declared type", args[i]->getSrcLoc());
+                        report.addError("Atoms argument is not a subtype of its declared type",
+                                arguments[i]->getSrcLoc());
                     }
                 }
             }

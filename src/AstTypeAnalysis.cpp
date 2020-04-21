@@ -205,7 +205,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
                 while (auto subset = dynamic_cast<const SubsetType*>(type)) {
                     type = &subset->getBaseType();
                 };
-                assert(dynamic_cast<const ConstantType*>(type) != nullptr);
+                assert(isA<ConstantType>(*type) && "Root of subset type must be a constant type");
                 return *type;
             };
 
@@ -224,8 +224,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             // Left
             if (!assigmentsLeft.isAll()) {
                 for (const auto& type : assigmentsLeft) {
-                    if (dynamic_cast<const SubsetType*>(&type) != nullptr ||
-                            dynamic_cast<const ConstantType*>(&type) != nullptr) {
+                    if (isA<SubsetType>(type) || isA<ConstantType>(type)) {
                         baseTypesLeft.insert(getBaseType(&type));
                     }
                 }
@@ -233,8 +232,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             // Right
             if (!assigmentsRight.isAll()) {
                 for (const auto& type : assigmentsRight) {
-                    if (dynamic_cast<const SubsetType*>(&type) != nullptr ||
-                            dynamic_cast<const ConstantType*>(&type) != nullptr) {
+                    if (isA<SubsetType>(type) || isA<ConstantType>(type)) {
                         baseTypesRight.insert(getBaseType(&type));
                     }
                 }
@@ -297,6 +295,9 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
     return std::make_shared<C>(left, right);
 }
 
+/**
+ * Constraint on record type and its elements.
+ */
 TypeConstraint isSubtypeOfComponent(
         const TypeVar& elementVariable, const TypeVar& recordVariable, size_t index) {
     struct C : public Constraint<TypeVar> {
@@ -433,6 +434,12 @@ AstClause* createAnnotatedClause(
 
 /**
  * Constraint analysis framework for types.
+ *
+ * The analysis operates on the concept of sinks and sources.
+ * If the atom is negated or is a head then it's a sink,
+ * and we can only extract the kind constraint from it
+ * Otherwise it is a source, and the type of the element must
+ * be a subtype of source attribute.
  */
 class TypeConstraintsAnalysis : public AstConstraintAnalysis<TypeVar> {
 public:
@@ -442,6 +449,8 @@ public:
 private:
     const TypeEnvironment& typeEnv;
     const AstProgram& program;
+
+    // Sinks = {head} ∪ {negated atoms}
     std::set<const AstAtom*> sinks;
 
     void collectConstraints(const AstClause& clause) override {
@@ -451,7 +460,7 @@ private:
 
     void visitSink(const AstAtom& atom) {
         iterateOverAtom(atom, [&](const AstArgument& argument, const Type& attributeType) {
-            if (dynamic_cast<const RecordType*>(&attributeType) != nullptr) {
+            if (isA<RecordType>(attributeType)) {
                 addConstraint(isSubtypeOf(getVar(argument), attributeType));
             } else {
                 for (auto& constantType : typeEnv.getConstantTypes()) {
@@ -523,7 +532,6 @@ private:
         addConstraint(hasSuperTypeInSet(getVar(constant), possibleTypes));
     }
 
-    // binary constraint
     void visitBinaryConstraint(const AstBinaryConstraint& rel) override {
         auto lhs = getVar(rel.getLHS());
         auto rhs = getVar(rel.getRHS());
@@ -574,7 +582,7 @@ private:
     }
 
     void visitCounter(const AstCounter& counter) override {
-        // this value must be a number value
+        // counter must be an int.
         addConstraint(isSubtypeOf(getVar(counter), typeEnv.getConstantType(TypeAttribute::Signed)));
     }
 

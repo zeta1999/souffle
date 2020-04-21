@@ -98,7 +98,7 @@ protected:
      * @param arg the AST argument to be mapped
      * @return the analysis variable representing its associated value
      */
-    virtual AnalysisVar getVar(const AstArgument& arg) {
+    AnalysisVar getVar(const AstArgument& arg) {
         const auto* var = dynamic_cast<const AstVariable*>(&arg);
         if (var == nullptr) {
             // no mapping required

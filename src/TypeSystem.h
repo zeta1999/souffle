@@ -191,8 +191,6 @@ struct TypeSet {
 public:
     using const_iterator = IterDerefWrapper<typename std::set<const Type*>::const_iterator>;
 
-    // -- constructors, destructors and assignment operations --
-
     TypeSet(bool all = false) : all(all) {}
 
     TypeSet(const TypeSet& other) = default;
@@ -337,7 +335,6 @@ private:
  */
 class TypeEnvironment {
 public:
-    // -- constructors / destructores --
     TypeEnvironment()
             : constantTypes(initializeConstantTypes()),
               constantNumericTypes(TypeSet(
@@ -346,14 +343,15 @@ public:
 
     TypeEnvironment(const TypeEnvironment&) = delete;
 
-    ~TypeEnvironment() = default;
+    virtual ~TypeEnvironment() = default;
 
     // -- create types in this environment --
     template <typename T, typename... Args>
     T& createType(const AstQualifiedName& name, const Args&... args) {
-        auto* res = new T(*this, name, args...);
-        addType(res);
-        return *res;
+        assert(types.find(name) == types.end() && "Error: registering present type!");
+        auto* newType = new T(*this, name, args...);
+        types[name] = std::unique_ptr<Type>(newType);
+        return *newType;
     }
 
     SubsetType& createSubsetType(const AstQualifiedName& name, TypeAttribute typeAttribute) {
@@ -401,17 +399,12 @@ public:
     bool isPrimitiveType(const AstQualifiedName& identifier) const {
         if (isType(identifier)) {
             return isPrimitiveType(getType(identifier));
-        } else {
-            return false;
         }
+        return false;
     }
 
     bool isPrimitiveType(const Type& typeName) const {
         return primitiveTypes.contains(typeName);
-    }
-
-    const TypeSet& getPrimitiveTypes() const {
-        return primitiveTypes;
     }
 
     const TypeSet& getConstantTypes() const {
@@ -422,8 +415,6 @@ public:
         return constantNumericTypes;
     }
 
-    TypeSet getAllTypes() const;
-
     void print(std::ostream& out) const;
 
     friend std::ostream& operator<<(std::ostream& out, const TypeEnvironment& environment) {
@@ -431,14 +422,7 @@ public:
         return out;
     }
 
-    void swap(TypeEnvironment& env) {
-        types.swap(env.types);
-    }
-
 private:
-    /** Register types created by one of the factory functions */
-    void addType(Type* type);
-
     TypeSet initializePrimitiveTypes(void);
     TypeSet initializeConstantTypes(void);
 

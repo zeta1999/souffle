@@ -322,7 +322,7 @@ public:
 
     /** @brief Helper method for printing */
     void printIndex(std::ostream& os) const {
-        const auto& attrib = getRelation().getAttributeNames();
+        //  const auto& attrib = getRelation().getAttributeNames();
         bool first = true;
         for (unsigned int i = 0; i < getRelation().getArity(); ++i) {
             // TODO: print proper upper lower/bound
@@ -347,7 +347,7 @@ public:
 		    // print equality when lower bound = upper bound
                     if (*(queryPattern.first[i]) == *(queryPattern.second[i])) {
                         os << "t" << getTupleId() << ".";
-		        os << attrib[i] << " = ";
+		        os << i << " = ";
                         os << *(queryPattern.first[i]);
 			continue;
 		    }
@@ -361,7 +361,7 @@ public:
 		         }
                     
 		         os << "t" << getTupleId() << ".";
-		         os << attrib[i];
+		         os << i;
 		   
 		         if (!isRamUndefValue(queryPattern.second[i].get())) {
 			     os << " <= " <<  *(queryPattern.second[i]);

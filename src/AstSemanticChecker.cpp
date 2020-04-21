@@ -158,7 +158,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
     // -- type checks --
 
-    // check if in all atoms the arguments are subtypes of declared types or of constant type.
+    // check if in all atoms the arguments are subtypes of declared types.
     visitDepthFirst(nodes, [&](const AstAtom& atom) {
         auto relation = getAtomRelation(&atom, &program);
         if (relation == nullptr) {
@@ -177,20 +177,22 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                 auto argTypes = typeAnalysis.getTypes(arguments[i]);
                 auto& attributeType = typeEnv.getType(typeName);
 
-                if (argTypes.isAll()) {
+                if (argTypes.isAll() || argTypes.empty()) {
                     continue;  // This will be reported later.
                 }
 
+                // Attribute and argument type agree if, argument type is a subtype of declared type or is of
+                // the appropriate constant type.
                 bool validAttribute = all_of(argTypes, [&attributeType](const Type& type) {
                     return isSubtypeOf(type, attributeType) ||
                            (isA<ConstantType>(type) && isSubtypeOf(attributeType, type));
                 });
                 if (!validAttribute) {
                     if (Global::config().has("legacy")) {
-                        report.addWarning("Atoms argument is not a subtype of its declared type",
+                        report.addWarning("Atoms argument type is not a subtype of its declared type",
                                 arguments[i]->getSrcLoc());
                     } else {
-                        report.addError("Atoms argument is not a subtype of its declared type",
+                        report.addError("Atoms argument type is not a subtype of its declared type",
                                 arguments[i]->getSrcLoc());
                     }
                 }

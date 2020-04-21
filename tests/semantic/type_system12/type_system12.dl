@@ -36,14 +36,10 @@ E("n").
 
 .decl C(x : S1)
 C(x) :- B(x).                      // Error
-C(x) :- !D(x), B(x).               // Error
+C(x) :- !A(x), B(x).               // Error
 C(x) :- D(x), !B(x).               // Ok
 C(x) :- D(x), B(x).                // Ok
 C(y) :- D(x), B(x), y = x.         // Ok
 C(cat("meow2 ", x)) :- D(x), B(x). // Ok
-
-// TODO (darth_tytus): this should work, but there is an issue related to legacy type semantics
-// See #1296, #1333 and tests/semantic/type_system4
-// C(x) :- D(cat("meow ", x)), B(x).
 
 .output C(IO = stdout)

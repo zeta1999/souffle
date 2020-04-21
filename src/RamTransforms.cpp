@@ -664,7 +664,7 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
     return changed;
 }
 
-bool FilterTransformer::transformIndexToFilter(RamProgram& program) {
+bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
     bool changed = false;
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> indexToFilterRewriter =

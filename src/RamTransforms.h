@@ -422,10 +422,10 @@ protected:
 
 
 // TODO: Add actual documentation for this transformer
-class FilterTransformer : public RamTransformer {
+class IndexedInequalityTransformer : public RamTransformer {
 public:
     std::string getName() const override {
-        return "FilterTransformer";
+        return "IndexedInequalityTransformer";
     }
     
     // converts a box query into a corresponding filter operation

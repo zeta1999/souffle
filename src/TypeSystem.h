@@ -61,7 +61,7 @@ public:
         return name < other.name;
     }
 
-    virtual void print(std::ostream& out = std::cout) const {
+    virtual void print(std::ostream& out) const {
         out << name;
     }
 
@@ -377,6 +377,7 @@ public:
     bool isType(const Type& type) const;
 
     const Type& getType(const AstQualifiedName&) const;
+    Type& getType(const AstQualifiedName&);
 
     const Type& getConstantType(TypeAttribute type) const {
         switch (type) {

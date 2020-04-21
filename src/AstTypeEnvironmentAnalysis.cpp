@@ -67,13 +67,13 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
 
     // link symbols in a second step
     for (const auto& cur : program.getTypes()) {
-        const Type& type = env.getType(cur->getQualifiedName());
+        Type& type = env.getType(cur->getQualifiedName());
 
         if (dynamic_cast<const AstSubsetType*>(cur) != nullptr) {
             // nothing to do here
         } else if (auto* t = dynamic_cast<const AstUnionType*>(cur)) {
             // get type as union type
-            auto* ut = dynamic_cast<const UnionType*>(&type);
+            auto* ut = dynamic_cast<UnionType*>(&type);
             if (ut == nullptr) {
                 continue;  // support faulty input
             }
@@ -81,12 +81,12 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
             // add element types
             for (const auto& cur : t->getTypes()) {
                 if (env.isType(cur)) {
-                    const_cast<UnionType*>(ut)->add(env.getType(cur));
+                    ut->add(env.getType(cur));
                 }
             }
-        } else if (auto* t = dynamic_cast<const AstRecordType*>(cur)) {
+        } else if (auto* t = dynamic_cast<AstRecordType*>(cur)) {
             // get type as record type
-            auto* rt = dynamic_cast<const RecordType*>(&type);
+            auto* rt = dynamic_cast<RecordType*>(&type);
             if (rt == nullptr) {
                 continue;  // support faulty input
             }
@@ -94,7 +94,7 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
             // add fields
             for (const auto& f : t->getFields()) {
                 if (env.isType(f.type)) {
-                    const_cast<RecordType*>(rt)->add(f.name, env.getType(f.type));
+                    rt->add(f.name, env.getType(f.type));
                 }
             }
         } else {

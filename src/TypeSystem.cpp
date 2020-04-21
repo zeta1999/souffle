@@ -84,9 +84,10 @@ bool TypeEnvironment::isType(const Type& type) const {
 }
 
 const Type& TypeEnvironment::getType(const AstQualifiedName& ident) const {
-    auto it = types.find(ident);
-    assert(it != types.end());
-    return *(it->second);
+    return *types.at(ident);
+}
+Type& TypeEnvironment::getType(const AstQualifiedName& ident) {
+    return *types.at(ident);
 }
 
 namespace {

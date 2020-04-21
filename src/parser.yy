@@ -397,8 +397,9 @@ union_type_list
 /* Relation declaration */
 relation_decl
   : DECL non_empty_relation_list attributes_list relation_tags {
-        auto tags = $relation_tags;
-        auto attributes_list = $attributes_list;
+        auto tags             = $relation_tags;
+        auto attributes_list  = $attributes_list;
+
         $$ = $non_empty_relation_list;
         for (auto&& rel : $$) {
             for (auto tag : tags) {
@@ -486,7 +487,7 @@ rule_def
                 auto cur = clone(body);
                 cur->setHead(clone(head));
                 cur->setSrcLoc(@$);
-                $$.push_back(move(cur));
+                $$.push_back(std::move(cur));
             }
         }
     }
@@ -671,7 +672,7 @@ arg
 
         auto expr = $arg_list.empty() ? nullptr : std::move($arg_list[0]);
         auto body = (bodies.size() == 1) ? clone(bodies[0]->getBodyLiterals()) : VecOwn<AstLiteral> {};
-        $$ = mk<AstAggregator>($aggregate_func, move(expr), move(body), @$);
+        $$ = mk<AstAggregator>($aggregate_func, std::move(expr), std::move(body), @$);
     }
   ;
 
@@ -743,8 +744,8 @@ type_param_list
 /* Component body */
 component_body
   : %empty                        { $$ = mk<AstComponent>(); }
-  | component_body io_head        { $$ = $1; for (auto&& x : $2) $$->addIO    (move(x)); }
-  | component_body rule           { $$ = $1; for (auto&& x : $2) $$->addClause(move(x)); }
+  | component_body io_head        { $$ = $1; for (auto&& x : $2) $$->addIO    (std::move(x)); }
+  | component_body rule           { $$ = $1; for (auto&& x : $2) $$->addClause(std::move(x)); }
   | component_body fact           { $$ = $1; $$->addClause       ($2); }
   | component_body OVERRIDE IDENT { $$ = $1; $$->addOverride     ($3); }
   | component_body comp_init      { $$ = $1; $$->addInstantiation($2); }
@@ -754,15 +755,13 @@ component_body
         $$ = $1;
         for (auto&& rel : $relation_decl) {
             driver.addIoFromDeprecatedTag(*rel);
-            $$->addRelation(move(rel));
+            $$->addRelation(std::move(rel));
         }
     }
   ;
 
 /* Component initialisation */
-comp_init
-  : INSTANTIATE IDENT EQUALS comp_type { $$ = mk<AstComponentInit>($IDENT, $comp_type, @$); }
-  ;
+comp_init : INSTANTIATE IDENT EQUALS comp_type { $$ = mk<AstComponentInit>($IDENT, $comp_type, @$); };
 
 /**
  * User-Defined Functors
@@ -805,15 +804,16 @@ predefined_type
 /* Pragma directives */
 pragma
   : PRAGMA STRING[key   ] STRING[value] { $$ = mk<AstPragma>($key   , $value, @$); }
-  | PRAGMA STRING[option]               { $$ = mk<AstPragma>($option, ""          , @$); }
+  | PRAGMA STRING[option]               { $$ = mk<AstPragma>($option, ""    , @$); }
   ;
 
 /* io directives */
 io_head
   : io_head_decl io_directive_list {
+        auto io_head_decl = $io_head_decl;
         for (auto&& io : $io_directive_list) {
-            io->setType($io_head_decl);
-            $$.push_back(move(io));
+            io->setType(io_head_decl);
+            $$.push_back(std::move(io));
         }
     }
   ;
@@ -830,8 +830,8 @@ io_directive_list
   | io_relation_list LPAREN RPAREN  { $$ = $io_relation_list; }
   | io_relation_list LPAREN non_empty_key_value_pairs RPAREN {
         $$ = $io_relation_list;
-        for (auto&& io : $$) {
-            for (const auto& kvp : $non_empty_key_value_pairs) {
+        for (auto&& kvp : $non_empty_key_value_pairs) {
+            for (auto&& io : $$) {
                 io->addDirective(kvp.first, kvp.second);
             }
         }
@@ -848,7 +848,7 @@ io_relation_list
 /* Key-value pairs */
 non_empty_key_value_pairs
   :                                 IDENT EQUALS kvp_value {          $$.push_back({ $1, $3 }); }
-  | non_empty_key_value_pairs COMMA IDENT EQUALS kvp_value { $$ = $1; $1.push_back({ $3, $5 }); }
+  | non_empty_key_value_pairs COMMA IDENT EQUALS kvp_value { $$ = $1; $$.push_back({ $3, $5 }); }
   ;
 kvp_value
   : STRING  { $$ = $STRING; }

@@ -171,7 +171,7 @@ void ParserDriver::addIoFromDeprecatedTag(AstRelation& rel) {
 std::set<RelationTag> ParserDriver::addDeprecatedTag(
         RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
     std::ostringstream os;
-    os << "Deprecated " << tag << " qualifier used";
+    os << "Deprecated " << tag << " qualifier was used";
     warning(tagLoc, os.str());
     return addTag(tag, std::move(tagLoc), std::move(tags));
 }

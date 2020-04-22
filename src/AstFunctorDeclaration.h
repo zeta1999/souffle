@@ -75,15 +75,14 @@ protected:
                     return "float";
                 case TypeAttribute::Unsigned:
                     return "unsigned";
-                default:
-                    abort();
+                case TypeAttribute::Record:
+                    fatal("unhandled `TypeAttribute`");
             }
+
+            UNREACHABLE_BAD_CASE_ANALYSIS
         };
 
-        std::vector<std::string> args(argsTypes.size());
-        std::transform(argsTypes.begin(), argsTypes.end(), args.begin(), convert);
-
-        out << ".declfun " << name << "(" << join(args) << "):" << convert(returnType) << "\n";
+        format(out, ".declfun %s(%s): %s\n", name, join(map(argsTypes, convert), ","), convert(returnType));
     }
 
     bool equal(const AstNode& node) const override {

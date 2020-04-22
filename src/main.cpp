@@ -311,7 +311,7 @@ int main(int argc, char** argv) {
         }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /**
@@ -419,6 +419,7 @@ int main(int argc, char** argv) {
                     std::make_unique<PipelineTransformer>(std::make_unique<ResolveAnonymousRecordsAliases>(),
                             std::make_unique<FoldAnonymousRecords>())),
             std::make_unique<PolymorphicObjectsTransformer>(), std::make_unique<AstSemanticChecker>(),
+            std::make_unique<MaterializeSingletonAggregationTransformer>(),
             std::make_unique<RemoveTypecastsTransformer>(),
             std::make_unique<RemoveBooleanConstraintsTransformer>(),
             std::make_unique<ResolveAliasesTransformer>(), std::make_unique<MinimiseProgramTransformer>(),
@@ -656,7 +657,7 @@ int main(int argc, char** argv) {
         }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        std::exit(1);
+        std::exit(EXIT_FAILURE);
     }
 
     /* Report overall run-time in verbose mode */

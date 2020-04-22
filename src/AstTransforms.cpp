@@ -317,8 +317,6 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
     return pairs.size() > 0;
 }
 
-// An aggregate is single-valued if
-// any variable occurring inside the aggregate body never occurs in the outer scope.
 bool MaterializeSingletonAggregationTransformer::isSingleValued(
         const AstAggregator& agg, const AstClause& clause) {
     std::map<std::string, int> occurrences;

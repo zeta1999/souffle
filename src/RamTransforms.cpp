@@ -657,15 +657,24 @@ bool MakeIndexTransformer::makeIndex(RamProgram& program) {
             node->apply(makeLambdaRamMapper(scanRewriter));
             return node;
         };
-	// std::cout << "---BEFORE SCAN---" << query << "---BEFORE SCAN---\n\n";
         const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(scanRewriter));
-	// std::cout << "++++AFTER SCAN+++" << query << "+++AFTER SCAN+++\n\n";
     });
     return changed;
 }
 
 bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
     bool changed = false;
+
+    // helper for collecting conditions from filter operations
+    auto addCondition = [](std::unique_ptr<RamCondition> condition,
+                                RamCondition* c) -> std::unique_ptr<RamCondition> {
+        if (condition == nullptr) {
+            return std::unique_ptr<RamCondition>(c);
+        } else {
+            return std::make_unique<RamConjunction>(std::move(condition), std::unique_ptr<RamCondition>(c));
+        }
+    };
+
     visitDepthFirst(program, [&](const RamQuery& query) {
         std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> indexToFilterRewriter =
 	        [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
@@ -674,9 +683,20 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
 	       auto pattern = indexOperation->getRangePattern();
 	       size_t length = pattern.first.size();
 	       
+	       std::unique_ptr<RamCondition> condition; 
 	       auto transformedNode = std::unique_ptr<RamIndexOperation>(indexOperation->clone());
                bool foundRealIndexableOperation = false;
 
+	       RamPattern updatedPattern;
+               for (RamExpression* p : transformedNode->getRangePattern().first)
+	       {
+	           updatedPattern.first.emplace_back(p->clone());
+	       }
+	       for (RamExpression* p : transformedNode->getRangePattern().second)
+	       {
+		    updatedPattern.second.emplace_back(p->clone());
+	       }
+	
 	       for (size_t i=0; i<length; ++i) {
 	           // if both bounds are undefined we don't have a box query
 	           if (isRamUndefValue(pattern.first[i]) && isRamUndefValue(pattern.second[i])) {
@@ -689,99 +709,68 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
 		   }
 
 		   changed = true;
-		   // now we know it must be a box query (one of the bounds is defined and they are not equal)
-                   // 1. Construct a new filter operation based off of these bounds
-		   std::unique_ptr<RamConstraint> lowerBound;
+		   // move constraints out of the indexed inequality and into a conjuction
+          	   std::unique_ptr<RamConstraint> lowerBound;
+		   std::unique_ptr<RamConstraint> upperBound;
 
                    if (!isRamUndefValue(pattern.first[i])) {
 		      lowerBound = std::make_unique<RamConstraint>(
                                             BinaryConstraintOp::GE
                                           , std::make_unique<RamTupleElement>(transformedNode->getTupleId(), i)
                                           , std::unique_ptr<RamExpression>(pattern.first[i]->clone()));
+		      condition = addCondition(std::move(condition), lowerBound->clone());
 		   }
-
-		   std::unique_ptr<RamConstraint> upperBound;
 
                    if (!isRamUndefValue(pattern.second[i])) {
                        upperBound = std::make_unique<RamConstraint>(
                                              BinaryConstraintOp::LE
                                            , std::make_unique<RamTupleElement>(transformedNode->getTupleId(), i)
-                                           , std::unique_ptr<RamExpression>(pattern.second[i]->clone()));		   
-		   }
-                    
-                   auto nestedOp = std::unique_ptr<RamOperation>(transformedNode->getOperation().clone());
-
-                   // if Tuple[level, element] >= lower_bound AND Tuple[level, element] <= upper_bound
-		   std::unique_ptr<RamFilter> filter;
-              
-                   if (lowerBound && upperBound) {
-		       filter = std::make_unique<RamFilter>(
-				           std::make_unique<RamConjunction>(
-							   std::move(lowerBound)
-							 , std::move(upperBound))
-				                 , std::move(nestedOp));
-		   // if Tuple[level, element] >= lower_bound
-		   } else if (lowerBound && !upperBound) {
-		       filter = std::make_unique<RamFilter>(
-				       std::move(lowerBound)
-				     , std::move(nestedOp));
-		   // if Tuple[level, element] <= upper_bound
-		   } else if (!lowerBound && upperBound) {
-		       filter = std::make_unique<RamFilter>(
-				       std::move(upperBound)
-				     , std::move(nestedOp));
+                                           , std::unique_ptr<RamExpression>(pattern.second[i]->clone()));
+                       condition = addCondition(std::move(condition), upperBound->clone());		       
 		   }
 
-
-		   // 2. Create the updated pattern for the new RamIndexOperation
-		   RamPattern updatedPattern;
-                   for (RamExpression* p : transformedNode->getRangePattern().first)
-		   {
-		      updatedPattern.first.emplace_back(p->clone());
-		   }
-		   for (RamExpression* p : transformedNode->getRangePattern().second)
-		   {
-		      updatedPattern.second.emplace_back(p->clone());
-		   }
-		   // Set the current index pattern to RamUndefValue
+		   // reset the bounds
 		   updatedPattern.first[i] = std::make_unique<RamUndefValue>();
-		   updatedPattern.second[i] = std::make_unique<RamUndefValue>();
-	
-		   // 3. Construct the updated RamIndexOperation
-	           // need to rewrite the node with the same index operation
-                   if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(transformedNode.get())) {
-                       transformedNode = std::make_unique<RamIndexScan>(
-                                       std::make_unique<RamRelationReference>(&iscan->getRelation())
-                                     , iscan->getTupleId()
-				     , std::move(updatedPattern)
-                                     , std::move(filter)
-                                     , iscan->getProfileText());
-                   } else if (const RamParallelIndexScan* pscan = dynamic_cast<RamParallelIndexScan*>(transformedNode.get())) {
-                       transformedNode = std::make_unique<RamParallelIndexScan>(
-                                       std::make_unique<RamRelationReference>(&pscan->getRelation())
-                                     , pscan->getTupleId()
-				     , std::move(updatedPattern)
-                                     , std::move(filter)
-                                     , pscan->getProfileText());
-                   } else if (const RamIndexChoice* ichoice = dynamic_cast<RamIndexChoice*>(transformedNode.get())) {
-                       transformedNode = std::make_unique<RamIndexChoice>(
-                                       std::make_unique<RamRelationReference>(&ichoice->getRelation())
-                                     , ichoice->getTupleId()
-                                     , std::unique_ptr<RamCondition>(ichoice->getCondition().clone())
-				     , std::move(updatedPattern)
-                                     , std::move(filter)
-                                     , ichoice->getProfileText());
-                   } else if (const RamIndexAggregate* iagg = dynamic_cast<RamIndexAggregate*>(transformedNode.get())) {
-                       transformedNode = std::make_unique<RamIndexAggregate>(
-                                       std::move(filter)
-                                     , iagg->getFunction()
-                                     , std::make_unique<RamRelationReference>(&iagg->getRelation())
-                                     , std::unique_ptr<RamExpression>(iagg->getExpression().clone())
-                                     , std::unique_ptr<RamCondition>(iagg->getCondition().clone())
-				     , std::move(updatedPattern)
-                                     , iagg->getTupleId());
-                   }
+		   updatedPattern.second[i] = std::make_unique<RamUndefValue>(); 
+	       } 
+               
+               if (condition) {
+	          auto nestedOp = std::unique_ptr<RamOperation>(transformedNode->getOperation().clone());
+   	          auto filter = std::make_unique<RamFilter>(std::move(condition), std::move(nestedOp)); 
 
+	          // need to rewrite the node with the same index operation
+                  if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(transformedNode.get())) {
+                      transformedNode = std::make_unique<RamIndexScan>(
+                                   std::make_unique<RamRelationReference>(&iscan->getRelation())
+                                 , iscan->getTupleId()
+			         , std::move(updatedPattern)
+                                 , std::move(filter)
+                                 , iscan->getProfileText());
+                  } else if (const RamParallelIndexScan* pscan = dynamic_cast<RamParallelIndexScan*>(transformedNode.get())) {
+                      transformedNode = std::make_unique<RamParallelIndexScan>(
+                                   std::make_unique<RamRelationReference>(&pscan->getRelation())
+                                 , pscan->getTupleId()
+			         , std::move(updatedPattern)
+                                 , std::move(filter)
+                                 , pscan->getProfileText());
+                  } else if (const RamIndexChoice* ichoice = dynamic_cast<RamIndexChoice*>(transformedNode.get())) {
+                      transformedNode = std::make_unique<RamIndexChoice>(
+                                   std::make_unique<RamRelationReference>(&ichoice->getRelation())
+                                 , ichoice->getTupleId()
+                                 , std::unique_ptr<RamCondition>(ichoice->getCondition().clone())
+			         , std::move(updatedPattern)
+                                 , std::move(filter)
+                                 , ichoice->getProfileText());
+                  } else if (const RamIndexAggregate* iagg = dynamic_cast<RamIndexAggregate*>(transformedNode.get())) {
+                      transformedNode = std::make_unique<RamIndexAggregate>(
+                                   std::move(filter)
+                                 , iagg->getFunction()
+                                 , std::make_unique<RamRelationReference>(&iagg->getRelation())
+                                 , std::unique_ptr<RamExpression>(iagg->getExpression().clone())
+                                 , std::unique_ptr<RamCondition>(iagg->getCondition().clone())
+		                 , std::move(updatedPattern)
+                                 , iagg->getTupleId());
+	          }
 	       }
 	       
 	       if (foundRealIndexableOperation) {
@@ -822,9 +811,7 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
 	   node->apply(makeLambdaRamMapper(indexToFilterRewriter));
            return node;	   
        };
-       // std::cout << "***BEFORE FILTER***" << query << "***BEFORE FILTER***\n\n";
        const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(indexToFilterRewriter));
-       // std::cout << "***AFTER FILTER***" << query << "***AFTER FILTER***\n\n";
     });
     return changed;
 }

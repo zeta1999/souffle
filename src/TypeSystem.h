@@ -503,17 +503,6 @@ inline bool isOrderableType(const T& type) {
     return isNumericType(type) || isSymbolType(type);
 }
 
-// Utilities for casting types.
-template <typename T>
-bool isA(const Type& type) {
-    return dynamic_cast<const T*>(&type) != nullptr;
-}
-
-template <typename T>
-const T& as(const Type& type) {
-    return static_cast<const T&>(type);
-}
-
 /**
  * Is any value in the set signed
  **/

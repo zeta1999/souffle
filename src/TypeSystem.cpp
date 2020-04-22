@@ -303,7 +303,7 @@ bool isRecordType(const Type& type) {
 }
 
 bool isRecordType(const TypeSet& s) {
-    return !s.empty() && !s.isAll() && all_of(s, isA<RecordType>);
+    return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isA<RecordType>);
 }
 
 bool isSubtypeOf(const Type& a, const Type& b) {
@@ -315,13 +315,13 @@ bool isSubtypeOf(const Type& a, const Type& b) {
     }
 
     if (isA<UnionType>(a)) {
-        return all_of(
-                as<UnionType>(a).getElementTypes(), [&b](const Type* type) { return isSubtypeOf(*type, b); });
+        return all_of(static_cast<const UnionType&>(a).getElementTypes(),
+                [&b](const Type* type) { return isSubtypeOf(*type, b); });
     }
 
     if (isA<UnionType>(b)) {
-        return any_of(
-                as<UnionType>(b).getElementTypes(), [&a](const Type* type) { return isSubtypeOf(a, *type); });
+        return any_of(static_cast<const UnionType&>(b).getElementTypes(),
+                [&a](const Type* type) { return isSubtypeOf(a, *type); });
     }
 
     return false;

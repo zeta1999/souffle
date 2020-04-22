@@ -53,7 +53,7 @@ Specify directory for library files
 Specify libraries to be included for user defined functors
 .TP
 .B --legacy
-Enable legacy support
+Enable legacy mode, which supports less strict type analysis
 .TP
 .B --live-profile
 Enable live profiling

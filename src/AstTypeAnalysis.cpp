@@ -462,11 +462,11 @@ private:
         iterateOverAtom(atom, [&](const AstArgument& argument, const Type& attributeType) {
             if (isA<RecordType>(attributeType)) {
                 addConstraint(isSubtypeOf(getVar(argument), attributeType));
-            } else {
-                for (auto& constantType : typeEnv.getConstantTypes()) {
-                    if (isSubtypeOf(attributeType, constantType)) {
-                        addConstraint(isSubtypeOf(getVar(argument), constantType));
-                    }
+                return;
+            }
+            for (auto& constantType : typeEnv.getConstantTypes()) {
+                if (isSubtypeOf(attributeType, constantType)) {
+                    addConstraint(isSubtypeOf(getVar(argument), constantType));
                 }
             }
         });
@@ -558,8 +558,7 @@ private:
             }
         }
 
-        // Debug report does not run the standard transformers.
-        // Because of this, the type of the user-defined function might not be set at this stage.
+        // The type of the user-defined function might not be set at this stage.
         try {
             fun.getReturnType();
         } catch (std::bad_optional_access& e) {
@@ -653,7 +652,7 @@ void TypeAnalysis::print(std::ostream& os) const {
 void TypeAnalysis::run(const AstTranslationUnit& translationUnit) {
     // Check if debugging information is being generated
     std::ostream* debugStream = nullptr;
-    if (Global::config().has("debug-report") || Global::config().get("show") == "type-analysis") {
+    if (Global::config().has("debug-report") || Global::config().has("show", "type-analysis")) {
         debugStream = &analysisLogs;
     }
     const auto& program = *translationUnit.getProgram();

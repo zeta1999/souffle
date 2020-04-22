@@ -311,7 +311,7 @@ int main(int argc, char** argv) {
         }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        exit(1);
+        exit(EXIT_FAILURE);
     }
 
     /**
@@ -656,7 +656,7 @@ int main(int argc, char** argv) {
         }
     } catch (std::exception& e) {
         std::cerr << e.what() << std::endl;
-        std::exit(1);
+        std::exit(EXIT_FAILURE);
     }
 
     /* Report overall run-time in verbose mode */

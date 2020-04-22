@@ -112,8 +112,7 @@ struct TypeVisitor {
         FORWARD(Union);
         FORWARD(Record);
 
-        assert(false && "Unsupported type encountered!");
-        return R();
+        fatal("Unsupported type encountered!");
     }
 #undef FORWARD
 

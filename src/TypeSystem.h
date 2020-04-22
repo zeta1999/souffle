@@ -368,8 +368,7 @@ public:
                 break;
         }
 
-        assert(false && "Invalid type attribute");
-        return createType<SubsetType>(name, getType(""));
+        fatal("Invalid type attribute");
     }
 
     bool isType(const AstQualifiedName&) const;
@@ -393,8 +392,7 @@ public:
                 break;
         }
 
-        assert(false && "There is no constant record type");
-        return getType("");
+        fatal("There is no constant record type");
     }
 
     bool isPrimitiveType(const AstQualifiedName& identifier) const {
@@ -467,8 +465,7 @@ bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
         case TypeAttribute::Record:
             return isRecordType(type);
     }
-    assert(false && "unhandled `TypeAttribute`");
-    exit(EXIT_FAILURE);
+    fatal("unhandled `TypeAttribute`");
 }
 
 /**
@@ -488,8 +485,7 @@ TypeAttribute getTypeAttribute(const T& type) {
     } else if (isSymbolType(type)) {
         primitiveType = TypeAttribute::Symbol;
     } else {
-        std::cerr << "Unknown type class" << std::endl;
-        std::exit(EXIT_FAILURE);
+        fatal("Unknown type class");
     }
     return primitiveType;
 }

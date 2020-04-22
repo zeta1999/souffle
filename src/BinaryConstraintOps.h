@@ -252,10 +252,6 @@ inline char const* toBinaryConstraintSymbol(const BinaryConstraintOp op) {
     UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
-inline std::ostream& operator<<(std::ostream& os, BinaryConstraintOp e) {
-    return os << toBinaryConstraintSymbol(e);
-}
-
 /**
  * Converts symbolic representation of an operator to the operator.
  * Note that this won't tell you which polymorphic overload is actually used.

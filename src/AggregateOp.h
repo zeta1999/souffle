@@ -63,8 +63,7 @@ inline std::ostream& operator<<(std::ostream& os, AggregateOp op) {
             return os << "sum";
     }
 
-    assert(false && "invalid argument");
-    exit(EXIT_FAILURE);
+    UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
 // `[min, max]` # of arguments for each function
@@ -86,7 +85,7 @@ inline std::pair<uint8_t, uint8_t> aggregateArity(AggregateOp op) {
             return {1, 1};
     }
 
-    abort();
+    UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
 /**

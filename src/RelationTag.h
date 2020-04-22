@@ -145,7 +145,7 @@ inline std::ostream& operator<<(std::ostream& os, RelationTag qualifier) {
             return os << "eqrel";
     }
 
-    abort();
+    UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
 inline std::ostream& operator<<(std::ostream& os, RelationQualifier qualifier) {

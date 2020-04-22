@@ -36,9 +36,8 @@ namespace souffle {
  */
 class AstType : public AstNode {
 public:
-    AstType(AstQualifiedName name = {}, SrcLocation loc = {}) : name(std::move(name)) {
-        setSrcLoc(std::move(loc));
-    }
+    AstType(AstQualifiedName name = {}, SrcLocation loc = {})
+            : AstNode(std::move(loc)), name(std::move(name)) {}
 
     /** get type name */
     const AstQualifiedName& getQualifiedName() const {
@@ -46,8 +45,8 @@ public:
     }
 
     /** set type name */
-    void setQualifiedName(const AstQualifiedName& name) {
-        this->name = name;
+    void setQualifiedName(AstQualifiedName name) {
+        this->name = std::move(name);
     }
 
     AstType* clone() const override = 0;
@@ -64,9 +63,7 @@ private:
 class AstSubsetType : public AstType {
 public:
     AstSubsetType(AstQualifiedName name, TypeAttribute type, SrcLocation loc = {})
-            : AstType(std::move(name)), type(type) {
-        setSrcLoc(std::move(loc));
-    }
+            : AstType(std::move(name), std::move(loc)), type(type) {}
 
     AstSubsetType* clone() const override {
         return new AstSubsetType(getQualifiedName(), type, getSrcLoc());

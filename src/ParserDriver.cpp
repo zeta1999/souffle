@@ -170,9 +170,7 @@ void ParserDriver::addIoFromDeprecatedTag(AstRelation& rel) {
 
 std::set<RelationTag> ParserDriver::addDeprecatedTag(
         RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
-    std::ostringstream os;
-    os << "Deprecated " << tag << " qualifier was used";
-    warning(tagLoc, os.str());
+    warning(tagLoc, format("Deprecated %s qualifier was used", tag));
     return addTag(tag, std::move(tagLoc), std::move(tags));
 }
 
@@ -189,9 +187,7 @@ std::set<RelationTag> ParserDriver::addTag(RelationTag tag, SrcLocation tagLoc, 
 std::set<RelationTag> ParserDriver::addTag(RelationTag tag, std::vector<RelationTag> incompatible,
         SrcLocation tagLoc, std::set<RelationTag> tags) {
     if (any_of(incompatible, [&](auto&& x) { return contains(tags, x); })) {
-        std::ostringstream os;
-        os << join(incompatible, "/") << " qualifier already set";
-        error(tagLoc, os.str());
+        error(tagLoc, format("%s qualifier already set", join(incompatible, "/")));
     }
 
     tags.insert(tag);

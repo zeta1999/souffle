@@ -36,7 +36,8 @@ inline std::ostream& operator<<(std::ostream& os, AstIoType e) {
         case AstIoType::printsize:
             return os << "printsize";
     }
-    abort();
+
+    UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
 /**

@@ -681,12 +681,10 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
 	   // find a RamIndexOperation
 	   if (const RamIndexOperation* indexOperation = dynamic_cast<RamIndexOperation*>(node.get())) {
 	       auto pattern = indexOperation->getRangePattern();
-	       size_t length = pattern.first.size();
-	       
+	       size_t length = pattern.first.size();	       
 	       std::unique_ptr<RamCondition> condition; 
-               bool foundRealIndexableOperation = false;
-
 	       RamPattern updatedPattern;
+
                for (RamExpression* p : indexOperation->getRangePattern().first)
 	       {
 	           updatedPattern.first.emplace_back(p->clone());
@@ -703,8 +701,7 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
 		   }
 		   // if lower and upper bounds are equal its also not a box query
 		   if (*(pattern.first[i]) == *(pattern.second[i])) {
-		       foundRealIndexableOperation = true;
-		       continue;
+           	       continue;
 		   }
 
 		   // move constraints out of the indexed inequality and into a conjuction
@@ -770,45 +767,71 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
 		                 , std::move(updatedPattern)
                                  , iagg->getTupleId());
 	          }
-	       }
-	       
-	       if (!foundRealIndexableOperation) {
-		   // need to rewrite the node with a semantically equivalent operation to get rid of the index operation
-		   // i.e. RamIndexScan with no indexable attributes -> RamScan
-		   if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {    
-	               node = std::make_unique<RamScan>(
+	       }   
+	   }
+	   node->apply(makeLambdaRamMapper(indexToFilterRewriter));
+           return node;	   
+       };
+       const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(indexToFilterRewriter));
+    });
+
+    visitDepthFirst(program, [&](const RamQuery& query){
+        std::function<std::unique_ptr<RamNode>(std::unique_ptr<RamNode>)> removeEmptyIndexRewriter =
+                [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
+		// find an IndexOperation
+		if (const RamIndexOperation* indexOperation = dynamic_cast<RamIndexOperation*>(node.get())) {
+                    auto pattern = indexOperation->getRangePattern();
+                    size_t length = pattern.first.size();
+                    bool foundRealIndexableOperation = false;
+             
+	     	    for (size_t i=0; i<length; ++i) {
+                        // if both bounds are undefined we don't have a box query
+                        if (isRamUndefValue(pattern.first[i]) && isRamUndefValue(pattern.second[i])) {
+                           continue;
+                        }
+                        // if lower and upper bounds are equal its also not a box query
+                        if (*(pattern.first[i]) == *(pattern.second[i])) {
+                           foundRealIndexableOperation = true;
+                           break;
+                        }
+		    }
+	            if (!foundRealIndexableOperation) {
+		        // need to rewrite the node with a semantically equivalent operation to get rid of the index operation
+		        // i.e. RamIndexScan with no indexable attributes -> RamScan
+		        if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {    
+	                    node = std::make_unique<RamScan>(
 				       std::make_unique<RamRelationReference>(&iscan->getRelation())
 				     , iscan->getTupleId()
 				     , std::unique_ptr<RamOperation>(iscan->getOperation().clone())
 				     , iscan->getProfileText());
-		   } else if (const RamParallelIndexScan* pscan = dynamic_cast<RamParallelIndexScan*>(node.get())) {
-		       node = std::make_unique<RamParallelScan>(
+		        } else if (const RamParallelIndexScan* pscan = dynamic_cast<RamParallelIndexScan*>(node.get())) {
+		            node = std::make_unique<RamParallelScan>(
                                        std::make_unique<RamRelationReference>(&pscan->getRelation())
                                      , pscan->getTupleId()
                                      , std::unique_ptr<RamOperation>(pscan->getOperation().clone())
 				     , pscan->getProfileText());
-		   } else if (const RamIndexChoice* ichoice = dynamic_cast<RamIndexChoice*>(node.get())) {
-		       node = std::make_unique<RamChoice>(
+		        } else if (const RamIndexChoice* ichoice = dynamic_cast<RamIndexChoice*>(node.get())) {
+		            node = std::make_unique<RamChoice>(
                                        std::make_unique<RamRelationReference>(&ichoice->getRelation())
                                      , ichoice->getTupleId()
 				     , std::unique_ptr<RamCondition>(ichoice->getCondition().clone())
                                      , std::unique_ptr<RamOperation>(ichoice->getOperation().clone())
 				     , ichoice->getProfileText());
-		   } else if (const RamIndexAggregate* iagg = dynamic_cast<RamIndexAggregate*>(node.get())) {
-		       node = std::make_unique<RamAggregate>(
+		        } else if (const RamIndexAggregate* iagg = dynamic_cast<RamIndexAggregate*>(node.get())) {
+		            node = std::make_unique<RamAggregate>(
 				       std::unique_ptr<RamOperation>(iagg->getOperation().clone())
 				     , iagg->getFunction()
 				     , std::make_unique<RamRelationReference>(&iagg->getRelation())
 				     , std::unique_ptr<RamExpression>(iagg->getExpression().clone())
 				     , std::unique_ptr<RamCondition>(iagg->getCondition().clone())
 				     , iagg->getTupleId());
-		   } 
-	       }
-	   }
-	   node->apply(makeLambdaRamMapper(indexToFilterRewriter));
-           return node;	   
+		        } 
+	            }
+	        }
+		node->apply(makeLambdaRamMapper(removeEmptyIndexRewriter));
+                return node;
        };
-       const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(indexToFilterRewriter));
+       const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(removeEmptyIndexRewriter));
     });
     return changed;
 }

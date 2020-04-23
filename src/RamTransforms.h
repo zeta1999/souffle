@@ -19,9 +19,9 @@
 #include "RamComplexityAnalysis.h"
 #include "RamIndexAnalysis.h"
 #include "RamLevelAnalysis.h"
+#include "RamOperation.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
-#include "RamOperation.h"
 
 #include <memory>
 #include <string>
@@ -378,8 +378,8 @@ public:
      * @param Tuple identifier of the indexable operation
      * @result Remaining conditions that could not be transformed to an index
      */
-    std::unique_ptr<RamCondition> constructPattern(RamPattern& queryPattern,
-            bool& indexable, std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
+    std::unique_ptr<RamCondition> constructPattern(RamPattern& queryPattern, bool& indexable,
+            std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
 
     /**
      * @brief Rewrite a scan operation to an indexed scan operation
@@ -420,14 +420,13 @@ protected:
     }
 };
 
-
 // TODO: Add actual documentation for this transformer
 class IndexedInequalityTransformer : public RamTransformer {
 public:
     std::string getName() const override {
         return "IndexedInequalityTransformer";
     }
-    
+
     // converts a box query into a corresponding filter operation
     bool transformIndexToFilter(RamProgram& program);
 

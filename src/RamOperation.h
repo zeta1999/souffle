@@ -34,8 +34,9 @@
 namespace souffle {
 
 /** Pattern type for lower/upper bound */
-using RamPattern = std::pair< std::vector<std::unique_ptr<RamExpression>>, std::vector<std::unique_ptr<RamExpression>>>;
- 
+using RamPattern =
+        std::pair<std::vector<std::unique_ptr<RamExpression>>, std::vector<std::unique_ptr<RamExpression>>>;
+
 /**
  * @class RamOperation
  * @brief Abstract class for a relational algebra operation
@@ -272,13 +273,12 @@ protected:
  */
 class RamIndexOperation : public RamRelationOperation {
 public:
-    RamIndexOperation(std::unique_ptr<RamRelationReference> r, int ident,
-            RamPattern queryPattern, std::unique_ptr<RamOperation> nested,
-            std::string profileText = "")
+    RamIndexOperation(std::unique_ptr<RamRelationReference> r, int ident, RamPattern queryPattern,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamRelationOperation(std::move(r), ident, std::move(nested), std::move(profileText)),
               queryPattern(std::move(queryPattern)) {
         assert(getRangePattern().first.size() == getRelation().getArity() &&
-               getRangePattern().second.size() == getRelation().getArity());
+                getRangePattern().second.size() == getRelation().getArity());
         for (const auto& pattern : queryPattern.first) {
             assert(pattern != nullptr && "pattern is a null-pointer");
         }
@@ -286,8 +286,7 @@ public:
             assert(pattern != nullptr && "pattern is a null-pointer");
         }
     }
- 
- 
+
     /**
      * @brief Get range pattern
      * @return A pair of std::vector of pointers to RamExpression objects
@@ -307,14 +306,14 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
-	for (auto& pattern : queryPattern.first) {
-	    pattern = map(std::move(pattern));
-	}
+        for (auto& pattern : queryPattern.first) {
+            pattern = map(std::move(pattern));
+        }
         for (auto& pattern : queryPattern.second) {
             pattern = map(std::move(pattern));
         }
     }
-    
+
     RamIndexOperation* clone() const override {
         RamPattern resQueryPattern;
 
@@ -324,9 +323,9 @@ public:
         for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
             resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
         }
-        return new RamIndexOperation(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
-                std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
-                getProfileText());
+        return new RamIndexOperation(std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                getTupleId(), std::move(resQueryPattern),
+                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
     }
 
     /** @brief Helper method for printing */
@@ -335,53 +334,50 @@ public:
         bool first = true;
         for (unsigned int i = 0; i < getRelation().getArity(); ++i) {
             // TODO: print proper upper lower/bound
-                
-		// early exit if no upper/lower bounds are defined
-		if (isRamUndefValue(queryPattern.first[i].get())
-	         && isRamUndefValue(queryPattern.second[i].get())) {
-	            continue;
-		}
 
-		if (first) {
-                    os << " ON INDEX ";
-                    first = false;
-                } else {
-                    os << " AND ";
+            // early exit if no upper/lower bounds are defined
+            if (isRamUndefValue(queryPattern.first[i].get()) &&
+                    isRamUndefValue(queryPattern.second[i].get())) {
+                continue;
+            }
+
+            if (first) {
+                os << " ON INDEX ";
+                first = false;
+            } else {
+                os << " AND ";
+            }
+
+            // both bounds defined and equal => equality
+            if (!isRamUndefValue(queryPattern.first[i].get()) &&
+                    !isRamUndefValue(queryPattern.second[i].get())) {
+                // print equality when lower bound = upper bound
+                if (*(queryPattern.first[i]) == *(queryPattern.second[i])) {
+                    os << "t" << getTupleId() << ".";
+                    os << i << " = ";
+                    os << *(queryPattern.first[i]);
+                    continue;
                 }
-                
-                // both bounds defined and equal => equality
-                if (!isRamUndefValue(queryPattern.first[i].get()) 
-	         && !isRamUndefValue(queryPattern.second[i].get())) {    
-            
-		    // print equality when lower bound = upper bound
-                    if (*(queryPattern.first[i]) == *(queryPattern.second[i])) {
-                        os << "t" << getTupleId() << ".";
-		        os << i << " = ";
-                        os << *(queryPattern.first[i]);
-			continue;
-		    }
-		}
-		// at least one bound defined => inequality
-		if (!isRamUndefValue(queryPattern.first[i].get())
-		 || !isRamUndefValue(queryPattern.second[i].get())) {
- 		         
-		         if (!isRamUndefValue(queryPattern.first[i].get())) {
-		            os << *(queryPattern.first[i]) << " <= ";
-		         }
-                    
-		         os << "t" << getTupleId() << ".";
-		         os << i;
-		   
-		         if (!isRamUndefValue(queryPattern.second[i].get())) {
-			     os << " <= " <<  *(queryPattern.second[i]);
-		         }
+            }
+            // at least one bound defined => inequality
+            if (!isRamUndefValue(queryPattern.first[i].get()) ||
+                    !isRamUndefValue(queryPattern.second[i].get())) {
+                if (!isRamUndefValue(queryPattern.first[i].get())) {
+                    os << *(queryPattern.first[i]) << " <= ";
+                }
 
-			 continue;
-		}
-            
+                os << "t" << getTupleId() << ".";
+                os << i;
+
+                if (!isRamUndefValue(queryPattern.second[i].get())) {
+                    os << " <= " << *(queryPattern.second[i]);
+                }
+
+                continue;
+            }
         }
     }
- 
+
 protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexOperation&>(node);
@@ -389,7 +385,7 @@ protected:
                equal_targets(queryPattern.first, other.queryPattern.first) &&
                equal_targets(queryPattern.second, other.queryPattern.second);
     }
- 
+
     /** Values of index per column of table (if indexable) */
     RamPattern queryPattern;
 };
@@ -408,18 +404,18 @@ protected:
  */
 class RamIndexScan : public RamIndexOperation {
 public:
-    RamIndexScan(std::unique_ptr<RamRelationReference> r, int ident,
-            RamPattern queryPattern, std::unique_ptr<RamOperation> nested,
-            std::string profileText = "")
-            : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested), std::move(profileText)) {}
+    RamIndexScan(std::unique_ptr<RamRelationReference> r, int ident, RamPattern queryPattern,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested),
+                      std::move(profileText)) {}
 
     RamIndexScan* clone() const override {
         RamPattern resQueryPattern;
-	 
+
         for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
             resQueryPattern.first.emplace_back(queryPattern.first[i]->clone());
         }
-	for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
+        for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
             resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
         }
         return new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
@@ -453,9 +449,8 @@ protected:
  */
 class RamParallelIndexScan : public RamIndexScan, public RamAbstractParallel {
 public:
-    RamParallelIndexScan(std::unique_ptr<RamRelationReference> rel, int ident,
-            RamPattern queryPattern, std::unique_ptr<RamOperation> nested,
-            std::string profileText = "")
+    RamParallelIndexScan(std::unique_ptr<RamRelationReference> rel, int ident, RamPattern queryPattern,
+            std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamIndexScan(std::move(rel), ident, std::move(queryPattern), std::move(nested), profileText) {}
 
     void print(std::ostream& os, int tabpos) const override {
@@ -468,7 +463,7 @@ public:
         RamIndexOperation::print(os, tabpos + 1);
     }
 
-    RamParallelIndexScan* clone() const override {    
+    RamParallelIndexScan* clone() const override {
         RamPattern resQueryPattern;
 
         for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
@@ -638,11 +633,10 @@ protected:
 class RamIndexChoice : public RamIndexOperation, public RamAbstractChoice {
 public:
     RamIndexChoice(std::unique_ptr<RamRelationReference> r, int ident, std::unique_ptr<RamCondition> cond,
-            RamPattern queryPattern, std::unique_ptr<RamOperation> nested,
-            std::string profileText = "")
-            : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested), std::move(profileText)),
+            RamPattern queryPattern, std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            : RamIndexOperation(std::move(r), ident, std::move(queryPattern), std::move(nested),
+                      std::move(profileText)),
               RamAbstractChoice(std::move(cond)) {
-        
         assert(getRangePattern().first.size() == getRelation().getArity());
         assert(getRangePattern().second.size() == getRelation().getArity());
     }
@@ -657,15 +651,14 @@ public:
         RamIndexOperation::print(os, tabpos + 1);
     }
 
-
     void apply(const RamNodeMapper& map) override {
         RamRelationOperation::apply(map);
         for (auto& pattern : queryPattern.first) {
             pattern = map(std::move(pattern));
         }
-	      for (auto& pattern : queryPattern.second) {
-	          pattern = map(std::move(pattern));
-	      }
+        for (auto& pattern : queryPattern.second) {
+            pattern = map(std::move(pattern));
+        }
         RamAbstractChoice::apply(map);
     }
 
@@ -680,8 +673,8 @@ public:
 
         for (size_t i = 0; i < queryPattern.first.size(); ++i) {
             resQueryPattern.first.emplace_back(queryPattern.first[i]->clone());
-	}
-	for (size_t i = 0; i < queryPattern.second.size(); ++i) {
+        }
+        for (size_t i = 0; i < queryPattern.second.size(); ++i) {
             resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
         }
         auto* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
@@ -703,8 +696,10 @@ protected:
 
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexChoice&>(node);
-        return RamRelationOperation::equal(other) && equal_targets(queryPattern.first, other.queryPattern.first) &&
-               equal_targets(queryPattern.second, other.queryPattern.second) && getCondition() == other.getCondition();
+        return RamRelationOperation::equal(other) &&
+               equal_targets(queryPattern.first, other.queryPattern.first) &&
+               equal_targets(queryPattern.second, other.queryPattern.second) &&
+               getCondition() == other.getCondition();
     }
 };
 
@@ -724,8 +719,8 @@ protected:
 class RamParallelIndexChoice : public RamIndexChoice, public RamAbstractParallel {
 public:
     RamParallelIndexChoice(std::unique_ptr<RamRelationReference> r, int ident,
-            std::unique_ptr<RamCondition> cond, RamPattern queryPattern,
-            std::unique_ptr<RamOperation> nested, std::string profileText = "")
+            std::unique_ptr<RamCondition> cond, RamPattern queryPattern, std::unique_ptr<RamOperation> nested,
+            std::string profileText = "")
             : RamIndexChoice(std::move(r), ident, std::move(cond), std::move(queryPattern), std::move(nested),
                       profileText) {}
 
@@ -908,8 +903,7 @@ class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate 
 public:
     RamIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
-            std::unique_ptr<RamCondition> condition, RamPattern queryPattern,
-            int ident)
+            std::unique_ptr<RamCondition> condition, RamPattern queryPattern, int ident)
             : RamIndexOperation(std::move(relRef), ident, std::move(queryPattern), std::move(nested)),
               RamAbstractAggregate(fun, std::move(expression), std::move(condition)) {}
 
@@ -929,7 +923,7 @@ public:
         for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
             pattern.second.emplace_back(queryPattern.second[i]->clone());
         }
-	
+
         return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
                 std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 std::unique_ptr<RamExpression>(expression->clone()),

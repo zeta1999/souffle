@@ -15,7 +15,9 @@
  ***********************************************************************/
 
 #include "InterpreterIndex.h"
+#include "Brie.h"
 #include "CompiledIndexUtils.h"
+#include "EquivalenceRelation.h"
 #include "Util.h"
 #include <atomic>
 
@@ -466,8 +468,7 @@ public:
         }
 
         bool contains(const TupleRef& /* low */, const TupleRef& /* high */) const override {
-            assert(false && "Not implemented!");
-            return false;
+            fatal("Not implemented!");
         }
 
         Stream range(const TupleRef& low, const TupleRef& high) const override {
@@ -560,11 +561,11 @@ private:
 
 // The comparator to be used for B-tree nodes.
 template <std::size_t Arity>
-using comparator = typename ram::index_utils::get_full_index<Arity>::type::comparator;
+using comparator = typename index_utils::get_full_index<Arity>::type::comparator;
 
 // Node type
 template <std::size_t Arity>
-using t_tuple = typename ram::Tuple<RamDomain, Arity>;
+using t_tuple = typename souffle::Tuple<RamDomain, Arity>;
 
 // Updater for Provenance
 template <std::size_t Arity>
@@ -650,15 +651,15 @@ std::unique_ptr<InterpreterIndex> createBTreeIndex(const Order& order) {
         case 12:
             return std::make_unique<BTreeIndex<12>>(order);
     }
-    assert(false && "Requested arity not yet supported. Feel free to add it.");
-    return {};
+
+    fatal("Requested arity not yet supported. Feel free to add it.");
 }
 
 std::unique_ptr<InterpreterIndex> createBTreeProvenanceIndex(const Order& order) {
     switch (order.size()) {
         case 0:
         case 1:
-            assert(false && "Provenance relation with arity < 2.");
+            fatal("Provenance relation with arity < 2.");
         case 2:
             return std::make_unique<BTreeProvenanceIndex<2>>(order);
         case 3:
@@ -686,8 +687,8 @@ std::unique_ptr<InterpreterIndex> createBTreeProvenanceIndex(const Order& order)
         case 14:
             return std::make_unique<BTreeProvenanceIndex<14>>(order);
     }
-    assert(false && "Requested arity not yet supported. Feel free to add it.");
-    return {};
+
+    fatal("Requested arity not yet supported. Feel free to add it.");
 }
 
 std::unique_ptr<InterpreterIndex> createBrieIndex(const Order& order) {
@@ -719,8 +720,8 @@ std::unique_ptr<InterpreterIndex> createBrieIndex(const Order& order) {
         case 12:
             return std::make_unique<BrieIndex<12>>(order);
     }
-    assert(false && "Requested arity not yet supported. Feel free to add it.");
-    return {};
+
+    fatal("Requested arity not yet supported. Feel free to add it.");
 }
 
 std::unique_ptr<InterpreterIndex> createIndirectIndex(const Order& order) {

@@ -4,12 +4,21 @@ NumberRelation("1").                   // error
 Error: Nil constant used as a non-record in file type_system1.dl at line 35
 NumberRelation(nil).                   // error
 ---------------^--------------------------------
+Error: Ambiguous record in file type_system1.dl at line 37
+NumberRelation([1]).                   // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 37
 NumberRelation([1]).                   // error
 ----------------^-------------------------------
+Error: Ambiguous record in file type_system1.dl at line 38
+NumberRelation([-1]).                  // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 38
 NumberRelation([-1]).                  // error
 -----------------^------------------------------
+Error: Ambiguous record in file type_system1.dl at line 39
+NumberRelation([1+1]).                 // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 39
 NumberRelation([1+1]).                 // error
 ----------------^-------------------------------
@@ -25,18 +34,27 @@ NumberRelation([1+1]).                 // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 39
 NumberRelation([1+1]).                 // error
 ------------------^-----------------------------
+Error: Ambiguous record in file type_system1.dl at line 41
+NumberRelation([1, 1]).                // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 41
 NumberRelation([1, 1]).                // error
 ----------------^-------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 41
 NumberRelation([1, 1]).                // error
 -------------------^----------------------------
+Error: Ambiguous record in file type_system1.dl at line 42
+NumberRelation([-1, -1]).              // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 42
 NumberRelation([-1, -1]).              // error
 -----------------^------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 42
 NumberRelation([-1, -1]).              // error
 ---------------------^--------------------------
+Error: Ambiguous record in file type_system1.dl at line 43
+NumberRelation([1+1, 1+1]).            // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 43
 NumberRelation([1+1, 1+1]).            // error
 ----------------^-------------------------------
@@ -67,6 +85,9 @@ NumberRelation([1+1, 1+1]).            // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 43
 NumberRelation([1+1, 1+1]).            // error
 -----------------------^------------------------
+Error: Ambiguous record in file type_system1.dl at line 45
+NumberRelation([1, 1, 1]).             // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 45
 NumberRelation([1, 1, 1]).             // error
 ----------------^-------------------------------
@@ -76,6 +97,9 @@ NumberRelation([1, 1, 1]).             // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 45
 NumberRelation([1, 1, 1]).             // error
 ----------------------^-------------------------
+Error: Ambiguous record in file type_system1.dl at line 46
+NumberRelation([-1, -1, -1]).          // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 46
 NumberRelation([-1, -1, -1]).          // error
 -----------------^------------------------------
@@ -85,6 +109,9 @@ NumberRelation([-1, -1, -1]).          // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 46
 NumberRelation([-1, -1, -1]).          // error
 -------------------------^----------------------
+Error: Ambiguous record in file type_system1.dl at line 47
+NumberRelation([1+1, 1+1, 1+1]).       // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 47
 NumberRelation([1+1, 1+1, 1+1]).       // error
 ----------------^-------------------------------
@@ -130,15 +157,24 @@ NumberRelation([1+1, 1+1, 1+1]).       // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 47
 NumberRelation([1+1, 1+1, 1+1]).       // error
 ----------------------------^-------------------
+Error: Ambiguous record in file type_system1.dl at line 49
+NumberRelation(["1"]).                 // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 49
 NumberRelation(["1"]).                 // error
 ----------------^-------------------------------
+Error: Ambiguous record in file type_system1.dl at line 50
+NumberRelation(["1", "1"]).            // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 50
 NumberRelation(["1", "1"]).            // error
 ----------------^-------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 50
 NumberRelation(["1", "1"]).            // error
 ---------------------^--------------------------
+Error: Ambiguous record in file type_system1.dl at line 51
+NumberRelation(["1", "1", "1"]).       // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 51
 NumberRelation(["1", "1", "1"]).       // error
 ----------------^-------------------------------
@@ -175,12 +211,21 @@ SymbolRelation(1+1).                   // error
 Error: Nil constant used as a non-record in file type_system1.dl at line 60
 SymbolRelation(nil).                   // error
 ---------------^--------------------------------
+Error: Ambiguous record in file type_system1.dl at line 62
+SymbolRelation([1]).                   // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 62
 SymbolRelation([1]).                   // error
 ----------------^-------------------------------
+Error: Ambiguous record in file type_system1.dl at line 63
+SymbolRelation([-1]).                  // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 63
 SymbolRelation([-1]).                  // error
 -----------------^------------------------------
+Error: Ambiguous record in file type_system1.dl at line 64
+SymbolRelation([1+1]).                 // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 64
 SymbolRelation([1+1]).                 // error
 ----------------^-------------------------------
@@ -196,18 +241,27 @@ SymbolRelation([1+1]).                 // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 64
 SymbolRelation([1+1]).                 // error
 ------------------^-----------------------------
+Error: Ambiguous record in file type_system1.dl at line 66
+SymbolRelation([1, 1]).                // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 66
 SymbolRelation([1, 1]).                // error
 ----------------^-------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 66
 SymbolRelation([1, 1]).                // error
 -------------------^----------------------------
+Error: Ambiguous record in file type_system1.dl at line 67
+SymbolRelation([-1, -1]).              // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 67
 SymbolRelation([-1, -1]).              // error
 -----------------^------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 67
 SymbolRelation([-1, -1]).              // error
 ---------------------^--------------------------
+Error: Ambiguous record in file type_system1.dl at line 68
+SymbolRelation([1+1, 1+1]).            // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 68
 SymbolRelation([1+1, 1+1]).            // error
 ----------------^-------------------------------
@@ -238,6 +292,9 @@ SymbolRelation([1+1, 1+1]).            // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 68
 SymbolRelation([1+1, 1+1]).            // error
 -----------------------^------------------------
+Error: Ambiguous record in file type_system1.dl at line 70
+SymbolRelation([1, 1, 1]).             // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 70
 SymbolRelation([1, 1, 1]).             // error
 ----------------^-------------------------------
@@ -247,6 +304,9 @@ SymbolRelation([1, 1, 1]).             // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 70
 SymbolRelation([1, 1, 1]).             // error
 ----------------------^-------------------------
+Error: Ambiguous record in file type_system1.dl at line 71
+SymbolRelation([-1, -1, -1]).          // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 71
 SymbolRelation([-1, -1, -1]).          // error
 -----------------^------------------------------
@@ -256,6 +316,9 @@ SymbolRelation([-1, -1, -1]).          // error
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 71
 SymbolRelation([-1, -1, -1]).          // error
 -------------------------^----------------------
+Error: Ambiguous record in file type_system1.dl at line 72
+SymbolRelation([1+1, 1+1, 1+1]).       // error
+---------------^--------------------------------
 Error: Ambiguous constant (unable to deduce type) in file type_system1.dl at line 72
 SymbolRelation([1+1, 1+1, 1+1]).       // error
 ----------------^-------------------------------
@@ -301,15 +364,24 @@ SymbolRelation([1+1, 1+1, 1+1]).       // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 72
 SymbolRelation([1+1, 1+1, 1+1]).       // error
 ----------------------------^-------------------
+Error: Ambiguous record in file type_system1.dl at line 74
+SymbolRelation(["1"]).                 // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 74
 SymbolRelation(["1"]).                 // error
 ----------------^-------------------------------
+Error: Ambiguous record in file type_system1.dl at line 75
+SymbolRelation(["1", "1"]).            // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 75
 SymbolRelation(["1", "1"]).            // error
 ----------------^-------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 75
 SymbolRelation(["1", "1"]).            // error
 ---------------------^--------------------------
+Error: Ambiguous record in file type_system1.dl at line 76
+SymbolRelation(["1", "1", "1"]).       // error
+---------------^--------------------------------
 Error: Symbol constant (type mismatch) in file type_system1.dl at line 76
 SymbolRelation(["1", "1", "1"]).       // error
 ----------------^-------------------------------
@@ -625,4 +697,4 @@ TripleSymbolRelation([1+1, 1+1, 1+1]). // error
 Error: Non-numeric argument for functor in file type_system1.dl at line 154
 TripleSymbolRelation([1+1, 1+1, 1+1]). // error
 ----------------------------------^-------------
-209 errors generated, evaluation aborted
+233 errors generated, evaluation aborted

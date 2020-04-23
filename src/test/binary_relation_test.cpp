@@ -37,10 +37,10 @@ namespace test {
 
 TEST(EqRelTest, Scoping) {
     // simply test that namespaces were setup correctly
-    souffle::EquivalenceRelation<souffle::ram::Tuple<RamDomain, 2>> br;
+    souffle::EquivalenceRelation<souffle::Tuple<RamDomain, 2>> br;
 }
 
-using EqRel = souffle::EquivalenceRelation<ram::Tuple<RamDomain, 2>>;
+using EqRel = souffle::EquivalenceRelation<Tuple<RamDomain, 2>>;
 
 TEST(EqRelTest, Basic) {
     EqRel br;
@@ -104,7 +104,7 @@ TEST(EqRelTest, Duplicates) {
     EXPECT_FALSE(br.contains(1, 1));
 
     // check iteration of duplicate is fine
-    ram::Tuple<RamDomain, 2> tup{};
+    Tuple<RamDomain, 2> tup{};
     tup[0] = 0;
     tup[1] = 0;
     auto x = br.begin();

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RamTypes.h"
+#include "Util.h"
 #include <cassert>
 #include <iostream>
 #include <vector>
@@ -57,6 +58,12 @@ enum class BinaryConstraintOp {
     NOT_MATCH,    // not matching string
     NOT_CONTAINS  // whether a sub-string is not contained in a string
 };
+
+char const* toBinaryConstraintSymbol(const BinaryConstraintOp op);
+
+inline std::ostream& operator<<(std::ostream& os, BinaryConstraintOp x) {
+    return os << toBinaryConstraintSymbol(x);
+}
 
 inline bool isEqConstraint(const BinaryConstraintOp constraintOp) {
     switch (constraintOp) {
@@ -126,9 +133,7 @@ inline bool isOverloaded(const BinaryConstraintOp constraintOp) {
 inline BinaryConstraintOp convertOverloadedConstraint(
         const BinaryConstraintOp constraintOp, const TypeAttribute toType) {
     auto FAIL = [&]() -> BinaryConstraintOp {
-        std::cerr << "invalid binary constraint overload: " << int(constraintOp) << " " << int(toType);
-        assert(false && "invalid binary constraint overload");
-        exit(EXIT_FAILURE);
+        fatal("invalid binary constraint overload: op = %s; type = %s", constraintOp, toType);
     };
 
     // clang-format off
@@ -147,7 +152,6 @@ inline BinaryConstraintOp convertOverloadedConstraint(
         case TypeAttribute::Symbol  : return BinaryConstraintOp::S##op; \
         case TypeAttribute::Record  : return FAIL();                    \
         }                                                               \
-        assert(false && "unhandled TypeAttr");                          \
         break; /* HACK: GCC-9 is incorrectly reporting a case fallthru */
     // clang-format on
 
@@ -161,15 +165,13 @@ inline BinaryConstraintOp convertOverloadedConstraint(
         COMPARE_CONSTRAINT(GE)
 
         default:
-            assert(false && "Invalid constraint conversion");
+            fatal("invalid constraint conversion: constraint = %s", constraintOp);
     }
+
+    UNREACHABLE_BAD_CASE_ANALYSIS
 
 #undef COMPARE_CONSTRAINT_FLOAT_OR_RAW
 #undef COMPARE_CONSTRAINT
-
-    assert(isOverloaded(constraintOp) && "missing handler for overloadable constraint op");
-    assert(!isOverloaded(constraintOp) && "can't overload this binary op");
-    exit(EXIT_FAILURE);
 }
 
 /**
@@ -233,14 +235,14 @@ inline BinaryConstraintOp negatedConstraintOp(const BinaryConstraintOp op) {
         case BinaryConstraintOp::NOT_CONTAINS:
             return BinaryConstraintOp::CONTAINS;
     }
-    assert(false && "Unsupported Operator!");
-    exit(EXIT_FAILURE);
+
+    UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
 /**
  * Converts operator to its symbolic representation
  */
-inline std::string toBinaryConstraintSymbol(const BinaryConstraintOp op) {
+inline char const* toBinaryConstraintSymbol(const BinaryConstraintOp op) {
     switch (op) {
         case BinaryConstraintOp::FEQ:
         case BinaryConstraintOp::EQ:
@@ -277,8 +279,8 @@ inline std::string toBinaryConstraintSymbol(const BinaryConstraintOp op) {
         case BinaryConstraintOp::NOT_CONTAINS:
             return "not_contains";
     }
-    assert(false && "Unsupported Operator!");
-    exit(EXIT_FAILURE);
+
+    UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
 /**
@@ -296,9 +298,8 @@ inline BinaryConstraintOp toBinaryConstraintOp(const std::string& symbol) {
     if (symbol == "contains") return BinaryConstraintOp::CONTAINS;
     if (symbol == "not_match") return BinaryConstraintOp::NOT_MATCH;
     if (symbol == "not_contains") return BinaryConstraintOp::NOT_CONTAINS;
-    std::cout << "Unrecognised operator: " << symbol << "\n";
-    assert(false && "Unsupported Operator!");
-    exit(EXIT_FAILURE);
+
+    fatal("unrecognised binary operator: symbol = `%s`", symbol);
 }
 
 /**
@@ -334,8 +335,8 @@ inline bool isOrderedBinaryConstraintOp(const BinaryConstraintOp op) {
         case BinaryConstraintOp::NOT_CONTAINS:
             return false;
     }
-    assert(false && "Uncovered case!");
-    exit(EXIT_FAILURE);
+
+    UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
 /**
@@ -370,8 +371,7 @@ inline std::vector<TypeAttribute> getBinaryConstraintTypes(const BinaryConstrain
             return {TypeAttribute::Symbol};
     }
 
-    assert(false && "Uncovered case!");
-    exit(EXIT_FAILURE);
+    UNREACHABLE_BAD_CASE_ANALYSIS
 
 #undef COMPARE_EQUALS
 #undef COMPARE_OP

@@ -444,24 +444,12 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         out << "}\n";
     }
 
-    // printHintStatistics method
-    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    // printStatistics method
+    out << "void printStatistics(std::ostream& o) const {\n";
     for (size_t i = 0; i < numIndexes; i++) {
-        out << "const auto& stats_" << i << " = ind_" << i << ".getHintStatistics();\n";
-        out << "o << prefix << \"arity " << getArity() << " direct b-tree index " << inds[i]
-            << ": (hits/misses/total)\\n\";\n";
-        out << "o << prefix << \"Insert: \" << stats_" << i << ".inserts.getHits() << \"/\" << stats_" << i
-            << ".inserts.getMisses() << \"/\" << stats_" << i << ".inserts.getAccesses() << \"\\n\";\n";
-        out << "o << prefix << \"Contains: \" << stats_" << i << ".contains.getHits() << \"/\" << stats_" << i
-            << ".contains.getMisses() << \"/\" << stats_" << i << ".contains.getAccesses() << \"\\n\";\n";
-        out << "o << prefix << \"Lower-bound: \" << stats_" << i
-            << ".lower_bound.getHits() << \"/\" << stats_" << i
-            << ".lower_bound.getMisses() << \"/\" << stats_" << i
-            << ".lower_bound.getAccesses() << \"\\n\";\n";
-        out << "o << prefix << \"Upper-bound: \" << stats_" << i
-            << ".upper_bound.getHits() << \"/\" << stats_" << i
-            << ".upper_bound.getMisses() << \"/\" << stats_" << i
-            << ".upper_bound.getAccesses() << \"\\n\";\n";
+        out << "o << \" arity " << arity << " direct b-tree index " << i << " lex-order " << inds[i]
+            << "\\n\";\n";
+        out << "ind_" << i << ".printStats(o);\n";
     }
     out << "}\n";
 
@@ -741,24 +729,12 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "return ind_" << masterIndex << ".end();\n";
     out << "}\n";
 
-    // printHintStatistics method
-    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    // printStatistics method
+    out << "void printStatistics(std::ostream& o) const {\n";
     for (size_t i = 0; i < numIndexes; i++) {
-        out << "const auto& stats_" << i << " = ind_" << i << ".getHintStatistics();\n";
-        out << "o << prefix << \"arity " << arity << " indirect b-tree index " << inds[i]
-            << ": (hits/misses/total)\\n\";\n";
-        out << "o << prefix << \"Insert: \" << stats_" << i << ".inserts.getHits() << \"/\" << stats_" << i
-            << ".inserts.getMisses() << \"/\" << stats_" << i << ".inserts.getAccesses() << \"\\n\";\n";
-        out << "o << prefix << \"Contains: \" << stats_" << i << ".contains.getHits() << \"/\" << stats_" << i
-            << ".contains.getMisses() << \"/\" << stats_" << i << ".contains.getAccesses() << \"\\n\";\n";
-        out << "o << prefix << \"Lower-bound: \" << stats_" << i
-            << ".lower_bound.getHits() << \"/\" << stats_" << i
-            << ".lower_bound.getMisses() << \"/\" << stats_" << i
-            << ".lower_bound.getAccesses() << \"\\n\";\n";
-        out << "o << prefix << \"Upper-bound: \" << stats_" << i
-            << ".upper_bound.getHits() << \"/\" << stats_" << i
-            << ".upper_bound.getMisses() << \"/\" << stats_" << i
-            << ".upper_bound.getAccesses() << \"\\n\";\n";
+        out << "o << \" arity " << arity << " indirect b-tree index " << i << " lex-order " << inds[i]
+            << "\\n\";\n";
+        out << "ind_" << i << ".printStats(o);\n";
     }
     out << "}\n";
 
@@ -1022,20 +998,12 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     out << "return iterator_" << masterIndex << "(ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
-    // TODO: finish printHintStatistics method
-    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
+    // TODO: finish printStatistics method
+    out << "void printStatistics(std::ostream& o) const {\n";
     for (size_t i = 0; i < numIndexes; i++) {
-        out << "const auto& stats_" << i << " = ind_" << i << ".getHintStatistics();\n";
-        out << "o << prefix << \"arity " << arity << " brie index " << inds[i]
-            << ": (hits/misses/total)\\n\";\n";
-        out << "o << prefix << \"Insert: \" << stats_" << i << ".inserts.getHits() << \"/\" << stats_" << i
-            << ".inserts.getMisses() << \"/\" << stats_" << i << ".inserts.getAccesses() << \"\\n\";\n";
-        out << "o << prefix << \"Contains: \" << stats_" << i << ".contains.getHits() << \"/\" << stats_" << i
-            << ".contains.getMisses() << \"/\" << stats_" << i << ".contains.getAccesses() << \"\\n\";\n";
-        out << "o << prefix << \"Range-query: \" << stats_" << i
-            << ".get_boundaries.getHits() << \"/\" << stats_" << i
-            << ".get_boundaries.getMisses() << \"/\" << stats_" << i
-            << ".get_boundaries.getAccesses() << \"\\n\";\n";
+        out << "o << \" arity " << arity << " brie index " << i << " lex-order " << inds[i] << "\\n\";\n";
+        ;
+        out << "ind_" << i << ".printStats(o);\n";
     }
     out << "}\n";
 
@@ -1089,7 +1057,7 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "struct " << getTypeName() << " {\n";
 
     // eqrel is only for binary relations
-    out << "using t_tuple = ram::Tuple<RamDomain, 2>;\n";
+    out << "using t_tuple = Tuple<RamDomain, 2>;\n";
     out << "using t_ind_" << masterIndex << " = EquivalenceRelation<t_tuple>;\n";
     out << "t_ind_" << masterIndex << " ind_" << masterIndex << ";\n";
 
@@ -1241,9 +1209,9 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "return iterator_" << masterIndex << "(ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
-    // printHintStatistics method
-    out << "void printHintStatistics(std::ostream& o, const std::string prefix) const {\n";
-    out << "o << \"eqrel index: no hint statistics supported\\n\";\n";
+    // printStatistics method
+    out << "void printStatistics(std::ostream& o) const {\n";
+    out << "o << \" eqrel index: no hint statistics supported\\n\";\n";
     out << "}\n";
 
     // generate orderIn and orderOut methods which reorder tuples

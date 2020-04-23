@@ -97,6 +97,10 @@ public:
         return false;
     }
 
+    void setClauses(std::vector<std::unique_ptr<AstClause>> newClauses) {
+        clauses = std::move(newClauses);
+    }
+
     /** add a clause */
     void addClause(std::unique_ptr<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");
@@ -242,9 +246,7 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstProgram*>(&node));
         const auto& other = static_cast<const AstProgram&>(node);
-
         if (!equal_targets(pragmaDirectives, other.pragmaDirectives)) {
             return false;
         }

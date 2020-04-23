@@ -89,12 +89,11 @@ protected:
                 os << "symbol";
                 break;
             case TypeAttribute::Record:
-                assert(false && "Invalid type");
+                fatal("Invalid type");
         }
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstSubsetType*>(&node));
         const auto& other = static_cast<const AstSubsetType&>(node);
         return getQualifiedName() == other.getQualifiedName() && type == other.type;
     }
@@ -141,7 +140,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstUnionType*>(&node));
         const auto& other = static_cast<const AstUnionType&>(node);
         return getQualifiedName() == other.getQualifiedName() && types == other.types;
     }
@@ -209,7 +207,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstRecordType*>(&node));
         const auto& other = static_cast<const AstRecordType&>(node);
         return getQualifiedName() == other.getQualifiedName() && fields == other.fields;
     }

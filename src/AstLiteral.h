@@ -110,7 +110,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstAtom*>(&node));
         const auto& other = static_cast<const AstAtom&>(node);
         return name == other.name && equal_targets(arguments, other.arguments);
     }

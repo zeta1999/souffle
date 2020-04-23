@@ -217,10 +217,8 @@ private:
             if (pos != record_definitions.end()) {
                 return pos->second;
             }
-            assert(false && "Requested location for undefined record!");
 
-            static Location fail;
-            return fail;
+            fatal("requested location for undefined record!");
         }
 
         // -- aggregates --
@@ -237,12 +235,7 @@ private:
                 }
             }
 
-            // fail
-            std::cout << "Lookup of " << &agg << " = " << agg << " failed\n";
-            assert(false && "Requested aggregation operation is not processed!");
-
-            const static Location fail = Location();
-            return fail;
+            fatal("lookup of agg `%s` failed", agg);
         }
 
         // -- others --
@@ -292,9 +285,6 @@ private:
      * constructs may be cloned without losing the variable-identity
      */
     void nameUnnamedVariables(AstClause* clause);
-
-    /** append statement to a list of statements */
-    void appendStmt(std::unique_ptr<RamStatement>& stmtList, std::unique_ptr<RamStatement> stmt);
 
     /** converts the given relation identifier into a relation name */
     std::string getRelationName(const AstQualifiedName& id) {
@@ -423,7 +413,7 @@ private:
             }
         }
 
-        assert(false && "Unaccounted-for constant");
+        fatal("unaccounted-for constant");
     }
 
     /** translate RAM code for a constant value */

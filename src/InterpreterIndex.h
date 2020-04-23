@@ -78,14 +78,14 @@ public:
      * a tuple into a reference.
      */
     template <std::size_t Arity>
-    TupleRef(const ram::Tuple<RamDomain, Arity>& tuple) : TupleRef(&tuple[0], Arity) {}
+    TupleRef(const Tuple<RamDomain, Arity>& tuple) : TupleRef(&tuple[0], Arity) {}
 
     TupleRef(const DynTuple& tuple) : TupleRef(&tuple[0], tuple.size()) {}
 
     template <std::size_t Arity>
-    const ram::Tuple<RamDomain, Arity>& asTuple() const {
+    const Tuple<RamDomain, Arity>& asTuple() const {
         assert(arity == Arity);
-        return *reinterpret_cast<const ram::Tuple<RamDomain, Arity>*>(base);
+        return *reinterpret_cast<const Tuple<RamDomain, Arity>*>(base);
     }
 
     /**
@@ -149,8 +149,8 @@ public:
     bool valid() const;
 
     template <std::size_t Arity>
-    ram::Tuple<RamDomain, Arity> encode(const ram::Tuple<RamDomain, Arity>& entry) const {
-        ram::Tuple<RamDomain, Arity> res{};
+    Tuple<RamDomain, Arity> encode(const Tuple<RamDomain, Arity>& entry) const {
+        Tuple<RamDomain, Arity> res{};
         for (std::size_t i = 0; i < Arity; ++i) {
             res[i] = entry[order[i]];
         }
@@ -158,8 +158,8 @@ public:
     }
 
     template <std::size_t Arity>
-    ram::Tuple<RamDomain, Arity> decode(const ram::Tuple<RamDomain, Arity>& entry) const {
-        ram::Tuple<RamDomain, Arity> res{};
+    Tuple<RamDomain, Arity> decode(const Tuple<RamDomain, Arity>& entry) const {
+        Tuple<RamDomain, Arity> res{};
         for (std::size_t i = 0; i < Arity; ++i) {
             res[order[i]] = entry[i];
         }

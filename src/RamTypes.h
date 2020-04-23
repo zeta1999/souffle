@@ -18,6 +18,7 @@
 
 #include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <iostream>
 #include <limits>
 #include <type_traits>
@@ -34,41 +35,12 @@ enum class TypeAttribute {
 
 // Printing of the TypeAttribute Enum.
 // To be utilised in synthesizer.
-inline std::ostream& operator<<(std::ostream& os, TypeAttribute T) {
-    switch (T) {
-        case TypeAttribute::Symbol:
-            os << "TypeAttribute::Symbol";
-            break;
-        case TypeAttribute::Signed:
-            os << "TypeAttribute::Signed";
-            break;
-        case TypeAttribute::Float:
-            os << "TypeAttribute::Float";
-            break;
-        case TypeAttribute::Unsigned:
-            os << "TypeAttribute::Unsigned";
-            break;
-        case TypeAttribute::Record:
-            os << "TypeAttribute::Record";
-    }
-    return os;
-}
+std::ostream& operator<<(std::ostream& os, TypeAttribute T);
 
 /**
  * Check if type is numeric.
  */
-inline bool isNumericType(TypeAttribute ramType) {
-    switch (ramType) {
-        case TypeAttribute::Signed:
-        case TypeAttribute::Unsigned:
-        case TypeAttribute::Float:
-            return true;
-        case TypeAttribute::Symbol:
-        case TypeAttribute::Record:
-            return false;
-    }
-    return false;  // silence warning
-}
+bool isNumericType(TypeAttribute ramType);
 
 /**
  * Types of elements in a tuple.
@@ -119,14 +91,12 @@ but as of January 2020 it is not yet supported.
  * ramBitCast<T>(ramBitCast<RamDomain>(a)) == a
  **/
 template <typename To = RamDomain, typename From>
-inline To ramBitCast(From RamElement) {
+To ramBitCast(From source) {
     static_assert(isRamType<From> && isRamType<To>, "Bit casting should only be used on Ram Types.");
-    union {
-        From source;
-        To destination;
-    } Union;
-    Union.source = RamElement;
-    return Union.destination;
+    static_assert(sizeof(To) == sizeof(From), "Can't bit cast types with different size.");
+    To destination;
+    memcpy(&destination, &source, sizeof(destination));
+    return destination;
 }
 
 /** lower and upper boundaries for the ram types **/

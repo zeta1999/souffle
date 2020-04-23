@@ -208,7 +208,6 @@ TEST(RamParallel, CloneAndEquals) {
      * END PARALLEL
      * */
 
-    RamParallel a;
     std::vector<std::unique_ptr<RamExpression>> a_expressions;
     a_expressions.emplace_back(new RamTupleElement(0, 0));
     a_expressions.emplace_back(new RamTupleElement(0, 2));
@@ -221,9 +220,8 @@ TEST(RamParallel, CloneAndEquals) {
     auto a_scan =
             std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(a_cond), "");
     auto a_query = std::make_unique<RamQuery>(std::move(a_scan));
-    a.add(std::move(a_query));
+    RamParallel a(std::move(a_query));
 
-    RamParallel b;
     std::vector<std::unique_ptr<RamExpression>> b_expressions;
     b_expressions.emplace_back(new RamTupleElement(0, 0));
     b_expressions.emplace_back(new RamTupleElement(0, 2));
@@ -236,7 +234,7 @@ TEST(RamParallel, CloneAndEquals) {
     auto b_scan =
             std::make_unique<RamScan>(std::make_unique<RamRelationReference>(&A), 0, std::move(b_cond), "");
     auto b_query = std::make_unique<RamQuery>(std::move(b_scan));
-    b.add(std::move(b_query));
+    RamParallel b(std::move(b_query));
 
     EXPECT_EQ(a, b);
     EXPECT_NE(&a, &b);

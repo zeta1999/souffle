@@ -27,7 +27,7 @@ namespace souffle::test {
 
 TEST(Pack, Tuple) {
     RecordTable recordTable;
-    const ram::Tuple<RamDomain, 3> tuple = {{1, 2, 3}};
+    const Tuple<RamDomain, 3> tuple = {{1, 2, 3}};
 
     RamDomain ref = pack(recordTable, tuple);
 
@@ -43,7 +43,7 @@ TEST(Pack, Tuple) {
 // unpack and test for equality
 TEST(PackUnpack, Tuple) {
     constexpr size_t tupleSize = 3;
-    using tupleType = ram::Tuple<RamDomain, tupleSize>;
+    using tupleType = Tuple<RamDomain, tupleSize>;
 
     RecordTable recordTable;
 

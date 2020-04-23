@@ -34,6 +34,7 @@ namespace souffle {
 class AstClause;
 class AstProgram;
 class AstRelation;
+class TypeAnalysis;
 
 /**
  * Transformation pass to eliminate grounded aliases.
@@ -114,6 +115,36 @@ public:
 
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
+};
+
+/**
+ * Replaces literals containing single-valued aggregates with
+ * a synthesised relation
+ */
+class MaterializeSingletonAggregationTransformer : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "MaterializeSingletonAggregationTransformer";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+    /**
+     * Determines whether an aggregate is single-valued,
+     * ie the aggregate does not depend on the outer scope.
+     */
+    static bool isSingleValued(const AstAggregator& agg, const AstClause& clause);
+    /**
+     * findUniqueVariableName returns a variable name that hasn't appeared
+     * in the given clause.
+     */
+    static std::string findUniqueVariableName(const AstClause& clause);
+    /**
+     * findUniqueAggregateRelationName returns a synthesised aggregate
+     * relation name that hasn't appeared
+     * in the given clause.
+     */
+    static std::string findUniqueAggregateRelationName(const AstProgram& program);
 };
 
 /**
@@ -583,6 +614,101 @@ public:
 
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
+};
+
+/**
+ * Transformation pass that removes (binary) constraints on the anonymous records.
+ * After resolving aliases this is equivalent to completely removing anonymous records.
+ *
+ * e.g.
+ * [a, b, c] = [x, y, z] → a = x, b = y, c = z.
+ * [a, b, c] != [x, y, z] →  a != x  b != y  c != z (expanded to three new clauses)
+ *
+ * In a single pass, in case of equalities  a transformation expands a single level
+ * of records in every clause. (e.g. [[a]] = [[1]] => [a] = [1])
+ * In case of inequalities, it expands at most a single inequality in every clause
+ *
+ *
+ * This transformation does not resolve aliases.
+ * E.g. A = [a, b], A = [c, d]
+ * Thus it should be called in conjunction with ResolveAnonymousRecordsAliases.
+ */
+class FoldAnonymousRecords : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "FoldAnonymousRecords";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+
+    /**
+     * Process a single clause.
+     *
+     * @parem clause Clause to be processed.
+     * @param newClauses a destination for the newly produced clauses.
+     */
+    void transformClause(const AstClause& clause, std::vector<std::unique_ptr<AstClause>>& newClauses);
+
+    /**
+     * Expand constraint on records position-wise.
+     *
+     * eg.
+     * [1, 2, 3] = [a, b, c] => vector(1 = a, 2 = b, 3 = c)
+     * [x, y, z] != [a, b, c] => vector(x != a, x != b, z != c)
+     *
+     * Procedure assumes that argument has a valid operation,
+     * that children are of type AstRecordInit and that the size
+     * of both sides is the same
+     */
+    std::vector<std::unique_ptr<AstLiteral>> expandRecordBinaryConstraint(const AstBinaryConstraint&);
+
+    /**
+     * Determine if the clause contains at least one binary constraint which can be expanded.
+     */
+    bool containsValidRecordConstraint(const AstClause&);
+
+    /**
+     * Determine if binary constraint can be expanded.
+     */
+    bool isValidRecordConstraint(const AstLiteral* literal);
+};
+
+/**
+ * Transformer resolving aliases for anonymous records.
+ *
+ * The transformer works by searching the clause for equalities
+ * of the form a = [...], where a is an anonymous record, and replacing
+ * all occurrences of a with the RHS.
+ *
+ * The transformer is to be called in conjunction with FoldAnonymousRecords.
+ **/
+class ResolveAnonymousRecordsAliases : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "FoldAnonymousRecords";
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+
+    /**
+     * Use mapping found by findVariablesRecordMapping to substitute
+     * a records for each variable that operates on records.
+     **/
+    bool replaceNamedVariables(AstTranslationUnit&, AstClause&);
+
+    /**
+     * For each variable equal to some anonymous record,
+     * assign a value of that record.
+     **/
+    std::map<std::string, const AstRecordInit*> findVariablesRecordMapping(
+            AstTranslationUnit&, const AstClause&);
+
+    /**
+     * For unnamed variables, replace each equation _ op record with true.
+     **/
+    bool replaceUnnamedVariable(AstClause&);
 };
 
 }  // end of namespace souffle

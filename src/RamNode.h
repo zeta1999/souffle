@@ -149,11 +149,6 @@ public:
     }
 
     /**
-     * @brief Print RAM node
-     */
-    virtual void print(std::ostream& out = std::cout) const = 0;
-
-    /**
      * Print RAM on a stream
      */
     friend std::ostream& operator<<(std::ostream& out, const RamNode& node) {
@@ -162,6 +157,11 @@ public:
     }
 
 protected:
+    /**
+     * @brief Print RAM node
+     */
+    virtual void print(std::ostream& out = std::cout) const = 0;
+
     /**
      * @brief Equality check for two RAM nodes.
      * Default action is that nothing needs to be checked.

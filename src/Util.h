@@ -792,6 +792,11 @@ detail::joined_sequence<Iter, Printer> join(const Container& c, const std::strin
     return join(c.begin(), c.end(), sep, p);
 }
 
+// Decide if the sane default is to deref-then-print or just print.
+// Right now, deref anything deref-able *except* for a `const char*` (which handled as a C-string).
+template <typename A>
+constexpr bool JoinShouldDeref = IsPtrLike<A>::value && !std::is_same_v<A, char const*>;
+
 /**
  * Creates an object to be forwarded to some output stream for printing
  * the content of containers interspersed by a given separator.
@@ -800,14 +805,14 @@ detail::joined_sequence<Iter, Printer> join(const Container& c, const std::strin
  */
 template <typename Container, typename Iter = typename Container::const_iterator,
         typename T = typename Iter::value_type>
-std::enable_if_t<!IsPtrLike<T>::value, detail::joined_sequence<Iter, detail::print<id<T>>>> join(
+std::enable_if_t<!JoinShouldDeref<T>, detail::joined_sequence<Iter, detail::print<id<T>>>> join(
         const Container& c, const std::string& sep = ",") {
     return join(c.begin(), c.end(), sep, detail::print<id<T>>());
 }
 
 template <typename Container, typename Iter = typename Container::const_iterator,
         typename T = typename Iter::value_type>
-std::enable_if_t<IsPtrLike<T>::value, detail::joined_sequence<Iter, detail::print<deref<T>>>> join(
+std::enable_if_t<JoinShouldDeref<T>, detail::joined_sequence<Iter, detail::print<deref<T>>>> join(
         const Container& c, const std::string& sep = ",") {
     return join(c.begin(), c.end(), sep, detail::print<deref<T>>());
 }

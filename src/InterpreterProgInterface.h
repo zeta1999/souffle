@@ -128,9 +128,18 @@ protected:
                         tup << s;
                         break;
                     }
-                    case 'f': tup << ramBitCast<RamFloat>((*it)[i]); break;
-                    case 'u': tup << ramBitCast<RamUnsigned>((*it)[i]); break;
-                    default: tup << (*it)[i]; break;
+                    case 'f': {
+                        tup << ramBitCast<RamFloat>((*it)[i]);
+                        break;
+                    }
+                    case 'u': {
+                        tup << ramBitCast<RamUnsigned>((*it)[i]);
+                        break;
+                    }
+                    default: {
+                        tup << (*it)[i];
+                        break;
+                    }
                 }
             }
             tup.rewind();

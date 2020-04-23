@@ -453,16 +453,6 @@ public:
             std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamIndexScan(std::move(rel), ident, std::move(queryPattern), std::move(nested), profileText) {}
 
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "PARALLEL FOR t" << getTupleId() << " IN ";
-        os << rel.getName();
-        printIndex(os);
-        os << std::endl;
-        RamIndexOperation::print(os, tabpos + 1);
-    }
-
     RamParallelIndexScan* clone() const override {
         RamPattern resQueryPattern;
 
@@ -639,16 +629,6 @@ public:
               RamAbstractChoice(std::move(cond)) {
         assert(getRangePattern().first.size() == getRelation().getArity());
         assert(getRangePattern().second.size() == getRelation().getArity());
-    }
-
-    void print(std::ostream& os, int tabpos) const override {
-        const RamRelation& rel = getRelation();
-        os << times(" ", tabpos);
-        os << "CHOICE " << rel.getName() << " AS t" << getTupleId();
-        printIndex(os);
-        os << " WHERE " << getCondition();
-        os << std::endl;
-        RamIndexOperation::print(os, tabpos + 1);
     }
 
     void apply(const RamNodeMapper& map) override {

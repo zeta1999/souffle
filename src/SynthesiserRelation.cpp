@@ -350,13 +350,14 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // empty lowerUpperRange method
-    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
-    
+    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper, context& h) const "
+           "{\n";
+
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
     out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper) const {\n";
-    
+
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
@@ -367,7 +368,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
         out << "range<t_ind_" << indNum << "::iterator> lowerUpperRange_" << search;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
-        
+
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
@@ -400,8 +401,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
         out << "range<t_ind_" << indNum << "::iterator> lowerUpperRange_" << search;
         out << "(const t_tuple& lower, const t_tuple& upper) const {\n";
-        
-	out << "context h;\n";
+
+        out << "context h;\n";
         out << "return lowerUpperRange_" << search << "(lower,upper,h);\n";
         out << "}\n";
     }
@@ -652,13 +653,14 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // empty lowerUpperRange method
-    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
-    
+    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper, context& h) const "
+           "{\n";
+
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
     out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper) const {\n";
-    
+
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
@@ -669,7 +671,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
 
         out << "range<iterator_" << indNum << "> lowerUpperRange_" << search;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
-        
+
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
@@ -695,15 +697,15 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
                     out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
             }
-            out << "return range<iterator_" << indNum << ">(ind_" << indNum << ".lower_bound(&low, h.hints_" << indNum << "), ind_"
-                << indNum << ".upper_bound(&high, h.hints_" << indNum << "));\n";
+            out << "return range<iterator_" << indNum << ">(ind_" << indNum << ".lower_bound(&low, h.hints_"
+                << indNum << "), ind_" << indNum << ".upper_bound(&high, h.hints_" << indNum << "));\n";
         }
         out << "}\n";
 
         out << "range<iterator_" << indNum << "> lowerUpperRange_" << search;
         out << "(const t_tuple& lower, const t_tuple& upper) const {\n";
-        
-	out << "context h;\n";
+
+        out << "context h;\n";
         out << "return lowerUpperRange_" << search << "(lower, upper, h);\n";
         out << "}\n";
     }
@@ -953,7 +955,8 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     }
 
     // empty lowerUpperRange method
-    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
+    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper, context& h) const "
+           "{\n";
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 

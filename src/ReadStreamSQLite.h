@@ -30,9 +30,10 @@ namespace souffle {
 
 class ReadStreamSQLite : public ReadStream {
 public:
-    ReadStreamSQLite(const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable)
-            : ReadStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.get("filename")),
-              relationName(rwOperation.get("name")) {
+    ReadStreamSQLite(const std::map<std::string, std::string>& rwOperation, SymbolTable& symbolTable,
+            RecordTable& recordTable)
+            : ReadStream(rwOperation, symbolTable, recordTable), dbFilename(rwOperation.at("filename")),
+              relationName(rwOperation.at("name")) {
         openDB();
         checkTableExists();
         prepareSelectStatement();
@@ -66,7 +67,8 @@ protected:
             }
 
             try {
-                switch (typeAttributes.at(column)[0]) {
+                auto&& ty = typeAttributes.at(column);
+                switch (ty[0]) {
                     case 's':
                         tuple[column] = symbolTable.unsafeLookup(element);
                         break;
@@ -77,7 +79,7 @@ protected:
                         tuple[column] = RamSignedFromString(element);
                         break;
                     default:
-                        assert(false && "Invalid type attribute");
+                        fatal("invalid type attribute: `%c`", ty[0]);
                 }
             } catch (...) {
                 std::stringstream errorMessage;
@@ -159,8 +161,8 @@ protected:
 
 class ReadSQLiteFactory : public ReadStreamFactory {
 public:
-    std::unique_ptr<ReadStream> getReader(
-            const RWOperation& rwOperation, SymbolTable& symbolTable, RecordTable& recordTable) override {
+    std::unique_ptr<ReadStream> getReader(const std::map<std::string, std::string>& rwOperation,
+            SymbolTable& symbolTable, RecordTable& recordTable) override {
         return std::make_unique<ReadStreamSQLite>(rwOperation, symbolTable, recordTable);
     }
 

@@ -103,7 +103,7 @@ jobs:
     name: "Linux gcc 64-bit non-eval"
     env:
     - *gcc_environment
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile,Provenance SOUFFLE_CONFS=",-c -j8"
 
 # Testing stage for clang without OpenMP (,-c)
   - <<: *linuxclang

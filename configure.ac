@@ -32,7 +32,7 @@ AC_CONFIG_MACRO_DIR([m4])
 
 dnl Do not set default CFLAGS and CXXFLAGS
 ENV_CXXFLAGS="$CXXFLAGS"
-CXXFLAGS=""
+CXXFLAGS=" -fwrapv "
 
 # Disable provenance
 AC_ARG_ENABLE(
@@ -166,9 +166,8 @@ if test -n "$SOUFFLE_PACKAGING"; then
       DISTRIBUTION=osx
     ;;
     linux*)
-      AC_CHECK_PROG(LSB_RELEASE, lsb_release, lsb_release)
-      AS_IF([test -z "$LSB_RELEASE"], [AC_MSG_ERROR([lsb_release required to detect LINUX distribution not found.])])
-      DISTRIBUTION=[`lsb_release -i | sed 's/^.*:[ \t]\+//' | tr '[A-Z]' '[a-z]'`]
+      DISTRIBUTION=[`. /etc/os-release; echo $ID`]
+      AS_IF([test -z "$DISTRIBUTION"], [DISTRIBUTION=unknown])
     ;;
     *BSD* | *bsd* )
       DISTRIBUTION=bsd
@@ -287,7 +286,6 @@ AC_CONFIG_LINKS([include/souffle/ExplainProvenance.h:src/ExplainProvenance.h])
 AC_CONFIG_LINKS([include/souffle/ExplainProvenanceImpl.h:src/ExplainProvenanceImpl.h])
 AC_CONFIG_LINKS([include/souffle/ExplainTree.h:src/ExplainTree.h])
 AC_CONFIG_LINKS([include/souffle/EquivalenceRelation.h:src/EquivalenceRelation.h])
-AC_CONFIG_LINKS([include/souffle/RWOperation.h:src/RWOperation.h])
 AC_CONFIG_LINKS([include/souffle/IOSystem.h:src/IOSystem.h])
 AC_CONFIG_LINKS([include/souffle/IterUtils.h:src/IterUtils.h])
 AC_CONFIG_LINKS([include/souffle/LambdaBTree.h:src/LambdaBTree.h])
@@ -300,6 +298,7 @@ AC_CONFIG_LINKS([include/souffle/RamTypes.h:src/RamTypes.h])
 AC_CONFIG_LINKS([include/souffle/ReadStream.h:src/ReadStream.h])
 AC_CONFIG_LINKS([include/souffle/ReadStreamCSV.h:src/ReadStreamCSV.h])
 AC_CONFIG_LINKS([include/souffle/ReadStreamSQLite.h:src/ReadStreamSQLite.h])
+AC_CONFIG_LINKS([include/souffle/SerialisationStream.h:src/SerialisationStream.h])
 AC_CONFIG_LINKS([include/souffle/SignalHandler.h:src/SignalHandler.h])
 AC_CONFIG_LINKS([include/souffle/SouffleInterface.h:src/SouffleInterface.h])
 AC_CONFIG_LINKS([include/souffle/SymbolTable.h:src/SymbolTable.h])
@@ -312,6 +311,7 @@ AC_CONFIG_LINKS([include/souffle/WriteStreamCSV.h:src/WriteStreamCSV.h])
 AC_CONFIG_LINKS([include/souffle/WriteStreamSQLite.h:src/WriteStreamSQLite.h])
 AC_CONFIG_LINKS([include/souffle/gzfstream.h:src/gzfstream.h])
 AC_CONFIG_LINKS([include/souffle/json11.h:src/json11.h])
+AC_CONFIG_LINKS([include/souffle/tinyformat.h:src/tinyformat.h])
 AC_CONFIG_LINKS([include/souffle/profile/Cell.h:src/profile/Cell.h])
 AC_CONFIG_LINKS([include/souffle/profile/CellInterface.h:src/profile/CellInterface.h])
 AC_CONFIG_LINKS([include/souffle/profile/Cli.h:src/profile/Cli.h])

@@ -743,36 +743,6 @@ TEST(Trie, Iterator) {
     EXPECT_EQ(3, card(set));
 }
 
-TEST(Trie, IteratorStress_0D) {
-    Trie<0> set;
-
-    EXPECT_TRUE(set.empty());
-
-    int count = 0;
-    for (auto it = set.begin(); it != set.end(); ++it) {
-        count++;
-    }
-
-    EXPECT_EQ(0, count);
-    EXPECT_EQ(0, set.size());
-
-    set.insert();
-
-    EXPECT_FALSE(set.empty());
-    EXPECT_EQ(1, set.size());
-
-    set.insert();
-
-    EXPECT_FALSE(set.empty());
-    EXPECT_EQ(1, set.size());
-
-    count = 0;
-    for (auto it = set.begin(); it != set.end(); ++it) {
-        count++;
-    }
-    EXPECT_EQ(1, count);
-}
-
 namespace {
 
 RamDomain rand(RamDomain max) {
@@ -781,7 +751,7 @@ RamDomain rand(RamDomain max) {
 }  // namespace
 
 TEST(Trie, IteratorStress_1D) {
-    using tuple = typename ram::Tuple<RamDomain, 1>;
+    using tuple = typename souffle::Tuple<RamDomain, 1>;
 
     const int N = 10000;
 
@@ -807,7 +777,7 @@ TEST(Trie, IteratorStress_1D) {
 }
 
 TEST(Trie, IteratorStress_2D) {
-    using tuple = typename ram::Tuple<RamDomain, 2>;
+    using tuple = typename souffle::Tuple<RamDomain, 2>;
 
     const int N = 10000;
 
@@ -835,7 +805,7 @@ TEST(Trie, IteratorStress_2D) {
 }
 
 TEST(Trie, IteratorStress_3D) {
-    using tuple = typename ram::Tuple<RamDomain, 3>;
+    using tuple = typename souffle::Tuple<RamDomain, 3>;
 
     const int N = 10000;
 
@@ -864,7 +834,7 @@ TEST(Trie, IteratorStress_3D) {
 }
 
 TEST(Trie, IteratorStress_4D) {
-    using tuple = typename ram::Tuple<RamDomain, 4>;
+    using tuple = typename souffle::Tuple<RamDomain, 4>;
 
     const int N = 10000;
 
@@ -1279,7 +1249,7 @@ TEST(Trie, BoundaryTest_3D_Stress) {
 }
 
 TEST(Trie, RangeQuery) {
-    using tuple = typename ram::Tuple<RamDomain, 3>;
+    using tuple = typename souffle::Tuple<RamDomain, 3>;
 
     Trie<3> set;
 
@@ -1306,20 +1276,8 @@ TEST(Trie, RangeQuery) {
     EXPECT_EQ(1, card(set.getBoundaries<3>(tuple({{3, 4, 5}}))));
 }
 
-TEST(Trie, RangeQuery_0D) {
-    using tuple = typename ram::Tuple<RamDomain, 0>;
-
-    Trie<0> set;
-
-    EXPECT_EQ(0, card(set.getBoundaries<0>(tuple())));
-
-    set.insert();
-
-    EXPECT_EQ(1, card(set.getBoundaries<0>(tuple())));
-}
-
 TEST(Trie, RangeQuery_1D) {
-    using tuple = typename ram::Tuple<RamDomain, 1>;
+    using tuple = typename souffle::Tuple<RamDomain, 1>;
 
     Trie<1> set;
 
@@ -1340,7 +1298,7 @@ TEST(Trie, RangeQuery_1D) {
 }
 
 TEST(Trie, RangeQuery_2D) {
-    using tuple = typename ram::Tuple<RamDomain, 2>;
+    using tuple = typename souffle::Tuple<RamDomain, 2>;
 
     Trie<2> set;
 
@@ -1370,7 +1328,7 @@ TEST(Trie, RangeQuery_2D) {
 }
 
 TEST(Trie, RangeQuery_3D) {
-    using tuple = typename ram::Tuple<RamDomain, 3>;
+    using tuple = typename souffle::Tuple<RamDomain, 3>;
 
     Trie<3> set;
 
@@ -1412,7 +1370,7 @@ TEST(Trie, RangeQuery_3D) {
 }
 
 TEST(Trie, RangeQueryStress) {
-    using tuple = typename ram::Tuple<RamDomain, 3>;
+    using tuple = typename souffle::Tuple<RamDomain, 3>;
 
     Trie<3> set;
 
@@ -1448,36 +1406,6 @@ TEST(Trie, RangeQueryStress) {
                 EXPECT_EQ(1, card(set.getBoundaries<3>(tuple({{x, y, z}}))));
             }
         }
-    }
-}
-
-TEST(Trie, Merge_0D) {
-    Trie<0> e;
-    Trie<0> f;
-    f.insert();
-
-    {
-        Trie<0> c = e;
-        c.insertAll(e);
-        EXPECT_TRUE(c.empty());
-    }
-
-    {
-        Trie<0> c = e;
-        c.insertAll(f);
-        EXPECT_FALSE(c.empty());
-    }
-
-    {
-        Trie<0> c = f;
-        c.insertAll(e);
-        EXPECT_FALSE(c.empty());
-    }
-
-    {
-        Trie<0> c = f;
-        c.insertAll(f);
-        EXPECT_FALSE(c.empty());
     }
 }
 

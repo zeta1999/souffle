@@ -19,7 +19,6 @@
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
-#include "RWOperation.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
 #include "RamIndexAnalysis.h"
@@ -244,9 +243,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << R"_(if (!inputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
                 out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
-                out << "RWOperation rwOperation(directiveMap);\n";
                 out << "IOSystem::getInstance().getReader(";
-                out << "rwOperation, symTable, recordTable";
+                out << "directiveMap, symTable, recordTable";
                 out << ")->readAll(*" << synthesiser.getRelationName(io.getRelation());
                 out << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() "
@@ -260,9 +258,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << R"_(if (!outputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
                 out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
                 out << "}\n";
-                out << "RWOperation rwOperation(directiveMap);\n";
                 out << "IOSystem::getInstance().getWriter(";
-                out << "rwOperation, symTable, recordTable";
+                out << "directiveMap, symTable, recordTable";
                 out << ")->writeAll(*" << synthesiser.getRelationName(io.getRelation()) << ");\n";
                 out << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
             } else {
@@ -365,8 +362,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         void visitClear(const RamClear& clear, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
 
-            out << "if (!isHintsProfilingEnabled()"
-                << (clear.getRelation().isTemp() ? ") " : "&& performIO) ");
+            if (!clear.getRelation().isTemp()) {
+                out << "if (performIO) ";
+            }
             out << synthesiser.getRelationName(clear.getRelation()) << "->"
                 << "purge();\n";
 
@@ -845,10 +843,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = aggregate.getTupleId();
 
             // aggregate tuple storing the result of aggregate
-            std::string tuple_type = "ram::Tuple<RamDomain," + toString(arity) + ">";
+            std::string tuple_type = "Tuple<RamDomain," + toString(arity) + ">";
 
             // declare environment variable
-            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
+            out << "Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // get range to aggregate
             auto keys = isa->getSearchSignature(&aggregate);
@@ -913,8 +911,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case TypeAttribute::Float:
                     type = "RamFloat";
                     break;
-                default:
-                    assert(false && "Invalid type");
+
+                case TypeAttribute::Symbol:
+                case TypeAttribute::Record:
+                    type = "RamDomain";
+                    break;
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
@@ -1024,7 +1025,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto identifier = aggregate.getTupleId();
 
             // declare environment variable
-            out << "ram::Tuple<RamDomain,1> env" << identifier << ";\n";
+            out << "Tuple<RamDomain,1> env" << identifier << ";\n";
 
             // special case: counting number elements over an unrestricted predicate
             if (aggregate.getFunction() == AggregateOp::COUNT && isRamTrue(&aggregate.getCondition())) {
@@ -1076,7 +1077,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
             }
 
-            std::string type;
+            char const* type;
             switch (getTypeAttributeAggregate(aggregate.getFunction())) {
                 case TypeAttribute::Signed:
                     type = "RamSigned";
@@ -1087,8 +1088,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case TypeAttribute::Float:
                     type = "RamFloat";
                     break;
-                default:
-                    assert(false && "Invalid type");
+
+                case TypeAttribute::Symbol:
+                case TypeAttribute::Record:
+                    type = "RamDomain";
+                    break;
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
@@ -1307,10 +1311,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ")) == std::string::npos)";
                     break;
                 }
-                default:
-                    assert(false && "Unsupported Operation!");
-                    break;
             }
+
             PRINT_END_COMMENT(out);
 
 #undef EVAL_CHILD
@@ -1709,7 +1711,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         out << ").c_str()";
                         break;
                     case TypeAttribute::Record:
-                        assert(false);
+                        fatal("unhandled type");
                 }
             }
             out << ")";
@@ -1724,7 +1726,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
 
             out << "pack(recordTable,"
-                << "ram::Tuple<RamDomain," << pack.getArguments().size() << ">";
+                << "Tuple<RamDomain," << pack.getArguments().size() << ">";
             if (pack.getArguments().size() == 0) {
                 out << "{{}}";
             } else {
@@ -1759,12 +1761,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
         // -- safety net --
 
         void visitUndefValue(const RamUndefValue&, std::ostream& /*out*/) override {
-            assert(false && "Compilation error");
+            fatal("Compilation error");
         }
 
         void visitNode(const RamNode& node, std::ostream& /*out*/) override {
-            std::cerr << "Unsupported node type: " << typeid(node).name() << "\n";
-            assert(false && "Unsupported Node Type!");
+            fatal("Unsupported node type: %s", typeid(node).name());
         }
     };
 
@@ -1789,6 +1790,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     std::string classname = "Sf_" + id;
 
     // generate C++ program
+
+    if (Global::config().has("verbose")) {
+        os << "#define _SOUFFLE_STATS\n";
+    }
     os << "\n#include \"souffle/CompiledSouffle.h\"\n";
     if (Global::config().has("provenance")) {
         os << "#include <mutex>\n";
@@ -1817,50 +1822,28 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         const auto& returnType = functorTypes.first;
         const auto& argsTypes = functorTypes.second;
 
-        switch (returnType) {
-            case TypeAttribute::Signed:
-                os << "souffle::RamSigned ";
-                break;
-            case TypeAttribute::Unsigned:
-                os << "souffle::RamUnsigned ";
-                break;
-            case TypeAttribute::Float:
-                os << "souffle::RamFloat ";
-                break;
-            case TypeAttribute::Symbol:
-                os << "const char * ";
-                break;
-            case TypeAttribute::Record:
-                abort();
-        }
-
-        os << name << "(";
-        std::vector<std::string> args;
-        for (const TypeAttribute typeAttribute : argsTypes) {
-            switch (typeAttribute) {
+        auto cppTypeDecl = [](TypeAttribute ty) -> char const* {
+            switch (ty) {
                 case TypeAttribute::Signed:
-                    args.push_back("souffle::RamSigned");
-                    break;
+                    return "souffle::RamSigned";
                 case TypeAttribute::Unsigned:
-                    args.push_back("souffle::RamUnsigned");
-                    break;
+                    return "souffle::RamUnsigned";
                 case TypeAttribute::Float:
-                    args.push_back("souffle::RamFloat");
-                    break;
+                    return "souffle::RamFloat";
                 case TypeAttribute::Symbol:
-                    args.push_back("const char *");
-                    break;
+                    return "const char *";
                 case TypeAttribute::Record:
-                    abort();
+                    fatal("records cannot be used by user-defined functors");
             }
-        }
-        os << join(args, ",");
-        os << ");\n";
+
+            UNREACHABLE_BAD_CASE_ANALYSIS
+        };
+
+        format(os, "%s %s(%s);\n", cppTypeDecl(returnType), name, join(map(argsTypes, cppTypeDecl), ","));
     }
     os << "}\n";
     os << "\n";
     os << "namespace souffle {\n";
-    os << "using namespace ram;\n";
     os << "static const RamDomain RAM_BIT_SHIFT_MASK = RAM_DOMAIN_SIZE - 1;\n";
 
     // synthesise data-structures for relations
@@ -2108,15 +2091,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // add code printing hint statistics
     os << "\n// -- relation hint statistics --\n";
-    os << "if(isHintsProfilingEnabled()) {\n";
-    os << "std::cout << \" -- Operation Hint Statistics --\\n\";\n";
-    for (auto rel : prog.getRelations()) {
-        auto name = getRelationName(*rel);
-        os << "std::cout << \"Relation " << name << ":\\n\";\n";
-        os << name << "->printHintStatistics(std::cout,\"  \");\n";
-        os << "std::cout << \"\\n\";\n";
+
+    if (Global::config().has("verbose")) {
+        for (auto rel : prog.getRelations()) {
+            auto name = getRelationName(*rel);
+            os << "std::cout << \"Statistics for Relation " << name << ":\\n\";\n";
+            os << name << "->printStatistics(std::cout);\n";
+            os << "std::cout << \"\\n\";\n";
+        }
     }
-    os << "}\n";
 
     os << "SignalHandler::instance()->reset();\n";
 
@@ -2163,9 +2146,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
-        os << "RWOperation rwOperation(directiveMap);\n";
         os << "IOSystem::getInstance().getWriter(";
-        os << "rwOperation, symTable, recordTable";
+        os << "directiveMap, symTable, recordTable";
         os << ")->writeAll(*" << getRelationName(store->getRelation()) << ");\n";
 
         os << "} catch (std::exception& e) {std::cerr << e.what();exit(1);}\n";
@@ -2199,9 +2181,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "directiveMap[\"filename\"].front() != '/') {";
         os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
         os << "}\n";
-        os << "RWOperation rwOperation(directiveMap);\n";
         os << "IOSystem::getInstance().getReader(";
-        os << "rwOperation, symTable, recordTable";
+        os << "directiveMap, symTable, recordTable";
         os << ")->readAll(*" << getRelationName(load->getRelation());
         os << ");\n";
         os << "} catch (std::exception& e) {std::cerr << \"Error loading data: \" << e.what() << "
@@ -2222,12 +2203,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         Json types = Json::object{{name, relJson}};
 
         os << "try {";
-        os << "RWOperation rwOperation;\n";
-        os << "rwOperation.set(\"IO\", \"stdout\");\n";
-        os << R"(rwOperation.set("name", ")" << name << "\");\n";
-        os << "rwOperation.set(\"types\",";
+        os << "std::map<std::string, std::string> rwOperation;\n";
+        os << "rwOperation[\"IO\"] = \"stdout\";\n";
+        os << R"(rwOperation["name"] = ")" << name << "\";\n";
+        os << "rwOperation[\"types\"] = ";
         os << "\"" << escapeJSONstring(types.dump()) << "\"";
-        os << ");\n";
+        os << ";\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "rwOperation, symTable, recordTable";
         os << ")->writeAll(*" << relName << ");\n";

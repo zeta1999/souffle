@@ -78,7 +78,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstComponentType*>(&node));
         const auto& other = static_cast<const AstComponentType&>(node);
         return name == other.name && typeParams == other.typeParams;
     }
@@ -139,7 +138,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstComponentInit*>(&node));
         const auto& other = static_cast<const AstComponentInit&>(node);
         return instanceName == other.instanceName && *componentType == *other.componentType;
     }
@@ -373,7 +371,6 @@ protected:
     }
 
     bool equal(const AstNode& node) const override {
-        assert(nullptr != dynamic_cast<const AstComponent*>(&node));
         const auto& other = static_cast<const AstComponent&>(node);
 
         if (equal_ptr(componentType, other.componentType)) {

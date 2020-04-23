@@ -17,6 +17,7 @@
 #pragma once
 
 #include "RamTypes.h"
+#include "tinyformat.h"
 
 #include <algorithm>
 #include <array>
@@ -106,6 +107,24 @@ inline unsigned long __builtin_ctzll(unsigned long long value) {
 #endif
 
 namespace souffle {
+
+using tfm::format;
+
+template <typename... Args>
+[[noreturn]] void fatal(const char* fmt, const Args&... args) {
+    format(std::cerr, fmt, args...);
+    std::cerr << "\n";
+    assert(false && "fatal error; see std err");
+    abort();
+}
+
+// HACK:  Workaround for GCC <= 9.2 which does not perform exhaustive switch analysis.
+//        This is intended to be used to suppress spurious reachability warnings.
+#if defined(__GNUC__) && __GNUC__ < 10
+#define UNREACHABLE_BAD_CASE_ANALYSIS fatal("unhandled switch branch");
+#else
+#define UNREACHABLE_BAD_CASE_ANALYSIS (void);
+#endif
 
 // Forward declaration
 inline bool isPrefix(const std::string& prefix, const std::string& element);
@@ -300,6 +319,17 @@ bool contains(const C& container, const typename C::value_type& element) {
 }
 
 /**
+ * Version of contains specialized for maps.
+ *
+ * This workaround is needed because of set container, for which value_type == key_type,
+ * which is ambiguous in this context.
+ */
+template <typename C>
+bool contains(const C& container, const typename C::value_type::first_type& element) {
+    return container.find(element) != container.end();
+}
+
+/**
  * Returns the first element in a container that satisfies a given predicate,
  * nullptr otherwise.
  */
@@ -308,6 +338,21 @@ typename C::value_type getIf(const C& container, std::function<bool(const typena
     auto res = std::find_if(container.begin(), container.end(),
             [&](const typename C::value_type item) { return pred(item); });
     return res == container.end() ? nullptr : *res;
+}
+
+/**
+ * Get value for a given key; if not found, return default value.
+ */
+template <typename C>
+typename C::mapped_type const& getOr(
+        const C& container, typename C::key_type key, const typename C::mapped_type& defaultValue) {
+    auto it = container.find(key);
+
+    if (it != container.end()) {
+        return it->second;
+    } else {
+        return defaultValue;
+    }
 }
 
 /**
@@ -340,6 +385,19 @@ std::vector<T*> toPtrVector(const std::vector<std::unique_ptr<T>>& v) {
         res.push_back(e.get());
     }
     return res;
+}
+
+/**
+ * Applies a function to each element of a vector and returns the results.
+ */
+template <typename A, typename F /* : A -> B */>
+auto map(const std::vector<A>& xs, F&& f) {
+    std::vector<decltype(f(xs[0]))> ys;
+    ys.reserve(xs.size());
+    for (auto&& x : xs) {
+        ys.emplace_back(f(x));
+    }
+    return ys;
 }
 
 // -------------------------------------------------------------
@@ -562,6 +620,14 @@ bool equal_ptr(const T* a, const T* b) {
 template <typename T>
 bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
     return equal_ptr(a.get(), b.get());
+}
+
+/**
+ * Checks if the object of type Source can be casted to type Destination.
+ */
+template <typename Destination, typename Source>
+bool isA(const Source& src) {
+    return dynamic_cast<const Destination*>(&src) != nullptr;
 }
 
 // -------------------------------------------------------------------------------
@@ -1573,59 +1639,57 @@ public:
 // -------------------------------------------------------------------------------
 
 /**
- * A utility function to determine whether hints-profiling is enabled or
- * disabled;
+ * cache hits/misses.
  */
-inline bool isHintsProfilingEnabled() {
-    return std::getenv("SOUFFLE_PROFILE_HINTS") != nullptr;
-}
+#ifdef _SOUFFLE_STATS
 
-/**
- * A utility class to keep track of cache hits/misses.
- */
 class CacheAccessCounter {
-    bool active;
     std::atomic<std::size_t> hits;
     std::atomic<std::size_t> misses;
 
 public:
-    CacheAccessCounter(bool active = isHintsProfilingEnabled()) : active(active), hits(0), misses(0) {}
-
-    CacheAccessCounter(const CacheAccessCounter& other)
-            : active(other.active), hits((active) ? other.getHits() : 0),
-              misses((active) ? other.getMisses() : 0) {}
-
+    CacheAccessCounter() : hits(0), misses(0) {}
+    CacheAccessCounter(const CacheAccessCounter& other) : hits(other.getHits()), misses(other.getMisses()) {}
     void addHit() {
-        if (active) {
-            hits.fetch_add(1, std::memory_order_relaxed);
-        }
+        hits.fetch_add(1, std::memory_order_relaxed);
     }
-
     void addMiss() {
-        if (active) {
-            misses.fetch_add(1, std::memory_order_relaxed);
-        }
+        misses.fetch_add(1, std::memory_order_relaxed);
     }
-
     std::size_t getHits() const {
-        assert(active);
         return hits;
     }
-
     std::size_t getMisses() const {
-        assert(active);
         return misses;
     }
-
     std::size_t getAccesses() const {
-        assert(active);
         return getHits() + getMisses();
     }
-
     void reset() {
         hits = 0;
         misses = 0;
     }
 };
 
+#else
+
+class CacheAccessCounter {
+public:
+    CacheAccessCounter() = default;
+    CacheAccessCounter(const CacheAccessCounter& /* other */) = default;
+    inline void addHit() {}
+    inline void addMiss() {}
+    inline std::size_t getHits() {
+        return 0;
+    }
+    inline std::size_t getMisses() {
+        return 0;
+    }
+    inline std::size_t getAccesses() {
+        return 0;
+    }
+    inline void reset() {}
+};
+
+#endif
 }  // end namespace souffle

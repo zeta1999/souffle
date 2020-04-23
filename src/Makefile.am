@@ -147,13 +147,13 @@ souffle_sources = \
         RelationTag.h                             \
         ReorderLiteralsTransformer.cpp            \
         ResolveAliasesTransformer.cpp             \
-        RWOperation.h                             \
         SignalHandler.h                           \
         SrcLocation.cpp    SrcLocation.h          \
         Synthesiser.cpp       Synthesiser.h       \
         SynthesiserRelation.cpp                   \
         SynthesiserRelation.h                     \
         TypeSystem.cpp        TypeSystem.h        \
+        Util.cpp                                  \
         WriteStream.h                             \
         WriteStreamCSV.h                          \
         parser.cc             parser.hh           \
@@ -194,7 +194,6 @@ soufflepublic_HEADERS = \
         ExplainProvenanceImpl.h                   \
         ExplainTree.h                             \
         EquivalenceRelation.h                     \
-        RWOperation.h                             \
         IOSystem.h                                \
         IterUtils.h                               \
         LambdaBTree.h                             \
@@ -207,6 +206,7 @@ soufflepublic_HEADERS = \
         ReadStream.h                              \
         ReadStreamCSV.h                           \
         RecordTable.h                             \
+        SerialisationStream.h                     \
         SignalHandler.h                           \
         SouffleInterface.h                        \
         SymbolTable.h                             \
@@ -216,6 +216,7 @@ soufflepublic_HEADERS = \
         WriteStream.h                             \
         WriteStreamCSV.h                          \
         json11.h                                  \
+        tinyformat.h                              \
         $(libz_sources)                           \
         $(sqlite_sources)
 

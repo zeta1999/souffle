@@ -105,9 +105,7 @@ protected:
                         tuple[inputMap[column]] = ramBitCast(RamFloatFromString(element, &charactersRead));
                         break;
                     }
-                    default: {
-                        fatal("invalid type attribute: `%c`", ty[0]);
-                    }
+                    default: fatal("invalid type attribute: `%c`", ty[0]);
                 }
                 // Check if everything was read.
                 if (charactersRead != element.size()) {

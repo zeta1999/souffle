@@ -109,9 +109,7 @@ protected:
                     recordValues[i] = readRecord(source, recordType, pos, &consumed);
                     break;
                 }
-                default: {
-                    fatal("Invalid type attribute");
-                }
+                default: fatal("Invalid type attribute");
             }
             pos += consumed;
         }

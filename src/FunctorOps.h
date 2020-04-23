@@ -498,9 +498,7 @@ inline bool isOverloadedFunctor(const FunctorOp functor) {
             return true;
         }
 
-        default: {
-            return false;
-        }
+        default: return false;
     }
 }
 
@@ -623,9 +621,7 @@ inline bool isInfixFunctorOp(const FunctorOp op) {
             return true;
         }
 
-        default: {
-            return false;
-        }
+        default: return false;
     }
 }
 

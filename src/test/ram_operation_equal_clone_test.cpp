@@ -358,7 +358,7 @@ TEST(RamIndexAggregate, CloneAndEquals) {
             std::make_unique<RamTupleElement>(1, 1), std::make_unique<RamSignedConstant>(80));
     RamPattern a_criteria;
     a_criteria.first.emplace_back(new RamUndefValue);
-    a_criteria.first.emplace_back(new RamUndefValue); 
+    a_criteria.first.emplace_back(new RamUndefValue);
     a_criteria.second.emplace_back(new RamUndefValue);
     a_criteria.second.emplace_back(new RamUndefValue);
     RamIndexAggregate a(std::move(a_return), AggregateOp::MIN, std::make_unique<RamRelationReference>(&sqrt),

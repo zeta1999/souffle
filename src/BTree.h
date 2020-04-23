@@ -1924,7 +1924,6 @@ public:
                 delete static_cast<inner_node*>(root);
             }
         }
-        delete root;
         root = nullptr;
         leftmost = nullptr;
     }

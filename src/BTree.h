@@ -331,8 +331,6 @@ protected:
          */
         base(bool inner) : parent(nullptr), numElements(0), position(0), inner(inner) {}
 
-        virtual ~base() = default;
-
         bool isLeaf() const {
             return !inner;
         }
@@ -1062,9 +1060,15 @@ protected:
         inner_node() : node(true) {}
 
         // clear up child nodes recursively
-        ~inner_node() override {
+        ~inner_node() {
             for (unsigned i = 0; i <= this->numElements; ++i) {
-                delete children[i];
+                if (children[i] != nullptr) {
+                    if (children[i]->isLeaf()) {
+                        delete static_cast<leaf_node*>(children[i]);
+                    } else {
+                        delete static_cast<inner_node*>(children[i]);
+                    }
+                }
             }
         }
     };
@@ -1913,7 +1917,13 @@ public:
      * Clears this tree.
      */
     void clear() {
-        delete root;
+        if (root != nullptr) {
+            if (root->isLeaf()) {
+                delete static_cast<leaf_node*>(root);
+            } else {
+                delete static_cast<inner_node*>(root);
+            }
+        }
         root = nullptr;
         leftmost = nullptr;
     }

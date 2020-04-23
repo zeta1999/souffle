@@ -441,7 +441,7 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             rel->setQualifiedName(relName);
             // add attributes
             std::map<const AstArgument*, TypeSet> argTypes =
-                    TypeAnalysis::analyseTypes(env, *aggClause, &program);
+                    TypeAnalysis::analyseTypes(env, *aggClause, program);
             for (const auto& cur : head->getArguments()) {
                 rel->addAttribute(std::make_unique<AstAttribute>(
                         toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));

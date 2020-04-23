@@ -158,6 +158,48 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
     // -- type checks --
 
+    // check if in all atoms the arguments are subtypes of declared types.
+    visitDepthFirst(nodes, [&](const AstAtom& atom) {
+        auto relation = getAtomRelation(&atom, &program);
+        if (relation == nullptr) {
+            return;  // error unrelated to types.
+        }
+
+        auto attributes = relation->getAttributes();
+        auto arguments = atom.getArguments();
+        if (attributes.size() != arguments.size()) {
+            return;  // error in input program
+        }
+
+        for (size_t i = 0; i < attributes.size(); ++i) {
+            auto& typeName = attributes[i]->getTypeName();
+            if (typeEnv.isType(typeName)) {
+                auto argTypes = typeAnalysis.getTypes(arguments[i]);
+                auto& attributeType = typeEnv.getType(typeName);
+
+                if (argTypes.isAll() || argTypes.empty()) {
+                    continue;  // This will be reported later.
+                }
+
+                // Attribute and argument type agree if, argument type is a subtype of declared type or is of
+                // the appropriate constant type.
+                bool validAttribute = all_of(argTypes, [&attributeType](const Type& type) {
+                    return isSubtypeOf(type, attributeType) ||
+                           (isA<ConstantType>(type) && isSubtypeOf(attributeType, type));
+                });
+                if (!validAttribute) {
+                    if (Global::config().has("legacy")) {
+                        report.addWarning("Atoms argument type is not a subtype of its declared type",
+                                arguments[i]->getSrcLoc());
+                    } else {
+                        report.addError("Atoms argument type is not a subtype of its declared type",
+                                arguments[i]->getSrcLoc());
+                    }
+                }
+            }
+        }
+    });
+
     // - variables -
     visitDepthFirst(nodes, [&](const AstVariable& var) {
         if (typeAnalysis.getTypes(&var).empty()) {
@@ -709,7 +751,7 @@ void AstSemanticCheckerImpl::checkRelationDeclaration(const AstRelation& relatio
         AstQualifiedName typeName = attr->getTypeName();
 
         /* check whether type exists */
-        if (!typeEnv.isPredefinedType(typeName) && (getType(program, typeName) == nullptr)) {
+        if (!typeEnv.isPrimitiveType(typeName) && (getType(program, typeName) == nullptr)) {
             report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
                                     toString(attr->getTypeName()),
                     attr->getSrcLoc());
@@ -759,18 +801,19 @@ void AstSemanticCheckerImpl::checkRelation(const AstRelation& relation) {
 void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
     // check presence of all the element types and that all element types are based off a primitive
     for (const AstQualifiedName& sub : type.getTypes()) {
-        if (!typeEnv.isPredefinedType(sub)) {
-            const AstType* subt = getType(program, sub);
-            if (subt == nullptr) {
-                report.addError("Undefined type " + toString(sub) + " in definition of union type " +
-                                        toString(type.getQualifiedName()),
-                        type.getSrcLoc());
-            } else if ((dynamic_cast<const AstUnionType*>(subt) == nullptr) &&
-                       (dynamic_cast<const AstSubsetType*>(subt) == nullptr)) {
-                report.addError("Union type " + toString(type.getQualifiedName()) +
-                                        " contains the non-primitive type " + toString(sub),
-                        type.getSrcLoc());
-            }
+        if (typeEnv.isPrimitiveType(sub)) {
+            continue;
+        }
+        const AstType* subt = getType(program, sub);
+        if (subt == nullptr) {
+            report.addError("Undefined type " + toString(sub) + " in definition of union type " +
+                                    toString(type.getQualifiedName()),
+                    type.getSrcLoc());
+        } else if ((dynamic_cast<const AstUnionType*>(subt) == nullptr) &&
+                   (dynamic_cast<const AstSubsetType*>(subt) == nullptr)) {
+            report.addError("Union type " + toString(type.getQualifiedName()) +
+                                    " contains the non-primitive type " + toString(sub),
+                    type.getSrcLoc());
         }
     }
 }
@@ -778,7 +821,7 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
 void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     // check proper definition of all field types
     for (const auto& field : type.getFields()) {
-        if (!typeEnv.isPredefinedType(field.type) && (getType(program, field.type) == nullptr)) {
+        if (!typeEnv.isPrimitiveType(field.type) && (getType(program, field.type) == nullptr)) {
             report.addError(
                     "Undefined type " + toString(field.type) + " in definition of field " + field.name,
                     type.getSrcLoc());

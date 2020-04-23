@@ -622,6 +622,14 @@ bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
     return equal_ptr(a.get(), b.get());
 }
 
+/**
+ * Checks if the object of type Source can be casted to type Destination.
+ */
+template <typename Destination, typename Source>
+bool isA(const Source& src) {
+    return dynamic_cast<const Destination*>(&src) != nullptr;
+}
+
 // -------------------------------------------------------------------------------
 //                           General Print Utilities
 // -------------------------------------------------------------------------------

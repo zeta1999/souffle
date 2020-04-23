@@ -676,10 +676,7 @@ protected:
 
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexChoice&>(node);
-        return RamRelationOperation::equal(other) &&
-               equal_targets(queryPattern.first, other.queryPattern.first) &&
-               equal_targets(queryPattern.second, other.queryPattern.second) &&
-               getCondition() == other.getCondition();
+        return RamIndexOperation::equal(other) && RamAbstractChoice::equal(other);
     }
 };
 

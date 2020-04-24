@@ -331,7 +331,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
         }
 
         std::unique_ptr<RamExpression> visitIntrinsicFunctor(const AstIntrinsicFunctor& inf) override {
-            VecOwn<RamExpression> values;
+            std::vector<std::unique_ptr<RamExpression>> values;
             for (const auto& cur : inf.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
@@ -798,10 +798,10 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
     for (auto* cur : reverse(generators)) {
         if (auto agg = dynamic_cast<const AstAggregator*>(cur)) {
             // condition for aggregate and helper function to add terms
-            Own<RamCondition> aggCondition;
-            auto addAggCondition = [&](Own<RamCondition> arg) {
-                aggCondition = aggCondition ? mk<RamConjunction>(std::move(aggCondition), std::move(arg))
-                                            : std::move(arg);
+            std::unique_ptr<RamCondition> aggCond;
+            auto addAggCondition = [&](std::unique_ptr<RamCondition> arg) {
+                aggCond = aggCond ? std::make_unique<RamConjunction>(std::move(aggCond), std::move(arg))
+                                  : std::move(arg);
             };
 
             // translate constraints of sub-clause
@@ -826,12 +826,12 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             // translate arguments's of atom (if exists) to conditions
             if (atom != nullptr) {
                 size_t pos = 0;
-                auto addAggEqCondition = [&](Own<RamExpression> value) {
+                auto addAggEqCondition = [&](std::unique_ptr<RamExpression> value) {
                     if (isRamUndefValue(value.get())) return;
 
                     // FIXME: equiv' for float types (`FEQ`)
-                    addAggCondition(mk<RamConstraint>(
-                            BinaryConstraintOp::EQ, mk<RamTupleElement>(level, pos), std::move(value)));
+                    addAggCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                            std::make_unique<RamTupleElement>(level, pos), std::move(value)));
                 };
                 for (auto* arg : atom->getArguments()) {
                     // variable bindings are issued differently since we don't want self
@@ -854,11 +854,12 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             auto expr = translator.translateValue(agg->getTargetExpression(), valueIndex);
 
             // add Ram-Aggregation layer
-            op = mk<RamAggregate>(std::move(op), agg->getOperator(), translator.translateRelation(atom),
-                    expr ? std::move(expr) : mk<RamUndefValue>(),
-                    aggCondition ? std::move(aggCondition) : mk<RamTrue>(), level);
+            op = std::make_unique<RamAggregate>(std::move(op), agg->getOperator(),
+                    translator.translateRelation(atom),
+                    expr ? std::move(expr) : std::make_unique<RamUndefValue>(),
+                    aggCond ? std::move(aggCond) : std::make_unique<RamTrue>(), level);
         } else if (const auto* func = dynamic_cast<const AstIntrinsicFunctor*>(cur)) {
-            VecOwn<RamExpression> args;
+            std::vector<std::unique_ptr<RamExpression>> args;
             for (auto&& x : func->getArguments()) {
                 args.push_back(translator.translateValue(x, valueIndex));
             }
@@ -878,7 +879,8 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
                 }
             };
 
-            op = mk<RamNestedIntrinsicOperator>(func_op(), std::move(args), std::move(op), level);
+            op = std::make_unique<RamNestedIntrinsicOperator>(
+                    func_op(), std::move(args), std::move(op), level);
         }
 
         --level;

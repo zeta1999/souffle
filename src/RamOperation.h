@@ -884,8 +884,8 @@ inline std::ostream& operator<<(std::ostream& os, RamNestedIntrinsicOp e) {
  */
 class RamNestedIntrinsicOperator : public RamTupleOperation {
 public:
-    RamNestedIntrinsicOperator(
-            RamNestedIntrinsicOp op, VecOwn<RamExpression> args, Own<RamOperation> nested, int ident)
+    RamNestedIntrinsicOperator(RamNestedIntrinsicOp op, std::vector<std::unique_ptr<RamExpression>> args,
+            std::unique_ptr<RamOperation> nested, int ident)
             : RamTupleOperation(ident, std::move(nested)), args(std::move(args)), op(op) {}
 
     RamNestedIntrinsicOp getFunction() const {
@@ -915,8 +915,8 @@ public:
 protected:
     void print(std::ostream& os, int tabpos) const override {
         os << times(" ", tabpos);
-        os << op << "(" << join(args, ",", print_deref<Own<RamExpression>>()) << ") INTO t" << getTupleId()
-           << "\n";
+        os << op << "(" << join(args, ",", print_deref<std::unique_ptr<RamExpression>>()) << ") INTO t"
+           << getTupleId() << "\n";
         RamNestedOperation::print(os, tabpos + 1);
     }
 
@@ -925,7 +925,7 @@ protected:
         return RamTupleOperation::equal(node) && op == other.op && equal_targets(args, other.args);
     }
 
-    VecOwn<RamExpression> args;
+    std::vector<std::unique_ptr<RamExpression>> args;
     RamNestedIntrinsicOp op;
 };
 

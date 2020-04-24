@@ -114,6 +114,7 @@ public:
         for (auto cur : qualifiers) {
             res->qualifiers.insert(cur);
         }
+        res->setRepresentation(representation);
         return res;
     }
 

@@ -115,6 +115,7 @@ public:
         auto res = new AstRelation(name, getSrcLoc());
         res->attributes = souffle::clone(attributes);
         res->qualifiers = qualifiers;
+        res->representation = representation;
         return res;
     }
 

@@ -736,6 +736,8 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                                 std::unique_ptr<RamExpression>(iagg->getExpression().clone()),
                                 std::unique_ptr<RamCondition>(iagg->getCondition().clone()),
                                 std::move(updatedPattern), iagg->getTupleId());
+                    } else {
+                        fatal("New RamIndexOperation subclass found but not supported while making index.");
                     }
                 }
             }
@@ -796,6 +798,9 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                                 std::unique_ptr<RamExpression>(iagg->getExpression().clone()),
                                 std::unique_ptr<RamCondition>(iagg->getCondition().clone()),
                                 iagg->getTupleId());
+                    } else {
+                        fatal("New RamIndexOperation subclass found but not supported while transforming "
+                              "index.");
                     }
                 }
             }

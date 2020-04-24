@@ -317,11 +317,11 @@ public:
     RamIndexOperation* clone() const override {
         RamPattern resQueryPattern;
 
-        for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
-            resQueryPattern.first.emplace_back(queryPattern.first[i]->clone());
+        for (const auto& i : queryPattern.first) {
+            resQueryPattern.first.emplace_back(i->clone());
         }
-        for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
-            resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
+        for (const auto& i : queryPattern.second) {
+            resQueryPattern.second.emplace_back(i->clone());
         }
         return new RamIndexOperation(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::move(resQueryPattern),
@@ -412,11 +412,11 @@ public:
     RamIndexScan* clone() const override {
         RamPattern resQueryPattern;
 
-        for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
-            resQueryPattern.first.emplace_back(queryPattern.first[i]->clone());
+        for (const auto& i : queryPattern.first) {
+            resQueryPattern.first.emplace_back(i->clone());
         }
-        for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
-            resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
+        for (const auto& i : queryPattern.second) {
+            resQueryPattern.second.emplace_back(i->clone());
         }
         return new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
                 std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
@@ -456,11 +456,11 @@ public:
     RamParallelIndexScan* clone() const override {
         RamPattern resQueryPattern;
 
-        for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
-            resQueryPattern.first.emplace_back(queryPattern.first[i]->clone());
+        for (const auto& i : queryPattern.first) {
+            resQueryPattern.first.emplace_back(i->clone());
         }
-        for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
-            resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
+        for (const auto& i : queryPattern.second) {
+            resQueryPattern.second.emplace_back(i->clone());
         }
         return new RamParallelIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::move(resQueryPattern),
@@ -651,11 +651,11 @@ public:
     RamIndexChoice* clone() const override {
         RamPattern resQueryPattern;
 
-        for (size_t i = 0; i < queryPattern.first.size(); ++i) {
-            resQueryPattern.first.emplace_back(queryPattern.first[i]->clone());
+        for (const auto& i : queryPattern.first) {
+            resQueryPattern.first.emplace_back(i->clone());
         }
-        for (size_t i = 0; i < queryPattern.second.size(); ++i) {
-            resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
+        for (const auto& i : queryPattern.second) {
+            resQueryPattern.second.emplace_back(i->clone());
         }
         auto* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
@@ -704,11 +704,11 @@ public:
     RamParallelIndexChoice* clone() const override {
         RamPattern resQueryPattern;
 
-        for (size_t i = 0; i < queryPattern.first.size(); ++i) {
-            resQueryPattern.first.emplace_back(queryPattern.first[i]->clone());
+        for (const auto& i : queryPattern.first) {
+            resQueryPattern.first.emplace_back(i->clone());
         }
-        for (size_t i = 0; i < queryPattern.second.size(); ++i) {
-            resQueryPattern.second.emplace_back(queryPattern.second[i]->clone());
+        for (const auto& i : queryPattern.second) {
+            resQueryPattern.second.emplace_back(i->clone());
         }
         auto* res = new RamParallelIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
                 getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
@@ -894,11 +894,11 @@ public:
     RamIndexAggregate* clone() const override {
         RamPattern pattern;
 
-        for (unsigned int i = 0; i < queryPattern.first.size(); ++i) {
-            pattern.first.emplace_back(queryPattern.first[i]->clone());
+        for (const auto& i : getRangePattern().first) {
+            pattern.first.emplace_back(i->clone());
         }
-        for (unsigned int i = 0; i < queryPattern.second.size(); ++i) {
-            pattern.second.emplace_back(queryPattern.second[i]->clone());
+        for (const auto& i : getRangePattern().second) {
+            pattern.second.emplace_back(i->clone());
         }
 
         return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,

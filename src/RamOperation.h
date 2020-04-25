@@ -298,6 +298,9 @@ public:
     // TODO: does this need to be refactored?
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamRelationOperation::getChildNodes();
+        for (auto& pattern : queryPattern.first) {
+            res.push_back(pattern.get());
+        }
         for (auto& pattern : queryPattern.second) {
             res.push_back(pattern.get());
         }

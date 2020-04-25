@@ -573,7 +573,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
                 queryPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
         if (indexable) {
             // Merge Index Pattern here
-            const auto prevPattern = iscan->getRangePattern().first;
+            const auto prevPattern = iscan->getRangePattern();
             auto addCondition = [&](std::unique_ptr<RamCondition> c) {
                 if (condition != nullptr) {
                     condition = std::make_unique<RamConjunction>(std::move(condition), std::move(c));
@@ -582,16 +582,16 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
                 }
             };
             for (std::size_t i = 0; i < rel.getArity(); i++) {
-                if (prevPattern[i] != nullptr && prevPattern[i] != nullptr) {
+                if (prevPattern.first[i] != nullptr) {
                     if (queryPattern.first[i] == nullptr) {
                         // found a new indexable attribute
-                        queryPattern.first[i] = std::unique_ptr<RamExpression>(prevPattern[i]->clone());
+                        queryPattern.first[i] = std::unique_ptr<RamExpression>(prevPattern.first[i]->clone());
                     } else {
                         // found a new constraint that is not dependent on the current scan level
                         // and can be hoisted in a later transformation.
                         // FIXME: `FEQ` handling; need to know if the expr is a float exp or not
                         addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                std::unique_ptr<RamExpression>(prevPattern[i]->clone()),
+                                std::unique_ptr<RamExpression>(prevPattern.first[i]->clone()),
                                 std::unique_ptr<RamExpression>(queryPattern.first[i]->clone())));
                     }
                 }
@@ -844,6 +844,15 @@ std::unique_ptr<RamOperation> IfConversionTransformer::rewriteIndexScan(const Ra
     if (tupleNotUsed) {
         // replace IndexScan with an Filter/Existence check
         std::vector<std::unique_ptr<RamExpression>> newValues;
+
+        size_t arity = indexScan->getRelation().getArity();
+	for (size_t i=0; i<arity; ++i)
+	{
+	    if (*(indexScan->getRangePattern().first[i]) != *(indexScan->getRangePattern().second[i])) {
+	        fatal("Inequal upper and lower bounds not supported while rewriting index scan in IfConversionTransformer");
+	    }
+	}
+
         for (auto& cur : indexScan->getRangePattern().second) {
             RamExpression* val = nullptr;
             if (cur != nullptr) {

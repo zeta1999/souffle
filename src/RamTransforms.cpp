@@ -1146,14 +1146,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                 if (indexScan->getTupleId() == 0) {
                     changed = true;
                     const RamRelation& rel = indexScan->getRelation();
-                    RamPattern queryPattern;
-
-                    for (const RamExpression* cur : indexScan->getRangePattern().first) {
-                        queryPattern.first.push_back(clone(cur));
-                    }
-                    for (const RamExpression* cur : indexScan->getRangePattern().second) {
-                        queryPattern.second.push_back(clone(cur));
-                    }
+                    RamPattern queryPattern = clone(indexScan->getRangePattern());
                     return std::make_unique<RamParallelIndexScan>(
                             std::make_unique<RamRelationReference>(&rel), indexScan->getTupleId(),
                             std::move(queryPattern),
@@ -1164,14 +1157,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                 if (indexChoice->getTupleId() == 0) {
                     changed = true;
                     const RamRelation& rel = indexChoice->getRelation();
-                    RamPattern queryPattern;
-
-                    for (const RamExpression* cur : indexChoice->getRangePattern().first) {
-                        queryPattern.first.push_back(clone(cur));
-                    }
-                    for (const RamExpression* cur : indexChoice->getRangePattern().second) {
-                        queryPattern.second.push_back(clone(cur));
-                    }
+                    RamPattern queryPattern = clone(indexChoice->getRangePattern());
                     return std::make_unique<RamParallelIndexChoice>(
                             std::make_unique<RamRelationReference>(&rel), indexChoice->getTupleId(),
                             std::unique_ptr<RamCondition>(indexChoice->getCondition().clone()),

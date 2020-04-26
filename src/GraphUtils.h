@@ -56,14 +56,12 @@ public:
 
     /** Returns the set of vertices the given vertex has edges to */
     const std::set<Vertex, Compare>& successors(const Vertex& from) const {
-        assert(contains(from));
-        return _successors.find(from)->second;
+        return _successors.at(from);
     }
 
     /** Returns the set of vertices the given vertex has edges from */
     const std::set<Vertex, Compare>& predecessors(const Vertex& to) const {
-        assert(contains(to));
-        return _predecessors.find(to)->second;
+        return _predecessors.at(to);
     }
 
     /** Determines whether the given vertex is present */

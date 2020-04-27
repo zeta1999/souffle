@@ -400,27 +400,24 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(RamPattern&
         if (!isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
             // if no previous bounds are set then just assign them, consider both bounds to be set (but not
             // necessarily defined) in all remaining cases
+            indexable = true;
             if (isRamUndefValue(queryPattern.first[element].get()) &&
                     isRamUndefValue(queryPattern.second[element].get())) {
-                indexable = true;
                 queryPattern.first[element] = std::move(lowerExpression);
                 queryPattern.second[element] = std::move(upperExpression);
                 // if lower bound is undefined and we have a new lower bound then assign it
             } else if (isRamUndefValue(queryPattern.first[element].get()) &&
                        !isRamUndefValue(lowerExpression.get()) && isRamUndefValue(upperExpression.get())) {
-                indexable = true;
                 queryPattern.first[element] = std::move(lowerExpression);
                 // if upper bound is undefined and we have a new upper bound then assign it
             } else if (isRamUndefValue(queryPattern.second[element].get()) &&
                        isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
-                indexable = true;
                 queryPattern.second[element] = std::move(upperExpression);
                 // if both bounds are defined ...
                 // and equal then we have a previous equality constraint i.e. Tuple[level, element] = <expr1>
             } else if (!isRamUndefValue(queryPattern.first[element].get()) &&
                        !isRamUndefValue(queryPattern.second[element].get()) &&
                        (*(queryPattern.first[element]) == *(queryPattern.second[element]))) {
-                indexable = true;
                 // new equality constraint i.e. Tuple[level, element] = <expr2>
                 // simply hoist <expr1> = <expr2> to the outer loop
                 if (!isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
@@ -448,7 +445,6 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(RamPattern&
                 // first one
             } else if (!isRamUndefValue(queryPattern.first[element].get()) ||
                        !isRamUndefValue(queryPattern.second[element].get())) {
-                indexable = true;
                 // if we have a new equality constraint and previous inequality constraints
                 if (!isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get()) &&
                         *lowerExpression == *upperExpression) {

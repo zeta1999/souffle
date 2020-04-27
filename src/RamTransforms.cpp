@@ -586,7 +586,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
                 op = std::make_unique<RamFilter>(std::move(condition), std::move(op));
             }
             return std::make_unique<RamIndexScan>(std::make_unique<RamRelationReference>(&rel), identifier,
-                    std::move(queryPattern), std::move(op), iscan->getProfileText());
+                    std::move(strengthenedPattern), std::move(op), iscan->getProfileText());
         }
     }
     return nullptr;

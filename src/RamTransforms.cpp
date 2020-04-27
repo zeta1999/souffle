@@ -374,7 +374,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
             }
         }
     }
-    return {nullptr, nullptr};
+    return {std::make_unique<RamUndefValue>(), std::make_unique<RamUndefValue>()};
 }
 
 std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(RamPattern& queryPattern,
@@ -397,11 +397,11 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(RamPattern&
         std::tie(lowerExpression, upperExpression) = getLowerUpperExpression(cond.get(), element, identifier);
 
         // we have new bounds if both are not nullptr
-        if (lowerExpression && upperExpression) {
+        if (!isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
             // if no previous bounds are set then just assign them, consider both bounds to be set (but not
             // necessarily defined) in all remaining cases
-            if (queryPattern.first[element].get() == nullptr &&
-                    queryPattern.second[element].get() == nullptr) {
+            if (isRamUndefValue(queryPattern.first[element].get()) &&
+                    isRamUndefValue(queryPattern.second[element].get())) {
                 indexable = true;
                 queryPattern.first[element] = std::move(lowerExpression);
                 queryPattern.second[element] = std::move(upperExpression);
@@ -494,17 +494,6 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(RamPattern&
     if (condition == nullptr) {
         condition = std::make_unique<RamTrue>();
     }
-
-    for (auto& p : queryPattern.first) {
-        if (p == nullptr) {
-            p = std::make_unique<RamUndefValue>();
-        }
-    }
-    for (auto& p : queryPattern.second) {
-        if (p == nullptr) {
-            p = std::make_unique<RamUndefValue>();
-        }
-    }
     return condition;
 }
 
@@ -514,8 +503,8 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
         int identifier = agg->getTupleId();
         RamPattern queryPattern;
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
-            queryPattern.first.emplace_back(nullptr);
-            queryPattern.second.emplace_back(nullptr);
+            queryPattern.first.push_back(std::make_unique<RamUndefValue>());
+            queryPattern.second.push_back(std::make_unique<RamUndefValue>());
         }
 
         bool indexable = false;
@@ -537,10 +526,9 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* s
         const RamRelation& rel = scan->getRelation();
         const int identifier = scan->getTupleId();
         RamPattern queryPattern;
-
         for (unsigned int i = 0; i < rel.getArity(); ++i) {
-            queryPattern.first.emplace_back(nullptr);
-            queryPattern.second.emplace_back(nullptr);
+            queryPattern.first.push_back(std::make_unique<RamUndefValue>());
+            queryPattern.second.push_back(std::make_unique<RamUndefValue>());
         }
 
         bool indexable = false;
@@ -562,24 +550,18 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
     if (const auto* filter = dynamic_cast<const RamFilter*>(&iscan->getOperation())) {
         const RamRelation& rel = iscan->getRelation();
         const int identifier = iscan->getTupleId();
-        RamPattern queryPattern;
-        for (unsigned int i = 0; i < rel.getArity(); ++i) {
-            queryPattern.first.emplace_back(nullptr);
-            queryPattern.second.emplace_back(nullptr);
-        }
+
+        RamPattern strengthenedPattern;
+        strengthenedPattern.first = clone(iscan->getRangePattern().first);
+        strengthenedPattern.second = clone(iscan->getRangePattern().second);
 
         bool indexable = false;
+        // strengthen the pattern with construct pattern
         std::unique_ptr<RamCondition> condition = constructPattern(
-                queryPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
+                strengthenedPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
+
         if (indexable) {
             // Merge Index Pattern here
-            RamPattern strengthenedPattern;
-            strengthenedPattern.first = clone(iscan->getRangePattern().first);
-            strengthenedPattern.second = clone(iscan->getRangePattern().second);
-
-            // strengthen the pattern with construct pattern
-            condition = constructPattern(
-                    strengthenedPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
 
             std::unique_ptr<RamOperation> op = std::unique_ptr<RamOperation>(filter->getOperation().clone());
             if (!isRamTrue(condition.get())) {

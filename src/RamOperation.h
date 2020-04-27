@@ -290,12 +290,14 @@ public:
     /**
      * @brief Get range pattern
      * @return A pair of std::vector of pointers to RamExpression objects
-     */
+     * These vectors represent the lower and upper bounds for each attribute in the tuple
+     * <expr1> <= Tuple[level, element] <= <expr2>
+     * We have that at an index for an attribute, its bounds are <expr1> and <expr2> respectively
+     * */
     std::pair<std::vector<RamExpression*>, std::vector<RamExpression*>> getRangePattern() const {
         return std::make_pair(toPtrVector(queryPattern.first), toPtrVector(queryPattern.second));
     }
 
-    // TODO: does this need to be refactored?
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamRelationOperation::getChildNodes();
         for (auto& pattern : queryPattern.first) {

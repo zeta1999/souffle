@@ -143,8 +143,12 @@ public:
     void print(std::ostream& out) const override;
 
 private:
-    // only allow type environments to create instances
     friend class TypeEnvironment;
+    friend class TypeEnvironmentAnalysis;
+
+    void clear() {
+        elementTypes.clear();
+    }
 
     /** The contained element types */
     std::vector<const Type*> elementTypes;

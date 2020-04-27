@@ -76,6 +76,36 @@ inline bool isEqConstraint(const BinaryConstraintOp constraintOp) {
     return false;
 }
 
+// need to distinguish which inequalities are indexable and thus introduce isIneqConstraint
+inline bool isIneqConstraint(const BinaryConstraintOp constraintOp) {
+    switch (constraintOp) {
+        case BinaryConstraintOp::LT:
+        case BinaryConstraintOp::GT:
+        case BinaryConstraintOp::LE:
+        case BinaryConstraintOp::GE:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
+inline bool isLessThanConstraint(const BinaryConstraintOp constraintOp) {
+    return constraintOp == BinaryConstraintOp::LT;
+}
+
+inline bool isGreaterThanConstraint(const BinaryConstraintOp constraintOp) {
+    return constraintOp == BinaryConstraintOp::GT;
+}
+
+inline bool isLessEqualConstraint(const BinaryConstraintOp constraintOp) {
+    return constraintOp == BinaryConstraintOp::LE;
+}
+
+inline bool isGreaterEqualConstraint(const BinaryConstraintOp constraintOp) {
+    return constraintOp == BinaryConstraintOp::GE;
+}
+
 /**
  * Utility function, informing whether constraint is overloaded.
  * Only the signed version's are treated as overloaded (as they are returned by the parser).

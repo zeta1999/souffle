@@ -362,7 +362,13 @@ SearchSignature searchSignature(Seq const& xs) {
 }  // namespace
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {
-    return searchSignature(search->getRangePattern());
+    size_t arity = search->getRelation().getArity();
+    for (size_t i = 0; i < arity; ++i) {
+        if (*(search->getRangePattern().first[i]) != *(search->getRangePattern().second[i])) {
+            fatal("Lower and upper bounds do not match when retrieving search signature.");
+        }
+    }
+    return searchSignature(search->getRangePattern().second);
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(

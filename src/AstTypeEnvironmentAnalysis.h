@@ -17,8 +17,10 @@
 #pragma once
 
 #include "AstAnalysis.h"
+#include "GraphUtils.h"
 #include "RamTypes.h"
 #include "TypeSystem.h"
+#include "Util.h"
 #include <map>
 #include <ostream>
 #include <set>
@@ -42,15 +44,45 @@ public:
         return env;
     }
 
-    const std::set<TypeAttribute>& getUnionType(const AstQualifiedName& identifier) const {
-        return unionTypes.at(identifier);
+    const std::set<TypeAttribute>& getPrimitiveTypesInUnion(const AstQualifiedName& identifier) const {
+        return primitiveTypesInUnions.at(identifier);
+    }
+
+    bool isCyclic(const AstQualifiedName& identifier) const {
+        return contains(cyclicTypes, identifier);
     }
 
 private:
     TypeEnvironment env;
-    std::map<AstQualifiedName, std::set<TypeAttribute>> unionTypes;
+    std::map<AstQualifiedName, std::set<TypeAttribute>> primitiveTypesInUnions;
+    std::set<AstQualifiedName> cyclicTypes;
 
-    void updateTypeEnvironment(const AstProgram& program);
+    /**
+     * Populate Type Environment with Ast Types.
+     */
+    void createTypes(const std::vector<AstType*>& program);
+
+    /**
+     * Link unions and records to their types.
+     */
+    void linkTypes(const std::vector<AstType*>& program);
+
+    /**
+     * Create a type dependency graph.
+     */
+    Graph<AstQualifiedName> createTypeDependencyGraph(const std::vector<AstType*>& programTypes);
+
+    /**
+     * Check intersections of unions with primitive types.
+     */
+    void analysePrimitiveTypesInUnion(
+            const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes);
+
+    /**
+     * Find cyclic unions.
+     */
+    void analyseCyclicUnions(
+            const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes);
 };
 
 }  // end of namespace souffle

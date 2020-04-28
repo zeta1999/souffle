@@ -171,7 +171,7 @@ void MinIndexSelection::solve() {
 
 MinIndexSelection::Chain MinIndexSelection::getChain(
         const SearchSignature umn, const MaxMatching::Matchings& match) {
-    SearchSignature start = umn;  // start at an unmateched node
+    SearchSignature start = umn;  // start at an unmatched node
     Chain chain;
     // given an unmapped node from set A we follow it from set B until it cannot be matched from B
     //  if not mateched from B then umn is a chain
@@ -321,7 +321,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         for (auto& cols : indexes.getSearches()) {
             os << "\t\t";
             for (uint32_t i = 0; i < arity; i++) {
-                if (((1UL << i) & cols) != 0u) {
+                if ((cols & (1UL << i)) != 0u) {
                     os << attrib[i] << " ";
                 }
             }
@@ -340,7 +340,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
 }
 
 namespace {
-constexpr int MAX_SEARCH_KEYS = int(sizeof(SearchSignature) * CHAR_BIT);
+constexpr int MAX_SEARCH_KEYS = int(sizeof(uint64_t) * CHAR_BIT);
 template <typename Iter>
 SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
     SearchSignature keys = 0;

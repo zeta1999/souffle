@@ -47,7 +47,97 @@ class RamTranslationUnit;
 /** search signature of a RAM operation; each bit represents an attribute of a relation.
  * A one represents that the attribute has an assigned value; a zero represents that
  * no value exists (i.e. attribute is unbounded) in the search. */
-using SearchSignature = uint64_t;
+class SearchSignature {
+public:
+    SearchSignature() : mask(0) {}
+    SearchSignature(uint64_t initialMask) : mask(initialMask) {}
+
+    // comparison operators
+    inline bool operator<(const SearchSignature& other) const {
+        return mask < other.mask;
+    }
+    inline bool operator>(const SearchSignature& other) const {
+        return mask > other.mask;
+    }
+    inline bool operator==(const SearchSignature& other) const {
+        return mask == other.mask;
+    }
+    inline bool operator!=(const SearchSignature& other) const {
+        return mask != other.mask;
+    }
+
+    // bitwise operators
+    inline SearchSignature operator~() const {
+        return SearchSignature(~mask);
+    }
+    inline SearchSignature operator|(const SearchSignature& other) const {
+        return SearchSignature(mask | other.mask);
+    }
+    inline SearchSignature operator&(const SearchSignature& other) const {
+        return SearchSignature(mask & other.mask);
+    }
+    inline SearchSignature operator^(const SearchSignature& other) const {
+        return SearchSignature(mask ^ other.mask);
+    }
+    inline SearchSignature operator+(const SearchSignature& other) const {
+        return SearchSignature(mask + other.mask);
+    }
+    inline SearchSignature operator-(const SearchSignature& other) const {
+        return SearchSignature(mask - other.mask);
+    }
+    inline SearchSignature operator<<(const size_t n) const {
+        return SearchSignature(mask << n);
+    }
+    inline SearchSignature operator>>(const size_t n) const {
+        return SearchSignature(mask >> n);
+    }
+    inline SearchSignature operator%(const size_t n) const {
+        return SearchSignature(mask % n);
+    }
+
+    // bitwise assignment operators
+    inline SearchSignature& operator|=(const SearchSignature& other) {
+        mask |= other.mask;
+        return *this;
+    }
+    inline SearchSignature& operator&=(const SearchSignature& other) {
+        mask &= other.mask;
+        return *this;
+    }
+    inline SearchSignature& operator^=(const SearchSignature& other) {
+        mask ^= other.mask;
+        return *this;
+    }
+    inline SearchSignature& operator+=(const SearchSignature& other) {
+        mask += other.mask;
+        return *this;
+    }
+    inline SearchSignature& operator-=(const SearchSignature& other) {
+        mask -= other.mask;
+        return *this;
+    }
+    inline SearchSignature& operator<<=(const size_t n) {
+        mask <<= n;
+        return *this;
+    }
+    inline SearchSignature& operator>>=(const size_t n) {
+        mask >>= n;
+        return *this;
+    }
+    inline SearchSignature& operator%=(const size_t n) {
+        mask %= n;
+        return *this;
+    }
+    friend std::ostream& operator<<(std::ostream& out, const SearchSignature& signature);
+
+private:
+    uint64_t mask;
+};
+
+inline std::ostream& operator<<(std::ostream& out, const SearchSignature& signature) {
+    out << signature.mask;
+    return out;
+}
 
 /**
  * @class MaxMatching
@@ -249,7 +339,7 @@ protected:
         size_t sz = 0;
         size_t idx = 1;
         for (size_t i = 0; i < sizeof(SearchSignature) * 8; i++) {
-            if ((idx & cols) != 0u) {
+            if ((cols & idx) != 0u) {
                 sz++;
             }
             idx *= 2;

@@ -362,7 +362,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // lowerUpperRange methods for each pattern which is used to search this relation
-    for (int64_t search : getMinIndexSelection().getSearches()) {
+    for (auto search : getMinIndexSelection().getSearches()) {
         auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
@@ -653,7 +653,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // lowerUpperRange methods for each pattern which is used to search this relation
-    for (int64_t search : getMinIndexSelection().getSearches()) {
+    for (auto search : getMinIndexSelection().getSearches()) {
         auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
@@ -941,7 +941,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // loweUpperRange methods
-    for (int64_t search : getMinIndexSelection().getSearches()) {
+    for (auto search : getMinIndexSelection().getSearches()) {
         auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 

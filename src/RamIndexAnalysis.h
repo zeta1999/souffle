@@ -338,7 +338,7 @@ protected:
     static size_t card(SearchSignature cols) {
         size_t sz = 0;
         size_t idx = 1;
-        for (size_t i = 0; i < sizeof(SearchSignature) * 8; i++) {
+        for (size_t i = 0; i < sizeof(uint64_t) * 8; i++) {
             if ((cols & idx) != 0u) {
                 sz++;
             }
@@ -362,7 +362,7 @@ protected:
 
     /** @Brief determine if key a is a strict subset of key b*/
     static bool isStrictSubset(SearchSignature a, SearchSignature b) {
-        auto tt = static_cast<SearchSignature>(std::numeric_limits<SearchSignature>::max());
+        auto tt = SearchSignature(std::numeric_limits<uint64_t>::max());
         return (~(a) | (b)) == tt && a != b;
     }
 

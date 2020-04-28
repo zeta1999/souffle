@@ -15,6 +15,7 @@
 
 #include "InterpreterEngine.h"
 #include "AggregateOp.h"
+#include "EvaluatorUtils.h"
 #include "IOSystem.h"
 #include "InterpreterGenerator.h"
 #include "Logger.h"
@@ -220,6 +221,7 @@ void InterpreterEngine::executeSubroutine(
 
 RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterContext& ctxt) {
 #define DEBUG(Kind) std::cout << "Running Node: " << #Kind << "\n";
+#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
 
 #define CASE(Kind)     \
     case (I_##Kind): { \
@@ -247,7 +249,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(AutoIncrement)
 
         CASE(IntrinsicOperator)
-#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
 #define BINARY_OP(op) return execute(node->getChild(0), ctxt) op execute(node->getChild(1), ctxt)
 // clang-format off
 #define BINARY_OP_TYPED(ty, op) return ramBitCast(EVAL_CHILD(ty, 0) op EVAL_CHILD(ty, 1))
@@ -455,11 +456,15 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     }
                     return getSymbolTable().lookup(sub_str);
                 }
+
+                case FunctorOp::RANGE:
+                case FunctorOp::URANGE:
+                case FunctorOp::FRANGE:
+                    fatal("ICE: functor `%s` must map onto `RamNestedIntrinsicOperator`", cur.getOperator());
             }
 
             { UNREACHABLE_BAD_CASE_ANALYSIS }
 
-#undef EVAL_CHILD
 #undef BINARY_OP_TYPED
 #undef BINARY_OP_INTEGRAL
 #undef BINARY_OP_NUMERIC
@@ -469,6 +474,32 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 #undef MINMAX_OP
 #undef MINMAX_NUMERIC
         ESAC(IntrinsicOperator)
+
+        CASE(NestedIntrinsicOperator)
+            auto numArgs = cur.getArguments().size();
+            auto runNested = [&](auto&& tuple) {
+                ctxt[cur.getTupleId()] = tuple.data;
+                execute(node->getChild(numArgs), ctxt);
+            };
+
+#define RUN_RANGE(ty)                                                                                     \
+    numArgs == 3                                                                                          \
+            ? evaluator::runRange<ty>(EVAL_CHILD(ty, 0), EVAL_CHILD(ty, 1), EVAL_CHILD(ty, 2), runNested) \
+            : evaluator::runRange<ty>(EVAL_CHILD(ty, 0), EVAL_CHILD(ty, 1), runNested),                   \
+            true
+
+            switch (cur.getFunction()) {
+                case RamNestedIntrinsicOp::RANGE:
+                    return RUN_RANGE(RamSigned);
+                case RamNestedIntrinsicOp::URANGE:
+                    return RUN_RANGE(RamUnsigned);
+                case RamNestedIntrinsicOp::FRANGE:
+                    return RUN_RANGE(RamFloat);
+            }
+
+            { UNREACHABLE_BAD_CASE_ANALYSIS }
+#undef RUN_RANGE
+        ESAC(NestedIntrinsicOperator)
 
         CASE(UserDefinedOperator)
             // get name and type
@@ -653,7 +684,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Constraint)
         // clang-format off
-#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
 #define COMPARE_NUMERIC(ty, op) return EVAL_CHILD(ty, 0) op EVAL_CHILD(ty, 1)
 #define COMPARE_STRING(op)                                        \
     return (getSymbolTable().resolve(EVAL_CHILD(RamDomain, 0)) op \
@@ -723,7 +753,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             { UNREACHABLE_BAD_CASE_ANALYSIS }
 
-#undef EVAL_CHILD
 #undef COMPARE_NUMERIC
 #undef COMPARE_STRING
 #undef COMPARE
@@ -1206,6 +1235,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
+
+#undef EVAL_CHILD
+#undef DEBUG
 }
 
 template <typename Aggregate>

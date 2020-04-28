@@ -35,6 +35,7 @@ enum InterpreterNodeType {
     I_AutoIncrement,
     I_IntrinsicOperator,
     I_UserDefinedOperator,
+    I_NestedIntrinsicOperator,
     I_PackRecord,
     I_SubroutineArgument,
     I_True,

@@ -87,11 +87,32 @@ enum class FunctorOp {
     SMAX,                // max of two symbols
     SMIN,                // min of two symbols
 
+    // Produces values within a numeric range. Format is `range(bgn, endExcl, step = 1)`.
+    // e.g. `range(0, 5)` produces the sequence `0, 1, 2, 3, 4`.
+    //      `range(5, 3.75, -0.5)` produces the sequence `5, 4.5, 4`.
+    //      `range(5, x, 0)` produces the sequence `5` iff `x` != 5.
+    RANGE,
+    URANGE,
+    FRANGE,
+
     CAT,  // string concatenation
 
     /** Ternary Functor Operators */
     SUBSTR,  // substring
 };
+
+// does this functor produce multiple results?
+inline bool isFunctorMultiResult(FunctorOp op) {
+    switch (op) {
+        case FunctorOp::RANGE:
+        case FunctorOp::URANGE:
+        case FunctorOp::FRANGE:
+            return true;
+
+        default:
+            return false;
+    }
+}
 
 /**
  * Checks whether a functor operation can have a given argument count.
@@ -153,6 +174,11 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
         case FunctorOp::FEXP:
             return arity == 2;
 
+        case FunctorOp::RANGE:
+        case FunctorOp::URANGE:
+        case FunctorOp::FRANGE:
+            return 2 <= arity && arity < 4;
+
         /** Ternary Functor Operators */
         case FunctorOp::SUBSTR:
             return arity == 3;
@@ -176,7 +202,7 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
 /**
  * Return a string representation of a functor.
  */
-inline std::string getSymbolForFunctorOp(const FunctorOp op) {
+inline char const* getSymbolForFunctorOp(const FunctorOp op) {
     switch (op) {
         /** Unary Functor Operators */
         case FunctorOp::ITOF:
@@ -258,6 +284,11 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
         case FunctorOp::ULOR:
             return "lor";
 
+        case FunctorOp::RANGE:
+        case FunctorOp::URANGE:
+        case FunctorOp::FRANGE:
+            return "range";
+
         /* N-ary Functor Operators */
         case FunctorOp::MAX:
         case FunctorOp::UMAX:
@@ -280,6 +311,10 @@ inline std::string getSymbolForFunctorOp(const FunctorOp op) {
     UNREACHABLE_BAD_CASE_ANALYSIS
 }
 
+inline std::ostream& operator<<(std::ostream& os, FunctorOp op) {
+    return os << getSymbolForFunctorOp(op);
+}
+
 /**
  * Check a functor's return type (codomain).
  */
@@ -296,6 +331,7 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::MUL:
         case FunctorOp::DIV:
         case FunctorOp::EXP:
+        case FunctorOp::RANGE:
         case FunctorOp::BAND:
         case FunctorOp::BOR:
         case FunctorOp::BXOR:
@@ -319,6 +355,7 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::UMUL:
         case FunctorOp::UDIV:
         case FunctorOp::UEXP:
+        case FunctorOp::URANGE:
         case FunctorOp::UMAX:
         case FunctorOp::UMIN:
         case FunctorOp::UMOD:
@@ -341,6 +378,7 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::FMUL:
         case FunctorOp::FDIV:
         case FunctorOp::FEXP:
+        case FunctorOp::FRANGE:
             return TypeAttribute::Float;
         case FunctorOp::SMAX:
         case FunctorOp::SMIN:
@@ -443,6 +481,13 @@ inline TypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::SMIN:
         case FunctorOp::CAT:
             return TypeAttribute::Symbol;
+
+        case FunctorOp::RANGE:
+            return TypeAttribute::Signed;
+        case FunctorOp::URANGE:
+            return TypeAttribute::Unsigned;
+        case FunctorOp::FRANGE:
+            return TypeAttribute::Float;
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -473,13 +518,12 @@ inline bool isOverloadedFunctor(const FunctorOp functor) {
         case FunctorOp::MOD:
         case FunctorOp::MAX:
         case FunctorOp::MIN:
+        case FunctorOp::RANGE:
             return true;
-            break;
-        default:
-            break;
-    }
 
-    return false;
+        default:
+            return false;
+    }
 }
 
 /**
@@ -541,6 +585,8 @@ inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const TypeAtt
         CASE_NUMERIC(DIV)
         CASE_INTEGRAL(MOD)
         CASE_NUMERIC(EXP)
+
+        CASE_NUMERIC(RANGE)
 
         CASE_ORDERED(MAX)
         CASE_ORDERED(MIN)

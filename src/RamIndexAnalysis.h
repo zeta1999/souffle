@@ -44,6 +44,11 @@ namespace souffle {
 
 class RamTranslationUnit;
 
+/** search signature of a RAM operation; each bit represents an attribute of a relation.
+ * A one represents that the attribute has an assigned value; a zero represents that
+ * no value exists (i.e. attribute is unbounded) in the search. */
+using SearchSignature = uint64_t;
+
 /**
  * @class MaxMatching
  * @Brief Computes a maximum matching with Hopcroft-Karp algorithm

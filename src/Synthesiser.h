@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "RamIndexAnalysis.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
 #include "RecordTable.h"

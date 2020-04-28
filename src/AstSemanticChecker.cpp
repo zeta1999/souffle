@@ -764,9 +764,7 @@ void AstSemanticCheckerImpl::checkRelationDeclaration(const AstRelation& relatio
         /* check whether name occurs more than once */
         for (size_t j = 0; j < i; j++) {
             if (attr->getName() == attributes[j]->getName()) {
-                report.addError("Doubly defined attribute name " + attr->getName() + ":" +
-                                        toString(attr->getTypeName()),
-                        attr->getSrcLoc());
+                report.addError(format("Doubly defined attribute name %s", *attr), attr->getSrcLoc());
             }
         }
     }
@@ -813,10 +811,9 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
             report.addError("Undefined type " + toString(sub) + " in definition of union type " +
                                     toString(type.getQualifiedName()),
                     type.getSrcLoc());
-        } else if ((dynamic_cast<const AstUnionType*>(subt) == nullptr) &&
-                   (dynamic_cast<const AstSubsetType*>(subt) == nullptr)) {
-            report.addError("Union type " + toString(type.getQualifiedName()) +
-                                    " contains the non-primitive type " + toString(sub),
+        } else if (!isA<AstUnionType>(subt) && !isA<SubsetType>(subt)) {
+            report.addError(
+                    format("Union type %s contains the non-primitive type %s", type.getQualifiedName(), sub),
                     type.getSrcLoc());
         }
     }
@@ -894,10 +891,10 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
 }
 
 void AstSemanticCheckerImpl::checkType(const AstType& type) {
-    if (isA<AstUnionType>(type)) {
-        checkUnionType(static_cast<const AstUnionType&>(type));
-    } else if (isA<AstRecordType>(type)) {
-        checkRecordType(static_cast<const AstRecordType&>(type));
+    if (auto p = as<AstUnionType>(type)) {
+        checkUnionType(*p);
+    } else if (auto p = as<AstRecordType>(type)) {
+        checkRecordType(*p);
     }
 }
 

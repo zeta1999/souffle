@@ -108,6 +108,9 @@ inline unsigned long __builtin_ctzll(unsigned long long value) {
 
 namespace souffle {
 
+template <typename A, typename B>
+using copy_const_t = std::conditional_t<std::is_const_v<A>, const B, A>;
+
 using tfm::format;
 
 template <typename... Args>
@@ -655,11 +658,30 @@ bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
 }
 
 /**
+ * Helpers for `dynamic_cast`ing without having to specify redundant type qualifiers.
+ * e.g. `as<AstLiteral>(p)` instead of `dynamic_cast<const AstLiteral*>(p.get())`.
+ */
+template <typename B, typename A>
+auto as(A* x) {
+    return dynamic_cast<copy_const_t<A, B>*>(x);
+}
+
+template <typename B, typename A>
+auto as(A& x) {
+    return as<B>(&x);
+}
+
+template <typename B, typename A>
+B* as(const Own<A>& x) {
+    return dynamic_cast<B*>(x.get());
+}
+
+/**
  * Checks if the object of type Source can be casted to type Destination.
  */
 template <typename Destination, typename Source>
-bool isA(const Source& src) {
-    return dynamic_cast<const Destination*>(&src) != nullptr;
+bool isA(Source&& src) {
+    return as<Destination>(std::forward<Source>(src)) != nullptr;
 }
 
 // -------------------------------------------------------------------------------

@@ -52,7 +52,10 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
         // index scan
         int visitIndexScan(const RamIndexScan& indexScan) override {
             int level = -1;
-            for (auto& index : indexScan.getRangePattern()) {
+            for (auto& index : indexScan.getRangePattern().first) {
+                level = std::max(level, visit(index));
+            }
+            for (auto& index : indexScan.getRangePattern().second) {
                 level = std::max(level, visit(index));
             }
             return level;
@@ -66,7 +69,10 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
         // index choice
         int visitIndexChoice(const RamIndexChoice& indexChoice) override {
             int level = -1;
-            for (auto& index : indexChoice.getRangePattern()) {
+            for (auto& index : indexChoice.getRangePattern().first) {
+                level = std::max(level, visit(index));
+            }
+            for (auto& index : indexChoice.getRangePattern().second) {
                 level = std::max(level, visit(index));
             }
             return std::max(level, visit(indexChoice.getCondition()));
@@ -80,7 +86,10 @@ int RamLevelAnalysis::getLevel(const RamNode* node) const {
         // index aggregate
         int visitIndexAggregate(const RamIndexAggregate& indexAggregate) override {
             int level = -1;
-            for (auto& index : indexAggregate.getRangePattern()) {
+            for (auto& index : indexAggregate.getRangePattern().first) {
+                level = std::max(level, visit(index));
+            }
+            for (auto& index : indexAggregate.getRangePattern().second) {
                 level = std::max(level, visit(index));
             }
             level = std::max(visit(indexAggregate.getExpression()), level);

@@ -530,6 +530,21 @@ auto clone(const std::vector<A>& xs) {
     return ys;
 }
 
+template <typename A>
+std::vector<std::unique_ptr<A>> clone(const std::vector<A*>& xs) {
+    std::vector<std::unique_ptr<A>> ys;
+    ys.reserve(xs.size());
+    for (A* x : xs) {
+        ys.emplace_back(clone(x));
+    }
+    return ys;
+}
+
+template <typename A, typename B>
+auto clone(const std::pair<A, B>& p) {
+    return std::make_pair(clone(p.first), clone(p.second));
+}
+
 // -------------------------------------------------------------------------------
 //                             Equality Utilities
 // -------------------------------------------------------------------------------

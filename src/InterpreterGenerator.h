@@ -202,7 +202,10 @@ public:
 
     NodePtr visitIndexScan(const RamIndexScan& scan) override {
         NodePtrVec children;
-        for (const auto& value : scan.getRangePattern()) {
+        for (const auto& value : scan.getRangePattern().first) {
+            children.push_back(visit(value));
+        }
+        for (const auto& value : scan.getRangePattern().second) {
             children.push_back(visit(value));
         }
         children.push_back(visitTupleOperation(scan));
@@ -216,7 +219,10 @@ public:
         size_t relId = encodeRelation(piscan.getRelation());
         auto rel = relations[relId].get();
         NodePtrVec children;
-        for (const auto& value : piscan.getRangePattern()) {
+        for (const auto& value : piscan.getRangePattern().first) {
+            children.push_back(visit(value));
+        }
+        for (const auto& value : piscan.getRangePattern().second) {
             children.push_back(visit(value));
         }
         children.push_back(visitTupleOperation(piscan));
@@ -250,7 +256,10 @@ public:
 
     NodePtr visitIndexChoice(const RamIndexChoice& choice) override {
         NodePtrVec children;
-        for (const auto& value : choice.getRangePattern()) {
+        for (const auto& value : choice.getRangePattern().first) {
+            children.push_back(visit(value));
+        }
+        for (const auto& value : choice.getRangePattern().second) {
             children.push_back(visit(value));
         }
         children.push_back(visit(choice.getCondition()));
@@ -265,7 +274,10 @@ public:
         size_t relId = encodeRelation(ichoice.getRelation());
         auto rel = relations[relId].get();
         NodePtrVec children;
-        for (const auto& value : ichoice.getRangePattern()) {
+        for (const auto& value : ichoice.getRangePattern().first) {
+            children.push_back(visit(value));
+        }
+        for (const auto& value : ichoice.getRangePattern().second) {
             children.push_back(visit(value));
         }
         children.push_back(visit(ichoice.getCondition()));
@@ -299,7 +311,10 @@ public:
         size_t relId = encodeRelation(aggregate.getRelation());
         auto rel = relations[relId].get();
         NodePtrVec children;
-        for (const auto& value : aggregate.getRangePattern()) {
+        for (const auto& value : aggregate.getRangePattern().first) {
+            children.push_back(visit(value));
+        }
+        for (const auto& value : aggregate.getRangePattern().second) {
             children.push_back(visit(value));
         }
         children.push_back(visit(aggregate.getCondition()));

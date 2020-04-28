@@ -624,7 +624,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             RamDomain high[arity];
             for (size_t i = 0; i < node->getChildren().size(); ++i) {
                 low[i] = node->getChild(i) != nullptr ? execute(node->getChild(i), ctxt) : MIN_RAM_SIGNED;
-                high[i] = node->getChild(i) != nullptr ? low[i] : MAX_RAM_SIGNED;
+                high[i] = node->getChild(i) != nullptr ? execute(node->getChild(i), ctxt) : MAX_RAM_SIGNED;
             }
             return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(high, arity));
         ESAC(ExistenceCheck)
@@ -638,7 +638,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             RamDomain high[arity];
             for (size_t i = 0; i < arity - 2; i++) {
                 low[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MIN_RAM_SIGNED;
-                high[i] = node->getChild(i) ? low[i] : MAX_RAM_SIGNED;
+                high[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MAX_RAM_SIGNED;
             }
 
             low[arity - 2] = MIN_RAM_SIGNED;
@@ -790,7 +790,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; i++) {
                 if (node->getChild(i) != nullptr) {
                     low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = low[i];
+                    hig[i] = execute(node->getChild(i + arity), ctxt);
                 } else {
                     low[i] = MIN_RAM_SIGNED;
                     hig[i] = MAX_RAM_SIGNED;
@@ -802,7 +802,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // conduct range query
             for (auto data : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 ctxt[cur.getTupleId()] = &data[0];
-                if (!execute(node->getChild(arity), ctxt)) {
+                if (!execute(node->getChild(2 * arity), ctxt)) {
                     break;
                 }
             }
@@ -820,7 +820,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; i++) {
                 if (node->getChild(i)) {
                     low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = low[i];
+                    hig[i] = execute(node->getChild(i + arity), ctxt);
                 } else {
                     low[i] = MIN_RAM_SIGNED;
                     hig[i] = MAX_RAM_SIGNED;
@@ -841,7 +841,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (!execute(node->getChild(arity), newCtxt)) {
+                        if (!execute(node->getChild(2 * arity), newCtxt)) {
                             break;
                         }
                     }
@@ -899,7 +899,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; i++) {
                 if (node->getChild(i) != nullptr) {
                     low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = low[i];
+                    hig[i] = execute(node->getChild(i + arity), ctxt);
                 } else {
                     low[i] = MIN_RAM_SIGNED;
                     hig[i] = MAX_RAM_SIGNED;
@@ -912,8 +912,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 const RamDomain* data = &ip[0];
                 ctxt[cur.getTupleId()] = data;
-                if (execute(node->getChild(arity), ctxt)) {
-                    execute(node->getChild(arity + 1), ctxt);
+                if (execute(node->getChild(2 * arity), ctxt)) {
+                    execute(node->getChild(2 * arity + 1), ctxt);
                     break;
                 }
             }
@@ -933,7 +933,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; i++) {
                 if (node->getChild(i) != nullptr) {
                     low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = low[i];
+                    hig[i] = execute(node->getChild(i + arity), ctxt);
                 } else {
                     low[i] = MIN_RAM_SIGNED;
                     hig[i] = MAX_RAM_SIGNED;
@@ -953,8 +953,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (execute(node->getChild(arity), newCtxt)) {
-                            execute(node->getChild(arity + 1), newCtxt);
+                        if (execute(node->getChild(2 * arity), newCtxt)) {
+                            execute(node->getChild(2 * arity + 1), newCtxt);
                             break;
                         }
                     }
@@ -999,7 +999,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (size_t i = 0; i < arity; i++) {
                 if (node->getChild(i) != nullptr) {
                     low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = low[i];
+                    hig[i] = execute(node->getChild(i + arity), ctxt);
                 } else {
                     low[i] = MIN_RAM_SIGNED;
                     hig[i] = MAX_RAM_SIGNED;
@@ -1009,8 +1009,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t viewId = node->getData(0);
             auto& view = ctxt.getView(viewId);
 
-            return executeAggregate(ctxt, cur, *node->getChild(arity), *node->getChild(arity + 1),
-                    *node->getChild(arity + 2), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
+            return executeAggregate(ctxt, cur, *node->getChild(2 * arity), *node->getChild(2 * arity + 1),
+                    *node->getChild(2 * arity + 2), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
         ESAC(IndexAggregate)
 
         CASE_NO_CAST(Break)

@@ -83,8 +83,6 @@ private:
     void checkRelationDeclaration(const AstRelation& relation);
     void checkRelation(const AstRelation& relation);
 
-    void checkTypes();
-    void checkRecursiveUnionTypes();
     void checkType(const AstType& type);
     void checkRecordType(const AstRecordType& type);
     void checkUnionType(const AstUnionType& type);
@@ -132,9 +130,10 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         }
     }
 
-    // -- conduct checks --
-    // TODO: re-write to use visitors
-    checkTypes();
+    // Check types in AST.
+    for (const auto* astType : program.getTypes()) {
+        checkType(*astType);
+    }
 
     // check rules
     for (auto* rel : program.getRelations()) checkRelation(*rel);
@@ -821,143 +820,10 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
                     type.getSrcLoc());
         }
     }
-}
 
-void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
-    // check proper definition of all field types
-    for (const auto& field : type.getFields()) {
-        if (!typeEnv.isPrimitiveType(field->getTypeName()) && !getType(program, field->getTypeName())) {
-            report.addError(format("Undefined type %s in definition of field %s", field->getTypeName(),
-                                    field->getName()),
-                    field->getSrcLoc());
-        }
-    }
-
-    // check that field names are unique
-    auto&& fields = type.getFields();
-    for (std::size_t i = 0; i < fields.size(); i++) {
-        auto&& cur_name = fields[i]->getName();
-        for (std::size_t j = 0; j < i; j++) {
-            if (fields[j]->getName() == cur_name) {
-                report.addError("Doubly defined field name " + cur_name + " in definition of type " +
-                                        toString(type.getQualifiedName()),
-                        fields[j]->getSrcLoc());
-            }
-        }
-    }
-}
-
-void AstSemanticCheckerImpl::checkType(const AstType& type) {
-    if (const auto* u = dynamic_cast<const AstUnionType*>(&type)) {
-        checkUnionType(*u);
-    } else if (const auto* r = dynamic_cast<const AstRecordType*>(&type)) {
-        checkRecordType(*r);
-    }
-}
-
-// TODO: use graph SCC functions
-void AstSemanticCheckerImpl::checkRecursiveUnionTypes() {
-    /* Goal: throw an error when unions are cyclically defined */
-
-    // create an edge from each union to its dependents
-    Graph<AstQualifiedName> unionTypeGraph = Graph<AstQualifiedName>();
-    visitDepthFirst(program, [&](const AstUnionType& ut) {
-        for (auto subtype : ut.getTypes()) {
-            unionTypeGraph.insert(ut.getQualifiedName(), subtype);
-        }
-    });
-
-    // helper method to find cycle in the final graph
-    std::set<AstQualifiedName> exploredNodes;
-    std::function<bool(
-            const Graph<AstQualifiedName>&, const AstQualifiedName&, std::vector<AstQualifiedName>&)>
-            findCycle;
-
-    // @param   graph union-type dependency graph
-    // @param   root next node to explore
-    // @param   currPath current path being explored through the graph
-    // @return  true if a cycle exists, false otherwise
-    findCycle = [&](const Graph<AstQualifiedName>& graph, AstQualifiedName root,
-                        std::vector<AstQualifiedName>& currPath) {
-        if (exploredNodes.find(root) != exploredNodes.end()) {
-            // already checked paths through this node
-            return false;
-        }
-
-        // exploring paths through this node
-        currPath.push_back(root);
-        bool cycleFound = false;
-        for (auto next : graph.successors(root)) {
-            auto pos = std::find(currPath.begin(), currPath.end(), next);
-            if (pos != currPath.end()) {
-                // cycle found!
-                // add to the end to close the cycle
-                currPath.push_back(next);
-                cycleFound = true;
-                break;
-            }
-
-            // keep going down this path
-            if (findCycle(graph, next, currPath)) {
-                cycleFound = true;
-                break;
-            }
-        }
-
-        // done with this node
-        exploredNodes.insert(root);
-
-        if (cycleFound) {
-            return true;
-        } else {
-            // no cycle found, bounce back
-            currPath.pop_back();
-            return false;
-        }
-    };
-
-    // run the cycle check
-    for (const auto& node : unionTypeGraph.vertices()) {
-        std::vector<AstQualifiedName> path;
-        if (findCycle(unionTypeGraph, node, path)) {
-            // pop out the last node of the cycle
-            AstQualifiedName cycleStart = path.back();
-            path.pop_back();
-
-            // last node is also the first node, so crop out irrelevant nodes from the start
-            auto startPos = std::find(path.begin(), path.end(), cycleStart);
-            assert(startPos != path.end() && "node should appear twice in cycle");
-            path.erase(path.begin(), startPos);
-
-            // get the associated type definition
-            auto types = program.getTypes();
-            const AstUnionType* typeDefinition = nullptr;
-            for (const auto* cur : program.getTypes()) {
-                const auto* curUnion = dynamic_cast<const AstUnionType*>(cur);
-                if (curUnion == nullptr) {
-                    // only care about union types
-                    continue;
-                }
-
-                // typename must match
-                if (curUnion->getQualifiedName() == cycleStart) {
-                    typeDefinition = curUnion;
-                }
-            }
-            assert(typeDefinition != nullptr && "typename should have union type definition");
-
-            // add the error
-            std::string typeListStr = toString(join(path, ","));
-            report.addError(
-                    "Cyclic definition of union type(s) {" + typeListStr + "}", typeDefinition->getSrcLoc());
-        }
-    }
-}
-
-void AstSemanticCheckerImpl::checkTypes() {
-    /* check each type individually */
-    for (const auto* cur : program.getTypes()) {
-        checkType(*cur);
+    // Check if the union is recursive.
+    if (typeEnvAnalysis.isCyclic(type.getQualifiedName())) {
+        report.addError("Recursive union " + toString(type.getQualifiedName()), type.getSrcLoc());
     }
 
     /* check that union types do not mix different primitive types */
@@ -969,7 +835,8 @@ void AstSemanticCheckerImpl::checkTypes() {
 
         const auto& name = type->getQualifiedName();
 
-        const std::set<TypeAttribute>& predefinedTypesInUnion = typeEnvAnalysis.getUnionType(name);
+        const std::set<TypeAttribute>& predefinedTypesInUnion =
+                typeEnvAnalysis.getPrimitiveTypesInUnion(name);
 
         // Report error (if size == 0, then the union is cyclic)
         if (predefinedTypesInUnion.size() > 1) {
@@ -999,9 +866,39 @@ void AstSemanticCheckerImpl::checkTypes() {
             report.addError(errorMessage.str(), type->getSrcLoc());
         }
     }
+}
 
-    /* check that union types are not defined recursively */
-    checkRecursiveUnionTypes();
+void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
+    auto&& fields = type.getFields();
+    // check proper definition of all field types
+    for (auto&& field : fields) {
+        if (!typeEnv.isPrimitiveType(field->getTypeName()) &&
+                (getType(program, field->getTypeName()) == nullptr)) {
+            report.addError(format("Undefined type %s in definition of field %s", field->getTypeName(),
+                                    field->getName()),
+                    type.getSrcLoc());
+        }
+    }
+
+    // check that field names are unique
+    for (std::size_t i = 0; i < fields.size(); i++) {
+        auto&& cur_name = fields[i]->getName();
+        for (std::size_t j = 0; j < i; j++) {
+            if (fields[j]->getName() == cur_name) {
+                report.addError(format("Doubly defined field name %s in definition of type %s", cur_name,
+                                        type.getQualifiedName()),
+                        type.getSrcLoc());
+            }
+        }
+    }
+}
+
+void AstSemanticCheckerImpl::checkType(const AstType& type) {
+    if (isA<AstUnionType>(type)) {
+        checkUnionType(static_cast<const AstUnionType&>(type));
+    } else if (isA<AstRecordType>(type)) {
+        checkRecordType(static_cast<const AstRecordType&>(type));
+    }
 }
 
 void AstSemanticCheckerImpl::checkIO() {

@@ -26,85 +26,72 @@
 namespace souffle {
 
 void TypeEnvironmentAnalysis::run(const AstTranslationUnit& translationUnit) {
-    updateTypeEnvironment(*translationUnit.getProgram());
+    const AstProgram& program = *translationUnit.getProgram();
+
+    std::vector<AstType*> programTypes = program.getTypes();
+    createTypes(programTypes);
+    linkTypes(programTypes);
+
+    Graph<AstQualifiedName> typeDependencyGraph{createTypeDependencyGraph(programTypes)};
+
+    analyseCyclicUnions(typeDependencyGraph, programTypes);
+    analysePrimitiveTypesInUnion(typeDependencyGraph, programTypes);
 }
 
-void TypeEnvironmentAnalysis::print(std::ostream& os) const {
-    env.print(os);
-}
-
-/**
- * A utility function utilized by the finishParsing member function to update a type environment
- * out of a given list of types in the AST
- *
- * @param types the types specified in the input file, contained in the AST
- * @param env the type environment to be updated
- */
-void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
-    // build up new type system based on defined types
-
-    // create all type symbols in a first step
-    for (const auto& cur : program.getTypes()) {
-        // support faulty codes with multiple definitions
-        if (env.isType(cur->getQualifiedName())) {
+void TypeEnvironmentAnalysis::createTypes(const std::vector<AstType*>& programTypes) {
+    for (const auto* astType : programTypes) {
+        // support invalid input with multiple definitions
+        if (env.isType(astType->getQualifiedName())) {
             continue;
         }
 
-        // create type within type environment
-        if (auto* t = dynamic_cast<const AstSubsetType*>(cur)) {
-            env.createSubsetType(cur->getQualifiedName(), t->getTypeAttribute());
-        } else if (dynamic_cast<const AstUnionType*>(cur) != nullptr) {
-            // initialize the union
-            env.createType<UnionType>(cur->getQualifiedName());
-        } else if (dynamic_cast<const AstRecordType*>(cur) != nullptr) {
-            // initialize the record
-            env.createType<RecordType>(cur->getQualifiedName());
+        if (auto* subType = dynamic_cast<const AstSubsetType*>(astType)) {
+            env.createSubsetType(astType->getQualifiedName(), subType->getTypeAttribute());
+        } else if (isA<AstUnionType>(*astType)) {
+            env.createType<UnionType>(astType->getQualifiedName());
+        } else if (isA<AstRecordType>(*astType)) {
+            env.createType<RecordType>(astType->getQualifiedName());
         } else {
-            fatal("unsupported type construct: %s", typeid(cur).name());
+            fatal("unsupported type construct: %s", typeid(astType).name());
         }
     }
+}
 
-    // link symbols in a second step
-    for (const auto& cur : program.getTypes()) {
-        Type& type = env.getType(cur->getQualifiedName());
+void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programTypes) {
+    for (const auto* astType : programTypes) {
+        Type& type = env.getType(astType->getQualifiedName());
 
-        if (dynamic_cast<const AstSubsetType*>(cur) != nullptr) {
+        if (isA<AstSubsetType>(*astType)) {
             // nothing to do here
-        } else if (auto* t = dynamic_cast<const AstUnionType*>(cur)) {
-            // get type as union type
-            auto* ut = dynamic_cast<UnionType*>(&type);
-            if (ut == nullptr) {
-                continue;  // support faulty input
-            }
+        } else if (auto* astUnion = dynamic_cast<const AstUnionType*>(astType)) {
+            auto& unionType = dynamic_cast<UnionType&>(type);
 
             // add element types
-            for (const auto& cur : t->getTypes()) {
-                if (env.isType(cur)) {
-                    ut->add(env.getType(cur));
+            for (const auto& astType : astUnion->getTypes()) {
+                if (env.isType(astType)) {
+                    unionType.add(env.getType(astType));
                 }
             }
-        } else if (auto* t = dynamic_cast<AstRecordType*>(cur)) {
-            // get type as record type
-            auto* rt = dynamic_cast<RecordType*>(&type);
-            if (rt == nullptr) {
-                continue;  // support faulty input
-            }
+        } else if (auto* astRecord = dynamic_cast<const AstRecordType*>(astType)) {
+            auto& recordType = dynamic_cast<RecordType&>(type);
 
             // add fields
-            for (auto&& f : t->getFields()) {
+            for (auto&& f : astRecord->getFields()) {
                 if (env.isType(f->getTypeName())) {
-                    rt->add(f->getName(), env.getType(f->getTypeName()));
+                    recordType.add(f->getName(), env.getType(f->getTypeName()));
                 }
             }
         } else {
-            fatal("unsupported type construct: %s", typeid(cur).name());
+            fatal("unsupported type construct: %s", typeid(astType).name());
         }
     }
+}
 
-    // Assign types to unions.
+Graph<AstQualifiedName> TypeEnvironmentAnalysis::createTypeDependencyGraph(
+        const std::vector<AstType*>& programTypes) {
     Graph<AstQualifiedName> typeDependencyGraph;
-    for (const auto& cur : program.getTypes()) {
-        if (auto type = dynamic_cast<const AstSubsetType*>(cur)) {
+    for (const auto* astType : programTypes) {
+        if (auto type = dynamic_cast<const AstSubsetType*>(astType)) {
             switch (type->getTypeAttribute()) {
                 case TypeAttribute::Signed:
                     typeDependencyGraph.insert(type->getQualifiedName(), "number");
@@ -121,47 +108,75 @@ void TypeEnvironmentAnalysis::updateTypeEnvironment(const AstProgram& program) {
                 case TypeAttribute::Record:
                     fatal("invalid type");
             }
-        } else if (dynamic_cast<const AstRecordType*>(cur) != nullptr) {
+        } else if (dynamic_cast<const AstRecordType*>(astType) != nullptr) {
             // do nothing
-        } else if (auto type = dynamic_cast<const AstUnionType*>(cur)) {
+        } else if (auto type = dynamic_cast<const AstUnionType*>(astType)) {
             for (const auto& subtype : type->getTypes()) {
                 typeDependencyGraph.insert(type->getQualifiedName(), subtype);
             }
         } else {
-            fatal("unsupported type construct: %s", typeid(cur).name());
+            fatal("unsupported type construct: %s", typeid(astType).name());
         }
     }
-    for (const auto& cur : program.getTypes()) {
-        if (auto unionType = dynamic_cast<const AstUnionType*>(cur)) {
-            AstQualifiedName unionName = unionType->getQualifiedName();
+    return typeDependencyGraph;
+}
 
-            auto itereratorToUnion = unionTypes.find(unionName);
+void TypeEnvironmentAnalysis::analyseCyclicUnions(
+        const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes) {
+    for (const auto& astType : programTypes) {
+        auto unionType = dynamic_cast<const AstUnionType*>(astType);
+        if (unionType == nullptr) {
+            continue;
+        }
 
-            // Initialize with the empty set
-            if (itereratorToUnion == unionTypes.end()) {
-                itereratorToUnion = unionTypes.insert({unionName, {}}).first;
-            }
-
-            auto& associatedTypes = itereratorToUnion->second;
-
-            // Insert any reachable predefined type
-            if (typeDependencyGraph.reaches(unionName, "number")) {
-                associatedTypes.insert(TypeAttribute::Signed);
-            }
-
-            if (typeDependencyGraph.reaches(unionName, "symbol")) {
-                associatedTypes.insert(TypeAttribute::Symbol);
-            }
-
-            if (typeDependencyGraph.reaches(unionName, "unsigned")) {
-                associatedTypes.insert(TypeAttribute::Unsigned);
-            }
-
-            if (typeDependencyGraph.reaches(unionName, "float")) {
-                associatedTypes.insert(TypeAttribute::Float);
-            }
+        AstQualifiedName unionName = unionType->getQualifiedName();
+        if (dependencyGraph.reaches(unionName, unionName)) {
+            auto& unionType = dynamic_cast<UnionType&>(env.getType(unionName));
+            unionType.clear();
+            cyclicTypes.insert(std::move(unionName));
         }
     }
 }
 
-}  // end of namespace souffle
+void TypeEnvironmentAnalysis::analysePrimitiveTypesInUnion(
+        const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes) {
+    for (const auto& astType : programTypes) {
+        auto unionType = dynamic_cast<const AstUnionType*>(astType);
+        if (unionType == nullptr) {
+            continue;
+        }
+        AstQualifiedName unionName = unionType->getQualifiedName();
+
+        auto iteratorToUnion = primitiveTypesInUnions.find(unionName);
+
+        // Initialize with the empty set
+        if (iteratorToUnion == primitiveTypesInUnions.end()) {
+            iteratorToUnion = primitiveTypesInUnions.insert({unionName, {}}).first;
+        }
+
+        auto& associatedTypes = iteratorToUnion->second;
+
+        // Insert any reachable primitive type
+        if (dependencyGraph.reaches(unionName, "number")) {
+            associatedTypes.insert(TypeAttribute::Signed);
+        }
+
+        if (dependencyGraph.reaches(unionName, "symbol")) {
+            associatedTypes.insert(TypeAttribute::Symbol);
+        }
+
+        if (dependencyGraph.reaches(unionName, "unsigned")) {
+            associatedTypes.insert(TypeAttribute::Unsigned);
+        }
+
+        if (dependencyGraph.reaches(unionName, "float")) {
+            associatedTypes.insert(TypeAttribute::Float);
+        }
+    }
+}
+
+void TypeEnvironmentAnalysis::print(std::ostream& os) const {
+    env.print(os);
+}
+
+}  // namespace souffle

@@ -19,8 +19,10 @@
 #include "RamComplexityAnalysis.h"
 #include "RamIndexAnalysis.h"
 #include "RamLevelAnalysis.h"
+#include "RamOperation.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
+
 #include <memory>
 #include <string>
 
@@ -364,7 +366,9 @@ public:
      * The method retrieves expression the expression of an equivalence constraint of the
      * format t1.x = <expr> or <expr> = t1.x
      */
-    std::unique_ptr<RamExpression> getExpression(RamCondition* c, size_t& element, int level);
+    using ExpressionPair = std::pair<std::unique_ptr<RamExpression>, std::unique_ptr<RamExpression>>;
+
+    ExpressionPair getLowerUpperExpression(RamCondition* c, size_t& element, int level);
 
     /**
      * @brief Construct query patterns for an indexable operation
@@ -374,8 +378,8 @@ public:
      * @param Tuple identifier of the indexable operation
      * @result Remaining conditions that could not be transformed to an index
      */
-    std::unique_ptr<RamCondition> constructPattern(std::vector<std::unique_ptr<RamExpression>>& queryPattern,
-            bool& indexable, std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
+    std::unique_ptr<RamCondition> constructPattern(RamPattern& queryPattern, bool& indexable,
+            std::vector<std::unique_ptr<RamCondition>> conditionList, int identifier);
 
     /**
      * @brief Rewrite a scan operation to an indexed scan operation
@@ -416,6 +420,66 @@ protected:
     }
 };
 
+/**
+ * @class IndexedInequalityTransformer
+ * @brief Removes Inequalities from Indexed Operations and replaces them with a Filter Operation
+ * and empty Indexed Operations are coverted to their Non-Indexed semantic equivalent
+ *
+ * If there exists inequality constraints in an Indexed Operation, these constraints will be
+ * replaced with a semantically equivalent nested Filter Operation.
+ *
+ * Furthermore, if after removing all of these inequality constraints from the Indexed Operation
+ * we may find that the Indexed Operation is empty (no constraints).
+ * This occurs in the case where an Indexed Operation is composed entirely of inequality constraints.
+ * In this situation, the Indexed Operation is empty and replaced with a semantically equivalent Operation.
+ * i.e. RamIndexScan -> RamScan
+ *
+ * For example,
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *	 FOR t1 IN X ON INDEX t1.x < 10 AND t1.y > 20
+ *     ... // t1 only has inequality constraints placed on it
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * will be rewritten to
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *       FOR t1 in X ON INDEX // empty index since all inequalities have been removed
+ *            IF t1.x < 10 AND t1.y > 20
+ *                // replaced with a semantically equivalent filter
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ * will be rewritten to
+ *
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *  QUERY
+ *   ...
+ *       FOR t1 in X // RamScan instead of RamIndexScan
+ *            IF t1.x < 10 AND t1.y > 20
+ *                // replaced with a semantically equivalent filter
+ *      ...
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ *
+ */
+class IndexedInequalityTransformer : public RamTransformer {
+public:
+    std::string getName() const override {
+        return "IndexedInequalityTransformer";
+    }
+
+    // converts a box query into a corresponding filter operation
+    bool transformIndexToFilter(RamProgram& program);
+
+protected:
+    bool transform(RamTranslationUnit& translationUnit) override {
+        return transformIndexToFilter(translationUnit.getProgram());
+    }
+};
 /**
  * @class IfConversionTransformer
  * @brief Convert IndexScan operations to Filter/Existence Checks

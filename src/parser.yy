@@ -372,24 +372,24 @@ identifier
 
 /* Type declarations */
 type
-  : TYPE IDENT SUBTYPE predefined_type {
-        $$ = new AstSubsetType($IDENT, $predefined_type);
+  : TYPE IDENT[type_name] SUBTYPE IDENT[base_type_name] {
+        $$ = new AstSubsetType($type_name, $base_type_name);
         $$->setSrcLoc(@$);
     }
   | NUMBER_TYPE IDENT {
-        $$ = new AstSubsetType($IDENT, TypeAttribute::Signed);
+        $$ = new AstSubsetType($IDENT, "number");
         $$->setSrcLoc(@$);
 
         driver.warning(@1, "Deprecated type declaration used");
     }
   | SYMBOL_TYPE IDENT {
-        $$ = new AstSubsetType($IDENT, TypeAttribute::Symbol);
+        $$ = new AstSubsetType($IDENT, "symbol");
         $$->setSrcLoc(@$);
 
         driver.warning(@1, "Deprecated type declaration used");
     }
   | TYPE IDENT {
-        $$ = new AstSubsetType($IDENT, TypeAttribute::Symbol);
+        $$ = new AstSubsetType($IDENT, "symbol");
         $$->setSrcLoc(@$);
 
         driver.warning(@1, "Deprecated type declaration used");

@@ -23,8 +23,8 @@ namespace souffle::test {
 TEST(TypeSystem, Basic) {
     TypeEnvironment env;
 
-    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-    auto& B = env.createSubsetType("B", TypeAttribute::Symbol);
+    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", &env.getType("symbol"));
 
     auto& U = env.createType<UnionType>("U");
     U.add(A);
@@ -46,10 +46,10 @@ TEST(TypeSystem, isNumberType) {
 
     auto& N = env.getType("number");
 
-    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", &env.getType("number"));
 
-    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
+    auto& C = env.createType<SubsetType>("C", &env.getType("symbol"));
 
     EXPECT_TRUE(isNumberType(N));
     EXPECT_TRUE(isNumberType(A));
@@ -110,8 +110,8 @@ TEST(TypeSystem, isSubtypeOf_Basic) {
 
     // check primitive type
 
-    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", &env.getType("number"));
 
     EXPECT_PRED2(isSubtypeOf, A, A);
     EXPECT_PRED2(isSubtypeOf, B, B);
@@ -160,8 +160,8 @@ TEST(TypeSystem, isSubtypeOf_Basic) {
 TEST(TypeSystem, isSubtypeOf_Records) {
     TypeEnvironment env;
 
-    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
+    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", &env.getType("number"));
 
     auto& R1 = env.createType<RecordType>("R1");
     auto& R2 = env.createType<RecordType>("R2");
@@ -180,9 +180,9 @@ TEST(TypeSystem, GreatestCommonSubtype) {
 
     auto& N = env.getType("number");
 
-    auto& A = env.createSubsetType("A", TypeAttribute::Signed);
-    auto& B = env.createSubsetType("B", TypeAttribute::Signed);
-    auto& C = env.createSubsetType("C", TypeAttribute::Symbol);
+    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", &env.getType("number"));
+    auto& C = env.createType<SubsetType>("C", &env.getType("symbol"));
 
     EXPECT_EQ("{number}", toString(getGreatestCommonSubtypes(N, N)));
 

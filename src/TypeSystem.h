@@ -99,17 +99,22 @@ public:
     void print(std::ostream& out) const override;
 
     const Type& getBaseType() const {
-        return baseType;
+        assert(baseType != nullptr);
+        return *baseType;
+    }
+
+    void setBaseType(Type& newBase) {
+        baseType = &newBase;
     }
 
 protected:
-    SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type& base)
-            : Type(environment, name), baseType(base) {}
+    SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type* base = nullptr)
+            : Type(environment, name), baseType(base){};
 
 private:
     friend class TypeEnvironment;
 
-    const Type& baseType;
+    mutable const Type* baseType;
 };
 
 /**
@@ -124,7 +129,7 @@ public:
 
 private:
     PrimitiveType(const TypeEnvironment& environment, const AstQualifiedName& name, const ConstantType& base)
-            : SubsetType(environment, name, base) {}
+            : SubsetType(environment, name, &base) {}
 
     friend class TypeEnvironment;
 };
@@ -356,23 +361,6 @@ public:
         auto* newType = new T(*this, name, args...);
         types[name] = std::unique_ptr<Type>(newType);
         return *newType;
-    }
-
-    SubsetType& createSubsetType(const AstQualifiedName& name, TypeAttribute typeAttribute) {
-        switch (typeAttribute) {
-            case TypeAttribute::Signed:
-                return createType<SubsetType>(name, getType("number"));
-            case TypeAttribute::Unsigned:
-                return createType<SubsetType>(name, getType("unsigned"));
-            case TypeAttribute::Float:
-                return createType<SubsetType>(name, getType("float"));
-            case TypeAttribute::Symbol:
-                return createType<SubsetType>(name, getType("symbol"));
-            case TypeAttribute::Record:
-                break;
-        }
-
-        fatal("Invalid type attribute");
     }
 
     bool isType(const AstQualifiedName&) const;

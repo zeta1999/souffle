@@ -45,8 +45,8 @@ void TypeEnvironmentAnalysis::createTypes(const std::vector<AstType*>& programTy
             continue;
         }
 
-        if (auto* subType = dynamic_cast<const AstSubsetType*>(astType)) {
-            env.createSubsetType(astType->getQualifiedName(), subType->getTypeAttribute());
+        if (isA<AstSubsetType>(*astType)) {
+            env.createType<SubsetType>(astType->getQualifiedName());
         } else if (isA<AstUnionType>(*astType)) {
             env.createType<UnionType>(astType->getQualifiedName());
         } else if (isA<AstRecordType>(*astType)) {
@@ -61,8 +61,11 @@ void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programType
     for (const auto* astType : programTypes) {
         Type& type = env.getType(astType->getQualifiedName());
 
-        if (isA<AstSubsetType>(*astType)) {
-            // nothing to do here
+        if (auto* astSubsetType = dynamic_cast<const AstSubsetType*>(astType)) {
+            auto& subsetType = dynamic_cast<SubsetType&>(type);
+
+            subsetType.setBaseType(env.getType(astSubsetType->getBaseType()));
+
         } else if (auto* astUnion = dynamic_cast<const AstUnionType*>(astType)) {
             auto& unionType = dynamic_cast<UnionType&>(type);
 
@@ -92,22 +95,7 @@ Graph<AstQualifiedName> TypeEnvironmentAnalysis::createTypeDependencyGraph(
     Graph<AstQualifiedName> typeDependencyGraph;
     for (const auto* astType : programTypes) {
         if (auto type = dynamic_cast<const AstSubsetType*>(astType)) {
-            switch (type->getTypeAttribute()) {
-                case TypeAttribute::Signed:
-                    typeDependencyGraph.insert(type->getQualifiedName(), "number");
-                    break;
-                case TypeAttribute::Unsigned:
-                    typeDependencyGraph.insert(type->getQualifiedName(), "unsigned");
-                    break;
-                case TypeAttribute::Float:
-                    typeDependencyGraph.insert(type->getQualifiedName(), "float");
-                    break;
-                case TypeAttribute::Symbol:
-                    typeDependencyGraph.insert(type->getQualifiedName(), "symbol");
-                    break;
-                case TypeAttribute::Record:
-                    fatal("invalid type");
-            }
+            typeDependencyGraph.insert(type->getQualifiedName(), type->getBaseType());
         } else if (dynamic_cast<const AstRecordType*>(astType) != nullptr) {
             // do nothing
         } else if (auto type = dynamic_cast<const AstUnionType*>(astType)) {

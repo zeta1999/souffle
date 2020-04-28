@@ -22,7 +22,8 @@
 namespace souffle {
 
 void SubsetType::print(std::ostream& out) const {
-    out << getName() << " <: " << baseType;
+    assert(baseType != nullptr);
+    out << getName() << " <: " << *baseType;
 }
 
 void UnionType::add(const Type& type) {

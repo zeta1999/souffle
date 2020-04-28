@@ -54,53 +54,36 @@ private:
 };
 
 /**
- * A subset type is named type that can either be a sub-type of
- * the predefined types (float/unsigned/number/symbol).
+ * A subset type. Can be derived from any type except union.
  */
 class AstSubsetType : public AstType {
 public:
     /** Creates a new primitive type */
-    AstSubsetType(const AstQualifiedName& name, TypeAttribute type) : AstType(name), type(type) {}
+    AstSubsetType(const AstQualifiedName& name, const AstQualifiedName& baseType)
+            : AstType(name), baseType(baseType) {}
 
     AstSubsetType* clone() const override {
-        auto res = new AstSubsetType(getQualifiedName(), type);
+        auto res = new AstSubsetType(getQualifiedName(), getBaseType());
         res->setSrcLoc(getSrcLoc());
         return res;
     }
 
-    TypeAttribute getTypeAttribute() const {
-        return type;
+    const AstQualifiedName& getBaseType() const {
+        return baseType;
     }
 
 protected:
     void print(std::ostream& os) const override {
-        os << ".type " << getQualifiedName() << " <: ";
-        switch (type) {
-            case TypeAttribute::Signed:
-                os << "number";
-                break;
-            case TypeAttribute::Unsigned:
-                os << "unsigned";
-                break;
-            case TypeAttribute::Float:
-                os << "float";
-                break;
-            case TypeAttribute::Symbol:
-                os << "symbol";
-                break;
-            case TypeAttribute::Record:
-                fatal("Invalid type");
-        }
+        os << ".type " << getQualifiedName() << " <: " << getBaseType();
     }
 
     bool equal(const AstNode& node) const override {
         const auto& other = static_cast<const AstSubsetType&>(node);
-        return getQualifiedName() == other.getQualifiedName() && type == other.type;
+        return getQualifiedName() == other.getQualifiedName() && baseType == other.baseType;
     }
 
 private:
-    /** type attribute */
-    TypeAttribute type;
+    const AstQualifiedName baseType;
 };
 
 /**

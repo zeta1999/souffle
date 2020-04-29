@@ -81,7 +81,7 @@ void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programType
             // add fields
             for (const auto& field : astRecord->getFields()) {
                 if (env.isType(field.type)) {
-                    recordType.add(field.name, env.getType(field.type));
+                    recordType.add(env.getType(field.type));
                 }
             }
         } else {

@@ -223,7 +223,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             // Iterate over possible types extracting base types.
             // Left
             if (!assigmentsLeft.isAll()) {
-                for (const auto& type : assigmentsLeft) {
+                for (const Type& type : assigmentsLeft) {
                     if (isA<SubsetType>(type) || isA<ConstantType>(type)) {
                         baseTypesLeft.insert(getBaseType(&type));
                     }
@@ -231,7 +231,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             }
             // Right
             if (!assigmentsRight.isAll()) {
-                for (const auto& type : assigmentsRight) {
+                for (const Type& type : assigmentsRight) {
                     if (isA<SubsetType>(type) || isA<ConstantType>(type)) {
                         baseTypesRight.insert(getBaseType(&type));
                     }
@@ -338,7 +338,7 @@ TypeConstraint isSubtypeOfComponent(
                 newRecordTypes.insert(typeAsRecord);
 
                 // and its corresponding field for a
-                newElementTypes.insert(typeAsRecord.getFields()[index].type);
+                newElementTypes.insert(typeAsRecord.getFields()[index]);
             }
 
             // combine with current types assigned to element

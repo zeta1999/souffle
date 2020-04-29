@@ -36,35 +36,30 @@ void UnionType::print(std::ostream& out) const {
         << join(elementTypes, " | ", [](std::ostream& out, const Type* type) { out << type->getName(); });
 }
 
-void RecordType::add(const std::string& name, const Type& type) {
-    assert(environment.isType(type));
-    fields.push_back(Field({name, type}));
-}
-
 void RecordType::print(std::ostream& out) const {
     out << getName() << " = ";
     if (fields.empty()) {
         out << "()";
         return;
     }
-    out << "( " << join(fields, " , ", [](std::ostream& out, const RecordType::Field& f) {
-        out << f.name << " : " << f.type.getName();
-    }) << " )";
+    out << "( "
+        << join(fields, " , ", [&](std::ostream& out, const Type& fieldType) { out << fieldType.getName(); })
+        << " )";
 }
 
 TypeSet TypeEnvironment::initializeConstantTypes() {
-    auto& signedConstant = createType<ConstantType>("numberConstant");
-    auto& floatConstant = createType<ConstantType>("floatConstant");
-    auto& symbolConstant = createType<ConstantType>("symbolConstant");
-    auto& unsignedConstant = createType<ConstantType>("unsignedConstant");
+    auto& signedConstant = createType<ConstantType>("__numberConstant");
+    auto& floatConstant = createType<ConstantType>("__floatConstant");
+    auto& symbolConstant = createType<ConstantType>("__symbolConstant");
+    auto& unsignedConstant = createType<ConstantType>("__unsignedConstant");
 
     return TypeSet(signedConstant, floatConstant, symbolConstant, unsignedConstant);
 }
 
 TypeSet TypeEnvironment::initializePrimitiveTypes() {
-#define CREATE_PRIMITIVE(TYPE) \
-    auto& TYPE##Type =         \
-            createType<PrimitiveType>(#TYPE, static_cast<const ConstantType&>(getType(#TYPE "Constant")));
+#define CREATE_PRIMITIVE(TYPE)                    \
+    auto& TYPE##Type = createType<PrimitiveType>( \
+            #TYPE, static_cast<const ConstantType&>(getType("__" #TYPE "Constant")));
 
     CREATE_PRIMITIVE(number);
     CREATE_PRIMITIVE(float);
@@ -211,15 +206,15 @@ std::string getTypeQualifier(const Type& type) {
             std::string str = visitType(type);
             str += "{";
             bool first = true;
-            for (auto field : type.getFields()) {
+            for (const Type& field : type.getFields()) {
                 if (first) {
                     first = false;
                 } else {
                     str += ",";
                 }
-                str += field.name;
+                str += field.getName().toString();
                 str += "#";
-                str += visit(field.type);
+                str += visit(field);
             }
             str += "}";
             return str;
@@ -346,7 +341,6 @@ TypeSet getGreatestCommonSubtypes(const Type& a, const Type& b) {
         return TypeSet(b);
     }
 
-    // last option: if both are unions with common sub-types
     TypeSet res;
     if (isA<UnionType>(a) && isA<UnionType>(b)) {
         // collect common sub-types of union types

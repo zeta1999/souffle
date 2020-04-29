@@ -932,18 +932,7 @@ detail::multiplying_printer<T> times(const T& value, unsigned num) {
  * Determine if one string is a prefix of another
  */
 inline bool isPrefix(const std::string& prefix, const std::string& element) {
-    auto itPrefix = prefix.begin();
-    auto itElement = element.begin();
-
-    while (itPrefix != prefix.end() && itElement != element.end()) {
-        if (*itPrefix != *itElement) {
-            break;
-        }
-        ++itPrefix;
-        ++itElement;
-    }
-
-    return itPrefix == prefix.end();
+    return std::equal(prefix.begin(), prefix.end(), element.begin());
 }
 
 /**

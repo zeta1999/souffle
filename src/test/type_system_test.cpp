@@ -23,22 +23,22 @@ namespace souffle::test {
 TEST(TypeSystem, Basic) {
     TypeEnvironment env;
 
-    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
-    auto& B = env.createType<SubsetType>("B", &env.getType("symbol"));
+    auto& A = env.createType<SubsetType>("A", env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", env.getType("symbol"));
 
     auto& U = env.createType<UnionType>("U");
     U.add(A);
     U.add(B);
 
     auto& R = env.createType<RecordType>("R");
-    R.add("a", A);
-    R.add("b", B);
+    R.add(A);
+    R.add(B);
 
     EXPECT_EQ("A <: number", toString(A));
     EXPECT_EQ("B <: symbol", toString(B));
 
     EXPECT_EQ("U = A | B", toString(U));
-    EXPECT_EQ("R = ( a : A , b : B )", toString(R));
+    EXPECT_EQ("R = ( A , B )", toString(R));
 }
 
 TEST(TypeSystem, isNumberType) {
@@ -46,10 +46,10 @@ TEST(TypeSystem, isNumberType) {
 
     auto& N = env.getType("number");
 
-    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
-    auto& B = env.createType<SubsetType>("B", &env.getType("number"));
+    auto& A = env.createType<SubsetType>("A", env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", env.getType("number"));
 
-    auto& C = env.createType<SubsetType>("C", &env.getType("symbol"));
+    auto& C = env.createType<SubsetType>("C", env.getType("symbol"));
 
     EXPECT_TRUE(isNumberType(N));
     EXPECT_TRUE(isNumberType(A));
@@ -110,8 +110,8 @@ TEST(TypeSystem, isSubtypeOf_Basic) {
 
     // check primitive type
 
-    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
-    auto& B = env.createType<SubsetType>("B", &env.getType("number"));
+    auto& A = env.createType<SubsetType>("A", env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", env.getType("number"));
 
     EXPECT_PRED2(isSubtypeOf, A, A);
     EXPECT_PRED2(isSubtypeOf, B, B);
@@ -160,8 +160,8 @@ TEST(TypeSystem, isSubtypeOf_Basic) {
 TEST(TypeSystem, isSubtypeOf_Records) {
     TypeEnvironment env;
 
-    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
-    auto& B = env.createType<SubsetType>("B", &env.getType("number"));
+    auto& A = env.createType<SubsetType>("A", env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", env.getType("number"));
 
     auto& R1 = env.createType<RecordType>("R1");
     auto& R2 = env.createType<RecordType>("R2");
@@ -169,8 +169,8 @@ TEST(TypeSystem, isSubtypeOf_Records) {
     EXPECT_FALSE(isSubtypeOf(R1, R2));
     EXPECT_FALSE(isSubtypeOf(R2, R1));
 
-    R1.add("a", A);
-    R2.add("b", B);
+    R1.add(A);
+    R2.add(B);
     EXPECT_FALSE(isSubtypeOf(R1, R2));
     EXPECT_FALSE(isSubtypeOf(R2, R1));
 }
@@ -180,9 +180,9 @@ TEST(TypeSystem, GreatestCommonSubtype) {
 
     auto& N = env.getType("number");
 
-    auto& A = env.createType<SubsetType>("A", &env.getType("number"));
-    auto& B = env.createType<SubsetType>("B", &env.getType("number"));
-    auto& C = env.createType<SubsetType>("C", &env.getType("symbol"));
+    auto& A = env.createType<SubsetType>("A", env.getType("number"));
+    auto& B = env.createType<SubsetType>("B", env.getType("number"));
+    auto& C = env.createType<SubsetType>("C", env.getType("symbol"));
 
     EXPECT_EQ("{number}", toString(getGreatestCommonSubtypes(N, N)));
 

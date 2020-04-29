@@ -108,8 +108,10 @@ public:
     }
 
 protected:
-    SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type* base = nullptr)
-            : Type(environment, name), baseType(base){};
+    SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name)
+            : Type(environment, name), baseType(nullptr){};
+    SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type& base)
+            : Type(environment, name), baseType(&base){};
 
 private:
     friend class TypeEnvironment;
@@ -129,7 +131,7 @@ public:
 
 private:
     PrimitiveType(const TypeEnvironment& environment, const AstQualifiedName& name, const ConstantType& base)
-            : SubsetType(environment, name, &base) {}
+            : SubsetType(environment, name, base) {}
 
     friend class TypeEnvironment;
 };
@@ -166,26 +168,20 @@ private:
  */
 struct RecordType : public Type {
 public:
-    /** The type to model fields */
-    struct Field {
-        std::string name;  // < the name of the field
-        const Type& type;  // < the type of the field
-    };
+    void add(const Type& type) {
+        fields.emplace_back(type);
+    }
 
-    /** The list of contained fields */
-    void add(const std::string& name, const Type& type);
-
-    const std::vector<Field>& getFields() const {
+    const std::vector<std::reference_wrapper<const Type>>& getFields() const {
         return fields;
     }
 
     void print(std::ostream& out) const override;
 
 private:
-    // only allow type environments to create instances
     friend class TypeEnvironment;
 
-    std::vector<Field> fields;
+    std::vector<std::reference_wrapper<const Type>> fields;
 
     RecordType(const TypeEnvironment& environment, const AstQualifiedName& name) : Type(environment, name) {}
 };
@@ -217,7 +213,6 @@ public:
 
     TypeSet& operator=(const TypeSet& other) = default;
 
-    /** Emptiness check */
     bool empty() const {
         return !all && types.empty();
     }
@@ -346,15 +341,15 @@ class TypeEnvironment {
 public:
     TypeEnvironment()
             : constantTypes(initializeConstantTypes()),
-              constantNumericTypes(TypeSet(
-                      getType("numberConstant"), getType("unsignedConstant"), getType("floatConstant"))),
+              constantNumericTypes(TypeSet(getType("__numberConstant"), getType("__unsignedConstant"),
+                      getType("__floatConstant"))),
               primitiveTypes(initializePrimitiveTypes()){};
 
     TypeEnvironment(const TypeEnvironment&) = delete;
 
     virtual ~TypeEnvironment() = default;
 
-    // -- create types in this environment --
+    /** create type in this environment */
     template <typename T, typename... Args>
     T& createType(const AstQualifiedName& name, const Args&... args) {
         assert(types.find(name) == types.end() && "Error: registering present type!");
@@ -364,7 +359,6 @@ public:
     }
 
     bool isType(const AstQualifiedName&) const;
-
     bool isType(const Type& type) const;
 
     const Type& getType(const AstQualifiedName&) const;
@@ -373,13 +367,13 @@ public:
     const Type& getConstantType(TypeAttribute type) const {
         switch (type) {
             case TypeAttribute::Signed:
-                return getType("numberConstant");
+                return getType("__numberConstant");
             case TypeAttribute::Unsigned:
-                return getType("unsignedConstant");
+                return getType("__unsignedConstant");
             case TypeAttribute::Float:
-                return getType("floatConstant");
+                return getType("__floatConstant");
             case TypeAttribute::Symbol:
-                return getType("symbolConstant");
+                return getType("__symbolConstant");
             case TypeAttribute::Record:
                 break;
         }

@@ -381,6 +381,16 @@ public:
         fatal("There is no constant record type");
     }
 
+    bool isPredefinedType(const AstQualifiedName& identifier) const {
+        if (!isType(identifier)) {
+            return false;
+        }
+
+        const auto& type = getType(identifier);
+
+        return primitiveTypes.contains(type) || constantTypes.contains(type);
+    }
+
     bool isPrimitiveType(const AstQualifiedName& identifier) const {
         if (isType(identifier)) {
             return isPrimitiveType(getType(identifier));
@@ -388,8 +398,8 @@ public:
         return false;
     }
 
-    bool isPrimitiveType(const Type& typeName) const {
-        return primitiveTypes.contains(typeName);
+    bool isPrimitiveType(const Type& type) const {
+        return primitiveTypes.contains(type);
     }
 
     const TypeSet& getConstantTypes() const {

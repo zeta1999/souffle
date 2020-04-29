@@ -132,6 +132,10 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
     // Check types in AST.
     for (const auto* astType : program.getTypes()) {
+        if (typeEnv.isPredefinedType(astType->getQualifiedName())) {
+            report.addError("Redefinition of the predefined type", astType->getSrcLoc());
+            continue;
+        }
         checkType(*astType);
     }
 

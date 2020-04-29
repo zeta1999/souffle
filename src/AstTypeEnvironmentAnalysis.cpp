@@ -28,7 +28,13 @@ namespace souffle {
 void TypeEnvironmentAnalysis::run(const AstTranslationUnit& translationUnit) {
     const AstProgram& program = *translationUnit.getProgram();
 
-    std::vector<AstType*> programTypes = program.getTypes();
+    // Filter redefinitions of predefined types.
+    std::vector<AstType*> programTypes;
+    for (auto* type : program.getTypes()) {
+        if (!env.isType(type->getQualifiedName())) {
+            programTypes.push_back(type);
+        }
+    }
     createTypes(programTypes);
     linkTypes(programTypes);
 
@@ -60,7 +66,6 @@ void TypeEnvironmentAnalysis::createTypes(const std::vector<AstType*>& programTy
 void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programTypes) {
     for (const auto* astType : programTypes) {
         Type& type = env.getType(astType->getQualifiedName());
-
         if (auto* astSubsetType = dynamic_cast<const AstSubsetType*>(astType)) {
             auto& subsetType = dynamic_cast<SubsetType&>(type);
 

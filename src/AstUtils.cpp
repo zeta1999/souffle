@@ -233,11 +233,10 @@ AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>
     return newClause;
 }
 
-void negateConstraint(AstConstraint* constraint) {
-    assert(nullptr != dynamic_cast<AstConstraint*>(constraint) && "not a constraint object");
-    if (auto* bcstr = dynamic_cast<AstBooleanConstraint*>(constraint)) {
+void negateConstraintInPlace(AstConstraint& constraint) {
+    if (auto* bcstr = dynamic_cast<AstBooleanConstraint*>(&constraint)) {
         bcstr->set(!bcstr->isTrue());
-    } else if (auto* cstr = dynamic_cast<AstBinaryConstraint*>(constraint)) {
+    } else if (auto* cstr = dynamic_cast<AstBinaryConstraint*>(&constraint)) {
         cstr->setOperator(souffle::negatedConstraintOp(cstr->getOperator()));
     } else {
         fatal("Unknown ast-constraint type");

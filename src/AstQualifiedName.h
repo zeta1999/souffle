@@ -43,13 +43,13 @@ public:
     AstQualifiedName& operator=(AstQualifiedName&&) = default;
 
     /** append qualifiers */
-    void append(const std::string& name) {
-        qualifiers.push_back(name);
+    void append(std::string name) {
+        qualifiers.push_back(std::move(name));
     }
 
     /** prepend qualifiers */
-    void prepend(const std::string& name) {
-        qualifiers.insert(qualifiers.begin(), name);
+    void prepend(std::string name) {
+        qualifiers.insert(qualifiers.begin(), std::move(name));
     }
 
     /** check for emptiness */

@@ -396,6 +396,13 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         }
     });
 
+    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& func) {
+        auto n_args = func.getArguments().size();
+        if (!isValidFunctorOpArity(func.getFunction(), n_args)) {
+            report.addError("invalid overload (arity mismatch)", func.getSrcLoc());
+        }
+    });
+
     // - stratification --
 
     // check for cyclic dependencies
@@ -747,21 +754,17 @@ void AstSemanticCheckerImpl::checkRelationDeclaration(const AstRelation& relatio
 
     for (size_t i = 0; i < relation.getArity(); i++) {
         AstAttribute* attr = attributes[i];
-        AstQualifiedName typeName = attr->getTypeName();
+        auto&& typeName = attr->getTypeName();
 
         /* check whether type exists */
-        if (!typeEnv.isPrimitiveType(typeName) && (getType(program, typeName) == nullptr)) {
-            report.addError("Undefined type in attribute " + attr->getAttributeName() + ":" +
-                                    toString(attr->getTypeName()),
-                    attr->getSrcLoc());
+        if (!typeEnv.isPrimitiveType(typeName) && !getType(program, typeName)) {
+            report.addError(format("Undefined type in attribute %s", *attr), attr->getSrcLoc());
         }
 
         /* check whether name occurs more than once */
         for (size_t j = 0; j < i; j++) {
-            if (attr->getAttributeName() == attributes[j]->getAttributeName()) {
-                report.addError("Doubly defined attribute name " + attr->getAttributeName() + ":" +
-                                        toString(attr->getTypeName()),
-                        attr->getSrcLoc());
+            if (attr->getName() == attributes[j]->getName()) {
+                report.addError(format("Doubly defined attribute name %s", *attr), attr->getSrcLoc());
             }
         }
     }
@@ -808,10 +811,9 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
             report.addError("Undefined type " + toString(sub) + " in definition of union type " +
                                     toString(type.getQualifiedName()),
                     type.getSrcLoc());
-        } else if ((dynamic_cast<const AstUnionType*>(subt) == nullptr) &&
-                   (dynamic_cast<const AstSubsetType*>(subt) == nullptr)) {
-            report.addError("Union type " + toString(type.getQualifiedName()) +
-                                    " contains the non-primitive type " + toString(sub),
+        } else if (!isA<AstUnionType>(subt) && !isA<AstSubsetType>(subt)) {
+            report.addError(
+                    format("Union type %s contains the non-primitive type %s", type.getQualifiedName(), sub),
                     type.getSrcLoc());
         }
     }
@@ -864,34 +866,35 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
 }
 
 void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
+    auto&& fields = type.getFields();
     // check proper definition of all field types
-    for (const auto& field : type.getFields()) {
-        if (!typeEnv.isPrimitiveType(field.type) && (getType(program, field.type) == nullptr)) {
-            report.addError(
-                    "Undefined type " + toString(field.type) + " in definition of field " + field.name,
-                    type.getSrcLoc());
+    for (auto&& field : fields) {
+        if (!typeEnv.isPrimitiveType(field->getTypeName()) &&
+                (getType(program, field->getTypeName()) == nullptr)) {
+            report.addError(format("Undefined type %s in definition of field %s", field->getTypeName(),
+                                    field->getName()),
+                    field->getSrcLoc());
         }
     }
 
     // check that field names are unique
-    auto& fields = type.getFields();
     for (std::size_t i = 0; i < fields.size(); i++) {
-        const std::string& cur_name = fields[i].name;
+        auto&& cur_name = fields[i]->getName();
         for (std::size_t j = 0; j < i; j++) {
-            if (fields[j].name == cur_name) {
-                report.addError("Doubly defined field name " + cur_name + " in definition of type " +
-                                        toString(type.getQualifiedName()),
-                        type.getSrcLoc());
+            if (fields[j]->getName() == cur_name) {
+                report.addError(format("Doubly defined field name %s in definition of type %s", cur_name,
+                                        type.getQualifiedName()),
+                        fields[i]->getSrcLoc());
             }
         }
     }
 }
 
 void AstSemanticCheckerImpl::checkType(const AstType& type) {
-    if (isA<AstUnionType>(type)) {
-        checkUnionType(static_cast<const AstUnionType&>(type));
-    } else if (isA<AstRecordType>(type)) {
-        checkRecordType(static_cast<const AstRecordType&>(type));
+    if (auto p = as<AstUnionType>(type)) {
+        checkUnionType(*p);
+    } else if (auto p = as<AstRecordType>(type)) {
+        checkRecordType(*p);
     }
 }
 

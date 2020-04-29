@@ -29,6 +29,8 @@ class AstAtom;
  */
 class AstLiteral : public AstNode {
 public:
+    using AstNode::AstNode;
+
     AstLiteral* clone() const override = 0;
 };
 
@@ -37,6 +39,8 @@ public:
  */
 class AstConstraint : public AstLiteral {
 public:
+    using AstLiteral::AstLiteral;
+
     AstConstraint* clone() const override = 0;
 };
 
@@ -45,6 +49,8 @@ public:
  */
 class AstArgument : public AstNode {
 public:
+    using AstNode::AstNode;
+
     /** Create clone */
     AstArgument* clone() const override = 0;
 };

@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include "AstAttribute.h"
 #include "AstNode.h"
 #include "AstQualifiedName.h"
 #include "RamTypes.h"
+#include "Util.h"
 
 #include <iostream>
 #include <set>
@@ -34,7 +36,8 @@ namespace souffle {
  */
 class AstType : public AstNode {
 public:
-    AstType(AstQualifiedName name = {""}) : name(std::move(name)) {}
+    AstType(AstQualifiedName name = {}, SrcLocation loc = {})
+            : AstNode(std::move(loc)), name(std::move(name)) {}
 
     /** get type name */
     const AstQualifiedName& getQualifiedName() const {
@@ -42,8 +45,8 @@ public:
     }
 
     /** set type name */
-    void setQualifiedName(const AstQualifiedName& name) {
-        this->name = name;
+    void setQualifiedName(AstQualifiedName name) {
+        this->name = std::move(name);
     }
 
     AstType* clone() const override = 0;
@@ -59,13 +62,11 @@ private:
  */
 class AstSubsetType : public AstType {
 public:
-    /** Creates a new primitive type */
-    AstSubsetType(const AstQualifiedName& name, TypeAttribute type) : AstType(name), type(type) {}
+    AstSubsetType(AstQualifiedName name, TypeAttribute type, SrcLocation loc = {})
+            : AstType(std::move(name), std::move(loc)), type(type) {}
 
     AstSubsetType* clone() const override {
-        auto res = new AstSubsetType(getQualifiedName(), type);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstSubsetType(getQualifiedName(), type, getSrcLoc());
     }
 
     TypeAttribute getTypeAttribute() const {
@@ -110,28 +111,26 @@ private:
  */
 class AstUnionType : public AstType {
 public:
+    AstUnionType(AstQualifiedName name, std::vector<AstQualifiedName> types, SrcLocation loc = {})
+            : AstType(std::move(name), std::move(loc)), types(std::move(types)) {}
+
     /** Obtains a reference to the list element types */
     const std::vector<AstQualifiedName>& getTypes() const {
         return types;
     }
 
     /** Adds another element type */
-    void add(const AstQualifiedName& type) {
-        types.push_back(type);
+    void add(AstQualifiedName type) {
+        types.push_back(std::move(type));
     }
 
     /** Set variant type */
-    void setVariantType(size_t idx, const AstQualifiedName& type) {
-        assert(idx < types.size() && "union variant index out of bounds");
-        types[idx] = type;
+    void setVariantType(size_t idx, AstQualifiedName type) {
+        types.at(idx) = std::move(type);
     }
 
     AstUnionType* clone() const override {
-        auto res = new AstUnionType();
-        res->setSrcLoc(getSrcLoc());
-        res->setQualifiedName(getQualifiedName());
-        res->types = types;
-        return res;
+        return new AstUnionType(getQualifiedName(), types, getSrcLoc());
     }
 
 protected:
@@ -157,63 +156,41 @@ private:
  */
 class AstRecordType : public AstType {
 public:
-    /** record field */
-    struct Field {
-        std::string name;       // < the field name
-        AstQualifiedName type;  // < the field type
-
-        bool operator==(const Field& other) const {
-            return this == &other || (name == other.name && type == other.type);
-        }
-    };
+    AstRecordType(AstQualifiedName name, VecOwn<AstAttribute> fields, SrcLocation loc = {})
+            : AstType(std::move(name), std::move(loc)), fields(std::move(fields)) {}
 
     /** add field to record type */
-    void add(const std::string& name, const AstQualifiedName& type) {
-        fields.push_back(Field({name, type}));
+    void add(std::string name, AstQualifiedName type) {
+        fields.push_back(mk<AstAttribute>(std::move(name), std::move(type)));
     }
 
     /** get fields of record */
-    const std::vector<Field>& getFields() const {
-        return fields;
+    std::vector<AstAttribute*> getFields() const {
+        return toPtrVector(fields);
     }
 
     /** set field type */
-    void setFieldType(size_t idx, const AstQualifiedName& type) {
-        assert(idx < fields.size() && "record field index out of bounds");
-        fields[idx].type = type;
+    void setFieldType(size_t idx, AstQualifiedName type) {
+        fields.at(idx)->setTypeName(std::move(type));
     }
 
     AstRecordType* clone() const override {
-        auto res = new AstRecordType();
-        res->setSrcLoc(getSrcLoc());
-        res->setQualifiedName(getQualifiedName());
-        res->fields = fields;
-        return res;
+        return new AstRecordType(getQualifiedName(), souffle::clone(fields), getSrcLoc());
     }
 
 protected:
     void print(std::ostream& os) const override {
-        os << ".type " << getQualifiedName() << " = "
-           << "[";
-        for (unsigned i = 0; i < fields.size(); i++) {
-            if (i != 0) {
-                os << ",";
-            }
-            os << fields[i].name;
-            os << ":";
-            os << fields[i].type;
-        }
-        os << "]";
+        os << ".type " << getQualifiedName() << "[" << join(fields, ", ") << "]";
     }
 
     bool equal(const AstNode& node) const override {
-        const auto& other = static_cast<const AstRecordType&>(node);
-        return getQualifiedName() == other.getQualifiedName() && fields == other.fields;
+        const auto& other = dynamic_cast<const AstRecordType&>(node);
+        return getQualifiedName() == other.getQualifiedName() && equal_targets(fields, other.fields);
     }
 
 private:
     /** record fields */
-    std::vector<Field> fields;
+    VecOwn<AstAttribute> fields;
 };
 
 }  // end of namespace souffle

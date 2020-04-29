@@ -350,13 +350,15 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // empty lowerUpperRange method
-    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper, context& h) const "
+    out << "range<iterator> lowerUpperRange_" << SearchSignature(0)
+        << "(const t_tuple& lower, const t_tuple& upper, context& h) const "
            "{\n";
 
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
-    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper) const {\n";
+    out << "range<iterator> lowerUpperRange_" << SearchSignature(0)
+        << "(const t_tuple& lower, const t_tuple& upper) const {\n";
 
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
@@ -1159,7 +1161,8 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
 
     // lowerUpperRange methods, one for each of the 4 possible search patterns
     for (int i = 1; i < 4; i++) {
-        out << "range<iterator> lowerUpperRange_" << i;
+        SearchSignature s(i);
+        out << "range<iterator> lowerUpperRange_" << s;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
         // compute size of sub-index
         size_t indSize = 0;
@@ -1173,9 +1176,9 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
         out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
         out << "}\n";
 
-        out << "range<iterator> lowerUpperRange_" << i;
+        out << "range<iterator> lowerUpperRange_" << s;
         out << "(const t_tuple& lower, const t_tuple& upper) const {\n";
-        out << "context h; return lowerUpperRange_" << i << "(lower, upper, h);\n";
+        out << "context h; return lowerUpperRange_" << s << "(lower, upper, h);\n";
         out << "}\n";
     }
 

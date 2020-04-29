@@ -49,93 +49,127 @@ class RamTranslationUnit;
  * no value exists (i.e. attribute is unbounded) in the search. */
 class SearchSignature {
 public:
-    SearchSignature() : mask(0) {}
-    SearchSignature(uint64_t initialMask) : mask(initialMask) {}
+    SearchSignature() : bits(64, false) {}
+    SearchSignature(uint64_t mask) : bits(64, false) {
+        size_t len = bits.size();
+        for (size_t i = 0; i < len; ++i) {
+            bits[i] = (mask >> i) & 1;
+        }
+    }
 
     // comparison operators
     inline bool operator<(const SearchSignature& other) const {
-        return mask < other.mask;
+        assert(bits.size() == other.bits.size());
+        size_t len = bits.size();
+        for (size_t i = 0; i < len; ++i) {
+            size_t index = len - i - 1;  // get the most significant bit
+
+            // if our bit is not set and other's bit is set then it is smaller
+            if (bits[index] < other.bits[index]) {
+                return true;
+            }
+            // if other's bit is set and ours is not set then it is larger
+            else if (bits[index] > other.bits[index]) {
+                return false;
+            }
+        }
+        return false;
     }
     inline bool operator>(const SearchSignature& other) const {
-        return mask > other.mask;
+        return other < *this;
     }
     inline bool operator==(const SearchSignature& other) const {
-        return mask == other.mask;
+        assert(bits.size() == other.bits.size());
+        return bits == other.bits;
     }
     inline bool operator!=(const SearchSignature& other) const {
-        return mask != other.mask;
-    }
-
-    // bitwise operators
-    inline SearchSignature operator~() const {
-        return SearchSignature(~mask);
-    }
-    inline SearchSignature operator|(const SearchSignature& other) const {
-        return SearchSignature(mask | other.mask);
-    }
-    inline SearchSignature operator&(const SearchSignature& other) const {
-        return SearchSignature(mask & other.mask);
-    }
-    inline SearchSignature operator^(const SearchSignature& other) const {
-        return SearchSignature(mask ^ other.mask);
-    }
-    inline SearchSignature operator+(const SearchSignature& other) const {
-        return SearchSignature(mask + other.mask);
-    }
-    inline SearchSignature operator-(const SearchSignature& other) const {
-        return SearchSignature(mask - other.mask);
-    }
-    inline SearchSignature operator<<(const size_t n) const {
-        return SearchSignature(mask << n);
-    }
-    inline SearchSignature operator>>(const size_t n) const {
-        return SearchSignature(mask >> n);
-    }
-    inline SearchSignature operator%(const size_t n) const {
-        return SearchSignature(mask % n);
+        return !(other == *this);
     }
 
     // bitwise assignment operators
     inline SearchSignature& operator|=(const SearchSignature& other) {
-        mask |= other.mask;
+        assert(bits.size() == other.bits.size());
+        std::transform(other.bits.begin(), other.bits.end(), bits.begin(), bits.begin(), std::bit_or<bool>());
         return *this;
     }
     inline SearchSignature& operator&=(const SearchSignature& other) {
-        mask &= other.mask;
+        assert(bits.size() == other.bits.size());
+        std::transform(
+                other.bits.begin(), other.bits.end(), bits.begin(), bits.begin(), std::bit_and<bool>());
         return *this;
     }
     inline SearchSignature& operator^=(const SearchSignature& other) {
-        mask ^= other.mask;
-        return *this;
-    }
-    inline SearchSignature& operator+=(const SearchSignature& other) {
-        mask += other.mask;
+        assert(bits.size() == other.bits.size());
+        std::transform(
+                other.bits.begin(), other.bits.end(), bits.begin(), bits.begin(), std::bit_xor<bool>());
         return *this;
     }
     inline SearchSignature& operator-=(const SearchSignature& other) {
-        mask -= other.mask;
+        assert(bits.size() == other.bits.size());
+        for (size_t i = 0; i < bits.size(); ++i) {
+            bits[i] = bits[i] && !other.bits[i];
+        }
         return *this;
     }
     inline SearchSignature& operator<<=(const size_t n) {
-        mask <<= n;
+        bits.insert(bits.begin(), n, 0);
+        bits.erase(bits.end() - n, bits.end());
         return *this;
     }
     inline SearchSignature& operator>>=(const size_t n) {
-        mask >>= n;
+        bits.resize(bits.size() + n, 0);
+        bits.erase(bits.begin(), bits.begin() + n);
         return *this;
     }
-    inline SearchSignature& operator%=(const size_t n) {
-        mask %= n;
+    // set a bit
+    inline SearchSignature& set(size_t pos, bool val = true) {
+        assert(pos < bits.size());
+        bits[pos] = val;
         return *this;
     }
+
+    // bitwise operators
+    inline SearchSignature operator~() const {
+        SearchSignature s(*this);
+        s.bits.flip();
+        return s;
+    }
+    inline SearchSignature operator|(const SearchSignature& other) const {
+        SearchSignature s(*this);
+        return s |= other;
+    }
+    inline SearchSignature operator&(const SearchSignature& other) const {
+        SearchSignature s(*this);
+        return s &= other;
+    }
+    inline SearchSignature operator^(const SearchSignature& other) const {
+        SearchSignature s(*this);
+        return s ^= other;
+    }
+    inline SearchSignature operator-(const SearchSignature& other) const {
+        SearchSignature s(*this);
+        return s -= other;
+    }
+    inline SearchSignature operator<<(const size_t n) const {
+        SearchSignature s(*this);
+        return s <<= n;
+    }
+    inline SearchSignature operator>>(const size_t n) const {
+        SearchSignature s(*this);
+        return s >>= n;
+    }
+
     friend std::ostream& operator<<(std::ostream& out, const SearchSignature& signature);
 
 private:
-    uint64_t mask;
+    std::vector<bool> bits;
 };
 
 inline std::ostream& operator<<(std::ostream& out, const SearchSignature& signature) {
-    out << signature.mask;
+    size_t len = signature.bits.size();
+    for (size_t i = 0; i < len; ++i) {
+        out << signature.bits[len - 1 - i];
+    }
     return out;
 }
 

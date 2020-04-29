@@ -136,7 +136,7 @@ std::string Synthesiser::toIndex(SearchSignature key) {
     tmp << "<";
     int i = 0;
     while (key != 0) {
-        if ((key % 2) != 0u) {
+        if ((key & 1) != 0u) {
             tmp << i;
             if (key > 1) {
                 tmp << ",";

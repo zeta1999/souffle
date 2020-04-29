@@ -141,7 +141,6 @@ void MinIndexSelection::solve() {
 
     // Should never get no chains back as we never call calculate on an empty graph
     assert(!chains.empty());
-
     for (const auto& chain : chains) {
         std::vector<int> ids;
         SearchSignature initDelta = *(chain.begin());
@@ -163,7 +162,7 @@ void MinIndexSelection::solve() {
         size_t l = card(search);
         SearchSignature k = 0;
         for (size_t i = 0; i < l; i++) {
-            k = k + (1 << (orders[idx][i]));
+            k.set(orders[idx][i]);
         }
         assert(k == search && "incorrect lexicographical order");
     }
@@ -349,7 +348,7 @@ SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
     size_t i = 0;
     for (auto cur = bgn; cur != end; ++cur, ++i) {
         if (!isRamUndefValue(*cur)) {
-            keys |= SearchSignature(1) << i;
+            keys.set(i);
         }
     }
     return keys;
@@ -387,7 +386,11 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* ex
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) const {
     assert(ramRel->getArity() <= MAX_SEARCH_KEYS && "relation is too big to fit in search key");
-    return (SearchSignature(1) << ramRel->getArity()) - 1;
+    SearchSignature s;
+    for (size_t i = 0; i < ramRel->getArity(); ++i) {
+        s.set(i);
+    }
+    return s;
 }
 
 bool RamIndexAnalysis::isTotalSignature(const RamAbstractExistenceCheck* existCheck) const {

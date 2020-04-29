@@ -64,7 +64,27 @@ jobs:
         paths: .
     script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig'"
 
+# Testing stage without Evaluation tests nor OpenMP (,-c)
+  - stage: Testing
+    <<: *osxclang
+    name: "OSX clang non-eval without OMP"
+    env:
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS=",-c"
+  - stage: Testing
+    name: "Linux clang non-eval without OMP"
+    <<: *docker
+    env:
+    - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
+    script:
+      - docker exec souf /bin/sh -c ".travis/init_test.sh '--disable-openmp'"
+      - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
+
 # Testing stage without Evaluation tests (-j8,-c -j8)
+  - stage: Testing
+    <<: *osxgcc
+    name: "OSX gcc non-eval"
+    env:
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
   - stage: Testing
     name: "Linux clang non-eval"
     <<: *docker
@@ -81,11 +101,14 @@ jobs:
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
     script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
+
+# Testing stage for Evaluation tests without OpenMP (,-c)
   - stage: Testing
-    <<: *osxgcc
-    name: "OSX gcc non-eval"
+    <<: *osxclang
+    name: "OSX clang fast evaluation tests without OMP"
+    before_script: ".travis/init_test.sh --enable-swig"
     env:
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
+    - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS=",-c"
 
 # Testing stage for Evaluation tests (-j8,-c -j8)
   - stage: Testing
@@ -133,29 +156,6 @@ jobs:
     - SOUFFLE_CATEGORY=FastEvaluation SOUFFLE_CONFS="-j8,-c -j8"
     script:
       - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
-
-# Testing stage for clang without OpenMP (,-c)
-  - stage: Testing
-    name: "Linux clang non-eval without OMP"
-    <<: *docker
-    env:
-    - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
-    script:
-      - docker exec souf /bin/sh -c ".travis/init_test.sh '--disable-openmp'"
-      - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
-  - stage: Testing
-    <<: *osxclang
-    name: "OSX clang non-eval without OMP"
-    env:
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS=",-c"
-
-# Testing stage for clang without OpenMP (,-c)
-  - stage: Testing
-    <<: *osxclang
-    name: "OSX clang fast evaluation tests without OMP"
-    before_script: ".travis/init_test.sh --enable-swig"
-    env:
-    - SOUFFLE_CATEGORY=Swig,FastEvaluation SOUFFLE_CONFS=",-c"
 
 # Packaging stage
 # These both test if packaging works, and if run on the master branch, deploy the resulting packages.

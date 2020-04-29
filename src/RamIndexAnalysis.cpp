@@ -41,7 +41,7 @@ void MaxMatching::addEdge(SearchSignature u, SearchSignature v) {
 SearchSignature MaxMatching::getMatch(SearchSignature v) {
     auto it = match.find(v);
     if (it == match.end()) {
-        return RIA_NIL;
+        return SearchSignature(v.arity(), RIA_NIL);
     }
     return it->second;
 }
@@ -54,45 +54,47 @@ int MaxMatching::getDistance(SearchSignature v) {
     return it->second;
 }
 
-bool MaxMatching::bfSearch() {
-    SearchSignature u;
+bool MaxMatching::bfSearch(size_t arity) {
     std::queue<SearchSignature> bfQueue;
     // Build layers
     for (auto& it : graph) {
-        if (getMatch(it.first) == RIA_NIL) {
+        arity = it.first.arity();
+        if (getMatch(it.first) == SearchSignature(arity, RIA_NIL)) {
             distance[it.first] = 0;
             bfQueue.push(it.first);
         } else {
             distance[it.first] = RIA_INF;
         }
     }
-    distance[RIA_NIL] = RIA_INF;
+
+    distance.insert({SearchSignature(arity, RIA_NIL), RIA_INF});
     while (!bfQueue.empty()) {
-        u = bfQueue.front();
+        SearchSignature u = bfQueue.front();
         bfQueue.pop();
-        assert(u != RIA_NIL);
+        assert(u != SearchSignature(arity, RIA_NIL));
         const Edges& children = graph[u];
         for (auto it : children) {
             SearchSignature mv = getMatch(it);
             if (getDistance(mv) == RIA_INF) {
                 distance[mv] = getDistance(u) + 1;
-                if (mv != RIA_NIL) {
+                if (mv != SearchSignature(arity, RIA_NIL)) {
                     bfQueue.push(mv);
                 }
             }
         }
     }
-    return (getDistance(0) != RIA_INF);
+    return (getDistance(SearchSignature(arity, 0)) != RIA_INF);
 }
 
 bool MaxMatching::dfSearch(SearchSignature u) {
-    if (u != 0) {
+    SearchSignature zero(u.arity(), 0);
+    if (u != zero) {
         Edges& children = graph[u];
         for (auto v : children) {
             if (getDistance(getMatch(v)) == getDistance(u) + 1) {
                 if (dfSearch(getMatch(v))) {
-                    match[u] = v;
-                    match[v] = u;
+                    match.insert({u, v});
+                    match.insert({v, u});
                     return true;
                 }
             }
@@ -104,10 +106,10 @@ bool MaxMatching::dfSearch(SearchSignature u) {
     return true;
 }
 
-const MaxMatching::Matchings& MaxMatching::solve() {
-    while (bfSearch()) {
+const MaxMatching::Matchings& MaxMatching::solve(size_t arity) {
+    while (bfSearch(arity)) {
         for (auto& it : graph) {
-            if (getMatch(it.first) == RIA_NIL) {
+            if (getMatch(it.first) == SearchSignature(arity, RIA_NIL)) {
                 dfSearch(it.first);
             }
         }
@@ -134,7 +136,8 @@ void MinIndexSelection::solve() {
     // Perform the Hopcroft-Karp on the graph and receive matchings (mapped A->B and B->A)
     // Assume: alg.calculate is not called on an empty graph
     assert(!searches.empty());
-    const MaxMatching::Matchings& matchings = matching.solve();
+    size_t arity = searches.begin()->arity();
+    const MaxMatching::Matchings& matchings = matching.solve(arity);
 
     // Extract the chains given the nodes and matchings
     const ChainOrderMap chains = getChainsFromMatching(matchings, searches);
@@ -160,7 +163,7 @@ void MinIndexSelection::solve() {
     for (auto search : searches) {
         int idx = map(search);
         size_t l = card(search);
-        SearchSignature k = 0;
+        SearchSignature k(search.arity(), 0);
         for (size_t i = 0; i < l; i++) {
             k.set(orders[idx][i]);
         }
@@ -315,12 +318,13 @@ void RamIndexAnalysis::print(std::ostream& os) const {
 
         const auto& attrib = rel.getAttributeNames();
         uint32_t arity = rel.getArity();
+        SearchSignature zero(arity, 0);
 
         /* print searches */
         for (auto& cols : indexes.getSearches()) {
             os << "\t\t";
             for (uint32_t i = 0; i < arity; i++) {
-                if ((cols & (1UL << i)) != 0u) {
+                if ((cols & SearchSignature(arity, 1UL << i)) != zero) {
                     os << attrib[i] << " ";
                 }
             }
@@ -339,11 +343,9 @@ void RamIndexAnalysis::print(std::ostream& os) const {
 }
 
 namespace {
-constexpr int MAX_SEARCH_KEYS = int(sizeof(uint64_t) * CHAR_BIT);
 template <typename Iter>
-SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
-    SearchSignature keys = 0;
-    assert(std::distance(bgn, end) <= MAX_SEARCH_KEYS && "too many patterns for index signature");
+SearchSignature searchSignature(size_t arity, Iter const& bgn, Iter const& end) {
+    SearchSignature keys(arity, 0);
 
     size_t i = 0;
     for (auto cur = bgn; cur != end; ++cur, ++i) {
@@ -355,8 +357,8 @@ SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
 }
 
 template <typename Seq>
-SearchSignature searchSignature(Seq const& xs) {
-    return searchSignature(xs.begin(), xs.end());
+SearchSignature searchSignature(size_t arity, Seq const& xs) {
+    return searchSignature(arity, xs.begin(), xs.end());
 }
 }  // namespace
 
@@ -367,7 +369,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* se
             fatal("Lower and upper bounds do not match when retrieving search signature.");
         }
     }
-    return searchSignature(search->getRangePattern().second);
+    return searchSignature(arity, search->getRangePattern().second);
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(
@@ -377,19 +379,16 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
 
     // values.size() - auxiliaryArity because we discard the height annotations
     auto const numSig = values.size() - auxiliaryArity;
-    return searchSignature(values.begin(), values.begin() + numSig);
+    return searchSignature(auxiliaryArity, values.begin(), values.begin() + numSig);
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {
-    return searchSignature(existCheck->getValues());
+    return searchSignature(existCheck->getRelation().getArity(), existCheck->getValues());
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) const {
-    assert(ramRel->getArity() <= MAX_SEARCH_KEYS && "relation is too big to fit in search key");
-    SearchSignature s;
-    for (size_t i = 0; i < ramRel->getArity(); ++i) {
-        s.set(i);
-    }
+    SearchSignature s(ramRel->getArity(), 0);
+    s = ~s;
     return s;
 }
 

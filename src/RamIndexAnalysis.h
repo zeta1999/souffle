@@ -49,14 +49,12 @@ class RamTranslationUnit;
  * no value exists (i.e. attribute is unbounded) in the search. */
 class SearchSignature {
 public:
-    SearchSignature() : bits(64, false) {}
-    SearchSignature(uint64_t mask) : bits(64, false) {
+    explicit SearchSignature(size_t arity, uint64_t mask) : bits(arity, false) {
         size_t len = bits.size();
         for (size_t i = 0; i < len; ++i) {
             bits[i] = (mask >> i) & 1;
         }
     }
-
     // comparison operators
     inline bool operator<(const SearchSignature& other) const {
         assert(bits.size() == other.bits.size());
@@ -112,13 +110,17 @@ public:
         return *this;
     }
     inline SearchSignature& operator<<=(const size_t n) {
+        size_t original_size = bits.size();
         bits.insert(bits.begin(), n, 0);
         bits.erase(bits.end() - n, bits.end());
+        assert(bits.size() == original_size);
         return *this;
     }
     inline SearchSignature& operator>>=(const size_t n) {
+        size_t original_size = bits.size();
         bits.resize(bits.size() + n, 0);
         bits.erase(bits.begin(), bits.begin() + n);
+        assert(bits.size() == original_size);
         return *this;
     }
     // set a bit
@@ -159,6 +161,9 @@ public:
         return s >>= n;
     }
 
+    inline size_t arity() const {
+        return bits.size();
+    }
     friend std::ostream& operator<<(std::ostream& out, const SearchSignature& signature);
 
 private:
@@ -207,7 +212,7 @@ public:
      * @Brief solve the maximum matching problem
      * @result returns the matching
      */
-    const Matchings& solve();
+    const Matchings& solve(size_t arity);
 
     /**
      * @Brief get number of matches in the solution
@@ -239,7 +244,7 @@ protected:
     /**
      * @Brief perform a breadth first search in the graph
      */
-    bool bfSearch();
+    bool bfSearch(size_t arity);
 
     /**
      * @Brief perform a depth first search in the graph
@@ -292,7 +297,8 @@ public:
 
     /** @Brief Add new key to an Index Set */
     inline void addSearch(SearchSignature cols) {
-        if (cols != 0) {
+        SearchSignature empty(cols.arity(), 0);
+        if (cols != empty) {
             searches.insert(cols);
         }
     }
@@ -335,14 +341,14 @@ public:
 
     /** @Brief convert from a representation of A vertices to B vertices */
     static SearchSignature toB(SearchSignature a) {
-        SearchSignature msb = 1;
+        SearchSignature msb(a.arity(), 1);
         msb <<= (4 * 8 - 1);
         return (a | msb);
     }
 
     /** @Brief convert from a representation of B vertices to A vertices */
     static SearchSignature toA(SearchSignature b) {
-        SearchSignature msb = 1;
+        SearchSignature msb(b.arity(), 1);
         msb <<= (4 * 8 - 1);
         return (b xor msb);
     }
@@ -352,7 +358,8 @@ public:
      */
     void insertDefaultTotalIndex(size_t arity) {
         Chain chain = std::set<SearchSignature>();
-        SearchSignature fullIndexKey = (1 << arity) - 1;
+        SearchSignature fullIndexKey(arity, 0);
+        fullIndexKey = ~fullIndexKey;
         chain.insert(fullIndexKey);
         chainToOrder.push_back(std::move(chain));
         LexOrder totalOrder;
@@ -371,12 +378,13 @@ protected:
     /** @Brief count the number of bits in key */
     static size_t card(SearchSignature cols) {
         size_t sz = 0;
-        size_t idx = 1;
-        for (size_t i = 0; i < sizeof(uint64_t) * 8; i++) {
-            if ((cols & idx) != 0u) {
+        SearchSignature empty(cols.arity(), 0);
+        SearchSignature idx(cols.arity(), 1);
+        for (size_t i = 0; i < cols.arity(); i++) {
+            if ((cols & idx) != empty) {
                 sz++;
             }
-            idx *= 2;
+            idx <<= 1;
         }
         return sz;
     }
@@ -396,19 +404,23 @@ protected:
 
     /** @Brief determine if key a is a strict subset of key b*/
     static bool isStrictSubset(SearchSignature a, SearchSignature b) {
-        auto tt = SearchSignature(std::numeric_limits<uint64_t>::max());
+        auto tt = SearchSignature(a.arity(), 0);
+        // tt |= std::numeric_limits<uint64_t>::max();
+        tt = ~tt;
         return (~(a) | (b)) == tt && a != b;
     }
 
     /** @Brief insert an index based on the delta */
     void insertIndex(LexOrder& ids, SearchSignature delta) {
         int pos = 0;
-        SearchSignature mask = 0;
+        SearchSignature empty(delta.arity(), 0);
+        SearchSignature mask(delta.arity(), 0);
 
         while (mask < delta) {
-            mask = SearchSignature(1 << (pos));
+            mask = SearchSignature(delta.arity(), 0);
+            mask.set(pos);
             SearchSignature result = (delta) & (mask);
-            if (result != 0u) {
+            if (result != empty) {
                 ids.push_back(pos);
             }
             pos++;

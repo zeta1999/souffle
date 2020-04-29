@@ -135,10 +135,12 @@ std::string Synthesiser::toIndex(SearchSignature key) {
     std::stringstream tmp;
     tmp << "<";
     int i = 0;
-    while (key != 0) {
-        if ((key & 1) != 0u) {
+    SearchSignature empty(key.arity(), 0);
+    SearchSignature one(key.arity(), 1);
+    while (key != empty) {
+        if ((key & one) != empty) {
             tmp << i;
-            if (key > 1) {
+            if (key > one) {
                 tmp << ",";
             }
         }
@@ -850,9 +852,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // get range to aggregate
             auto keys = isa->getSearchSignature(&aggregate);
-
+            SearchSignature zero(arity, 0);
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == AggregateOp::COUNT && keys == 0 &&
+            if (aggregate.getFunction() == AggregateOp::COUNT && keys == zero &&
                     isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -926,7 +928,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // check whether there is an index to use
-            if (keys == 0) {
+            if (keys == zero) {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
             } else {

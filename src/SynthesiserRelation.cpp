@@ -350,14 +350,14 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // empty lowerUpperRange method
-    out << "range<iterator> lowerUpperRange_" << SearchSignature(0)
+    out << "range<iterator> lowerUpperRange_" << SearchSignature(arity, 0)
         << "(const t_tuple& lower, const t_tuple& upper, context& h) const "
            "{\n";
 
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
-    out << "range<iterator> lowerUpperRange_" << SearchSignature(0)
+    out << "range<iterator> lowerUpperRange_" << SearchSignature(arity, 0)
         << "(const t_tuple& lower, const t_tuple& upper) const {\n";
 
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
@@ -373,8 +373,11 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
         // count size of search pattern
         size_t indSize = 0;
+        SearchSignature zero(arity, 0);
+        SearchSignature one(arity, 1);
+
         for (size_t column = 0; column < arity; column++) {
-            if (((search >> column) & 1) != 0) {
+            if (((search >> column) & one) != zero) {
                 indSize++;
             }
         }
@@ -391,7 +394,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
-                if (((search >> column) & 1) == 0) {
+                if (((search >> column) & one) == zero) {
                     out << "low[" << column << "] = MIN_RAM_SIGNED;\n";
                     out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
@@ -662,10 +665,12 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         out << "range<iterator_" << indNum << "> lowerUpperRange_" << search;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
 
+        SearchSignature zero(arity, 0);
+        SearchSignature one(arity, 1);
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
-            if (((search >> column) & 1) != 0) {
+            if (((search >> column) & one) != zero) {
                 indSize++;
             }
         }
@@ -682,7 +687,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is set
-                if (((search >> column) & 1) == 0) {
+                if (((search >> column) & one) == zero) {
                     out << "low[" << column << "] = MIN_RAM_SIGNED;\n";
                     out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
@@ -950,10 +955,12 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
         out << "range<iterator_" << indNum << "> lowerUpperRange_" << search;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
 
+        SearchSignature zero(arity, 0);
+        SearchSignature one(arity, 1);
         // compute size of sub-index
         size_t indSize = 0;
         for (size_t i = 0; i < arity; i++) {
-            if (((search >> i) & 1) != 0) {
+            if (((search >> i) & one) != zero) {
                 indSize++;
             }
         }
@@ -1160,8 +1167,10 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // lowerUpperRange methods, one for each of the 4 possible search patterns
+    size_t arity = 2;
     for (int i = 1; i < 4; i++) {
-        SearchSignature s(i);
+        SearchSignature s(arity, 0);
+        s |= SearchSignature(arity, i);
         out << "range<iterator> lowerUpperRange_" << s;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
         // compute size of sub-index

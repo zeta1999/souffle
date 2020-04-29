@@ -196,6 +196,7 @@
 %token TCONTAINS                 "checks whether substring is contained in a string"
 %token CAT                       "concatenation of strings"
 %token ORD                       "ordinal number of a string"
+%token RANGE                     "range"
 %token STRLEN                    "length of a string"
 %token SUBSTR                    "sub-string of a string"
 %token MEAN                      "mean aggregator"
@@ -683,6 +684,7 @@ functor_built_in
   | ITOF      { $$ = FunctorOp::ITOF;     }
   | ITOU      { $$ = FunctorOp::ITOU;     }
   | ORD       { $$ = FunctorOp::ORD;      }
+  | RANGE     { $$ = FunctorOp::RANGE;    }
   | STRLEN    { $$ = FunctorOp::STRLEN;   }
   | SUBSTR    { $$ = FunctorOp::SUBSTR;   }
   | TONUMBER  { $$ = FunctorOp::TONUMBER; }

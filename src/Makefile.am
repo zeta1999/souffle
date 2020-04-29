@@ -102,6 +102,7 @@ souffle_sources = \
         Constraints.h                             \
         DebugReport.cpp       DebugReport.h       \
         DebugReporter.cpp     DebugReporter.h     \
+        EvaluatorUtils.h                          \
         EventProcessor.h                          \
         FunctorOps.h                              \
         Global.cpp            Global.h            \
@@ -188,6 +189,7 @@ soufflepublic_HEADERS = \
         CompiledIndexUtils.h                      \
         CompiledSouffle.h                         \
         CompiledTuple.h                           \
+        EvaluatorUtils.h                          \
         EventProcessor.h                          \
         Explain.h                                 \
         ExplainProvenance.h                       \

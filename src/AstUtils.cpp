@@ -172,9 +172,18 @@ bool isFact(const AstClause& clause) {
     }
 
     // and there are no aggregates
-    bool hasAggregates = false;
-    visitDepthFirst(*clause.getHead(), [&](const AstAggregator&) { hasAggregates = true; });
-    return !hasAggregates;
+    bool hasAggregatesOrMultiResultFunctor = false;
+    visitDepthFirst(*clause.getHead(), [&](const AstArgument& arg) {
+        if (dynamic_cast<const AstAggregator*>(&arg)) {
+            hasAggregatesOrMultiResultFunctor = true;
+        }
+
+        auto func = dynamic_cast<const AstIntrinsicFunctor*>(&arg);
+        if (func && isFunctorMultiResult(func->getFunction())) {
+            hasAggregatesOrMultiResultFunctor = true;
+        }
+    });
+    return !hasAggregatesOrMultiResultFunctor;
 }
 
 bool isRule(const AstClause& clause) {

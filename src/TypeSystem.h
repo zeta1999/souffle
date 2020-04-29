@@ -103,7 +103,7 @@ public:
         return *baseType;
     }
 
-    void setBaseType(Type& newBase) {
+    void setBaseType(const Type& newBase) {
         baseType = &newBase;
     }
 

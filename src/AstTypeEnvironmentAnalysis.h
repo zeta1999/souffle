@@ -79,9 +79,9 @@ private:
             const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes);
 
     /**
-     * Find cyclic unions.
+     * Find cyclic types.
      */
-    void analyseCyclicUnions(
+    void analyseCyclicTypes(
             const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes);
 };
 

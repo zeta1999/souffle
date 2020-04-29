@@ -18,17 +18,3 @@
 .type B <: A
 
 
-// Check handling of primitive types
-.type number <: float
-// .type unsigned <: symbol
-// .type number <: A
-
-// .type number <: G
-
-
-
-// // Check unions
-// .type C = symbol
-// .type O <: C
-
-

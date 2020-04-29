@@ -40,7 +40,7 @@ void TypeEnvironmentAnalysis::run(const AstTranslationUnit& translationUnit) {
 
     Graph<AstQualifiedName> typeDependencyGraph{createTypeDependencyGraph(programTypes)};
 
-    analyseCyclicUnions(typeDependencyGraph, programTypes);
+    analyseCyclicTypes(typeDependencyGraph, programTypes);
     analysePrimitiveTypesInUnion(typeDependencyGraph, programTypes);
 }
 
@@ -114,19 +114,19 @@ Graph<AstQualifiedName> TypeEnvironmentAnalysis::createTypeDependencyGraph(
     return typeDependencyGraph;
 }
 
-void TypeEnvironmentAnalysis::analyseCyclicUnions(
+void TypeEnvironmentAnalysis::analyseCyclicTypes(
         const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes) {
     for (const auto& astType : programTypes) {
-        auto unionType = dynamic_cast<const AstUnionType*>(astType);
-        if (unionType == nullptr) {
-            continue;
-        }
+        AstQualifiedName typeName = astType->getQualifiedName();
+        auto& type = env.getType(typeName);
 
-        AstQualifiedName unionName = unionType->getQualifiedName();
-        if (dependencyGraph.reaches(unionName, unionName)) {
-            auto& unionType = dynamic_cast<UnionType&>(env.getType(unionName));
-            unionType.clear();
-            cyclicTypes.insert(std::move(unionName));
+        if (dependencyGraph.reaches(typeName, typeName)) {
+            if (auto* unionType = dynamic_cast<UnionType*>(&type)) {
+                unionType->clear();
+            } else if (auto* subsetType = dynamic_cast<SubsetType*>(&type)) {
+                subsetType->setBaseType(env.getType("number"));
+            }
+            cyclicTypes.insert(std::move(typeName));
         }
     }
 }

@@ -1,0 +1,10 @@
+Error: Infinite descent in the definition of type X in file extended_subtypes2.dl at line 15
+.type X <: X
+^------------
+Error: Infinite descent in the definition of type A in file extended_subtypes2.dl at line 17
+.type A <: B
+^------------
+Error: Infinite descent in the definition of type B in file extended_subtypes2.dl at line 18
+.type B <: A
+^------------
+3 errors generated, evaluation aborted

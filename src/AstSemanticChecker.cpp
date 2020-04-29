@@ -132,10 +132,6 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
     // Check types in AST.
     for (const auto* astType : program.getTypes()) {
-        if (typeEnv.isPredefinedType(astType->getQualifiedName())) {
-            report.addError("Redefinition of the predefined type", astType->getSrcLoc());
-            continue;
-        }
         checkType(*astType);
     }
 
@@ -822,7 +818,8 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
 
     // Check if the union is recursive.
     if (typeEnvAnalysis.isCyclic(type.getQualifiedName())) {
-        report.addError("Recursive union " + toString(type.getQualifiedName()), type.getSrcLoc());
+        report.addError("Infinite descent in the definition of type " + toString(type.getQualifiedName()),
+                type.getSrcLoc());
     }
 
     /* check that union types do not mix different primitive types */
@@ -892,10 +889,20 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
 }
 
 void AstSemanticCheckerImpl::checkType(const AstType& type) {
+    if (typeEnv.isPredefinedType(type.getQualifiedName())) {
+        report.addError("Redefinition of the predefined type", type.getSrcLoc());
+        return;
+    }
+
     if (isA<AstUnionType>(type)) {
         checkUnionType(static_cast<const AstUnionType&>(type));
     } else if (isA<AstRecordType>(type)) {
         checkRecordType(static_cast<const AstRecordType&>(type));
+    } else if (isA<AstSubsetType>(type)) {
+        if (typeEnvAnalysis.isCyclic(type.getQualifiedName())) {
+            report.addError("Infinite descent in the definition of type " + toString(type.getQualifiedName()),
+                    type.getSrcLoc());
+        }
     }
 }
 

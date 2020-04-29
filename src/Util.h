@@ -663,6 +663,10 @@ bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
  */
 template <typename B, typename A>
 auto as(A* x) {
+    static_assert(std::is_base_of_v<A, B>,
+            "`as<B, A>` does not allow cross-type dyn casts. "
+            "(i.e. `as<B, A>` where `B <: A` is not true.) "
+            "Such a cast is likely a mistake or typo.");
     return dynamic_cast<copy_const_t<A, B>*>(x);
 }
 
@@ -673,7 +677,7 @@ auto as(A& x) {
 
 template <typename B, typename A>
 B* as(const Own<A>& x) {
-    return dynamic_cast<B*>(x.get());
+    return as<B*>(x.get());
 }
 
 /**

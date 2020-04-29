@@ -811,7 +811,7 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
             report.addError("Undefined type " + toString(sub) + " in definition of union type " +
                                     toString(type.getQualifiedName()),
                     type.getSrcLoc());
-        } else if (!isA<AstUnionType>(subt) && !isA<SubsetType>(subt)) {
+        } else if (!isA<AstUnionType>(subt) && !isA<AstSubsetType>(subt)) {
             report.addError(
                     format("Union type %s contains the non-primitive type %s", type.getQualifiedName(), sub),
                     type.getSrcLoc());

@@ -39,10 +39,6 @@ extern void yyset_in(FILE* in_str, yyscan_t scanner);
 
 namespace souffle {
 
-ParserDriver::ParserDriver() = default;
-
-ParserDriver::~ParserDriver() = default;
-
 std::unique_ptr<AstTranslationUnit> ParserDriver::parse(
         const std::string& filename, FILE* in, ErrorReport& errorReport, DebugReport& debugReport) {
     translationUnit =
@@ -120,9 +116,9 @@ void ParserDriver::addRelation(std::unique_ptr<AstRelation> r) {
 }
 
 void ParserDriver::addIO(std::unique_ptr<AstIO> d) {
-    if (d->getType() == AstIO::PrintsizeIO) {
+    if (d->getType() == AstIoType::printsize) {
         for (const auto& cur : translationUnit->getProgram()->getIOs()) {
-            if (cur->getQualifiedName() == d->getQualifiedName() && cur->getType() == AstIO::PrintsizeIO) {
+            if (cur->getQualifiedName() == d->getQualifiedName() && cur->getType() == AstIoType::printsize) {
                 Diagnostic err(Diagnostic::ERROR,
                         DiagnosticMessage("Redefinition of printsize directives for relation " +
                                                   toString(d->getQualifiedName()),
@@ -156,6 +152,52 @@ void ParserDriver::addComponent(std::unique_ptr<AstComponent> c) {
 }
 void ParserDriver::addInstantiation(std::unique_ptr<AstComponentInit> ci) {
     translationUnit->getProgram()->addInstantiation(std::move(ci));
+}
+
+void ParserDriver::addIoFromDeprecatedTag(AstRelation& rel) {
+    if (rel.hasQualifier(RelationQualifier::INPUT)) {
+        addIO(mk<AstIO>(AstIoType::input, rel.getQualifiedName(), rel.getSrcLoc()));
+    }
+
+    if (rel.hasQualifier(RelationQualifier::OUTPUT)) {
+        addIO(mk<AstIO>(AstIoType::output, rel.getQualifiedName(), rel.getSrcLoc()));
+    }
+
+    if (rel.hasQualifier(RelationQualifier::PRINTSIZE)) {
+        addIO(mk<AstIO>(AstIoType::printsize, rel.getQualifiedName(), rel.getSrcLoc()));
+    }
+}
+
+std::set<RelationTag> ParserDriver::addDeprecatedTag(
+        RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
+    warning(tagLoc, format("Deprecated %s qualifier was used", tag));
+    return addTag(tag, std::move(tagLoc), std::move(tags));
+}
+
+std::set<RelationTag> ParserDriver::addReprTag(
+        RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
+    return addTag(tag, {RelationTag::BTREE, RelationTag::BRIE, RelationTag::EQREL}, std::move(tagLoc),
+            std::move(tags));
+}
+
+std::set<RelationTag> ParserDriver::addTag(RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
+    return addTag(tag, {tag}, std::move(tagLoc), std::move(tags));
+}
+
+std::set<RelationTag> ParserDriver::addTag(RelationTag tag, std::vector<RelationTag> incompatible,
+        SrcLocation tagLoc, std::set<RelationTag> tags) {
+    if (any_of(incompatible, [&](auto&& x) { return contains(tags, x); })) {
+        error(tagLoc, format("%s qualifier already set", join(incompatible, "/")));
+    }
+
+    tags.insert(tag);
+    return tags;
+}
+
+Own<AstSubsetType> ParserDriver::mkDeprecatedSubType(
+        AstQualifiedName name, AstQualifiedName baseTypeName, SrcLocation loc) {
+    warning(loc, "Deprecated type declaration used");
+    return mk<AstSubsetType>(std::move(name), std::move(baseTypeName), std::move(loc));
 }
 
 void ParserDriver::warning(const SrcLocation& loc, const std::string& msg) {

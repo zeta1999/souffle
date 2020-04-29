@@ -17,7 +17,6 @@
 #include "AstTranslator.h"
 #include "AggregateOp.h"
 #include "AstArgument.h"
-#include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstFunctorDeclaration.h"
 #include "AstIO.h"
@@ -152,7 +151,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirective
 
     std::vector<const AstIO*> relLoads;
     for (const auto* io : program->getIOs()) {
-        if (io->getQualifiedName() == rel->getQualifiedName() && io->getType() == AstIO::InputIO) {
+        if (io->getQualifiedName() == rel->getQualifiedName() && io->getType() == AstIoType::input) {
             relLoads.push_back(io);
         }
     }
@@ -186,7 +185,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
     std::vector<const AstIO*> relStores;
     for (const auto* store : program->getIOs()) {
         if (store->getQualifiedName() == rel->getQualifiedName() &&
-                (store->getType() == AstIO::OutputIO || store->getType() == AstIO::PrintsizeIO)) {
+                (store->getType() == AstIoType::output || store->getType() == AstIoType::printsize)) {
             relStores.push_back(store);
         }
     }
@@ -196,7 +195,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
         bool hasOutput = false;
         for (const auto* current : relStores) {
             std::map<std::string, std::string> directives;
-            if (current->getType() == AstIO::PrintsizeIO) {
+            if (current->getType() == AstIoType::printsize) {
                 directives["operation"] = "printsize";
                 directives["IO"] = "stdoutprintsize";
                 outputDirectives.push_back(directives);
@@ -214,7 +213,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
             for (const auto& currentPair : current->getDirectives()) {
                 directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
             }
-            if (current->getType() == AstIO::PrintsizeIO) {
+            if (current->getType() == AstIoType::printsize) {
                 directives["operation"] = "printsize";
                 directives["IO"] = "stdoutprintsize";
             } else {
@@ -241,7 +240,7 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
             }
             std::vector<std::string> attributeNames;
             for (const auto* attribute : rel->getAttributes()) {
-                attributeNames.push_back(attribute->getAttributeName());
+                attributeNames.push_back(attribute->getName());
             }
 
             if (Global::config().has("provenance")) {
@@ -335,7 +334,12 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
             for (const auto& cur : inf.getArguments()) {
                 values.push_back(translator.translateValue(cur, index));
             }
-            return std::make_unique<RamIntrinsicOperator>(inf.getFunction(), std::move(values));
+
+            if (isFunctorMultiResult(inf.getFunction())) {
+                return translator.makeRamTupleElement(index.getGeneratorLoc(inf));
+            } else {
+                return std::make_unique<RamIntrinsicOperator>(inf.getFunction(), std::move(values));
+            }
         }
 
         std::unique_ptr<RamExpression> visitUserDefinedFunctor(const AstUserDefinedFunctor& udf) override {
@@ -365,7 +369,7 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
 
         std::unique_ptr<RamExpression> visitAggregator(const AstAggregator& agg) override {
             // here we look up the location the aggregation result gets bound
-            return translator.makeRamTupleElement(index.getAggregatorLocation(agg));
+            return translator.makeRamTupleElement(index.getGeneratorLoc(agg));
         }
 
         std::unique_ptr<RamExpression> visitSubroutineArgument(const AstSubroutineArgument& subArg) override {
@@ -547,28 +551,38 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
     }
 
     // add aggregation functions
-    visitDepthFirstPostOrder(clause, [&](const AstAggregator& cur) {
-        // add each aggregator expression only once
-        if (any_of(aggregators, [&](const AstAggregator* agg) { return *agg == cur; })) {
-            return;
-        }
+    visitDepthFirstPostOrder(clause, [&](const AstArgument& arg) {
+        // returns the write-location for this generator (or none if an equiv arg was already seen)
+        auto addGenerator = [&]() -> std::optional<int> {
+            // The by-value compare means that we're effectively doing CSE for any
+            // generator args during code-gen. This is a weird place to do this.
+            if (any_of(generators, [&](auto* x) { return *x == arg; })) return {};
+            generators.push_back(&arg);
 
-        int aggLoc = level++;
-        valueIndex.setAggregatorLocation(cur, Location({aggLoc, 0}));
-
-        // bind aggregator variables to locations
-        assert(nullptr != dynamic_cast<const AstAtom*>(cur.getBodyLiterals()[0]));
-        const AstAtom& atom = static_cast<const AstAtom&>(*cur.getBodyLiterals()[0]);
-        size_t pos = 0;
-        for (auto arg : atom.getArguments()) {
-            if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
-                valueIndex.addVarReference(*var, aggLoc, (int)pos, translator.translateRelation(&atom));
-            }
-            ++pos;
+            int aggLoc = level++;
+            valueIndex.setGeneratorLoc(arg, Location({aggLoc, 0}));
+            return aggLoc;
         };
 
-        // and remember aggregator
-        aggregators.push_back(&cur);
+        if (auto agg = dynamic_cast<const AstAggregator*>(&arg)) {
+            if (auto aggLoc = addGenerator()) {
+                // bind aggregator variables to locations
+                const AstAtom& atom = dynamic_cast<const AstAtom&>(*agg->getBodyLiterals()[0]);
+                size_t pos = 0;
+                for (auto* arg : atom.getArguments()) {
+                    if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
+                        valueIndex.addVarReference(
+                                *var, *aggLoc, (int)pos, translator.translateRelation(&atom));
+                    }
+                    ++pos;
+                }
+            }
+        }
+
+        auto func = dynamic_cast<const AstIntrinsicFunctor*>(&arg);
+        if (func && isFunctorMultiResult(func->getFunction())) {
+            addGenerator();
+        }
     });
 }
 
@@ -739,7 +753,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         const Location& first = *cur.second.begin();
         // all other appearances
         for (const Location& loc : cur.second) {
-            if (first != loc && !valueIndex.isAggregator(loc.identifier)) {
+            if (first != loc && !valueIndex.isGenerator(loc.identifier)) {
                 // FIXME: equiv' for float types (`FEQ`)
                 op = std::make_unique<RamFilter>(
                         std::make_unique<RamConstraint>(
@@ -766,7 +780,7 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             size_t pos = 0;
             for (auto arg : atom->getArguments()) {
                 if (auto* agg = dynamic_cast<AstAggregator*>(arg)) {
-                    auto loc = valueIndex.getAggregatorLocation(*agg);
+                    auto loc = valueIndex.getGeneratorLoc(*agg);
                     // FIXME: equiv' for float types (`FEQ`)
                     op = std::make_unique<RamFilter>(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
                                                              std::make_unique<RamTupleElement>(curLevel, pos),
@@ -778,88 +792,97 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
         }
     }
 
-    // add aggregator levels
+    // add generator levels
     --level;
-    for (auto it = aggregators.rbegin(); it != aggregators.rend(); ++it, --level) {
-        const AstAggregator* cur = *it;
+    for (auto* cur : reverse(generators)) {
+        if (auto agg = dynamic_cast<const AstAggregator*>(cur)) {
+            // condition for aggregate and helper function to add terms
+            std::unique_ptr<RamCondition> aggCond;
+            auto addAggCondition = [&](std::unique_ptr<RamCondition> arg) {
+                aggCond = aggCond ? std::make_unique<RamConjunction>(std::move(aggCond), std::move(arg))
+                                  : std::move(arg);
+            };
 
-        // condition for aggregate and helper function to add terms
-        std::unique_ptr<RamCondition> aggCondition;
-        auto addAggCondition = [&](std::unique_ptr<RamCondition>& arg) {
-            if (aggCondition == nullptr) {
-                aggCondition = std::move(arg);
-            } else {
-                aggCondition = std::make_unique<RamConjunction>(std::move(aggCondition), std::move(arg));
-            }
-        };
-
-        // translate constraints of sub-clause
-        for (const auto& lit : cur->getBodyLiterals()) {
-            if (auto newCondition = translator.translateConstraint(lit, valueIndex)) {
-                addAggCondition(newCondition);
-            }
-        }
-
-        // get the first predicate of the sub-clause
-        // NB: at most one atom is permitted in a sub-clause
-        const AstAtom* atom = nullptr;
-        for (const auto& lit : cur->getBodyLiterals()) {
-            if (atom == nullptr) {
-                atom = dynamic_cast<const AstAtom*>(lit);
-            } else {
-                assert(dynamic_cast<const AstAtom*>(lit) != nullptr &&
-                        "Unsupported complex aggregation body encountered!");
-            }
-        }
-
-        // translate arguments's of atom (if exists) to conditions
-        if (atom != nullptr) {
-            size_t pos = 0;
-            for (auto arg : atom->getArguments()) {
-                // variable bindings are issued differently since we don't want self
-                // referential variable bindings
-                if (const auto* var = dynamic_cast<const AstVariable*>(arg)) {
-                    for (const Location& loc :
-                            valueIndex.getVariableReferences().find(var->getName())->second) {
-                        if (level != loc.identifier || (int)pos != loc.element) {
-                            // FIXME: equiv' for float types (`FEQ`)
-                            std::unique_ptr<RamCondition> newCondition = std::make_unique<RamConstraint>(
-                                    BinaryConstraintOp::EQ, makeRamTupleElement(loc),
-                                    std::make_unique<RamTupleElement>(level, pos));
-                            addAggCondition(newCondition);
-                            break;
-                        }
-                    }
-                } else if (arg != nullptr) {
-                    std::unique_ptr<RamExpression> value = translator.translateValue(arg, valueIndex);
-                    if (value != nullptr && !isRamUndefValue(value.get())) {
-                        // FIXME: equiv' for float types (`FEQ`)
-                        std::unique_ptr<RamCondition> newCondition =
-                                std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                                        std::make_unique<RamTupleElement>(level, pos), std::move(value));
-                        addAggCondition(newCondition);
-                    }
+            // translate constraints of sub-clause
+            for (auto&& lit : agg->getBodyLiterals()) {
+                if (auto newCondition = translator.translateConstraint(lit, valueIndex)) {
+                    addAggCondition(std::move(newCondition));
                 }
-                ++pos;
             }
+
+            // get the first predicate of the sub-clause
+            // NB: at most one atom is permitted in a sub-clause
+            const AstAtom* atom = nullptr;
+            for (auto&& lit : agg->getBodyLiterals()) {
+                if (atom == nullptr) {
+                    atom = dynamic_cast<const AstAtom*>(lit);
+                } else {
+                    assert(dynamic_cast<const AstAtom*>(lit) != nullptr &&
+                            "Unsupported complex aggregation body encountered!");
+                }
+            }
+
+            // translate arguments's of atom (if exists) to conditions
+            if (atom != nullptr) {
+                size_t pos = 0;
+                auto addAggEqCondition = [&](std::unique_ptr<RamExpression> value) {
+                    if (isRamUndefValue(value.get())) return;
+
+                    // FIXME: equiv' for float types (`FEQ`)
+                    addAggCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
+                            std::make_unique<RamTupleElement>(level, pos), std::move(value)));
+                };
+                for (auto* arg : atom->getArguments()) {
+                    // variable bindings are issued differently since we don't want self
+                    // referential variable bindings
+                    if (auto* var = dynamic_cast<const AstVariable*>(arg)) {
+                        for (auto&& loc : valueIndex.getVariableReferences().find(var->getName())->second) {
+                            if (level != loc.identifier || (int)pos != loc.element) {
+                                addAggEqCondition(makeRamTupleElement(loc));
+                                break;
+                            }
+                        }
+                    } else if (auto value = translator.translateValue(arg, valueIndex)) {
+                        addAggEqCondition(std::move(value));
+                    }
+                    ++pos;
+                }
+            }
+
+            // translate aggregate expression
+            auto expr = translator.translateValue(agg->getTargetExpression(), valueIndex);
+
+            // add Ram-Aggregation layer
+            op = std::make_unique<RamAggregate>(std::move(op), agg->getOperator(),
+                    translator.translateRelation(atom),
+                    expr ? std::move(expr) : std::make_unique<RamUndefValue>(),
+                    aggCond ? std::move(aggCond) : std::make_unique<RamTrue>(), level);
+        } else if (const auto* func = dynamic_cast<const AstIntrinsicFunctor*>(cur)) {
+            std::vector<std::unique_ptr<RamExpression>> args;
+            for (auto&& x : func->getArguments()) {
+                args.push_back(translator.translateValue(x, valueIndex));
+            }
+
+            auto func_op = [&]() -> RamNestedIntrinsicOp {
+                switch (func->getFunction()) {
+                    case FunctorOp::RANGE:
+                        return RamNestedIntrinsicOp::RANGE;
+                    case FunctorOp::URANGE:
+                        return RamNestedIntrinsicOp::URANGE;
+                    case FunctorOp::FRANGE:
+                        return RamNestedIntrinsicOp::FRANGE;
+
+                    default:
+                        assert(isFunctorMultiResult(func->getFunction()));
+                        abort();
+                }
+            };
+
+            op = std::make_unique<RamNestedIntrinsicOperator>(
+                    func_op(), std::move(args), std::move(op), level);
         }
 
-        // translate aggregate expression
-        std::unique_ptr<RamExpression> expr =
-                translator.translateValue(cur->getTargetExpression(), valueIndex);
-        if (expr == nullptr) {
-            expr = std::make_unique<RamUndefValue>();
-        }
-
-        if (aggCondition == nullptr) {
-            aggCondition = std::make_unique<RamTrue>();
-        }
-
-        // add Ram-Aggregation layer
-        std::unique_ptr<RamAggregate> aggregate =
-                std::make_unique<RamAggregate>(std::move(op), cur->getOperator(),
-                        translator.translateRelation(atom), std::move(expr), std::move(aggCondition), level);
-        op = std::move(aggregate);
+        --level;
     }
 
     // build operation bottom-up
@@ -1597,7 +1620,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             std::vector<std::string> attributeNames;
             std::vector<std::string> attributeTypeQualifiers;
             for (size_t i = 0; i < rel->getArity(); ++i) {
-                attributeNames.push_back(attributes[i]->getAttributeName());
+                attributeNames.push_back(attributes[i]->getName());
                 if (typeEnv != nullptr) {
                     attributeTypeQualifiers.push_back(
                             getTypeQualifier(typeEnv->getType(attributes[i]->getTypeName())));
@@ -1713,8 +1736,8 @@ const Json AstTranslator::getRecordsTypes(void) {
 
             recordType = getTypeQualifier(typeEnv->getType(elementType->getQualifiedName()));
 
-            for (auto field : elementType->getFields()) {
-                types.push_back(getTypeQualifier(typeEnv->getType(field.type)));
+            for (auto&& field : elementType->getFields()) {
+                types.push_back(getTypeQualifier(typeEnv->getType(field->getTypeName())));
             }
             const size_t recordArity = types.size();
             Json recordInfo =

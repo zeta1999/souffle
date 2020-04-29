@@ -84,9 +84,9 @@ void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programType
             auto& recordType = dynamic_cast<RecordType&>(type);
 
             // add fields
-            for (const auto& field : astRecord->getFields()) {
-                if (env.isType(field.type)) {
-                    recordType.add(env.getType(field.type));
+            for (const auto* field : astRecord->getFields()) {
+                if (env.isType(field->getTypeName())) {
+                    recordType.add(env.getType(field->getTypeName()));
                 }
             }
         } else {

@@ -108,6 +108,9 @@ inline unsigned long __builtin_ctzll(unsigned long long value) {
 
 namespace souffle {
 
+template <typename A, typename B>
+using copy_const_t = std::conditional_t<std::is_const_v<A>, const B, A>;
+
 using tfm::format;
 
 template <typename... Args>
@@ -309,6 +312,35 @@ inline bool isNumber(const char* str) {
 //                           General Container Utilities
 // -------------------------------------------------------------------------------
 
+template <typename A>
+using Own = std::unique_ptr<A>;
+
+template <typename A>
+using VecOwn = std::vector<Own<A>>;
+
+template <typename A, typename B = A, typename... Args>
+Own<A> mk(Args&&... xs) {
+    return Own<A>(new B(std::forward<Args>(xs)...));
+}
+
+/**
+ * Use to range-for iterate in reverse.
+ * Assumes `std::rbegin` and `std::rend` are defined for type `A`.
+ */
+template <typename A>
+struct reverse {
+    reverse(A& iterable) : iterable(iterable) {}
+    A& iterable;
+
+    auto begin() {
+        return std::rbegin(iterable);
+    }
+
+    auto end() {
+        return std::rend(iterable);
+    }
+};
+
 /**
  * A utility to check generically whether a given element is contained in a given
  * container.
@@ -316,6 +348,12 @@ inline bool isNumber(const char* str) {
 template <typename C>
 bool contains(const C& container, const typename C::value_type& element) {
     return std::find(container.begin(), container.end(), element) != container.end();
+}
+
+// TODO: Detect and generalise to other set types?
+template <typename A>
+bool contains(const std::set<A>& container, const A& element) {
+    return container.find(element) != container.end();
 }
 
 /**
@@ -504,8 +542,8 @@ std::unique_ptr<A> clone(const std::unique_ptr<A>& node) {
 }
 
 template <typename A>
-std::vector<std::unique_ptr<A>> clone(const std::vector<std::unique_ptr<A>>& xs) {
-    std::vector<std::unique_ptr<A>> ys;
+auto clone(const std::vector<A>& xs) {
+    std::vector<decltype(clone(xs[0]))> ys;
     ys.reserve(xs.size());
     for (auto&& x : xs) {
         ys.emplace_back(clone(x));
@@ -638,16 +676,48 @@ bool equal_ptr(const std::unique_ptr<T>& a, const std::unique_ptr<T>& b) {
 }
 
 /**
+ * Helpers for `dynamic_cast`ing without having to specify redundant type qualifiers.
+ * e.g. `as<AstLiteral>(p)` instead of `dynamic_cast<const AstLiteral*>(p.get())`.
+ */
+template <typename B, typename A>
+auto as(A* x) {
+    static_assert(std::is_base_of_v<A, B>,
+            "`as<B, A>` does not allow cross-type dyn casts. "
+            "(i.e. `as<B, A>` where `B <: A` is not true.) "
+            "Such a cast is likely a mistake or typo.");
+    return dynamic_cast<copy_const_t<A, B>*>(x);
+}
+
+template <typename B, typename A>
+auto as(A& x) {
+    return as<B>(&x);
+}
+
+template <typename B, typename A>
+B* as(const Own<A>& x) {
+    return as<B*>(x.get());
+}
+
+/**
  * Checks if the object of type Source can be casted to type Destination.
  */
 template <typename Destination, typename Source>
-bool isA(const Source& src) {
-    return dynamic_cast<const Destination*>(&src) != nullptr;
+bool isA(Source&& src) {
+    return as<Destination>(std::forward<Source>(src)) != nullptr;
 }
 
 // -------------------------------------------------------------------------------
 //                           General Print Utilities
 // -------------------------------------------------------------------------------
+
+template <typename A>
+struct IsPtrLike : std::is_pointer<A> {};
+template <typename A>
+struct IsPtrLike<std::unique_ptr<A>> : std::true_type {};
+template <typename A>
+struct IsPtrLike<std::shared_ptr<A>> : std::true_type {};
+template <typename A>
+struct IsPtrLike<std::weak_ptr<A>> : std::true_type {};
 
 namespace detail {
 
@@ -781,6 +851,11 @@ detail::joined_sequence<Iter, Printer> join(const Container& c, const std::strin
     return join(c.begin(), c.end(), sep, p);
 }
 
+// Decide if the sane default is to deref-then-print or just print.
+// Right now, deref anything deref-able *except* for a `const char*` (which handled as a C-string).
+template <typename A>
+constexpr bool JoinShouldDeref = IsPtrLike<A>::value && !std::is_same_v<A, char const*>;
+
 /**
  * Creates an object to be forwarded to some output stream for printing
  * the content of containers interspersed by a given separator.
@@ -789,8 +864,16 @@ detail::joined_sequence<Iter, Printer> join(const Container& c, const std::strin
  */
 template <typename Container, typename Iter = typename Container::const_iterator,
         typename T = typename Iter::value_type>
-detail::joined_sequence<Iter, detail::print<id<T>>> join(const Container& c, const std::string& sep = ",") {
+std::enable_if_t<!JoinShouldDeref<T>, detail::joined_sequence<Iter, detail::print<id<T>>>> join(
+        const Container& c, const std::string& sep = ",") {
     return join(c.begin(), c.end(), sep, detail::print<id<T>>());
+}
+
+template <typename Container, typename Iter = typename Container::const_iterator,
+        typename T = typename Iter::value_type>
+std::enable_if_t<JoinShouldDeref<T>, detail::joined_sequence<Iter, detail::print<deref<T>>>> join(
+        const Container& c, const std::string& sep = ",") {
+    return join(c.begin(), c.end(), sep, detail::print<deref<T>>());
 }
 
 }  // end namespace souffle

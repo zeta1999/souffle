@@ -26,13 +26,13 @@ TEST(RuleBody, Basic) {
     RuleBody body;
 
     // start with an A
-    auto a = RuleBody::atom(new AstAtom("A"));
+    auto a = RuleBody::atom(mk<AstAtom>("A"));
     EXPECT_EQ("A()", toString(a));
 
-    a.conjunct(RuleBody::atom(new AstAtom("B")));
+    a.conjunct(RuleBody::atom(mk<AstAtom>("B")));
     EXPECT_EQ("A(),B()", toString(a));
 
-    a.disjunct(RuleBody::atom(new AstAtom("C")));
+    a.disjunct(RuleBody::atom(mk<AstAtom>("C")));
     EXPECT_EQ("A(),B();C()", toString(a));
 }
 
@@ -40,18 +40,18 @@ TEST(RuleBody, Negation) {
     RuleBody body = RuleBody::getTrue();
 
     RuleBody AB = RuleBody::getTrue();
-    AB.conjunct(RuleBody::atom(new AstAtom("A")));
-    AB.conjunct(RuleBody::atom(new AstAtom("B")));
+    AB.conjunct(RuleBody::atom(mk<AstAtom>("A")));
+    AB.conjunct(RuleBody::atom(mk<AstAtom>("B")));
     EXPECT_EQ("A(),B()", toString(AB));
 
     RuleBody CD = RuleBody::getTrue();
-    CD.conjunct(RuleBody::atom(new AstAtom("C")));
-    CD.conjunct(RuleBody::atom(new AstAtom("D")));
+    CD.conjunct(RuleBody::atom(mk<AstAtom>("C")));
+    CD.conjunct(RuleBody::atom(mk<AstAtom>("D")));
     EXPECT_EQ("C(),D()", toString(CD));
 
     RuleBody EF = RuleBody::getTrue();
-    EF.conjunct(RuleBody::atom(new AstAtom("E")));
-    EF.conjunct(RuleBody::atom(new AstAtom("F")));
+    EF.conjunct(RuleBody::atom(mk<AstAtom>("E")));
+    EF.conjunct(RuleBody::atom(mk<AstAtom>("F")));
     EXPECT_EQ("E(),F()", toString(EF));
 
     RuleBody full = RuleBody::getFalse();
@@ -60,13 +60,13 @@ TEST(RuleBody, Negation) {
     full.disjunct(std::move(EF));
     EXPECT_EQ("A(),B();C(),D();E(),F()", toString(full));
 
-    full.negate();
+    full = full.negated();
     EXPECT_EQ(
             "!A(),!C(),!E();!A(),!C(),!F();!A(),!D(),!E();!A(),!D(),!F();!B(),!C(),!E();!B(),!C(),!F();!B(),!"
             "D(),!E();!B(),!D(),!F()",
             toString(full));
 
-    full.negate();
+    full = full.negated();
     EXPECT_EQ("A(),B();C(),D();E(),F()", toString(full));
 }
 
@@ -74,18 +74,18 @@ TEST(RuleBody, ClauseBodyExtraction) {
     RuleBody body = RuleBody::getTrue();
 
     RuleBody AB = RuleBody::getTrue();
-    AB.conjunct(RuleBody::atom(new AstAtom("A")));
-    AB.conjunct(RuleBody::atom(new AstAtom("B")));
+    AB.conjunct(RuleBody::atom(mk<AstAtom>("A")));
+    AB.conjunct(RuleBody::atom(mk<AstAtom>("B")));
     EXPECT_EQ("A(),B()", toString(AB));
 
     RuleBody CD = RuleBody::getTrue();
-    CD.conjunct(RuleBody::atom(new AstAtom("C")));
-    CD.conjunct(RuleBody::atom(new AstAtom("D")));
+    CD.conjunct(RuleBody::atom(mk<AstAtom>("C")));
+    CD.conjunct(RuleBody::atom(mk<AstAtom>("D")));
     EXPECT_EQ("C(),D()", toString(CD));
 
     RuleBody EF = RuleBody::getTrue();
-    EF.conjunct(RuleBody::atom(new AstAtom("E")));
-    EF.conjunct(RuleBody::atom(new AstAtom("F")));
+    EF.conjunct(RuleBody::atom(mk<AstAtom>("E")));
+    EF.conjunct(RuleBody::atom(mk<AstAtom>("F")));
     EXPECT_EQ("E(),F()", toString(EF));
 
     RuleBody full = RuleBody::getFalse();
@@ -101,11 +101,6 @@ TEST(RuleBody, ClauseBodyExtraction) {
     EXPECT_EQ(" :- \n   A(),\n   B().", toString(*list[0]));
     EXPECT_EQ(" :- \n   C(),\n   D().", toString(*list[1]));
     EXPECT_EQ(" :- \n   E(),\n   F().", toString(*list[2]));
-
-    // free the clauses
-    for (const auto& cur : list) {
-        delete cur;
-    }
 }
 
 }  // end namespace test

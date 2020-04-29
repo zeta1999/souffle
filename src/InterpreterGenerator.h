@@ -94,6 +94,15 @@ public:
         return std::make_unique<InterpreterNode>(I_UserDefinedOperator, &op, std::move(children));
     }
 
+    NodePtr visitNestedIntrinsicOperator(const RamNestedIntrinsicOperator& op) override {
+        NodePtrVec children;
+        for (auto&& arg : op.getArguments()) {
+            children.push_back(visit(arg));
+        }
+        children.push_back(visitTupleOperation(op));
+        return std::make_unique<InterpreterNode>(I_NestedIntrinsicOperator, &op, std::move(children));
+    }
+
     NodePtr visitPackRecord(const RamPackRecord& pr) override {
         NodePtrVec children;
         for (const auto& arg : pr.getArguments()) {

@@ -172,9 +172,18 @@ bool isFact(const AstClause& clause) {
     }
 
     // and there are no aggregates
-    bool hasAggregates = false;
-    visitDepthFirst(*clause.getHead(), [&](const AstAggregator&) { hasAggregates = true; });
-    return !hasAggregates;
+    bool hasAggregatesOrMultiResultFunctor = false;
+    visitDepthFirst(*clause.getHead(), [&](const AstArgument& arg) {
+        if (dynamic_cast<const AstAggregator*>(&arg)) {
+            hasAggregatesOrMultiResultFunctor = true;
+        }
+
+        auto func = dynamic_cast<const AstIntrinsicFunctor*>(&arg);
+        if (func && isFunctorMultiResult(func->getFunction())) {
+            hasAggregatesOrMultiResultFunctor = true;
+        }
+    });
+    return !hasAggregatesOrMultiResultFunctor;
 }
 
 bool isRule(const AstClause& clause) {
@@ -224,11 +233,10 @@ AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>
     return newClause;
 }
 
-void negateConstraint(AstConstraint* constraint) {
-    assert(nullptr != dynamic_cast<AstConstraint*>(constraint) && "not a constraint object");
-    if (auto* bcstr = dynamic_cast<AstBooleanConstraint*>(constraint)) {
+void negateConstraintInPlace(AstConstraint& constraint) {
+    if (auto* bcstr = dynamic_cast<AstBooleanConstraint*>(&constraint)) {
         bcstr->set(!bcstr->isTrue());
-    } else if (auto* cstr = dynamic_cast<AstBinaryConstraint*>(constraint)) {
+    } else if (auto* cstr = dynamic_cast<AstBinaryConstraint*>(&constraint)) {
         cstr->setOperator(souffle::negatedConstraintOp(cstr->getOperator()));
     } else {
         fatal("Unknown ast-constraint type");

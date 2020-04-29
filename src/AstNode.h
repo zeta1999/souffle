@@ -38,17 +38,17 @@ class AstNodeMapper;
  */
 class AstNode {
 public:
-    AstNode() = default;
+    AstNode(SrcLocation loc = {}) : location(std::move(loc)){};
     virtual ~AstNode() = default;
 
     /** Return source location of the AstNode */
-    SrcLocation getSrcLoc() const {
+    const SrcLocation& getSrcLoc() const {
         return location;
     }
 
     /** Set source location for the AstNode */
-    void setSrcLoc(const SrcLocation& l) {
-        location = l;
+    void setSrcLoc(SrcLocation l) {
+        location = std::move(l);
     }
 
     /** Return source location of the syntactic element */
@@ -116,17 +116,16 @@ public:
      * will be destroyed by the mapper and the returned node
      * will become owned by the caller.
      */
-    virtual std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const = 0;
+    virtual Own<AstNode> operator()(Own<AstNode> node) const = 0;
 
     /**
      * Wrapper for any subclass of the AST node hierarchy performing type casts.
      */
     template <typename T>
-    std::unique_ptr<T> operator()(std::unique_ptr<T> node) const {
-        std::unique_ptr<AstNode> resPtr =
-                (*this)(std::unique_ptr<AstNode>(static_cast<AstNode*>(node.release())));
+    Own<T> operator()(Own<T> node) const {
+        Own<AstNode> resPtr = (*this)(Own<AstNode>(static_cast<AstNode*>(node.release())));
         assert(nullptr != dynamic_cast<T*>(resPtr.get()) && "Invalid target node!");
-        return std::unique_ptr<T>(dynamic_cast<T*>(resPtr.release()));
+        return Own<T>(dynamic_cast<T*>(resPtr.release()));
     }
 };
 
@@ -142,7 +141,7 @@ class LambdaNodeMapper : public AstNodeMapper {
 public:
     LambdaNodeMapper(const Lambda& lambda) : lambda(lambda) {}
 
-    std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+    Own<AstNode> operator()(Own<AstNode> node) const override {
         return lambda(std::move(node));
     }
 };

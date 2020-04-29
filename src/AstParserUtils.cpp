@@ -26,33 +26,39 @@
 
 namespace souffle {
 
-void RuleBody::negate() {
+RuleBody RuleBody::negated() const {
     RuleBody res = getTrue();
 
     for (const clause& cur : dnf) {
-        RuleBody step = getFalse();
-
+        RuleBody step;
         for (const literal& lit : cur) {
             step.dnf.push_back(clause());
-            clause& cl = step.dnf.back();
-            cl.emplace_back(literal{!lit.negated, std::unique_ptr<AstLiteral>(lit.atom->clone())});
+            step.dnf.back().emplace_back(literal{!lit.negated, clone(lit.atom)});
         }
 
         res.conjunct(std::move(step));
     }
 
-    dnf.swap(res.dnf);
+    return res;
 }
 
-void RuleBody::conjunct(RuleBody&& other) {
+void RuleBody::conjunct(RuleBody other) {
+    // avoid making clones if possible
+    if (dnf.size() == 1 && other.dnf.size() == 1) {
+        for (auto&& rhs : other.dnf[0]) {
+            insert(dnf[0], std::move(rhs));
+        }
+
+        return;
+    }
+
+    // compute the product of the disjunctions
     std::vector<clause> res;
 
     for (const auto& clauseA : dnf) {
         for (const auto& clauseB : other.dnf) {
-            // create a new clause in result
             clause cur;
 
-            // it is the concatenation of the two clauses
             for (const auto& lit : clauseA) {
                 cur.emplace_back(lit.clone());
             }
@@ -64,41 +70,40 @@ void RuleBody::conjunct(RuleBody&& other) {
         }
     }
 
-    // update local dnf
-    dnf.swap(res);
+    dnf = std::move(res);
 }
 
-void RuleBody::disjunct(RuleBody&& other) {
+void RuleBody::disjunct(RuleBody other) {
     // append the clauses of the other body to this body
     for (auto& cur : other.dnf) {
-        // insert clause
         insert(dnf, std::move(cur));
     }
 }
 
-std::vector<AstClause*> RuleBody::toClauseBodies() const {
+VecOwn<AstClause> RuleBody::toClauseBodies() const {
     // collect clause results
-    std::vector<AstClause*> bodies;
+    VecOwn<AstClause> bodies;
     for (const clause& cur : dnf) {
-        bodies.push_back(new AstClause());
+        bodies.push_back(mk<AstClause>());
         AstClause& clause = *bodies.back();
 
         for (const literal& lit : cur) {
             // extract literal
-            AstLiteral* base = lit.atom->clone();
+            auto base = clone(lit.atom);
             // negate if necessary
             if (lit.negated) {
                 // negate
-                if (auto* atom = dynamic_cast<AstAtom*>(base)) {
-                    base = new AstNegation(std::unique_ptr<AstAtom>(atom));
+                if (auto* atom = dynamic_cast<AstAtom*>(&*base)) {
+                    base.release();
+                    base = mk<AstNegation>(std::unique_ptr<AstAtom>(atom));
                     base->setSrcLoc(atom->getSrcLoc());
-                } else if (auto* cstr = dynamic_cast<AstConstraint*>(base)) {
-                    negateConstraint(cstr);
+                } else if (auto* cstr = dynamic_cast<AstConstraint*>(&*base)) {
+                    negateConstraintInPlace(*cstr);
                 }
             }
 
             // add to result
-            clause.addToBody(std::unique_ptr<AstLiteral>(base));
+            clause.addToBody(std::move(base));
         }
     }
 
@@ -118,19 +123,17 @@ RuleBody RuleBody::getFalse() {
     return RuleBody();
 }
 
-RuleBody RuleBody::atom(AstAtom* atom) {
+RuleBody RuleBody::atom(Own<AstAtom> atom) {
     RuleBody body;
     body.dnf.push_back(clause());
-    auto& clause = body.dnf.back();
-    clause.emplace_back(false, std::unique_ptr<AstAtom>(atom));
+    body.dnf.back().emplace_back(literal{false, std::move(atom)});
     return body;
 }
 
-RuleBody RuleBody::constraint(AstConstraint* constraint) {
+RuleBody RuleBody::constraint(Own<AstConstraint> constraint) {
     RuleBody body;
     body.dnf.push_back(clause());
-    auto& clause = body.dnf.back();
-    clause.emplace_back(false, std::unique_ptr<AstLiteral>(constraint));
+    body.dnf.back().emplace_back(literal{false, std::move(constraint)});
     return body;
 }
 

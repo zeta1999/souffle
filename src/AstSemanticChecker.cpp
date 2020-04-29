@@ -873,7 +873,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
                 (getType(program, field->getTypeName()) == nullptr)) {
             report.addError(format("Undefined type %s in definition of field %s", field->getTypeName(),
                                     field->getName()),
-                    type.getSrcLoc());
+                    field->getSrcLoc());
         }
     }
 
@@ -884,7 +884,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
             if (fields[j]->getName() == cur_name) {
                 report.addError(format("Doubly defined field name %s in definition of type %s", cur_name,
                                         type.getQualifiedName()),
-                        type.getSrcLoc());
+                        fields[i]->getSrcLoc());
             }
         }
     }

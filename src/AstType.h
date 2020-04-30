@@ -77,20 +77,11 @@ protected:
     void print(std::ostream& os) const override {
         os << ".type " << getQualifiedName() << " <: ";
         switch (type) {
-            case TypeAttribute::Signed:
-                os << "number";
-                break;
-            case TypeAttribute::Unsigned:
-                os << "unsigned";
-                break;
-            case TypeAttribute::Float:
-                os << "float";
-                break;
-            case TypeAttribute::Symbol:
-                os << "symbol";
-                break;
-            case TypeAttribute::Record:
-                fatal("Invalid type");
+            case TypeAttribute::Signed: os << "number"; break;
+            case TypeAttribute::Unsigned: os << "unsigned"; break;
+            case TypeAttribute::Float: os << "float"; break;
+            case TypeAttribute::Symbol: os << "symbol"; break;
+            case TypeAttribute::Record: fatal("Invalid type");
         }
     }
 

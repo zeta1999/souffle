@@ -772,25 +772,15 @@ protected:
         switch (function) {
             case AggregateOp::MIN:
             case AggregateOp::FMIN:
-            case AggregateOp::UMIN:
-                os << "min ";
-                break;
+            case AggregateOp::UMIN: os << "min "; break;
             case AggregateOp::MAX:
             case AggregateOp::UMAX:
-            case AggregateOp::FMAX:
-                os << "max ";
-                break;
+            case AggregateOp::FMAX: os << "max "; break;
             case AggregateOp::SUM:
             case AggregateOp::FSUM:
-            case AggregateOp::USUM:
-                os << "sum ";
-                break;
-            case AggregateOp::COUNT:
-                os << "count ";
-                break;
-            case AggregateOp::MEAN:
-                os << "mean ";
-                break;
+            case AggregateOp::USUM: os << "sum "; break;
+            case AggregateOp::COUNT: os << "count "; break;
+            case AggregateOp::MEAN: os << "mean "; break;
         }
         if (function != AggregateOp::COUNT) {
             os << *expression << " ";
@@ -939,12 +929,9 @@ enum class RamNestedIntrinsicOp {
 
 inline std::ostream& operator<<(std::ostream& os, RamNestedIntrinsicOp e) {
     switch (e) {
-        case RamNestedIntrinsicOp::RANGE:
-            return os << "RANGE";
-        case RamNestedIntrinsicOp::URANGE:
-            return os << "URANGE";
-        case RamNestedIntrinsicOp::FRANGE:
-            return os << "FRANGE";
+        case RamNestedIntrinsicOp::RANGE: return os << "RANGE";
+        case RamNestedIntrinsicOp::URANGE: return os << "URANGE";
+        case RamNestedIntrinsicOp::FRANGE: return os << "FRANGE";
     }
     abort();
 }
@@ -974,7 +961,9 @@ public:
 
     std::vector<const RamNode*> getChildNodes() const override {
         auto res = RamTupleOperation::getChildNodes();
-        for (auto&& x : args) res.push_back(x.get());
+        for (auto&& x : args) {
+            res.push_back(x.get());
+        }
         return res;
     }
 
@@ -985,7 +974,9 @@ public:
 
     void apply(const RamNodeMapper& map) override {
         RamTupleOperation::apply(map);
-        for (auto&& x : args) x = map(std::move(x));
+        for (auto&& x : args) {
+            x = map(std::move(x));
+        }
     }
 
 protected:

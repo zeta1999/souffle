@@ -136,8 +136,12 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     }
 
     // check rules
-    for (auto* rel : program.getRelations()) checkRelation(*rel);
-    for (auto* clause : program.getClauses()) checkClause(*clause);
+    for (auto* rel : program.getRelations()) {
+        checkRelation(*rel);
+    }
+    for (auto* clause : program.getClauses()) {
+        checkClause(*clause);
+    }
 
     checkNamespaces();
     checkIO();
@@ -297,8 +301,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                 case TypeAttribute::Symbol:
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
-                case TypeAttribute::Record:
-                    fatal("Invalid return type");
+                case TypeAttribute::Record: fatal("Invalid return type");
             }
         }
 
@@ -325,8 +328,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     case TypeAttribute::Float:
                         report.addError("Non-float argument for functor", arg->getSrcLoc());
                         break;
-                    case TypeAttribute::Record:
-                        fatal("Invalid argument type");
+                    case TypeAttribute::Record: fatal("Invalid argument type");
                 }
             }
             ++i;
@@ -357,21 +359,11 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     ss << "Constraint requires an operand of type "
                        << join(opRamTypes, " or ", [&](auto& out, auto& ramTy) {
                               switch (ramTy) {
-                                  case TypeAttribute::Signed:
-                                      out << "`number`";
-                                      break;
-                                  case TypeAttribute::Symbol:
-                                      out << "`symbol`";
-                                      break;
-                                  case TypeAttribute::Unsigned:
-                                      out << "`unsigned`";
-                                      break;
-                                  case TypeAttribute::Float:
-                                      out << "`float`";
-                                      break;
-                                  case TypeAttribute::Record:
-                                      out << "a record";
-                                      break;
+                                  case TypeAttribute::Signed: out << "`number`"; break;
+                                  case TypeAttribute::Symbol: out << "`symbol`"; break;
+                                  case TypeAttribute::Unsigned: out << "`unsigned`"; break;
+                                  case TypeAttribute::Float: out << "`float`"; break;
+                                  case TypeAttribute::Record: out << "a record"; break;
                               }
                           });
                     report.addError(ss.str(), side.getSrcLoc());
@@ -840,20 +832,11 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
             std::stringstream errorMessage;
             auto toPrimitiveTypeName = [](std::ostream& out, TypeAttribute type) {
                 switch (type) {
-                    case TypeAttribute::Signed:
-                        out << "number";
-                        break;
-                    case TypeAttribute::Unsigned:
-                        out << "unsigned";
-                        break;
-                    case TypeAttribute::Float:
-                        out << "float";
-                        break;
-                    case TypeAttribute::Symbol:
-                        out << "symbol";
-                        break;
-                    case TypeAttribute::Record:
-                        fatal("Invalid type");
+                    case TypeAttribute::Signed: out << "number"; break;
+                    case TypeAttribute::Unsigned: out << "unsigned"; break;
+                    case TypeAttribute::Float: out << "float"; break;
+                    case TypeAttribute::Symbol: out << "symbol"; break;
+                    case TypeAttribute::Record: fatal("Invalid type");
                 }
             };
             errorMessage << "Union type " << name << " is defined over {"

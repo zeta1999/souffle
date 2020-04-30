@@ -106,11 +106,9 @@ inline bool isFunctorMultiResult(FunctorOp op) {
     switch (op) {
         case FunctorOp::RANGE:
         case FunctorOp::URANGE:
-        case FunctorOp::FRANGE:
-            return true;
+        case FunctorOp::FRANGE: return true;
 
-        default:
-            return false;
+        default: return false;
     }
 }
 
@@ -135,8 +133,7 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
         case FunctorOp::ITOF:
         case FunctorOp::FTOI:
         case FunctorOp::UTOF:
-        case FunctorOp::FTOU:
-            return arity == 1;
+        case FunctorOp::FTOU: return arity == 1;
 
         /** Binary Functor Operators */
         case FunctorOp::ADD:
@@ -171,17 +168,14 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
         case FunctorOp::FSUB:
         case FunctorOp::FMUL:
         case FunctorOp::FDIV:
-        case FunctorOp::FEXP:
-            return arity == 2;
+        case FunctorOp::FEXP: return arity == 2;
 
         case FunctorOp::RANGE:
         case FunctorOp::URANGE:
-        case FunctorOp::FRANGE:
-            return 2 <= arity && arity < 4;
+        case FunctorOp::FRANGE: return 2 <= arity && arity < 4;
 
         /** Ternary Functor Operators */
-        case FunctorOp::SUBSTR:
-            return arity == 3;
+        case FunctorOp::SUBSTR: return arity == 3;
 
         /** Non-fixed */
         case FunctorOp::MAX:
@@ -192,8 +186,7 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
         case FunctorOp::FMIN:
         case FunctorOp::SMAX:
         case FunctorOp::SMIN:
-        case FunctorOp::CAT:
-            return arity >= 2;
+        case FunctorOp::CAT: return arity >= 2;
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -205,107 +198,75 @@ inline bool isValidFunctorOpArity(const FunctorOp op, const size_t arity) {
 inline char const* getSymbolForFunctorOp(const FunctorOp op) {
     switch (op) {
         /** Unary Functor Operators */
-        case FunctorOp::ITOF:
-            return "itof";
-        case FunctorOp::ITOU:
-            return "itou";
-        case FunctorOp::UTOF:
-            return "utof";
-        case FunctorOp::UTOI:
-            return "utoi";
-        case FunctorOp::FTOI:
-            return "ftoi";
-        case FunctorOp::FTOU:
-            return "ftou";
-        case FunctorOp::ORD:
-            return "ord";
-        case FunctorOp::STRLEN:
-            return "strlen";
+        case FunctorOp::ITOF: return "itof";
+        case FunctorOp::ITOU: return "itou";
+        case FunctorOp::UTOF: return "utof";
+        case FunctorOp::UTOI: return "utoi";
+        case FunctorOp::FTOI: return "ftoi";
+        case FunctorOp::FTOU: return "ftou";
+        case FunctorOp::ORD: return "ord";
+        case FunctorOp::STRLEN: return "strlen";
         case FunctorOp::NEG:
-        case FunctorOp::FNEG:
-            return "-";
+        case FunctorOp::FNEG: return "-";
         case FunctorOp::BNOT:
-        case FunctorOp::UBNOT:
-            return "bnot";
+        case FunctorOp::UBNOT: return "bnot";
         case FunctorOp::LNOT:
-        case FunctorOp::ULNOT:
-            return "lnot";
-        case FunctorOp::TONUMBER:
-            return "to_number";
-        case FunctorOp::TOSTRING:
-            return "to_string";
+        case FunctorOp::ULNOT: return "lnot";
+        case FunctorOp::TONUMBER: return "to_number";
+        case FunctorOp::TOSTRING: return "to_string";
 
         /** Binary Functor Operators */
         case FunctorOp::ADD:
         case FunctorOp::FADD:
-        case FunctorOp::UADD:
-            return "+";
+        case FunctorOp::UADD: return "+";
         case FunctorOp::SUB:
         case FunctorOp::USUB:
-        case FunctorOp::FSUB:
-            return "-";
+        case FunctorOp::FSUB: return "-";
         case FunctorOp::MUL:
         case FunctorOp::UMUL:
-        case FunctorOp::FMUL:
-            return "*";
+        case FunctorOp::FMUL: return "*";
         case FunctorOp::DIV:
         case FunctorOp::UDIV:
-        case FunctorOp::FDIV:
-            return "/";
+        case FunctorOp::FDIV: return "/";
         case FunctorOp::EXP:
         case FunctorOp::FEXP:
-        case FunctorOp::UEXP:
-            return "^";
+        case FunctorOp::UEXP: return "^";
         case FunctorOp::MOD:
-        case FunctorOp::UMOD:
-            return "%";
+        case FunctorOp::UMOD: return "%";
         case FunctorOp::BAND:
-        case FunctorOp::UBAND:
-            return "band";
+        case FunctorOp::UBAND: return "band";
         case FunctorOp::BOR:
-        case FunctorOp::UBOR:
-            return "bor";
+        case FunctorOp::UBOR: return "bor";
         case FunctorOp::BXOR:
-        case FunctorOp::UBXOR:
-            return "bxor";
+        case FunctorOp::UBXOR: return "bxor";
         case FunctorOp::BSHIFT_L:
-        case FunctorOp::UBSHIFT_L:
-            return "bshl";
+        case FunctorOp::UBSHIFT_L: return "bshl";
         case FunctorOp::BSHIFT_R:
-        case FunctorOp::UBSHIFT_R:
-            return "bshr";
+        case FunctorOp::UBSHIFT_R: return "bshr";
         case FunctorOp::BSHIFT_R_UNSIGNED:
-        case FunctorOp::UBSHIFT_R_UNSIGNED:
-            return "bshru";
+        case FunctorOp::UBSHIFT_R_UNSIGNED: return "bshru";
         case FunctorOp::LAND:
-        case FunctorOp::ULAND:
-            return "land";
+        case FunctorOp::ULAND: return "land";
         case FunctorOp::LOR:
-        case FunctorOp::ULOR:
-            return "lor";
+        case FunctorOp::ULOR: return "lor";
 
         case FunctorOp::RANGE:
         case FunctorOp::URANGE:
-        case FunctorOp::FRANGE:
-            return "range";
+        case FunctorOp::FRANGE: return "range";
 
         /* N-ary Functor Operators */
         case FunctorOp::MAX:
         case FunctorOp::UMAX:
         case FunctorOp::FMAX:
-        case FunctorOp::SMAX:
-            return "max";
+        case FunctorOp::SMAX: return "max";
         case FunctorOp::MIN:
         case FunctorOp::UMIN:
         case FunctorOp::FMIN:
-        case FunctorOp::SMIN:
-            return "min";
-        case FunctorOp::CAT:
-            return "cat";
+        case FunctorOp::SMIN: return "min";
+        case FunctorOp::CAT: return "cat";
 
         /** Ternary Functor Operators */
-        case FunctorOp::SUBSTR:
-            return "substr";
+        case FunctorOp::SUBSTR: return "substr";
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -344,8 +305,9 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::MAX:
         case FunctorOp::MIN:
         case FunctorOp::FTOI:
-        case FunctorOp::UTOI:
+        case FunctorOp::UTOI: {
             return TypeAttribute::Signed;
+        }
         case FunctorOp::UBNOT:
         case FunctorOp::ITOU:
         case FunctorOp::FTOU:
@@ -366,8 +328,9 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::UBSHIFT_R:
         case FunctorOp::UBSHIFT_R_UNSIGNED:
         case FunctorOp::ULAND:
-        case FunctorOp::ULOR:
+        case FunctorOp::ULOR: {
             return TypeAttribute::Unsigned;
+        }
         case FunctorOp::FMAX:
         case FunctorOp::FMIN:
         case FunctorOp::FNEG:
@@ -378,14 +341,16 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
         case FunctorOp::FMUL:
         case FunctorOp::FDIV:
         case FunctorOp::FEXP:
-        case FunctorOp::FRANGE:
+        case FunctorOp::FRANGE: {
             return TypeAttribute::Float;
+        }
         case FunctorOp::SMAX:
         case FunctorOp::SMIN:
         case FunctorOp::TOSTRING:
         case FunctorOp::CAT:
-        case FunctorOp::SUBSTR:
+        case FunctorOp::SUBSTR: {
             return TypeAttribute::Symbol;
+        }
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -397,31 +362,36 @@ inline TypeAttribute functorReturnType(const FunctorOp op) {
 inline TypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
     switch (op) {
         // Special case
-        case FunctorOp::ORD:
+        case FunctorOp::ORD: {
             fatal("ord is a special function that returns a Ram Representation of the element");
+        }
         case FunctorOp::ITOF:
         case FunctorOp::ITOU:
         case FunctorOp::NEG:
         case FunctorOp::BNOT:
         case FunctorOp::LNOT:
-        case FunctorOp::TOSTRING:
+        case FunctorOp::TOSTRING: {
             assert(arg == 0 && "unary functor out of bound");
             return TypeAttribute::Signed;
+        }
         case FunctorOp::FNEG:
         case FunctorOp::FTOI:
-        case FunctorOp::FTOU:
+        case FunctorOp::FTOU: {
             assert(arg == 0 && "unary functor out of bound");
             return TypeAttribute::Float;
+        }
         case FunctorOp::STRLEN:
-        case FunctorOp::TONUMBER:
+        case FunctorOp::TONUMBER: {
             assert(arg == 0 && "unary functor out of bound");
             return TypeAttribute::Symbol;
+        }
         case FunctorOp::UBNOT:
         case FunctorOp::ULNOT:
         case FunctorOp::UTOI:
-        case FunctorOp::UTOF:
+        case FunctorOp::UTOF: {
             assert(arg == 0 && "unary functor out of bound");
             return TypeAttribute::Unsigned;
+        }
         case FunctorOp::ADD:
         case FunctorOp::SUB:
         case FunctorOp::MUL:
@@ -435,9 +405,10 @@ inline TypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::BSHIFT_R:
         case FunctorOp::BSHIFT_R_UNSIGNED:
         case FunctorOp::LAND:
-        case FunctorOp::LOR:
+        case FunctorOp::LOR: {
             assert(arg < 2 && "binary functor out of bound");
             return TypeAttribute::Signed;
+        }
         case FunctorOp::UADD:
         case FunctorOp::USUB:
         case FunctorOp::UMUL:
@@ -451,43 +422,48 @@ inline TypeAttribute functorOpArgType(const size_t arg, const FunctorOp op) {
         case FunctorOp::UBSHIFT_R:
         case FunctorOp::UBSHIFT_R_UNSIGNED:
         case FunctorOp::ULAND:
-        case FunctorOp::ULOR:
+        case FunctorOp::ULOR: {
             assert(arg < 2 && "binary functor out of bound");
             return TypeAttribute::Unsigned;
+        }
         case FunctorOp::FADD:
         case FunctorOp::FSUB:
         case FunctorOp::FMUL:
         case FunctorOp::FDIV:
-        case FunctorOp::FEXP:
+        case FunctorOp::FEXP: {
             assert(arg < 2 && "binary functor out of bound");
             return TypeAttribute::Float;
-        case FunctorOp::SUBSTR:
+        }
+        case FunctorOp::SUBSTR: {
             assert(arg < 3 && "ternary functor out of bound");
             if (arg == 0) {
                 return TypeAttribute::Symbol;
             } else {
-                return TypeAttribute::Signed;  // In the future: Change to unsigned
+                // In the future: Change to unsigned
+                return TypeAttribute::Signed;
             }
+        }
         case FunctorOp::MAX:
-        case FunctorOp::MIN:
+        case FunctorOp::MIN: {
             return TypeAttribute::Signed;
+        }
         case FunctorOp::UMAX:
-        case FunctorOp::UMIN:
+        case FunctorOp::UMIN: {
             return TypeAttribute::Unsigned;
+        }
         case FunctorOp::FMAX:
-        case FunctorOp::FMIN:
+        case FunctorOp::FMIN: {
             return TypeAttribute::Float;
+        }
         case FunctorOp::SMAX:
         case FunctorOp::SMIN:
-        case FunctorOp::CAT:
+        case FunctorOp::CAT: {
             return TypeAttribute::Symbol;
+        }
 
-        case FunctorOp::RANGE:
-            return TypeAttribute::Signed;
-        case FunctorOp::URANGE:
-            return TypeAttribute::Unsigned;
-        case FunctorOp::FRANGE:
-            return TypeAttribute::Float;
+        case FunctorOp::RANGE: return TypeAttribute::Signed;
+        case FunctorOp::URANGE: return TypeAttribute::Unsigned;
+        case FunctorOp::FRANGE: return TypeAttribute::Float;
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -518,11 +494,11 @@ inline bool isOverloadedFunctor(const FunctorOp functor) {
         case FunctorOp::MOD:
         case FunctorOp::MAX:
         case FunctorOp::MIN:
-        case FunctorOp::RANGE:
+        case FunctorOp::RANGE: {
             return true;
+        }
 
-        default:
-            return false;
+        default: return false;
     }
 }
 
@@ -558,8 +534,7 @@ inline FunctorOp convertOverloadedFunctor(const FunctorOp functor, const TypeAtt
     } break;
 
     switch (functor) {
-        default:
-            fatal("functor is not overloaded");
+        default: fatal("functor is not overloaded");
 
         case FunctorOp::NEG: {
             OVERLOAD_SIGNED(NEG);
@@ -642,10 +617,11 @@ inline bool isInfixFunctorOp(const FunctorOp op) {
         case FunctorOp::LOR:
         case FunctorOp::ULOR:
         case FunctorOp::MOD:
-        case FunctorOp::UMOD:
+        case FunctorOp::UMOD: {
             return true;
-        default:
-            return false;
+        }
+
+        default: return false;
     }
 }
 

@@ -409,8 +409,7 @@ private:
                     return RamSignedFromString(numConstant->getConstant(), nullptr, 0);
                 case AstNumericConstant::Type::Uint:
                     return RamUnsignedFromString(numConstant->getConstant(), nullptr, 0);
-                case AstNumericConstant::Type::Float:
-                    return RamFloatFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Float: return RamFloatFromString(numConstant->getConstant());
             }
         }
 

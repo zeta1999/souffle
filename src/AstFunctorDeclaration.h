@@ -67,16 +67,11 @@ protected:
     void print(std::ostream& out) const override {
         auto convert = [&](TypeAttribute type) {
             switch (type) {
-                case TypeAttribute::Signed:
-                    return "number";
-                case TypeAttribute::Symbol:
-                    return "symbol";
-                case TypeAttribute::Float:
-                    return "float";
-                case TypeAttribute::Unsigned:
-                    return "unsigned";
-                case TypeAttribute::Record:
-                    fatal("unhandled `TypeAttribute`");
+                case TypeAttribute::Signed: return "number";
+                case TypeAttribute::Symbol: return "symbol";
+                case TypeAttribute::Float: return "float";
+                case TypeAttribute::Unsigned: return "unsigned";
+                case TypeAttribute::Record: fatal("unhandled `TypeAttribute`");
             }
 
             UNREACHABLE_BAD_CASE_ANALYSIS

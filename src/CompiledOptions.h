@@ -187,9 +187,7 @@ public:
                     std::cerr << "\nWarning: OpenMP was not enabled in compilation\n\n";
 #endif
                     break;
-                default:
-                    printHelpPage(exec_name);
-                    return false;
+                default: printHelpPage(exec_name); return false;
             }
         }
 

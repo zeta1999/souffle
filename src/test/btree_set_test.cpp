@@ -543,7 +543,9 @@ TEST(BTreeSet, ChunkSplitStress) {
         // fill tree
         test_set t;
 
-        for (int x : data) t.insert(x);
+        for (int x : data) {
+            t.insert(x);
+        }
 
         for (int j = 1; j < 100; j++) {
             auto chunks = t.getChunks(j);

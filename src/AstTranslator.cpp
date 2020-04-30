@@ -865,16 +865,11 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
             auto func_op = [&]() -> RamNestedIntrinsicOp {
                 switch (func->getFunction()) {
-                    case FunctorOp::RANGE:
-                        return RamNestedIntrinsicOp::RANGE;
-                    case FunctorOp::URANGE:
-                        return RamNestedIntrinsicOp::URANGE;
-                    case FunctorOp::FRANGE:
-                        return RamNestedIntrinsicOp::FRANGE;
+                    case FunctorOp::RANGE: return RamNestedIntrinsicOp::RANGE;
+                    case FunctorOp::URANGE: return RamNestedIntrinsicOp::URANGE;
+                    case FunctorOp::FRANGE: return RamNestedIntrinsicOp::FRANGE;
 
-                    default:
-                        assert(isFunctorMultiResult(func->getFunction()));
-                        abort();
+                    default: assert(isFunctorMultiResult(func->getFunction())); abort();
                 }
             };
 
@@ -967,12 +962,9 @@ std::unique_ptr<RamExpression> AstTranslator::translateConstant(AstConstant cons
 
     if (auto* const c_num = dynamic_cast<const AstNumericConstant*>(&c)) {
         switch (*c_num->getType()) {
-            case AstNumericConstant::Type::Int:
-                return std::make_unique<RamSignedConstant>(rawConstant);
-            case AstNumericConstant::Type::Uint:
-                return std::make_unique<RamUnsignedConstant>(rawConstant);
-            case AstNumericConstant::Type::Float:
-                return std::make_unique<RamFloatConstant>(rawConstant);
+            case AstNumericConstant::Type::Int: return std::make_unique<RamSignedConstant>(rawConstant);
+            case AstNumericConstant::Type::Uint: return std::make_unique<RamUnsignedConstant>(rawConstant);
+            case AstNumericConstant::Type::Float: return std::make_unique<RamFloatConstant>(rawConstant);
         }
     }
 

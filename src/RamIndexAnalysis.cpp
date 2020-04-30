@@ -28,7 +28,8 @@
 
 namespace souffle {
 
-void MaxMatching::addEdge(SearchSignature u, SearchSignature v) {
+void MaxMatching::addEdge(Node u, Node v) {
+    assert(u >= 1 && v >= 1 && "Nodes must be greater than or equal to 1");
     if (graph.find(u) == graph.end()) {
         Edges vals;
         vals.insert(v);
@@ -38,78 +39,77 @@ void MaxMatching::addEdge(SearchSignature u, SearchSignature v) {
     }
 }
 
-SearchSignature MaxMatching::getMatch(SearchSignature v) {
+MaxMatching::Node MaxMatching::getMatch(Node v) {
     auto it = match.find(v);
     if (it == match.end()) {
-        return SearchSignature(v.arity(), RIA_NIL);
+        return NullVertex;
     }
     return it->second;
 }
 
-int MaxMatching::getDistance(SearchSignature v) {
+MaxMatching::Distance MaxMatching::getDistance(Node v) {
     auto it = distance.find(v);
     if (it == distance.end()) {
-        return RIA_INF;
+        return InfiniteDistance;
     }
     return it->second;
 }
 
-bool MaxMatching::bfSearch(size_t arity) {
-    std::queue<SearchSignature> bfQueue;
+bool MaxMatching::bfSearch() {
+    Node u;
+    std::queue<Node> bfQueue;
     // Build layers
     for (auto& it : graph) {
-        arity = it.first.arity();
-        if (getMatch(it.first) == SearchSignature(arity, RIA_NIL)) {
+        if (getMatch(it.first) == NullVertex) {
             distance[it.first] = 0;
             bfQueue.push(it.first);
         } else {
-            distance[it.first] = RIA_INF;
+            distance[it.first] = InfiniteDistance;
         }
     }
 
-    distance.insert({SearchSignature(arity, RIA_NIL), RIA_INF});
+    distance[NullVertex] = InfiniteDistance;
     while (!bfQueue.empty()) {
-        SearchSignature u = bfQueue.front();
+        u = bfQueue.front();
         bfQueue.pop();
-        assert(u != SearchSignature(arity, RIA_NIL));
+        assert(u != NullVertex);
         const Edges& children = graph[u];
         for (auto it : children) {
-            SearchSignature mv = getMatch(it);
-            if (getDistance(mv) == RIA_INF) {
+            Node mv = getMatch(it);
+            if (getDistance(mv) == InfiniteDistance) {
                 distance[mv] = getDistance(u) + 1;
-                if (mv != SearchSignature(arity, RIA_NIL)) {
+                if (mv != NullVertex) {
                     bfQueue.push(mv);
                 }
             }
         }
     }
-    return (getDistance(SearchSignature(arity, 0)) != RIA_INF);
+    return (getDistance(NullVertex) != InfiniteDistance);
 }
 
-bool MaxMatching::dfSearch(SearchSignature u) {
-    SearchSignature zero(u.arity(), 0);
-    if (u != zero) {
+bool MaxMatching::dfSearch(Node u) {
+    if (u != 0) {
         Edges& children = graph[u];
         for (auto v : children) {
             if (getDistance(getMatch(v)) == getDistance(u) + 1) {
                 if (dfSearch(getMatch(v))) {
-                    match.insert({u, v});
-                    match.insert({v, u});
+                    match[u] = v;
+                    match[v] = u;
                     return true;
                 }
             }
         }
 
-        distance[u] = RIA_INF;
+        distance[u] = InfiniteDistance;
         return false;
     }
     return true;
 }
 
-const MaxMatching::Matchings& MaxMatching::solve(size_t arity) {
-    while (bfSearch(arity)) {
+const MaxMatching::Matchings& MaxMatching::solve() {
+    while (bfSearch()) {
         for (auto& it : graph) {
-            if (getMatch(it.first) == SearchSignature(arity, RIA_NIL)) {
+            if (getMatch(it.first) == NullVertex) {
                 dfSearch(it.first);
             }
         }
@@ -123,12 +123,30 @@ void MinIndexSelection::solve() {
         return;
     }
 
+    // map the signatures of each searches to a unique index for the matching problem
+    AttributeIndex currentIndex = 1;
+    for (SearchSignature s : searches) {
+        // we skip if the search is empty
+        SearchSignature empty(s.arity(), 0);
+        if (s == empty) {
+            continue;
+        }
+
+        // map the signature to its unique index in each set
+        signatureToIndexA.insert({s, currentIndex});
+        signatureToIndexB.insert({s, currentIndex + 1});
+        // map each index back to the search signature
+        indexToSignature.insert({currentIndex, s});
+        indexToSignature.insert({currentIndex + 1, s});
+        currentIndex += 2;
+    }
+
     // Construct the matching poblem
     for (auto search : searches) {
         // For this node check if other nodes are strict subsets
         for (auto itt : searches) {
             if (isStrictSubset(search, itt)) {
-                matching.addEdge(search, toB(itt));
+                matching.addEdge(signatureToIndexA[search], signatureToIndexB[itt]);
             }
         }
     }
@@ -136,8 +154,7 @@ void MinIndexSelection::solve() {
     // Perform the Hopcroft-Karp on the graph and receive matchings (mapped A->B and B->A)
     // Assume: alg.calculate is not called on an empty graph
     assert(!searches.empty());
-    size_t arity = searches.begin()->arity();
-    const MaxMatching::Matchings& matchings = matching.solve(arity);
+    const MaxMatching::Matchings& matchings = matching.solve();
 
     // Extract the chains given the nodes and matchings
     const ChainOrderMap chains = getChainsFromMatching(matchings, searches);
@@ -145,7 +162,7 @@ void MinIndexSelection::solve() {
     // Should never get no chains back as we never call calculate on an empty graph
     assert(!chains.empty());
     for (const auto& chain : chains) {
-        std::vector<int> ids;
+        std::vector<uint32_t> ids;
         SearchSignature initDelta = *(chain.begin());
         insertIndex(ids, initDelta);
 
@@ -181,14 +198,15 @@ MinIndexSelection::Chain MinIndexSelection::getChain(
     // Assume : no circular mappings, i.e. a in A -> b in B -> ........ -> a in A is not allowed.
     // Given this, the loop will terminate
     while (true) {
-        auto mit = match.find(toB(start));  // we start from B side
+        auto mit = match.find(signatureToIndexB[start]);  // we start from B side
+        // on each iteration we swap sides when collecting the chain so we use the corresponding index map
         chain.insert(start);
 
         if (mit == match.end()) {
             return chain;
         }
 
-        SearchSignature a = mit->second;
+        SearchSignature a = indexToSignature.at(mit->second);
         chain.insert(a);
         start = a;
     }

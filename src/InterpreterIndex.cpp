@@ -378,10 +378,10 @@ class IndirectIndex : public InterpreterIndex {
 public:
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {
-        const std::vector<int> order;
+        const std::vector<uint32_t> order;
 
         /* constructor to initialize state */
-        comparator(std::vector<int> order) : order(std::move(order)) {}
+        comparator(std::vector<uint32_t> order) : order(std::move(order)) {}
 
         /* comparison function */
         int operator()(const TupleRef& x, const TupleRef& y) const {
@@ -481,7 +481,7 @@ public:
         }
     };
 
-    IndirectIndex(std::vector<int> order)
+    IndirectIndex(std::vector<uint32_t> order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)),
               arity(order.size()) {}
 
@@ -547,7 +547,7 @@ public:
 
 private:
     /** retain the index order used to construct an object of this class */
-    const std::vector<int> theOrder;
+    const std::vector<uint32_t> theOrder;
 
     /** set storing tuple pointers of table */
     index_set set;

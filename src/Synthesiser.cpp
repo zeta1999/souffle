@@ -130,22 +130,21 @@ void Synthesiser::generateRelationTypeStruct(
     relationType->generateTypeStruct(out);
 }
 
-/* Convert SearchColums to a template index */
+/* Convert SearchColumns to a template index */
 std::string Synthesiser::toIndex(SearchSignature key) {
     std::stringstream tmp;
     tmp << "<";
-    int i = 0;
-    SearchSignature empty(key.arity(), 0);
-    SearchSignature one(key.arity(), 1);
-    while (key != empty) {
-        if ((key & one) != empty) {
-            tmp << i;
-            if (key > one) {
+    bool first = true;
+
+    for (size_t i = 0; i < key.arity(); ++i) {
+        if (key[i]) {
+            if (!first) {
                 tmp << ",";
+            } else {
+                first = false;
             }
+            tmp << i;
         }
-        key >>= 1;
-        i++;
     }
 
     tmp << ">";

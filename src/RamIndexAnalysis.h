@@ -53,6 +53,12 @@ public:
             mask /= 2;
         }
     }
+    // array subscript operator
+    inline bool operator[](std::size_t pos) const {
+        assert(pos < bits.size());
+        return bits[pos];
+    }
+
     // comparison operators
     inline bool operator<(const SearchSignature& other) const {
         assert(bits.size() == other.bits.size());
@@ -381,10 +387,8 @@ protected:
     /** @Brief count the number of bits in key */
     static size_t card(SearchSignature cols) {
         size_t sz = 0;
-        SearchSignature empty(cols.arity(), 0);
-        SearchSignature one(cols.arity(), 1);
         for (size_t i = 0; i < cols.arity(); i++) {
-            if ((cols & one) != empty) {
+            if (cols[0]) {
                 sz++;
             }
             cols >>= 1;

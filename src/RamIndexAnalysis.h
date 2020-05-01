@@ -121,14 +121,14 @@ public:
     }
     inline SearchSignature& operator<<=(const size_t n) {
         size_t original_size = bits.size();
-        bits.insert(bits.begin(), n, 0);
+        bits.insert(bits.begin(), n, false);
         bits.erase(bits.end() - n, bits.end());
         assert(bits.size() == original_size);
         return *this;
     }
     inline SearchSignature& operator>>=(const size_t n) {
         size_t original_size = bits.size();
-        bits.resize(bits.size() + n, 0);
+        bits.resize(bits.size() + n, false);
         bits.erase(bits.begin(), bits.begin() + n);
         assert(bits.size() == original_size);
         return *this;

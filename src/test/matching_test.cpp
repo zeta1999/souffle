@@ -96,3 +96,49 @@ TEST(Matching, StaticTest_2) {
 
     EXPECT_EQ(num, 5);
 }
+
+TEST(Matching, TestOver64BitSignature) {
+    TestAutoIndex order;
+    Nodes nodes;
+
+    size_t arity = 100;
+    SearchSignature first(arity, 0);
+    first.set(99);
+    first.set(75);
+    first.set(50);
+    first.set(25);
+    first.set(0);
+
+    SearchSignature second(arity, 0);
+    second.set(99);
+    second.set(75);
+    second.set(50);
+
+    SearchSignature third(arity, 0);
+    third.set(99);
+    third.set(75);
+
+    SearchSignature fourth(arity, 0);
+    fourth.set(99);
+
+    SearchSignature fifth(arity, 0);
+    fifth.set(25);
+    fifth.set(0);
+
+    nodes.insert(first);
+    nodes.insert(second);
+    nodes.insert(third);
+    nodes.insert(fourth);
+    nodes.insert(fifth);
+
+    order.addSearch(first);
+    order.addSearch(second);
+    order.addSearch(third);
+    order.addSearch(fourth);
+    order.addSearch(fifth);
+
+    order.solve();
+    int num = order.getNumMatchings();
+
+    EXPECT_EQ(num, 3);
+}

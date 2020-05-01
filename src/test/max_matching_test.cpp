@@ -31,14 +31,14 @@ using namespace souffle;
 
 class TestMaxMatching : public MaxMatching {
 public:
-    TestMaxMatching() : MaxMatching() {} 
+    TestMaxMatching() : MaxMatching() {}
 };
 
 using Nodes = set<SearchSignature>;
 
 TEST(Matching, StaticTest_1) {
     TestMaxMatching match;
-    
+
     match.addEdge(1, 7);
     match.addEdge(1, 8);
     match.addEdge(3, 7);
@@ -47,7 +47,7 @@ TEST(Matching, StaticTest_1) {
     match.addEdge(5, 9);
     match.addEdge(5, 10);
     match.addEdge(6, 12);
-    
+
     match.solve();
     int num = match.getNumMatchings();
 
@@ -56,7 +56,7 @@ TEST(Matching, StaticTest_1) {
 
 TEST(Matching, StaticTest_2) {
     TestMaxMatching match;
-    
+
     match.addEdge(1, 6);
     match.addEdge(1, 7);
     match.addEdge(2, 6);

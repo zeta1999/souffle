@@ -49,7 +49,8 @@ public:
     explicit SearchSignature(size_t arity, uint64_t mask) : bits(arity, false) {
         size_t len = bits.size();
         for (size_t i = 0; i < len; ++i) {
-            bits[i] = (mask >> i) & 1;
+            bits[i] = (mask % 2);
+            mask /= 2;
         }
     }
     // comparison operators
@@ -375,12 +376,12 @@ protected:
     static size_t card(SearchSignature cols) {
         size_t sz = 0;
         SearchSignature empty(cols.arity(), 0);
-        SearchSignature idx(cols.arity(), 1);
+        SearchSignature one(cols.arity(), 1);
         for (size_t i = 0; i < cols.arity(); i++) {
-            if ((cols & idx) != empty) {
+            if ((cols & one) != empty) {
                 sz++;
             }
-            idx <<= 1;
+            cols >>= 1;
         }
         return sz;
     }

@@ -29,14 +29,16 @@ class AstClause;
 class RuleBody {
 public:
     RuleBody() = default;
+    RuleBody(RuleBody&&) = default;
+    RuleBody& operator=(RuleBody&&) = default;
 
-    void negate();
+    RuleBody negated() const;
 
-    void conjunct(RuleBody&& other);
+    void conjunct(RuleBody other);
 
-    void disjunct(RuleBody&& other);
+    void disjunct(RuleBody other);
 
-    std::vector<AstClause*> toClauseBodies() const;
+    VecOwn<AstClause> toClauseBodies() const;
 
     // -- factory functions --
 
@@ -44,9 +46,9 @@ public:
 
     static RuleBody getFalse();
 
-    static RuleBody atom(AstAtom* atom);
+    static RuleBody atom(Own<AstAtom> atom);
 
-    static RuleBody constraint(AstConstraint* constraint);
+    static RuleBody constraint(Own<AstConstraint> constraint);
 
     friend std::ostream& operator<<(std::ostream& out, const RuleBody& body);
 
@@ -54,6 +56,7 @@ private:
     // a struct to represent literals
     struct literal {
         literal(bool negated, std::unique_ptr<AstLiteral> atom) : negated(negated), atom(std::move(atom)) {}
+
         // whether this literal is negated or not
         bool negated;
 

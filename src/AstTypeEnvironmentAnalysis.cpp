@@ -76,9 +76,9 @@ void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programType
             auto& recordType = dynamic_cast<RecordType&>(type);
 
             // add fields
-            for (const auto& field : astRecord->getFields()) {
-                if (env.isType(field.type)) {
-                    recordType.add(field.name, env.getType(field.type));
+            for (auto&& f : astRecord->getFields()) {
+                if (env.isType(f->getTypeName())) {
+                    recordType.add(f->getName(), env.getType(f->getTypeName()));
                 }
             }
         } else {
@@ -105,8 +105,7 @@ Graph<AstQualifiedName> TypeEnvironmentAnalysis::createTypeDependencyGraph(
                 case TypeAttribute::Symbol:
                     typeDependencyGraph.insert(type->getQualifiedName(), "symbol");
                     break;
-                case TypeAttribute::Record:
-                    fatal("invalid type");
+                case TypeAttribute::Record: fatal("invalid type");
             }
         } else if (dynamic_cast<const AstRecordType*>(astType) != nullptr) {
             // do nothing

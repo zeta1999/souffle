@@ -112,10 +112,14 @@ TEST(PiggyTest, Append) {
     // larger than BLOCKSIZE
     constexpr size_t N = 10000;
 
-    for (size_t i = 0; i < N; ++i) pl.append(2);
+    for (size_t i = 0; i < N; ++i) {
+        pl.append(2);
+    }
     EXPECT_EQ(pl.size(), N + 3);
     // make sure that all of our inserties are exacties
-    for (size_t i = 3; i < N + 3; ++i) EXPECT_EQ(pl.get(i), 2);
+    for (size_t i = 3; i < N + 3; ++i) {
+        EXPECT_EQ(pl.get(i), 2);
+    }
 }
 
 TEST(PiggyTest, ElementCreation) {
@@ -311,7 +315,9 @@ TEST(DjTest, Clear) {
     EXPECT_EQ(ds.size(), 0);
 
     // get ready 2 double free y'all
-    for (size_t i = 0; i < 10000; ++i) ds.makeNode();
+    for (size_t i = 0; i < 10000; ++i) {
+        ds.makeNode();
+    }
     ds.unionNodes(1, 2);
     ds.clear();
     ds.clear();

@@ -15,7 +15,6 @@
  ***********************************************************************/
 
 #include "ComponentInstantiationTransformer.h"
-#include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstComponent.h"
 #include "AstIO.h"
@@ -92,7 +91,7 @@ struct ComponentContent {
         // if yes, add error
         if (foundItem != ios.end()) {
             auto type = (*foundItem)->getType();
-            if (type == newIO->getType() && newIO->getType() != AstIO::OutputIO) {
+            if (type == newIO->getType() && newIO->getType() != AstIoType::output) {
                 Diagnostic err(Diagnostic::ERROR,
                         DiagnosticMessage("Redefinition I/O operation " + toString(newIO->getQualifiedName()),
                                 newIO->getSrcLoc()),
@@ -185,9 +184,9 @@ void collectContent(AstProgram& program, const AstComponent& component, const Ty
         // instantiate elements of record types
         visitDepthFirst(*type, [&](const AstRecordType& type) {
             for (const auto& field : type.getFields()) {
-                AstQualifiedName newName = binding.find(field.type);
+                auto&& newName = binding.find(field->getTypeName());
                 if (!newName.empty()) {
-                    const_cast<AstQualifiedName&>(field.type) = newName;
+                    const_cast<AstAttribute&>(*field).setTypeName(newName);
                 }
             }
         });
@@ -357,10 +356,10 @@ ComponentContent getInstantiatedContent(AstProgram& program, const AstComponentI
 
         // rename field types in records
         visitDepthFirst(node, [&](const AstRecordType& recordType) {
-            auto& fields = recordType.getFields();
+            auto&& fields = recordType.getFields();
             for (size_t i = 0; i < fields.size(); i++) {
                 auto& field = fields[i];
-                auto pos = typeNameMapping.find(field.type);
+                auto pos = typeNameMapping.find(field->getTypeName());
                 if (pos != typeNameMapping.end()) {
                     const_cast<AstRecordType&>(recordType).setFieldType(i, pos->second);
                 }

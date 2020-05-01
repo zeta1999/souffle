@@ -24,26 +24,35 @@
 
 namespace souffle {
 
+enum class AstIoType { input, output, printsize };
+
+// FIXME: I'm going crazy defining these. There has to be a library that does this boilerplate for us.
+inline std::ostream& operator<<(std::ostream& os, AstIoType e) {
+    switch (e) {
+        case AstIoType::input: return os << "input";
+        case AstIoType::output: return os << "output";
+        case AstIoType::printsize: return os << "printsize";
+    }
+
+    UNREACHABLE_BAD_CASE_ANALYSIS
+}
+
 /**
  * @class AstIO
  * @brief I/O operation has a type (input/output/printsize), qualified relation name, and I/O directives.
  */
 class AstIO : public AstNode {
 public:
-    enum AstIOType { UndefinedIO, InputIO, OutputIO, PrintsizeIO };
-
-    AstIO(const AstIO& io) : type(io.type), name(io.name), directives(io.directives) {
-        this->setSrcLoc(io.getSrcLoc());
-    }
-    AstIO() = default;
+    AstIO(AstIoType type, AstQualifiedName name, SrcLocation loc = {})
+            : AstNode(std::move(loc)), type(type), name(std::move(name)) {}
 
     /** get I/O type */
-    AstIOType getType() const {
+    AstIoType getType() const {
         return type;
     }
 
     /** set I/O type */
-    void setType(AstIOType type) {
+    void setType(AstIoType type) {
         this->type = type;
     }
 
@@ -53,8 +62,8 @@ public:
     }
 
     /** set relation name */
-    void setQualifiedName(const AstQualifiedName& name) {
-        this->name = name;
+    void setQualifiedName(AstQualifiedName name) {
+        this->name = std::move(name);
     }
 
     /** get value of I/O directive */
@@ -63,8 +72,8 @@ public:
     }
 
     /** add new I/O directive */
-    void addDirective(const std::string& key, const std::string& value) {
-        directives[key] = value;
+    void addDirective(const std::string& key, std::string value) {
+        directives[key] = std::move(value);
     }
 
     /** check for I/O directive */
@@ -78,33 +87,14 @@ public:
     }
 
     AstIO* clone() const override {
-        auto res = new AstIO();
-        res->type = type;
-        res->name = name;
+        auto res = new AstIO(type, name, getSrcLoc());
         res->directives = directives;
-        res->setSrcLoc(getSrcLoc());
         return res;
     }
 
 protected:
     void print(std::ostream& os) const override {
-        switch (type) {
-            case UndefinedIO:
-                os << ".undefined ";
-                break;
-            case InputIO:
-                os << ".input ";
-                break;
-            case OutputIO:
-                os << ".output ";
-                break;
-            case PrintsizeIO:
-                os << ".printsize ";
-                break;
-            default:
-                assert("Unknown I/O operation type");
-        }
-        os << name;
+        os << "." << type << " " << name;
         if (!directives.empty()) {
             os << "(" << join(directives, ",", [](std::ostream& out, const auto& arg) {
                 out << arg.first << "=\"" << arg.second << "\"";
@@ -118,7 +108,7 @@ protected:
     }
 
     /** type of I/O operation */
-    AstIOType type = UndefinedIO;
+    AstIoType type;
 
     /** relation name of I/O operation */
     AstQualifiedName name;

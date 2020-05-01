@@ -230,6 +230,6 @@ AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>
  *
  * @param constraint constraint that will be negated
  */
-void negateConstraint(AstConstraint* constraint);
+void negateConstraintInPlace(AstConstraint& constraint);
 
 }  // end of namespace souffle

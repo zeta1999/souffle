@@ -32,10 +32,11 @@ namespace souffle {
 
 class AstFunctorDeclaration : public AstNode {
 public:
-    AstFunctorDeclaration(
-            const std::string& name, std::vector<TypeAttribute> argsTypes, TypeAttribute returnType)
-            : name(name), argsTypes(std::move(argsTypes)), returnType(returnType) {
-        assert(name.length() > 0 && "functor name is empty");
+    AstFunctorDeclaration(std::string name, std::vector<TypeAttribute> argsTypes, TypeAttribute returnType,
+            SrcLocation loc = {})
+            : AstNode(std::move(loc)), name(std::move(name)), argsTypes(std::move(argsTypes)),
+              returnType(returnType) {
+        assert(this->name.length() > 0 && "functor name is empty");
     }
 
     /** get name */
@@ -59,25 +60,18 @@ public:
 
     /** clone */
     AstFunctorDeclaration* clone() const override {
-        auto* res = new AstFunctorDeclaration(name, argsTypes, returnType);
-        res->setSrcLoc(getSrcLoc());
-        return res;
+        return new AstFunctorDeclaration(name, argsTypes, returnType, getSrcLoc());
     }
 
 protected:
     void print(std::ostream& out) const override {
         auto convert = [&](TypeAttribute type) {
             switch (type) {
-                case TypeAttribute::Signed:
-                    return "number";
-                case TypeAttribute::Symbol:
-                    return "symbol";
-                case TypeAttribute::Float:
-                    return "float";
-                case TypeAttribute::Unsigned:
-                    return "unsigned";
-                case TypeAttribute::Record:
-                    fatal("unhandled `TypeAttribute`");
+                case TypeAttribute::Signed: return "number";
+                case TypeAttribute::Symbol: return "symbol";
+                case TypeAttribute::Float: return "float";
+                case TypeAttribute::Unsigned: return "unsigned";
+                case TypeAttribute::Record: fatal("unhandled `TypeAttribute`");
             }
 
             UNREACHABLE_BAD_CASE_ANALYSIS

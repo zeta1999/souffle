@@ -624,32 +624,19 @@ public:
 
 std::unique_ptr<InterpreterIndex> createBTreeIndex(const Order& order) {
     switch (order.size()) {
-        case 0:
-            return std::make_unique<NullaryIndex>();
-        case 1:
-            return std::make_unique<BTreeIndex<1>>(order);
-        case 2:
-            return std::make_unique<BTreeIndex<2>>(order);
-        case 3:
-            return std::make_unique<BTreeIndex<3>>(order);
-        case 4:
-            return std::make_unique<BTreeIndex<4>>(order);
-        case 5:
-            return std::make_unique<BTreeIndex<5>>(order);
-        case 6:
-            return std::make_unique<BTreeIndex<6>>(order);
-        case 7:
-            return std::make_unique<BTreeIndex<7>>(order);
-        case 8:
-            return std::make_unique<BTreeIndex<8>>(order);
-        case 9:
-            return std::make_unique<BTreeIndex<9>>(order);
-        case 10:
-            return std::make_unique<BTreeIndex<10>>(order);
-        case 11:
-            return std::make_unique<BTreeIndex<11>>(order);
-        case 12:
-            return std::make_unique<BTreeIndex<12>>(order);
+        case 0: return std::make_unique<NullaryIndex>();
+        case 1: return std::make_unique<BTreeIndex<1>>(order);
+        case 2: return std::make_unique<BTreeIndex<2>>(order);
+        case 3: return std::make_unique<BTreeIndex<3>>(order);
+        case 4: return std::make_unique<BTreeIndex<4>>(order);
+        case 5: return std::make_unique<BTreeIndex<5>>(order);
+        case 6: return std::make_unique<BTreeIndex<6>>(order);
+        case 7: return std::make_unique<BTreeIndex<7>>(order);
+        case 8: return std::make_unique<BTreeIndex<8>>(order);
+        case 9: return std::make_unique<BTreeIndex<9>>(order);
+        case 10: return std::make_unique<BTreeIndex<10>>(order);
+        case 11: return std::make_unique<BTreeIndex<11>>(order);
+        case 12: return std::make_unique<BTreeIndex<12>>(order);
     }
 
     fatal("Requested arity not yet supported. Feel free to add it.");
@@ -658,34 +645,20 @@ std::unique_ptr<InterpreterIndex> createBTreeIndex(const Order& order) {
 std::unique_ptr<InterpreterIndex> createBTreeProvenanceIndex(const Order& order) {
     switch (order.size()) {
         case 0:
-        case 1:
-            fatal("Provenance relation with arity < 2.");
-        case 2:
-            return std::make_unique<BTreeProvenanceIndex<2>>(order);
-        case 3:
-            return std::make_unique<BTreeProvenanceIndex<3>>(order);
-        case 4:
-            return std::make_unique<BTreeProvenanceIndex<4>>(order);
-        case 5:
-            return std::make_unique<BTreeProvenanceIndex<5>>(order);
-        case 6:
-            return std::make_unique<BTreeProvenanceIndex<6>>(order);
-        case 7:
-            return std::make_unique<BTreeProvenanceIndex<7>>(order);
-        case 8:
-            return std::make_unique<BTreeProvenanceIndex<8>>(order);
-        case 9:
-            return std::make_unique<BTreeProvenanceIndex<9>>(order);
-        case 10:
-            return std::make_unique<BTreeProvenanceIndex<10>>(order);
-        case 11:
-            return std::make_unique<BTreeProvenanceIndex<11>>(order);
-        case 12:
-            return std::make_unique<BTreeProvenanceIndex<12>>(order);
-        case 13:
-            return std::make_unique<BTreeProvenanceIndex<13>>(order);
-        case 14:
-            return std::make_unique<BTreeProvenanceIndex<14>>(order);
+        case 1: fatal("Provenance relation with arity < 2.");
+        case 2: return std::make_unique<BTreeProvenanceIndex<2>>(order);
+        case 3: return std::make_unique<BTreeProvenanceIndex<3>>(order);
+        case 4: return std::make_unique<BTreeProvenanceIndex<4>>(order);
+        case 5: return std::make_unique<BTreeProvenanceIndex<5>>(order);
+        case 6: return std::make_unique<BTreeProvenanceIndex<6>>(order);
+        case 7: return std::make_unique<BTreeProvenanceIndex<7>>(order);
+        case 8: return std::make_unique<BTreeProvenanceIndex<8>>(order);
+        case 9: return std::make_unique<BTreeProvenanceIndex<9>>(order);
+        case 10: return std::make_unique<BTreeProvenanceIndex<10>>(order);
+        case 11: return std::make_unique<BTreeProvenanceIndex<11>>(order);
+        case 12: return std::make_unique<BTreeProvenanceIndex<12>>(order);
+        case 13: return std::make_unique<BTreeProvenanceIndex<13>>(order);
+        case 14: return std::make_unique<BTreeProvenanceIndex<14>>(order);
     }
 
     fatal("Requested arity not yet supported. Feel free to add it.");
@@ -693,32 +666,19 @@ std::unique_ptr<InterpreterIndex> createBTreeProvenanceIndex(const Order& order)
 
 std::unique_ptr<InterpreterIndex> createBrieIndex(const Order& order) {
     switch (order.size()) {
-        case 0:
-            return std::make_unique<NullaryIndex>();
-        case 1:
-            return std::make_unique<BrieIndex<1>>(order);
-        case 2:
-            return std::make_unique<BrieIndex<2>>(order);
-        case 3:
-            return std::make_unique<BrieIndex<3>>(order);
-        case 4:
-            return std::make_unique<BrieIndex<4>>(order);
-        case 5:
-            return std::make_unique<BrieIndex<5>>(order);
-        case 6:
-            return std::make_unique<BrieIndex<6>>(order);
-        case 7:
-            return std::make_unique<BrieIndex<7>>(order);
-        case 8:
-            return std::make_unique<BrieIndex<8>>(order);
-        case 9:
-            return std::make_unique<BrieIndex<9>>(order);
-        case 10:
-            return std::make_unique<BrieIndex<10>>(order);
-        case 11:
-            return std::make_unique<BrieIndex<11>>(order);
-        case 12:
-            return std::make_unique<BrieIndex<12>>(order);
+        case 0: return std::make_unique<NullaryIndex>();
+        case 1: return std::make_unique<BrieIndex<1>>(order);
+        case 2: return std::make_unique<BrieIndex<2>>(order);
+        case 3: return std::make_unique<BrieIndex<3>>(order);
+        case 4: return std::make_unique<BrieIndex<4>>(order);
+        case 5: return std::make_unique<BrieIndex<5>>(order);
+        case 6: return std::make_unique<BrieIndex<6>>(order);
+        case 7: return std::make_unique<BrieIndex<7>>(order);
+        case 8: return std::make_unique<BrieIndex<8>>(order);
+        case 9: return std::make_unique<BrieIndex<9>>(order);
+        case 10: return std::make_unique<BrieIndex<10>>(order);
+        case 11: return std::make_unique<BrieIndex<11>>(order);
+        case 12: return std::make_unique<BrieIndex<12>>(order);
     }
 
     fatal("Requested arity not yet supported. Feel free to add it.");

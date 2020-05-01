@@ -30,35 +30,21 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
             return;
         }
         switch (io.getType()) {
-            case AstIO::InputIO:
-                inputRelations.insert(relation);
-                break;
-            case AstIO::OutputIO:
-                outputRelations.insert(relation);
-                break;
-            case AstIO::PrintsizeIO:
+            case AstIoType::input: inputRelations.insert(relation); break;
+            case AstIoType::output: outputRelations.insert(relation); break;
+            case AstIoType::printsize:
                 printSizeRelations.insert(relation);
                 outputRelations.insert(relation);
                 break;
-            default:
-                assert("Unrecognized I/O operation");
         }
     });
 }
 
 void IOType::print(std::ostream& os) const {
-    os << "input relations: {";
-    os << join(inputRelations, ", ",
-            [](std::ostream& out, const AstRelation* r) { out << r->getQualifiedName(); });
-    os << "}\n";
-    os << "output relations: {";
-    os << join(outputRelations, ", ",
-            [](std::ostream& out, const AstRelation* r) { out << r->getQualifiedName(); });
-    os << "}\n";
-    os << "printsize relations: {";
-    os << join(printSizeRelations, ", ",
-            [](std::ostream& out, const AstRelation* r) { out << r->getQualifiedName(); });
-    os << "}\n";
+    auto show = [](std::ostream& os, const AstRelation* r) { os << r->getQualifiedName(); };
+    os << "input relations: {" << join(inputRelations, ", ", show) << "}\n";
+    os << "output relations: {" << join(outputRelations, ", ", show) << "}\n";
+    os << "printsize relations: {" << join(printSizeRelations, ", ", show) << "}\n";
 }
 
 }  // end of namespace souffle

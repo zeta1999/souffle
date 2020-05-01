@@ -102,23 +102,12 @@ protected:
             const RamDomain recordValue = tuplePtr[i];
 
             switch (recordType[0]) {
-                case 'i':
-                    destination << recordValue;
-                    break;
-                case 'f':
-                    destination << ramBitCast<RamFloat>(recordValue);
-                    break;
-                case 'u':
-                    destination << ramBitCast<RamUnsigned>(recordValue);
-                    break;
-                case 's':
-                    destination << symbolTable.unsafeResolve(recordValue);
-                    break;
-                case 'r':
-                    outputRecord(destination, recordValue, recordType);
-                    break;
-                default:
-                    fatal("Unsupported type attribute: `%c`", recordType[0]);
+                case 'i': destination << recordValue; break;
+                case 'f': destination << ramBitCast<RamFloat>(recordValue); break;
+                case 'u': destination << ramBitCast<RamUnsigned>(recordValue); break;
+                case 's': destination << symbolTable.unsafeResolve(recordValue); break;
+                case 'r': outputRecord(destination, recordValue, recordType); break;
+                default: fatal("Unsupported type attribute: `%c`", recordType[0]);
             }
         }
         destination << "]";

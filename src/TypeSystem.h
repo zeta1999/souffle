@@ -360,16 +360,11 @@ public:
 
     SubsetType& createSubsetType(const AstQualifiedName& name, TypeAttribute typeAttribute) {
         switch (typeAttribute) {
-            case TypeAttribute::Signed:
-                return createType<SubsetType>(name, getType("number"));
-            case TypeAttribute::Unsigned:
-                return createType<SubsetType>(name, getType("unsigned"));
-            case TypeAttribute::Float:
-                return createType<SubsetType>(name, getType("float"));
-            case TypeAttribute::Symbol:
-                return createType<SubsetType>(name, getType("symbol"));
-            case TypeAttribute::Record:
-                break;
+            case TypeAttribute::Signed: return createType<SubsetType>(name, getType("number"));
+            case TypeAttribute::Unsigned: return createType<SubsetType>(name, getType("unsigned"));
+            case TypeAttribute::Float: return createType<SubsetType>(name, getType("float"));
+            case TypeAttribute::Symbol: return createType<SubsetType>(name, getType("symbol"));
+            case TypeAttribute::Record: break;
         }
 
         fatal("Invalid type attribute");
@@ -384,16 +379,11 @@ public:
 
     const Type& getConstantType(TypeAttribute type) const {
         switch (type) {
-            case TypeAttribute::Signed:
-                return getType("numberConstant");
-            case TypeAttribute::Unsigned:
-                return getType("unsignedConstant");
-            case TypeAttribute::Float:
-                return getType("floatConstant");
-            case TypeAttribute::Symbol:
-                return getType("symbolConstant");
-            case TypeAttribute::Record:
-                break;
+            case TypeAttribute::Signed: return getType("numberConstant");
+            case TypeAttribute::Unsigned: return getType("unsignedConstant");
+            case TypeAttribute::Float: return getType("floatConstant");
+            case TypeAttribute::Symbol: return getType("symbolConstant");
+            case TypeAttribute::Record: break;
         }
 
         fatal("There is no constant record type");
@@ -458,16 +448,11 @@ std::string getTypeQualifier(const Type& type);
 template <typename T>  // T = Type or T = Typeset
 bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
     switch (ramType) {
-        case TypeAttribute::Signed:
-            return isNumberType(type);
-        case TypeAttribute::Unsigned:
-            return isUnsignedType(type);
-        case TypeAttribute::Float:
-            return isFloatType(type);
-        case TypeAttribute::Symbol:
-            return isSymbolType(type);
-        case TypeAttribute::Record:
-            return isRecordType(type);
+        case TypeAttribute::Signed: return isNumberType(type);
+        case TypeAttribute::Unsigned: return isUnsignedType(type);
+        case TypeAttribute::Float: return isFloatType(type);
+        case TypeAttribute::Symbol: return isSymbolType(type);
+        case TypeAttribute::Record: return isRecordType(type);
     }
     fatal("unhandled `TypeAttribute`");
 }

@@ -20,6 +20,7 @@
 #include "souffle/CompiledIndexUtils.h"
 #include "souffle/CompiledTuple.h"
 #include "souffle/EquivalenceRelation.h"
+#include "souffle/EvaluatorUtils.h"
 #include "souffle/IOSystem.h"
 #include "souffle/IterUtils.h"
 #include "souffle/ParallelUtils.h"

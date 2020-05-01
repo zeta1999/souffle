@@ -69,17 +69,12 @@ protected:
             try {
                 auto&& ty = typeAttributes.at(column);
                 switch (ty[0]) {
-                    case 's':
-                        tuple[column] = symbolTable.unsafeLookup(element);
-                        break;
+                    case 's': tuple[column] = symbolTable.unsafeLookup(element); break;
                     case 'i':
                     case 'u':
                     case 'f':
-                    case 'r':
-                        tuple[column] = RamSignedFromString(element);
-                        break;
-                    default:
-                        fatal("invalid type attribute: `%c`", ty[0]);
+                    case 'r': tuple[column] = RamSignedFromString(element); break;
+                    default: fatal("invalid type attribute: `%c`", ty[0]);
                 }
             } catch (...) {
                 std::stringstream errorMessage;

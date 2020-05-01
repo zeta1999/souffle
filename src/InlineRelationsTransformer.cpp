@@ -351,7 +351,7 @@ AstLiteral* negateLiteral(AstLiteral* lit) {
         return atom;
     } else if (auto* cons = dynamic_cast<AstConstraint*>(lit)) {
         AstConstraint* newCons = cons->clone();
-        negateConstraint(newCons);
+        negateConstraintInPlace(*newCons);
         return newCons;
     }
 
@@ -600,28 +600,17 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // Utility lambda: get functor used to tie aggregators together.
                     auto aggregateToFunctor = [](AggregateOp op) {
                         switch (op) {
-                            case AggregateOp::MIN:
-                                return FunctorOp::MIN;
-                            case AggregateOp::FMIN:
-                                return FunctorOp::FMIN;
-                            case AggregateOp::UMIN:
-                                return FunctorOp::UMIN;
-                            case AggregateOp::MAX:
-                                return FunctorOp::MAX;
-                            case AggregateOp::FMAX:
-                                return FunctorOp::FMAX;
-                            case AggregateOp::UMAX:
-                                return FunctorOp::UMAX;
-                            case AggregateOp::SUM:
-                                return FunctorOp::ADD;
-                            case AggregateOp::FSUM:
-                                return FunctorOp::FADD;
-                            case AggregateOp::USUM:
-                                return FunctorOp::UADD;
-                            case AggregateOp::COUNT:
-                                return FunctorOp::ADD;
-                            case AggregateOp::MEAN:
-                                fatal("no translation");
+                            case AggregateOp::MIN: return FunctorOp::MIN;
+                            case AggregateOp::FMIN: return FunctorOp::FMIN;
+                            case AggregateOp::UMIN: return FunctorOp::UMIN;
+                            case AggregateOp::MAX: return FunctorOp::MAX;
+                            case AggregateOp::FMAX: return FunctorOp::FMAX;
+                            case AggregateOp::UMAX: return FunctorOp::UMAX;
+                            case AggregateOp::SUM: return FunctorOp::ADD;
+                            case AggregateOp::FSUM: return FunctorOp::FADD;
+                            case AggregateOp::USUM: return FunctorOp::UADD;
+                            case AggregateOp::COUNT: return FunctorOp::ADD;
+                            case AggregateOp::MEAN: fatal("no translation");
                         }
 
                         UNREACHABLE_BAD_CASE_ANALYSIS

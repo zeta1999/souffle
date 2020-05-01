@@ -157,11 +157,12 @@ private:
         using record_definition_map = std::map<const AstRecordInit*, Location>;
 
         /**
-         * A map from AstAggregators to storage locations. Note, since in this case
-         * AstAggregators are indexed by their values (not their address) no standard
-         * map can be utilized.
+         * A map from generative `AstArgument`s to storage locations. Note,
+         * since in this case AstArgument are indexed by their values (not their
+         * address) no standard map can be utilized.
+         * (By-value indexing induces an ad-hoc form of CSE.)
          */
-        using aggregator_location_map = std::vector<std::pair<const AstAggregator*, Location>>;
+        using generator_location_map = std::vector<std::pair<const AstArgument*, Location>>;
 
         /** The index of variable accesses */
         variable_reference_map var_references;
@@ -169,8 +170,8 @@ private:
         /** The index of record definition points */
         record_definition_map record_definitions;
 
-        /** The level of a nested ram operation that is handling a given aggregator operation */
-        aggregator_location_map aggregator_locations;
+        /** The level of a nested ram operation that is handling a generator operation */
+        generator_location_map arg_generator_locations;
 
     public:
         // -- variables --
@@ -221,28 +222,28 @@ private:
             fatal("requested location for undefined record!");
         }
 
-        // -- aggregates --
+        // -- generators (aggregates & some functors) --
 
-        void setAggregatorLocation(const AstAggregator& agg, const Location& loc) {
-            aggregator_locations.push_back(std::make_pair(&agg, loc));
+        void setGeneratorLoc(const AstArgument& agg, const Location& loc) {
+            arg_generator_locations.push_back(std::make_pair(&agg, loc));
         }
 
-        const Location& getAggregatorLocation(const AstAggregator& agg) const {
+        const Location& getGeneratorLoc(const AstArgument& arg) const {
             // search list
-            for (const auto& cur : aggregator_locations) {
-                if (*cur.first == agg) {
+            for (const auto& cur : arg_generator_locations) {
+                if (*cur.first == arg) {
                     return cur.second;
                 }
             }
 
-            fatal("lookup of agg `%s` failed", agg);
+            fatal("arg `%s` has no generator location", arg);
         }
 
         // -- others --
 
-        bool isAggregator(const int level) const {
+        bool isGenerator(const int level) const {
             // check for aggregator definitions
-            return any_of(aggregator_locations,
+            return any_of(arg_generator_locations,
                     [&level](const auto& location) { return location.second.identifier == level; });
         }
 
@@ -331,7 +332,7 @@ private:
         // index nested variables and records
         using arg_list = std::vector<AstArgument*>;
 
-        std::vector<const AstAggregator*> aggregators;
+        std::vector<const AstArgument*> generators;
 
         // the order of processed operations
         std::vector<const AstNode*> op_nesting;
@@ -408,8 +409,7 @@ private:
                     return RamSignedFromString(numConstant->getConstant(), nullptr, 0);
                 case AstNumericConstant::Type::Uint:
                     return RamUnsignedFromString(numConstant->getConstant(), nullptr, 0);
-                case AstNumericConstant::Type::Float:
-                    return RamFloatFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Float: return RamFloatFromString(numConstant->getConstant());
             }
         }
 

@@ -53,23 +53,12 @@ protected:
 
     void writeNextTupleElement(std::ostream& destination, const std::string& type, RamDomain value) {
         switch (type[0]) {
-            case 's':
-                destination << symbolTable.unsafeResolve(value);
-                break;
-            case 'i':
-                destination << value;
-                break;
-            case 'u':
-                destination << ramBitCast<RamUnsigned>(value);
-                break;
-            case 'f':
-                destination << ramBitCast<RamFloat>(value);
-                break;
-            case 'r':
-                outputRecord(destination, value, type);
-                break;
-            default:
-                fatal("unsupported type attribute: `%c`", type[0]);
+            case 's': destination << symbolTable.unsafeResolve(value); break;
+            case 'i': destination << value; break;
+            case 'u': destination << ramBitCast<RamUnsigned>(value); break;
+            case 'f': destination << ramBitCast<RamFloat>(value); break;
+            case 'r': outputRecord(destination, value, type); break;
+            default: fatal("unsupported type attribute: `%c`", type[0]);
         }
     }
 };

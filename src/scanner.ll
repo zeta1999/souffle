@@ -99,6 +99,7 @@
 "mean"                                { return yy::parser::make_MEAN(yylloc); }
 "cat"                                 { return yy::parser::make_CAT(yylloc); }
 "ord"                                 { return yy::parser::make_ORD(yylloc); }
+"range"                               { return yy::parser::make_RANGE(yylloc); }
 "strlen"                              { return yy::parser::make_STRLEN(yylloc); }
 "substr"                              { return yy::parser::make_SUBSTR(yylloc); }
 "contains"                            { return yy::parser::make_TCONTAINS(yylloc); }

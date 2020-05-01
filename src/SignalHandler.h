@@ -152,18 +152,10 @@ private:
         const char* msg = instance()->msg;
         std::string error;
         switch (signal) {
-            case SIGINT:
-                error = "Interrupt";
-                break;
-            case SIGFPE:
-                error = "Floating-point arithmetic exception";
-                break;
-            case SIGSEGV:
-                error = "Segmentation violation";
-                break;
-            default:
-                error = "Unknown";
-                break;
+            case SIGINT: error = "Interrupt"; break;
+            case SIGFPE: error = "Floating-point arithmetic exception"; break;
+            case SIGSEGV: error = "Segmentation violation"; break;
+            default: error = "Unknown"; break;
         }
         if (msg != nullptr) {
             std::cerr << error << " signal in rule:\n" << msg << std::endl;

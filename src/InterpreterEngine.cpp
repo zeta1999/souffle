@@ -15,6 +15,7 @@
 
 #include "InterpreterEngine.h"
 #include "AggregateOp.h"
+#include "EvaluatorUtils.h"
 #include "IOSystem.h"
 #include "InterpreterGenerator.h"
 #include "Logger.h"
@@ -220,6 +221,7 @@ void InterpreterEngine::executeSubroutine(
 
 RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterContext& ctxt) {
 #define DEBUG(Kind) std::cout << "Running Node: " << #Kind << "\n";
+#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
 
 #define CASE(Kind)     \
     case (I_##Kind): { \
@@ -247,7 +249,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(AutoIncrement)
 
         CASE(IntrinsicOperator)
-#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
 #define BINARY_OP(op) return execute(node->getChild(0), ctxt) op execute(node->getChild(1), ctxt)
 // clang-format off
 #define BINARY_OP_TYPED(ty, op) return ramBitCast(EVAL_CHILD(ty, 0) op EVAL_CHILD(ty, 1))
@@ -298,24 +299,20 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             const auto& args = cur.getArguments();
             switch (cur.getOperator()) {
                 /** Unary Functor Operators */
-                case FunctorOp::ORD:
-                    return execute(node->getChild(0), ctxt);
+                case FunctorOp::ORD: return execute(node->getChild(0), ctxt);
                 case FunctorOp::STRLEN:
                     return getSymbolTable().resolve(execute(node->getChild(0), ctxt)).size();
-                case FunctorOp::NEG:
-                    return -execute(node->getChild(0), ctxt);
+                case FunctorOp::NEG: return -execute(node->getChild(0), ctxt);
                 case FunctorOp::FNEG: {
                     RamDomain result = execute(node->getChild(0), ctxt);
                     return ramBitCast(-ramBitCast<RamFloat>(result));
                 }
-                case FunctorOp::BNOT:
-                    return ~execute(node->getChild(0), ctxt);
+                case FunctorOp::BNOT: return ~execute(node->getChild(0), ctxt);
                 case FunctorOp::UBNOT: {
                     RamDomain result = execute(node->getChild(0), ctxt);
                     return ramBitCast(~ramBitCast<RamUnsigned>(result));
                 }
-                case FunctorOp::LNOT:
-                    return !execute(node->getChild(0), ctxt);
+                case FunctorOp::LNOT: return !execute(node->getChild(0), ctxt);
 
                 case FunctorOp::ULNOT: {
                     RamDomain result = execute(node->getChild(0), ctxt);
@@ -455,11 +452,15 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     }
                     return getSymbolTable().lookup(sub_str);
                 }
+
+                case FunctorOp::RANGE:
+                case FunctorOp::URANGE:
+                case FunctorOp::FRANGE:
+                    fatal("ICE: functor `%s` must map onto `RamNestedIntrinsicOperator`", cur.getOperator());
             }
 
             { UNREACHABLE_BAD_CASE_ANALYSIS }
 
-#undef EVAL_CHILD
 #undef BINARY_OP_TYPED
 #undef BINARY_OP_INTEGRAL
 #undef BINARY_OP_NUMERIC
@@ -469,6 +470,29 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 #undef MINMAX_OP
 #undef MINMAX_NUMERIC
         ESAC(IntrinsicOperator)
+
+        CASE(NestedIntrinsicOperator)
+            auto numArgs = cur.getArguments().size();
+            auto runNested = [&](auto&& tuple) {
+                ctxt[cur.getTupleId()] = tuple.data;
+                execute(node->getChild(numArgs), ctxt);
+            };
+
+#define RUN_RANGE(ty)                                                                                     \
+    numArgs == 3                                                                                          \
+            ? evaluator::runRange<ty>(EVAL_CHILD(ty, 0), EVAL_CHILD(ty, 1), EVAL_CHILD(ty, 2), runNested) \
+            : evaluator::runRange<ty>(EVAL_CHILD(ty, 0), EVAL_CHILD(ty, 1), runNested),                   \
+            true
+
+            switch (cur.getFunction()) {
+                case RamNestedIntrinsicOp::RANGE: return RUN_RANGE(RamSigned);
+                case RamNestedIntrinsicOp::URANGE: return RUN_RANGE(RamUnsigned);
+                case RamNestedIntrinsicOp::FRANGE: return RUN_RANGE(RamFloat);
+            }
+
+            { UNREACHABLE_BAD_CASE_ANALYSIS }
+#undef RUN_RANGE
+        ESAC(NestedIntrinsicOperator)
 
         CASE(UserDefinedOperator)
             // get name and type
@@ -513,8 +537,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         floatVal[i] = ramBitCast<RamFloat>(arg);
                         values[i] = &floatVal[i];
                         break;
-                    case TypeAttribute::Record:
-                        fatal("Record support is not implemented");
+                    case TypeAttribute::Record: fatal("Record support is not implemented");
                 }
             }
 
@@ -522,20 +545,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto codomain = &FFI_RamSigned;
             switch (cur.getReturnType()) {
                 // initialize for string value.
-                case TypeAttribute::Symbol:
-                    codomain = &FFI_Symbol;
-                    break;
-                case TypeAttribute::Signed:
-                    codomain = &FFI_RamSigned;
-                    break;
-                case TypeAttribute::Unsigned:
-                    codomain = &FFI_RamUnsigned;
-                    break;
-                case TypeAttribute::Float:
-                    codomain = &FFI_RamFloat;
-                    break;
-                case TypeAttribute::Record:
-                    fatal("Not implemented");
+                case TypeAttribute::Symbol: codomain = &FFI_Symbol; break;
+                case TypeAttribute::Signed: codomain = &FFI_RamSigned; break;
+                case TypeAttribute::Unsigned: codomain = &FFI_RamUnsigned; break;
+                case TypeAttribute::Float: codomain = &FFI_RamFloat; break;
+                case TypeAttribute::Record: fatal("Not implemented");
             }
 
             // Call the external function.
@@ -548,20 +562,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             RamDomain result;
             switch (cur.getReturnType()) {
-                case TypeAttribute::Signed:
-                    result = static_cast<RamDomain>(rc);
-                    break;
+                case TypeAttribute::Signed: result = static_cast<RamDomain>(rc); break;
                 case TypeAttribute::Symbol:
                     result = getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
                     break;
-                case TypeAttribute::Unsigned:
-                    result = ramBitCast(static_cast<RamUnsigned>(rc));
-                    break;
-                case TypeAttribute::Float:
-                    result = ramBitCast(static_cast<RamFloat>(rc));
-                    break;
-                case TypeAttribute::Record:
-                    fatal("Not implemented");
+                case TypeAttribute::Unsigned: result = ramBitCast(static_cast<RamUnsigned>(rc)); break;
+                case TypeAttribute::Float: result = ramBitCast(static_cast<RamFloat>(rc)); break;
+                case TypeAttribute::Record: fatal("Not implemented");
             }
 
             return result;
@@ -653,7 +660,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Constraint)
         // clang-format off
-#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
 #define COMPARE_NUMERIC(ty, op) return EVAL_CHILD(ty, 0) op EVAL_CHILD(ty, 1)
 #define COMPARE_STRING(op)                                        \
     return (getSymbolTable().resolve(EVAL_CHILD(RamDomain, 0)) op \
@@ -723,7 +729,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             { UNREACHABLE_BAD_CASE_ANALYSIS }
 
-#undef EVAL_CHILD
 #undef COMPARE_NUMERIC
 #undef COMPARE_STRING
 #undef COMPARE
@@ -1206,6 +1211,9 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
+
+#undef EVAL_CHILD
+#undef DEBUG
 }
 
 template <typename Aggregate>
@@ -1221,25 +1229,13 @@ RamDomain InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Ag
     std::pair<RamFloat, RamFloat> accumulateMean;
 
     switch (aggregate.getFunction()) {
-        case AggregateOp::MIN:
-            res = ramBitCast(MAX_RAM_SIGNED);
-            break;
-        case AggregateOp::UMIN:
-            res = ramBitCast(MAX_RAM_UNSIGNED);
-            break;
-        case AggregateOp::FMIN:
-            res = ramBitCast(MAX_RAM_FLOAT);
-            break;
+        case AggregateOp::MIN: res = ramBitCast(MAX_RAM_SIGNED); break;
+        case AggregateOp::UMIN: res = ramBitCast(MAX_RAM_UNSIGNED); break;
+        case AggregateOp::FMIN: res = ramBitCast(MAX_RAM_FLOAT); break;
 
-        case AggregateOp::MAX:
-            res = ramBitCast(MIN_RAM_SIGNED);
-            break;
-        case AggregateOp::UMAX:
-            res = ramBitCast(MIN_RAM_UNSIGNED);
-            break;
-        case AggregateOp::FMAX:
-            res = ramBitCast(MIN_RAM_FLOAT);
-            break;
+        case AggregateOp::MAX: res = ramBitCast(MIN_RAM_SIGNED); break;
+        case AggregateOp::UMAX: res = ramBitCast(MIN_RAM_UNSIGNED); break;
+        case AggregateOp::FMAX: res = ramBitCast(MIN_RAM_FLOAT); break;
 
         case AggregateOp::SUM:
             res = ramBitCast(static_cast<RamSigned>(0));
@@ -1285,9 +1281,7 @@ RamDomain InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Ag
         RamDomain val = execute(&expression, ctxt);
 
         switch (aggregate.getFunction()) {
-            case AggregateOp::MIN:
-                res = std::min(res, val);
-                break;
+            case AggregateOp::MIN: res = std::min(res, val); break;
             case AggregateOp::FMIN:
                 res = ramBitCast(std::min(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
                 break;
@@ -1295,9 +1289,7 @@ RamDomain InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Ag
                 res = ramBitCast(std::min(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
                 break;
 
-            case AggregateOp::MAX:
-                res = std::max(res, val);
-                break;
+            case AggregateOp::MAX: res = std::max(res, val); break;
             case AggregateOp::FMAX:
                 res = ramBitCast(std::max(ramBitCast<RamFloat>(res), ramBitCast<RamFloat>(val)));
                 break;
@@ -1305,9 +1297,7 @@ RamDomain InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Ag
                 res = ramBitCast(std::max(ramBitCast<RamUnsigned>(res), ramBitCast<RamUnsigned>(val)));
                 break;
 
-            case AggregateOp::SUM:
-                res += val;
-                break;
+            case AggregateOp::SUM: res += val; break;
             case AggregateOp::FSUM:
                 res = ramBitCast(ramBitCast<RamFloat>(res) + ramBitCast<RamFloat>(val));
                 break;
@@ -1320,8 +1310,7 @@ RamDomain InterpreterEngine::executeAggregate(InterpreterContext& ctxt, const Ag
                 accumulateMean.second++;
                 break;
 
-            case AggregateOp::COUNT:
-                fatal("This should never be executed");
+            case AggregateOp::COUNT: fatal("This should never be executed");
         }
     }
 

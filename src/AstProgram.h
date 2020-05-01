@@ -74,12 +74,12 @@ public:
     }
 
     /** get pragma directives */
-    const std::vector<std::unique_ptr<AstPragma>>& getPragmaDirectives() const {
+    const VecOwn<AstPragma>& getPragmaDirectives() const {
         return pragmaDirectives;
     }
 
     /* add relation */
-    void addRelation(std::unique_ptr<AstRelation> r) {
+    void addRelation(Own<AstRelation> r) {
         assert(getRelation(*this, r->getQualifiedName()) == nullptr && "Redefinition of relation!");
         relations.push_back(std::move(r));
     }
@@ -97,12 +97,12 @@ public:
         return false;
     }
 
-    void setClauses(std::vector<std::unique_ptr<AstClause>> newClauses) {
+    void setClauses(VecOwn<AstClause> newClauses) {
         clauses = std::move(newClauses);
     }
 
     /** add a clause */
-    void addClause(std::unique_ptr<AstClause> clause) {
+    void addClause(Own<AstClause> clause) {
         assert(clause != nullptr && "Undefined clause");
         assert(clause->getHead() != nullptr && "Undefined head of the clause");
         clauses.push_back(std::move(clause));
@@ -131,33 +131,14 @@ public:
 
     AstProgram* clone() const override {
         auto res = new AstProgram();
-
-        for (const auto& cur : pragmaDirectives) {
-            res->pragmaDirectives.emplace_back(cur->clone());
-        }
-        for (const auto& cur : components) {
-            res->components.emplace_back(cur->clone());
-        }
-        for (const auto& cur : instantiations) {
-            res->instantiations.emplace_back(cur->clone());
-        }
-        for (const auto& cur : types) {
-            res->types.emplace_back(cur->clone());
-        }
-        for (const auto& cur : functors) {
-            res->functors.emplace_back(cur->clone());
-        }
-        for (const auto& cur : relations) {
-            res->relations.emplace_back(cur->clone());
-        }
-        for (const auto& cur : clauses) {
-            res->clauses.emplace_back(cur->clone());
-        }
-        for (const auto& cur : ios) {
-            res->ios.emplace_back(cur->clone());
-        }
-
-        // done
+        res->pragmaDirectives = souffle::clone(pragmaDirectives);
+        res->components = souffle::clone(components);
+        res->instantiations = souffle::clone(instantiations);
+        res->types = souffle::clone(types);
+        res->functors = souffle::clone(functors);
+        res->relations = souffle::clone(relations);
+        res->clauses = souffle::clone(clauses);
+        res->ios = souffle::clone(ios);
         return res;
     }
 
@@ -219,30 +200,18 @@ public:
 
 protected:
     void print(std::ostream& os) const override {
-        if (!pragmaDirectives.empty()) {
-            os << join(pragmaDirectives, "\n\n", print_deref<std::unique_ptr<AstPragma>>()) << "\n";
-        }
-        if (!components.empty()) {
-            os << join(components, "\n", print_deref<std::unique_ptr<AstComponent>>()) << "\n";
-        }
-        if (!instantiations.empty()) {
-            os << join(instantiations, "\n", print_deref<std::unique_ptr<AstComponentInit>>()) << "\n";
-        }
-        if (!types.empty()) {
-            os << join(types, "\n", print_deref<std::unique_ptr<AstType>>()) << "\n";
-        }
-        if (!functors.empty()) {
-            os << join(functors, "\n", print_deref<std::unique_ptr<AstFunctorDeclaration>>()) << "\n";
-        }
-        if (!relations.empty()) {
-            os << join(relations, "\n", print_deref<std::unique_ptr<AstRelation>>()) << "\n";
-        }
-        if (!clauses.empty()) {
-            os << join(clauses, "\n\n", print_deref<std::unique_ptr<AstClause>>()) << "\n";
-        }
-        if (!ios.empty()) {
-            os << join(ios, "\n\n", print_deref<std::unique_ptr<AstIO>>()) << "\n";
-        }
+        auto show = [&](auto&& xs, char const* sep = "\n") {
+            if (!xs.empty()) os << join(xs, sep) << "\n";
+        };
+
+        show(pragmaDirectives, "\n\n");
+        show(components);
+        show(instantiations);
+        show(types);
+        show(functors);
+        show(relations);
+        show(clauses, "\n\n");
+        show(ios, "\n\n");
     }
 
     bool equal(const AstNode& node) const override {
@@ -279,62 +248,62 @@ protected:
     friend class ParserDriver;
 
     /* add type */
-    void addType(std::unique_ptr<AstType> type) {
+    void addType(Own<AstType> type) {
         assert(getType(*this, type->getQualifiedName()) == nullptr && "Redefinition of type!");
         types.push_back(std::move(type));
     }
 
     /** add IO directive */
-    void addIO(std::unique_ptr<AstIO> directive) {
+    void addIO(Own<AstIO> directive) {
         assert(directive && "NULL IO directive");
         ios.push_back(std::move(directive));
     }
 
     /** add a pragma */
-    void addPragma(std::unique_ptr<AstPragma> pragma) {
+    void addPragma(Own<AstPragma> pragma) {
         assert(pragma && "NULL IO directive");
         pragmaDirectives.push_back(std::move(pragma));
     }
 
     /** add functor */
-    void addFunctorDeclaration(std::unique_ptr<souffle::AstFunctorDeclaration> f) {
+    void addFunctorDeclaration(Own<souffle::AstFunctorDeclaration> f) {
         assert(getFunctorDeclaration(*this, f->getName()) == nullptr && "Redefinition of functor!");
         functors.push_back(std::move(f));
     }
 
     /** add component */
-    void addComponent(std::unique_ptr<AstComponent> c) {
+    void addComponent(Own<AstComponent> c) {
         components.push_back(std::move(c));
     }
 
     /** add component instantiation */
-    void addInstantiation(std::unique_ptr<AstComponentInit> i) {
+    void addInstantiation(Own<AstComponentInit> i) {
         instantiations.push_back(std::move(i));
     }
 
     /** Program types  */
-    std::vector<std::unique_ptr<AstType>> types;
+    VecOwn<AstType> types;
 
     /** Program relations */
-    std::vector<std::unique_ptr<AstRelation>> relations;
+    VecOwn<AstRelation> relations;
 
     /** External Functors */
-    std::vector<std::unique_ptr<AstFunctorDeclaration>> functors;
+    VecOwn<AstFunctorDeclaration> functors;
 
     /** Program clauses */
-    std::vector<std::unique_ptr<AstClause>> clauses;
+    VecOwn<AstClause> clauses;
 
     /** IO statements */
-    std::vector<std::unique_ptr<AstIO>> ios;
+    VecOwn<AstIO> ios;
 
     /** Program components */
-    std::vector<std::unique_ptr<AstComponent>> components;
+    VecOwn<AstComponent> components;
 
     /** Component instantiations */
-    std::vector<std::unique_ptr<AstComponentInit>> instantiations;
+    VecOwn<AstComponentInit> instantiations;
 
     /** Pragmas */
-    std::vector<std::unique_ptr<AstPragma>> pragmaDirectives;
+    VecOwn<AstPragma> pragmaDirectives;
 };
 
 }  // namespace souffle

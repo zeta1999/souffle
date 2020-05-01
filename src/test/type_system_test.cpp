@@ -250,4 +250,34 @@ TEST(TypeSystem, GreatestCommonSubtype) {
     EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
 }
 
+TEST(TypeSystem, complexSubsetTypes) {
+    TypeEnvironment env;
+
+    auto& A = env.createType<SubsetType>("A", env.getType("number"));
+    auto& BfromA = env.createType<SubsetType>("B", A);
+    auto& CfromA = env.createType<SubsetType>("C", A);
+
+    EXPECT_EQ("{B}", toString(getGreatestCommonSubtypes(A, BfromA)));
+    EXPECT_EQ("{C}", toString(getGreatestCommonSubtypes(A, CfromA)));
+    EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(A, BfromA, CfromA)));
+    EXPECT_EQ("{}", toString(getGreatestCommonSubtypes(BfromA, CfromA)));
+
+    auto* base = &env.createType<SubsetType>("B0", BfromA);
+    for (size_t i = 1; i <= 10; ++i) {
+        base = &env.createType<SubsetType>("B" + std::to_string(i), *base);
+        EXPECT_PRED2(isSubtypeOf, *base, A);
+    }
+}
+
+TEST(TypeSystem, RecordSubsets) {
+    TypeEnvironment env;
+
+    auto& R = env.createType<RecordType>("R");
+
+    auto& A = env.createType<SubsetType>("A", R);
+    EXPECT_PRED2(isSubtypeOf, A, R);
+
+    EXPECT_EQ("{A}", toString(getGreatestCommonSubtypes(A, R)));
+}
+
 }  // namespace souffle::test

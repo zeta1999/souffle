@@ -145,7 +145,7 @@ void MinIndexSelection::solve() {
     for (auto search : searches) {
         // For this node check if other nodes are strict subsets
         for (auto itt : searches) {
-            if (isStrictSubset(search, itt)) {
+            if (search.isStrictSubset(itt)) {
                 matching.addEdge(signatureToIndexA[search], signatureToIndexB[itt]);
             }
         }

@@ -81,6 +81,12 @@ public:
     inline bool operator!=(const SearchSignature& other) const {
         return !(other == *this);
     }
+    inline bool isStrictSubset(const SearchSignature& other) const {
+        assert(bits.size() == other.bits.size());
+        auto tt = SearchSignature(bits.size(), 0);
+        tt = ~tt;
+        return (~(*this) | (other)) == tt && *this != other;
+    }
 
     // bitwise assignment operators
     inline SearchSignature& operator|=(const SearchSignature& other) {
@@ -397,14 +403,6 @@ protected:
             }
         }
         fatal("cannot find matching lexicographical order");
-    }
-
-    /** @Brief determine if key a is a strict subset of key b*/
-    static bool isStrictSubset(SearchSignature a, SearchSignature b) {
-        auto tt = SearchSignature(a.arity(), 0);
-        // tt |= std::numeric_limits<uint64_t>::max();
-        tt = ~tt;
-        return (~(a) | (b)) == tt && a != b;
     }
 
     /** @Brief insert an index based on the delta */

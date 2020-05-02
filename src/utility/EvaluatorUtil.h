@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "CompiledTuple.h"
-#include "RamTypes.h"
+#include "../CompiledTuple.h"
+#include "../RamTypes.h"
 
 namespace souffle::evaluator {
 

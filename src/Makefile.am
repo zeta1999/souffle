@@ -46,6 +46,7 @@ souffle_utility_sources = \
         utility/CacheUtil.h                                \
         utility/ContainerUtil.h                            \
         utility/FileUtil.h                                 \
+        utility/EvaluatorUtil.h                            \
         utility/FunctionalUtil.h                           \
         utility/MiscUtil.h                                 \
         utility/ParallelUtil.h                             \
@@ -125,7 +126,6 @@ souffle_sources = \
         DebugReporter.cpp                                  \
         DebugReporter.h                                    \
         ErrorReport.h                                      \
-        EvaluatorUtils.h                                   \
         EventProcessor.h                                   \
         FunctorOps.h                                       \
         Global.cpp                                         \
@@ -231,7 +231,6 @@ soufflepublic_HEADERS = \
         CompiledSouffle.h                                  \
         CompiledTuple.h                                    \
         EquivalenceRelation.h                              \
-        EvaluatorUtils.h                                   \
         EventProcessor.h                                   \
         Explain.h                                          \
         ExplainProvenance.h                                \

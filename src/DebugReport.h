@@ -93,7 +93,7 @@ public:
         buf.emplace_back(std::move(section));
     }
 
-    void addSection(std::string id, std::string title, std::string code);
+    void addSection(std::string id, std::string title, std::string_view code);
 
     void startSection() {
         currentSubsections.emplace();

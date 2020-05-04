@@ -18,3 +18,9 @@
 .type B <: A
 
 
+
+// Subtype of undefined type.
+.type Y <: Z
+
+.decl relY(y : Y)
+relY(1).

@@ -69,7 +69,12 @@ void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programType
         if (auto* astSubsetType = dynamic_cast<const AstSubsetType*>(astType)) {
             auto& subsetType = dynamic_cast<SubsetType&>(type);
 
-            subsetType.setBaseType(env.getType(astSubsetType->getBaseType()));
+            // Handle non-existing base type.
+            try {
+                subsetType.setBaseType(env.getType(astSubsetType->getBaseType()));
+            } catch (std::out_of_range& e) {
+                subsetType.setBaseType(env.getType("number"));
+            }
 
         } else if (auto* astUnion = dynamic_cast<const AstUnionType*>(astType)) {
             auto& unionType = dynamic_cast<UnionType&>(type);

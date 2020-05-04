@@ -7,4 +7,7 @@ Error: Infinite descent in the definition of type A in file extended_subtypes2.d
 Error: Infinite descent in the definition of type B in file extended_subtypes2.dl at line 18
 .type B <: A
 ^------------
-3 errors generated, evaluation aborted
+Error: Undefined base type Z in definition of type Y in file extended_subtypes2.dl at line 23
+.type Y <: Z
+^------------
+4 errors generated, evaluation aborted

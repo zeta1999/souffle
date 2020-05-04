@@ -85,6 +85,7 @@ private:
 
     void checkType(const AstType& type);
     void checkRecordType(const AstRecordType& type);
+    void checkSubsetType(const AstSubsetType& type);
     void checkUnionType(const AstUnionType& type);
 
     void checkNamespaces();
@@ -869,6 +870,19 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     }
 }
 
+void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& type) {
+    if (!typeEnv.isType(type.getBaseType())) {
+        report.addError(format("Undefined base type %s in definition of type %s", type.getBaseType(),
+                                type.getQualifiedName()),
+                type.getSrcLoc());
+    }
+
+    if (typeEnvAnalysis.isCyclic(type.getQualifiedName())) {
+        report.addError("Infinite descent in the definition of type " + toString(type.getQualifiedName()),
+                type.getSrcLoc());
+    }
+}
+
 void AstSemanticCheckerImpl::checkType(const AstType& type) {
     if (typeEnv.isPredefinedType(type.getQualifiedName())) {
         report.addError("Redefinition of the predefined type", type.getSrcLoc());
@@ -880,10 +894,7 @@ void AstSemanticCheckerImpl::checkType(const AstType& type) {
     } else if (isA<AstRecordType>(type)) {
         checkRecordType(static_cast<const AstRecordType&>(type));
     } else if (isA<AstSubsetType>(type)) {
-        if (typeEnvAnalysis.isCyclic(type.getQualifiedName())) {
-            report.addError("Infinite descent in the definition of type " + toString(type.getQualifiedName()),
-                    type.getSrcLoc());
-        }
+        checkSubsetType(static_cast<const AstSubsetType&>(type));
     }
 }
 

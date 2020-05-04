@@ -359,6 +359,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
 }
 
 namespace {
+// handles equality constraints
 template <typename Iter>
 SearchSignature searchSignature(size_t arity, Iter const& bgn, Iter const& end) {
     SearchSignature keys(arity, 0);
@@ -380,12 +381,23 @@ SearchSignature searchSignature(size_t arity, Seq const& xs) {
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {
     size_t arity = search->getRelation().getArity();
+
+    auto lower = search->getRangePattern().first;
+    auto upper = search->getRangePattern().second;
+
+    SearchSignature keys(arity, 0);
     for (size_t i = 0; i < arity; ++i) {
-        if (*(search->getRangePattern().first[i]) != *(search->getRangePattern().second[i])) {
-            fatal("Lower and upper bounds do not match when retrieving search signature.");
+        // if both bounds are undefined
+        if (isRamUndefValue(lower[i]) && isRamUndefValue(upper[i])) {
+            keys.set(i, AttributeConstraint::None);
+            // if bounds are equal we have an equality
+        } else if (*lower[i] == *upper[i]) {
+            keys.set(i, AttributeConstraint::Equal);
+        } else {
+            keys.set(i, AttributeConstraint::Inequal);
         }
     }
-    return searchSignature(arity, search->getRangePattern().second);
+    return keys;
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(

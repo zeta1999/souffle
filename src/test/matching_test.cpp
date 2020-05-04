@@ -103,27 +103,27 @@ TEST(Matching, TestOver64BitSignature) {
 
     size_t arity = 100;
     SearchSignature first(arity, 0);
-    first.set(99);
-    first.set(75);
-    first.set(50);
-    first.set(25);
-    first.set(0);
+    first.set(99, AttributeConstraint::Equal);
+    first.set(75, AttributeConstraint::Equal);
+    first.set(50, AttributeConstraint::Equal);
+    first.set(25, AttributeConstraint::Equal);
+    first.set(0, AttributeConstraint::Equal);
 
     SearchSignature second(arity, 0);
-    second.set(99);
-    second.set(75);
-    second.set(50);
+    second.set(99, AttributeConstraint::Equal);
+    second.set(75, AttributeConstraint::Equal);
+    second.set(50, AttributeConstraint::Equal);
 
     SearchSignature third(arity, 0);
-    third.set(99);
-    third.set(75);
+    third.set(99, AttributeConstraint::Equal);
+    third.set(75, AttributeConstraint::Equal);
 
     SearchSignature fourth(arity, 0);
-    fourth.set(99);
+    fourth.set(99, AttributeConstraint::Equal);
 
     SearchSignature fifth(arity, 0);
-    fifth.set(25);
-    fifth.set(0);
+    fifth.set(25, AttributeConstraint::Equal);
+    fifth.set(0, AttributeConstraint::Equal);
 
     nodes.insert(first);
     nodes.insert(second);

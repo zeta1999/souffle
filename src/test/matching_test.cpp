@@ -40,24 +40,28 @@ public:
 
 using Nodes = set<SearchSignature>;
 
+void setBits(SearchSignature& search, uint64_t mask) {
+    size_t len = search.arity();
+    for (size_t i = 0; i < len; ++i) {
+        if (mask % 2) {
+            search.set(i, AttributeConstraint::Equal);
+        }
+        mask /= 2;
+    }
+}
+
 TEST(Matching, StaticTest_1) {
     TestAutoIndex order;
     Nodes nodes;
     size_t arity = 5;
-    order.addSearch(SearchSignature(arity, 31));
-    nodes.insert(SearchSignature(arity, 31));
-    order.addSearch(SearchSignature(arity, 23));
-    nodes.insert(SearchSignature(arity, 23));
-    order.addSearch(SearchSignature(arity, 15));
-    nodes.insert(SearchSignature(arity, 15));
-    order.addSearch(SearchSignature(arity, 7));
-    nodes.insert(SearchSignature(arity, 7));
-    order.addSearch(SearchSignature(arity, 5));
-    nodes.insert(SearchSignature(arity, 5));
-    order.addSearch(SearchSignature(arity, 3));
-    nodes.insert(SearchSignature(arity, 3));
-    order.addSearch(SearchSignature(arity, 1));
-    nodes.insert(SearchSignature(arity, 1));
+
+    std::array<uint64_t, 7> patterns = {1, 3, 5, 7, 15, 23, 31};
+    for (auto pattern : patterns) {
+        SearchSignature search(arity);
+        setBits(search, pattern);
+        order.addSearch(search);
+        nodes.insert(search);
+    }
 
     order.solve();
     int num = order.getNumMatchings();
@@ -70,26 +74,14 @@ TEST(Matching, StaticTest_2) {
     Nodes nodes;
 
     size_t arity = 7;
-    order.addSearch(SearchSignature(arity, 121));
-    nodes.insert(SearchSignature(arity, 121));
-    order.addSearch(SearchSignature(arity, 104));
-    nodes.insert(SearchSignature(arity, 104));
-    order.addSearch(SearchSignature(arity, 53));
-    nodes.insert(SearchSignature(arity, 53));
-    order.addSearch(SearchSignature(arity, 49));
-    nodes.insert(SearchSignature(arity, 49));
-    order.addSearch(SearchSignature(arity, 39));
-    nodes.insert(SearchSignature(arity, 39));
-    order.addSearch(SearchSignature(arity, 33));
-    nodes.insert(SearchSignature(arity, 33));
-    order.addSearch(SearchSignature(arity, 32));
-    nodes.insert(SearchSignature(arity, 32));
-    order.addSearch(SearchSignature(arity, 23));
-    nodes.insert(SearchSignature(arity, 23));
-    order.addSearch(SearchSignature(arity, 11));
-    nodes.insert(SearchSignature(arity, 11));
-    order.addSearch(SearchSignature(arity, 7));
-    nodes.insert(SearchSignature(arity, 7));
+
+    std::array<uint64_t, 10> patterns = {7, 11, 23, 32, 33, 39, 49, 53, 104, 121};
+    for (auto pattern : patterns) {
+        SearchSignature search(arity);
+        setBits(search, pattern);
+        order.addSearch(search);
+        nodes.insert(search);
+    }
 
     order.solve();
     int num = order.getNumMatchings();
@@ -102,26 +94,26 @@ TEST(Matching, TestOver64BitSignature) {
     Nodes nodes;
 
     size_t arity = 100;
-    SearchSignature first(arity, 0);
+    SearchSignature first(arity);
     first.set(99, AttributeConstraint::Equal);
     first.set(75, AttributeConstraint::Equal);
     first.set(50, AttributeConstraint::Equal);
     first.set(25, AttributeConstraint::Equal);
     first.set(0, AttributeConstraint::Equal);
 
-    SearchSignature second(arity, 0);
+    SearchSignature second(arity);
     second.set(99, AttributeConstraint::Equal);
     second.set(75, AttributeConstraint::Equal);
     second.set(50, AttributeConstraint::Equal);
 
-    SearchSignature third(arity, 0);
+    SearchSignature third(arity);
     third.set(99, AttributeConstraint::Equal);
     third.set(75, AttributeConstraint::Equal);
 
-    SearchSignature fourth(arity, 0);
+    SearchSignature fourth(arity);
     fourth.set(99, AttributeConstraint::Equal);
 
-    SearchSignature fifth(arity, 0);
+    SearchSignature fifth(arity);
     fifth.set(25, AttributeConstraint::Equal);
     fifth.set(0, AttributeConstraint::Equal);
 

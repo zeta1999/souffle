@@ -179,7 +179,7 @@ void MinIndexSelection::solve() {
     for (auto search : searches) {
         int idx = map(search);
         size_t l = card(search);
-        SearchSignature k(search.arity(), 0);
+        SearchSignature k(search.arity());
         for (size_t i = 0; i < l; i++) {
             k.set(orders[idx][i], AttributeConstraint::Equal);
         }
@@ -362,7 +362,7 @@ namespace {
 // handles equality constraints
 template <typename Iter>
 SearchSignature searchSignature(size_t arity, Iter const& bgn, Iter const& end) {
-    SearchSignature keys(arity, 0);
+    SearchSignature keys(arity);
 
     size_t i = 0;
     for (auto cur = bgn; cur != end; ++cur, ++i) {
@@ -385,7 +385,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* se
     auto lower = search->getRangePattern().first;
     auto upper = search->getRangePattern().second;
 
-    SearchSignature keys(arity, 0);
+    SearchSignature keys(arity);
     for (size_t i = 0; i < arity; ++i) {
         // if both bounds are undefined
         if (isRamUndefValue(lower[i]) && isRamUndefValue(upper[i])) {

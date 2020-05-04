@@ -48,13 +48,7 @@ enum class AttributeConstraint { None, Equal, Inequal };
  * no value exists (i.e. attribute is unbounded) in the search. */
 class SearchSignature {
 public:
-    explicit SearchSignature(size_t arity, uint64_t mask) : constraints(arity, AttributeConstraint::None) {
-        size_t len = constraints.size();
-        for (size_t i = 0; i < len; ++i) {
-            constraints[i] = (mask % 2) ? AttributeConstraint::Equal : AttributeConstraint::None;
-            mask /= 2;
-        }
-    }
+    explicit SearchSignature(size_t arity) : constraints(arity, AttributeConstraint::None) {}
 
     inline size_t arity() const {
         return constraints.size();
@@ -120,7 +114,7 @@ public:
 
     static SearchSignature getDelta(const SearchSignature& lhs, const SearchSignature& rhs) {
         assert(lhs.arity() == rhs.arity());
-        SearchSignature delta(lhs.arity(), 0);
+        SearchSignature delta(lhs.arity());
         for (size_t i = 0; i < lhs.arity(); ++i) {
             // if constraints are the same then delta is nothing
             if (lhs.constraints[i] == rhs.constraints[i]) {
@@ -140,7 +134,7 @@ public:
     }
 
     static SearchSignature getFullSearchSignature(size_t arity) {
-        SearchSignature res(arity, 0);
+        SearchSignature res(arity);
         for (size_t i = 0; i < arity; ++i) {
             res.constraints[i] = AttributeConstraint::Equal;
         }

@@ -406,6 +406,10 @@ public:
         return constantTypes;
     }
 
+    const TypeSet& getPrimitiveTypes() const {
+        return primitiveTypes;
+    }
+
     const TypeSet& getConstantNumericTypes() const {
         return constantNumericTypes;
     }

@@ -150,20 +150,10 @@ void TypeEnvironmentAnalysis::analysePrimitiveTypesInUnion(
         auto& associatedTypes = iteratorToUnion->second;
 
         // Insert any reachable primitive type
-        if (dependencyGraph.reaches(unionName, "number")) {
-            associatedTypes.insert(TypeAttribute::Signed);
-        }
-
-        if (dependencyGraph.reaches(unionName, "symbol")) {
-            associatedTypes.insert(TypeAttribute::Symbol);
-        }
-
-        if (dependencyGraph.reaches(unionName, "unsigned")) {
-            associatedTypes.insert(TypeAttribute::Unsigned);
-        }
-
-        if (dependencyGraph.reaches(unionName, "float")) {
-            associatedTypes.insert(TypeAttribute::Float);
+        for (auto& type : env.getPrimitiveTypes()) {
+            if (dependencyGraph.reaches(unionName, type.getName())) {
+                associatedTypes.insert(type.getName());
+            }
         }
     }
 }

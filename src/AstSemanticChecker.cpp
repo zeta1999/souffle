@@ -833,35 +833,13 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
 
         const auto& name = type->getQualifiedName();
 
-        const std::set<TypeAttribute>& predefinedTypesInUnion =
-                typeEnvAnalysis.getPrimitiveTypesInUnion(name);
+        const auto& predefinedTypesInUnion = typeEnvAnalysis.getPrimitiveTypesInUnion(name);
 
         // Report error (if size == 0, then the union is cyclic)
         if (predefinedTypesInUnion.size() > 1) {
-            std::stringstream errorMessage;
-            auto toPrimitiveTypeName = [](std::ostream& out, TypeAttribute type) {
-                switch (type) {
-                    case TypeAttribute::Signed:
-                        out << "number";
-                        break;
-                    case TypeAttribute::Unsigned:
-                        out << "unsigned";
-                        break;
-                    case TypeAttribute::Float:
-                        out << "float";
-                        break;
-                    case TypeAttribute::Symbol:
-                        out << "symbol";
-                        break;
-                    case TypeAttribute::Record:
-                        fatal("Invalid type");
-                }
-            };
-            errorMessage << "Union type " << name << " is defined over {"
-                         << join(predefinedTypesInUnion, ", ", toPrimitiveTypeName) << "}"
-                         << " (multiple primitive types in union)";
-
-            report.addError(errorMessage.str(), type->getSrcLoc());
+            report.addError(format("Union type %s is defined over {%s} (multiple primitive types in union)",
+                                    name, join(predefinedTypesInUnion, ", ")),
+                    type->getSrcLoc());
         }
     }
 }

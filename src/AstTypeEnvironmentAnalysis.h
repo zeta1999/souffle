@@ -44,7 +44,7 @@ public:
         return env;
     }
 
-    const std::set<TypeAttribute>& getPrimitiveTypesInUnion(const AstQualifiedName& identifier) const {
+    const std::set<AstQualifiedName>& getPrimitiveTypesInUnion(const AstQualifiedName& identifier) const {
         return primitiveTypesInUnions.at(identifier);
     }
 
@@ -54,7 +54,7 @@ public:
 
 private:
     TypeEnvironment env;
-    std::map<AstQualifiedName, std::set<TypeAttribute>> primitiveTypesInUnions;
+    std::map<AstQualifiedName, std::set<AstQualifiedName>> primitiveTypesInUnions;
     std::set<AstQualifiedName> cyclicTypes;
 
     /**

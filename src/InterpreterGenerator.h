@@ -559,10 +559,9 @@ private:
     size_t encodeIndexPos(RamNode& node) {
         const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
         SearchSignature signature = isa->getSearchSignature(&node);
-        SearchSignature empty(signature.arity(), 0);
         // A zero signature is equivalent as a full order signature.
-        if (signature == empty) {
-            signature = ~signature;
+        if (signature.empty()) {
+            signature.flip();
         }
         auto i = orderSet.getLexOrderNum(signature);
         indexTable[&node] = i;

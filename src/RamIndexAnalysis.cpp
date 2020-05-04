@@ -127,8 +127,7 @@ void MinIndexSelection::solve() {
     AttributeIndex currentIndex = 1;
     for (SearchSignature s : searches) {
         // we skip if the search is empty
-        SearchSignature empty(s.arity(), 0);
-        if (s == empty) {
+        if (s.empty()) {
             continue;
         }
 
@@ -335,14 +334,13 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         os << "\tNumber of Primitive Searches: " << indexes.getSearches().size() << "\n";
 
         const auto& attrib = rel.getAttributeNames();
-        uint32_t arity = rel.getArity();
-        SearchSignature zero(arity, 0);
+        size_t arity = rel.getArity();
 
         /* print searches */
         for (auto& cols : indexes.getSearches()) {
             os << "\t\t";
-            for (uint32_t i = 0; i < arity; i++) {
-                if ((cols & SearchSignature(arity, 1UL << i)) != zero) {
+            for (size_t i = 0; i < arity; i++) {
+                if (cols[i]) {
                     os << attrib[i] << " ";
                 }
             }
@@ -406,8 +404,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* ex
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) const {
     SearchSignature s(ramRel->getArity(), 0);
-    s = ~s;
-    return s;
+    return s.flip();
 }
 
 bool RamIndexAnalysis::isTotalSignature(const RamAbstractExistenceCheck* existCheck) const {

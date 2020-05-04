@@ -851,9 +851,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // get range to aggregate
             auto keys = isa->getSearchSignature(&aggregate);
-            SearchSignature zero(arity, 0);
+
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == AggregateOp::COUNT && keys == zero &&
+            if (aggregate.getFunction() == AggregateOp::COUNT && keys.empty() &&
                     isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -905,7 +905,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // check whether there is an index to use
-            if (keys == zero) {
+            if (keys.empty()) {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
             } else {

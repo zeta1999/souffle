@@ -130,11 +130,13 @@ public:
  * component to be considered in sorting tuples.
  */
 class Order {
-    std::vector<uint32_t> order;
+    using Attribute = uint32_t;
+    using OrderAttributes = std::vector<Attribute>;
+    OrderAttributes order;
 
 public:
     Order() = default;
-    Order(std::vector<uint32_t> pos) : order(std::move(pos)) {
+    Order(OrderAttributes pos) : order(std::move(pos)) {
         assert(valid());
     }
 
@@ -166,7 +168,7 @@ public:
         return res;
     }
 
-    const std::vector<uint32_t>& getOrder() const {
+    const OrderAttributes& getOrder() const {
         return this->order;
     }
 

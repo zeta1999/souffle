@@ -77,9 +77,11 @@ public:
         }
         return false;
     }
+
     inline bool operator>(const SearchSignature& other) const {
         return other < *this;
     }
+
     inline bool operator==(const SearchSignature& other) const {
         assert(bits.size() == other.bits.size());
         return bits == other.bits;
@@ -87,31 +89,29 @@ public:
     inline bool operator!=(const SearchSignature& other) const {
         return !(other == *this);
     }
-    inline bool isStrictSubset(const SearchSignature& other) const {
-        assert(bits.size() == other.bits.size());
-        auto tt = SearchSignature(bits.size(), 0);
-        tt = ~tt;
-        return (~(*this) | (other)) == tt && *this != other;
+    inline bool empty() const {
+        size_t len = bits.size();
+        for (size_t i = 0; i < len; ++i) {
+            if (bits[i]) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    // bitwise assignment operators
-    inline SearchSignature& operator|=(const SearchSignature& other) {
+    // TODO:  This is really a subsumption but will refactor this later
+    inline bool isStrictSubset(const SearchSignature& other) const {
         assert(bits.size() == other.bits.size());
-        std::transform(other.bits.begin(), other.bits.end(), bits.begin(), bits.begin(), std::bit_or<bool>());
-        return *this;
+        size_t len = bits.size();
+        for (size_t i = 0; i < len; ++i) {
+            if (bits[i] && !other.bits[i]) {
+                return false;
+            }
+        }
+        return bits != other.bits;
     }
-    inline SearchSignature& operator&=(const SearchSignature& other) {
-        assert(bits.size() == other.bits.size());
-        std::transform(
-                other.bits.begin(), other.bits.end(), bits.begin(), bits.begin(), std::bit_and<bool>());
-        return *this;
-    }
-    inline SearchSignature& operator^=(const SearchSignature& other) {
-        assert(bits.size() == other.bits.size());
-        std::transform(
-                other.bits.begin(), other.bits.end(), bits.begin(), bits.begin(), std::bit_xor<bool>());
-        return *this;
-    }
+
+    // TODO: Refactor this to a delta but will refactor this later
     inline SearchSignature& operator-=(const SearchSignature& other) {
         assert(bits.size() == other.bits.size());
         for (size_t i = 0; i < bits.size(); ++i) {
@@ -119,20 +119,7 @@ public:
         }
         return *this;
     }
-    inline SearchSignature& operator<<=(const size_t n) {
-        size_t original_size = bits.size();
-        bits.insert(bits.begin(), n, false);
-        bits.erase(bits.end() - n, bits.end());
-        assert(bits.size() == original_size);
-        return *this;
-    }
-    inline SearchSignature& operator>>=(const size_t n) {
-        size_t original_size = bits.size();
-        bits.resize(bits.size() + n, false);
-        bits.erase(bits.begin(), bits.begin() + n);
-        assert(bits.size() == original_size);
-        return *this;
-    }
+
     // set a bit
     inline SearchSignature& set(size_t pos, bool val = true) {
         assert(pos < bits.size());
@@ -140,35 +127,15 @@ public:
         return *this;
     }
 
-    // bitwise operators
-    inline SearchSignature operator~() const {
-        SearchSignature s(*this);
-        s.bits.flip();
-        return s;
+    // flip all bits
+    inline SearchSignature& flip() {
+        bits.flip();
+        return *this;
     }
-    inline SearchSignature operator|(const SearchSignature& other) const {
-        SearchSignature s(*this);
-        return s |= other;
-    }
-    inline SearchSignature operator&(const SearchSignature& other) const {
-        SearchSignature s(*this);
-        return s &= other;
-    }
-    inline SearchSignature operator^(const SearchSignature& other) const {
-        SearchSignature s(*this);
-        return s ^= other;
-    }
+
     inline SearchSignature operator-(const SearchSignature& other) const {
         SearchSignature s(*this);
         return s -= other;
-    }
-    inline SearchSignature operator<<(const size_t n) const {
-        SearchSignature s(*this);
-        return s <<= n;
-    }
-    inline SearchSignature operator>>(const size_t n) const {
-        SearchSignature s(*this);
-        return s >>= n;
     }
 
     inline size_t arity() const {
@@ -314,8 +281,7 @@ public:
 
     /** @Brief Add new key to an Index Set */
     inline void addSearch(SearchSignature cols) {
-        SearchSignature empty(cols.arity(), 0);
-        if (cols != empty) {
+        if (!cols.empty()) {
             searches.insert(cols);
         }
     }
@@ -365,7 +331,7 @@ public:
     void insertDefaultTotalIndex(size_t arity) {
         Chain chain = std::set<SearchSignature>();
         SearchSignature fullIndexKey(arity, 0);
-        fullIndexKey = ~fullIndexKey;
+        fullIndexKey.flip();
         chain.insert(fullIndexKey);
         chainToOrder.push_back(std::move(chain));
         LexOrder totalOrder;
@@ -388,10 +354,9 @@ protected:
     static size_t card(SearchSignature cols) {
         size_t sz = 0;
         for (size_t i = 0; i < cols.arity(); i++) {
-            if (cols[0]) {
+            if (cols[i]) {
                 sz++;
             }
-            cols >>= 1;
         }
         return sz;
     }
@@ -411,14 +376,8 @@ protected:
 
     /** @Brief insert an index based on the delta */
     void insertIndex(LexOrder& ids, SearchSignature delta) {
-        SearchSignature empty(delta.arity(), 0);
-        SearchSignature mask(delta.arity(), 0);
-
         for (size_t pos = 0; pos < delta.arity(); pos++) {
-            mask = SearchSignature(delta.arity(), 0);
-            mask.set(pos);
-            SearchSignature result = (delta) & (mask);
-            if (result != empty) {
+            if (delta[pos]) {
                 ids.push_back(pos);
             }
         }

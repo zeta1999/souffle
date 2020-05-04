@@ -41,37 +41,44 @@ namespace souffle {
 
 class RamTranslationUnit;
 
+enum class AttributeConstraint { None, Equal, Inequal };
+
 /** search signature of a RAM operation; each bit represents an attribute of a relation.
  * A one represents that the attribute has an assigned value; a zero represents that
  * no value exists (i.e. attribute is unbounded) in the search. */
 class SearchSignature {
 public:
-    explicit SearchSignature(size_t arity, uint64_t mask) : bits(arity, false) {
-        size_t len = bits.size();
+    explicit SearchSignature(size_t arity, uint64_t mask) : constraints(arity, AttributeConstraint::None) {
+        size_t len = constraints.size();
         for (size_t i = 0; i < len; ++i) {
-            bits[i] = (mask % 2);
+            constraints[i] = (mask % 2) ? AttributeConstraint::Equal : AttributeConstraint::None;
             mask /= 2;
         }
     }
+
+    inline size_t arity() const {
+        return constraints.size();
+    }
+
     // array subscript operator
-    inline bool operator[](std::size_t pos) const {
-        assert(pos < bits.size());
-        return bits[pos];
+    inline AttributeConstraint operator[](std::size_t pos) const {
+        assert(pos < constraints.size());
+        return constraints[pos];
     }
 
     // comparison operators
     inline bool operator<(const SearchSignature& other) const {
-        assert(bits.size() == other.bits.size());
-        size_t len = bits.size();
+        assert(constraints.size() == other.constraints.size());
+        size_t len = constraints.size();
         for (size_t i = 0; i < len; ++i) {
-            size_t index = len - i - 1;  // get the most significant bit
+            size_t index = len - i - 1;  // get right to left index order
 
-            // if our bit is not set and other's bit is set then it is smaller
-            if (bits[index] < other.bits[index]) {
+            // if ours has a constraint and other's has a constraint then it is smaller
+            if (constraints[index] < other.constraints[index]) {
                 return true;
             }
-            // if other's bit is set and ours is not set then it is larger
-            else if (bits[index] > other.bits[index]) {
+            // if ours has a constraint and other's has no constraint then it is larger
+            else if (constraints[index] > other.constraints[index]) {
                 return false;
             }
         }
@@ -83,74 +90,84 @@ public:
     }
 
     inline bool operator==(const SearchSignature& other) const {
-        assert(bits.size() == other.bits.size());
-        return bits == other.bits;
+        assert(constraints.size() == other.constraints.size());
+        return constraints == other.constraints;
     }
     inline bool operator!=(const SearchSignature& other) const {
         return !(other == *this);
     }
     inline bool empty() const {
-        size_t len = bits.size();
+        size_t len = constraints.size();
         for (size_t i = 0; i < len; ++i) {
-            if (bits[i]) {
+            if (constraints[i] != AttributeConstraint::None) {
                 return false;
             }
         }
         return true;
     }
 
-    // TODO:  This is really a subsumption but will refactor this later
     inline bool isStrictSubset(const SearchSignature& other) const {
-        assert(bits.size() == other.bits.size());
-        size_t len = bits.size();
+        assert(constraints.size() == other.constraints.size());
+        size_t len = constraints.size();
         for (size_t i = 0; i < len; ++i) {
-            if (bits[i] && !other.bits[i]) {
+            if ((constraints[i] != AttributeConstraint::None) &&
+                    (other.constraints[i] == AttributeConstraint::None)) {
                 return false;
             }
         }
-        return bits != other.bits;
+        return constraints != other.constraints;
     }
 
-    // TODO: Refactor this to a delta but will refactor this later
-    inline SearchSignature& operator-=(const SearchSignature& other) {
-        assert(bits.size() == other.bits.size());
-        for (size_t i = 0; i < bits.size(); ++i) {
-            bits[i] = bits[i] && !other.bits[i];
+    static SearchSignature getDelta(const SearchSignature& lhs, const SearchSignature& rhs) {
+        assert(lhs.arity() == rhs.arity());
+        SearchSignature delta(lhs.arity(), 0);
+        for (size_t i = 0; i < lhs.arity(); ++i) {
+            // if constraints are the same then delta is nothing
+            if (lhs.constraints[i] == rhs.constraints[i]) {
+                delta.constraints[i] = AttributeConstraint::None;
+                continue;
+            }
+
+            // if rhs has no constraint then delta has lhs constraint
+            if (rhs.constraints[i] == AttributeConstraint::None) {
+                delta.constraints[i] = lhs.constraints[i];
+                continue;
+            }
+
+            assert(false && "lhs and rhs should not have inequal/equal pair constraints");
         }
+        return delta;
+    }
+
+    static SearchSignature getFullSearchSignature(size_t arity) {
+        SearchSignature res(arity, 0);
+        for (size_t i = 0; i < arity; ++i) {
+            res.constraints[i] = AttributeConstraint::Equal;
+        }
+        return res;
+    }
+
+    // set a constraint
+    inline SearchSignature& set(size_t pos, AttributeConstraint constraint) {
+        assert(pos < constraints.size());
+        constraints[pos] = constraint;
         return *this;
     }
 
-    // set a bit
-    inline SearchSignature& set(size_t pos, bool val = true) {
-        assert(pos < bits.size());
-        bits[pos] = val;
-        return *this;
-    }
-
-    // flip all bits
-    inline SearchSignature& flip() {
-        bits.flip();
-        return *this;
-    }
-
-    inline SearchSignature operator-(const SearchSignature& other) const {
-        SearchSignature s(*this);
-        return s -= other;
-    }
-
-    inline size_t arity() const {
-        return bits.size();
-    }
     friend std::ostream& operator<<(std::ostream& out, const SearchSignature& signature);
 
 private:
-    std::vector<bool> bits;
+    std::vector<AttributeConstraint> constraints;
 };
 
 inline std::ostream& operator<<(std::ostream& out, const SearchSignature& signature) {
-    size_t len = signature.bits.size();
+    size_t len = signature.constraints.size();
     for (size_t i = 0; i < len; ++i) {
-        out << signature.bits[len - 1 - i];
+        switch (signature.constraints[len - 1 - i]) {
+            case AttributeConstraint::None: out << 0; break;
+            case AttributeConstraint::Equal: out << 1; break;
+            case AttributeConstraint::Inequal: out << 2; break;
+        }
     }
     return out;
 }
@@ -315,7 +332,7 @@ public:
         return chainToOrder;
     }
 
-    /** @Brief check whether number of bits in k is not equal
+    /** @Brief check whether number of constraints in k is not equal
         to number of columns in lexicographical order */
     bool isSubset(SearchSignature cols) const {
         int idx = map(cols);
@@ -330,8 +347,7 @@ public:
      */
     void insertDefaultTotalIndex(size_t arity) {
         Chain chain = std::set<SearchSignature>();
-        SearchSignature fullIndexKey(arity, 0);
-        fullIndexKey.flip();
+        SearchSignature fullIndexKey = SearchSignature::getFullSearchSignature(arity);
         chain.insert(fullIndexKey);
         chainToOrder.push_back(std::move(chain));
         LexOrder totalOrder;
@@ -350,11 +366,11 @@ protected:
     ChainOrderMap chainToOrder;           // maps order index to set of searches covered by chain
     MaxMatching matching;                 // matching problem for finding minimal number of orders
 
-    /** @Brief count the number of bits in key */
+    /** @Brief count the number of constraints in key */
     static size_t card(SearchSignature cols) {
         size_t sz = 0;
         for (size_t i = 0; i < cols.arity(); i++) {
-            if (cols[i]) {
+            if (cols[i] != AttributeConstraint::None) {
                 sz++;
             }
         }
@@ -377,7 +393,7 @@ protected:
     /** @Brief insert an index based on the delta */
     void insertIndex(LexOrder& ids, SearchSignature delta) {
         for (size_t pos = 0; pos < delta.arity(); pos++) {
-            if (delta[pos]) {
+            if (delta[pos] != AttributeConstraint::None) {
                 ids.push_back(pos);
             }
         }

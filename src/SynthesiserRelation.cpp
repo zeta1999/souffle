@@ -8,6 +8,7 @@
 
 #include "SynthesiserRelation.h"
 #include "Global.h"
+#include "RamIndexAnalysis.h"
 #include "RelationTag.h"
 #include "Util.h"
 #include <algorithm>
@@ -374,7 +375,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
-            if (search[column]) {
+            if (search[column] != AttributeConstraint::None) {
                 indSize++;
             }
         }
@@ -391,7 +392,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is not set
-                if (!search[column]) {
+                if (search[column] == AttributeConstraint::None) {
                     out << "low[" << column << "] = MIN_RAM_SIGNED;\n";
                     out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
@@ -665,7 +666,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
-            if (search[column]) {
+            if (search[column] != AttributeConstraint::None) {
                 indSize++;
             }
         }
@@ -682,7 +683,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
                 // if bit number column is not set
-                if (!search[column]) {
+                if (search[column] == AttributeConstraint::None) {
                     out << "low[" << column << "] = MIN_RAM_SIGNED;\n";
                     out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
@@ -953,7 +954,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
         // compute size of sub-index
         size_t indSize = 0;
         for (size_t i = 0; i < arity; i++) {
-            if (search[i]) {
+            if (search[i] != AttributeConstraint::None) {
                 indSize++;
             }
         }

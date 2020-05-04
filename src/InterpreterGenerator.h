@@ -561,7 +561,7 @@ private:
         SearchSignature signature = isa->getSearchSignature(&node);
         // A zero signature is equivalent as a full order signature.
         if (signature.empty()) {
-            signature.flip();
+            signature = SearchSignature::getFullSearchSignature(signature.arity());
         }
         auto i = orderSet.getLexOrderNum(signature);
         indexTable[&node] = i;

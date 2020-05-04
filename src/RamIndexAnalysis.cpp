@@ -166,7 +166,7 @@ void MinIndexSelection::solve() {
         insertIndex(ids, initDelta);
 
         for (auto iit = chain.begin(); next(iit) != chain.end(); ++iit) {
-            SearchSignature delta = *(next(iit)) - *iit;
+            SearchSignature delta = SearchSignature::getDelta(*next(iit), *iit);
             insertIndex(ids, delta);
         }
 
@@ -181,7 +181,7 @@ void MinIndexSelection::solve() {
         size_t l = card(search);
         SearchSignature k(search.arity(), 0);
         for (size_t i = 0; i < l; i++) {
-            k.set(orders[idx][i]);
+            k.set(orders[idx][i], AttributeConstraint::Equal);
         }
         assert(k == search && "incorrect lexicographical order");
     }
@@ -340,7 +340,7 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         for (auto& cols : indexes.getSearches()) {
             os << "\t\t";
             for (size_t i = 0; i < arity; i++) {
-                if (cols[i]) {
+                if (cols[i] != AttributeConstraint::None) {
                     os << attrib[i] << " ";
                 }
             }
@@ -366,7 +366,7 @@ SearchSignature searchSignature(size_t arity, Iter const& bgn, Iter const& end) 
     size_t i = 0;
     for (auto cur = bgn; cur != end; ++cur, ++i) {
         if (!isRamUndefValue(*cur)) {
-            keys.set(i);
+            keys.set(i, AttributeConstraint::Equal);
         }
     }
     return keys;
@@ -403,8 +403,7 @@ SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* ex
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) const {
-    SearchSignature s(ramRel->getArity(), 0);
-    return s.flip();
+    return SearchSignature::getFullSearchSignature(ramRel->getArity());
 }
 
 bool RamIndexAnalysis::isTotalSignature(const RamAbstractExistenceCheck* existCheck) const {

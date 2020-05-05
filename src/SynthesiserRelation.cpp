@@ -1164,6 +1164,13 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     size_t arity = 2;
     for (int i = 1; i < 4; i++) {
         SearchSignature s(arity);
+        // if the bit is set then set it in the search signature
+        for (size_t j = 0; j < arity; j++) {
+            if (i & (1 << j)) {
+                s.set(j, AttributeConstraint::Equal);
+            }
+        }
+
         if (i & 1) {
             s.set(0, AttributeConstraint::Equal);
         }

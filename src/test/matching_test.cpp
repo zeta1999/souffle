@@ -40,14 +40,15 @@ public:
 
 using Nodes = set<SearchSignature>;
 
-void setBits(SearchSignature& search, uint64_t mask) {
-    size_t len = search.arity();
-    for (size_t i = 0; i < len; ++i) {
+SearchSignature setBits(size_t arity, uint64_t mask) {
+    SearchSignature search(arity);
+    for (size_t i = 0; i < arity; ++i) {
         if (mask % 2) {
             search.set(i, AttributeConstraint::Equal);
         }
         mask /= 2;
     }
+    return search;
 }
 
 TEST(Matching, StaticTest_1) {
@@ -55,10 +56,9 @@ TEST(Matching, StaticTest_1) {
     Nodes nodes;
     size_t arity = 5;
 
-    std::array<uint64_t, 7> patterns = {1, 3, 5, 7, 15, 23, 31};
+    uint64_t patterns[] = {1, 3, 5, 7, 15, 23, 31};
     for (auto pattern : patterns) {
-        SearchSignature search(arity);
-        setBits(search, pattern);
+        SearchSignature search = setBits(arity, pattern);
         order.addSearch(search);
         nodes.insert(search);
     }
@@ -75,10 +75,9 @@ TEST(Matching, StaticTest_2) {
 
     size_t arity = 7;
 
-    std::array<uint64_t, 10> patterns = {7, 11, 23, 32, 33, 39, 49, 53, 104, 121};
+    uint64_t patterns[] = {7, 11, 23, 32, 33, 39, 49, 53, 104, 121};
     for (auto pattern : patterns) {
-        SearchSignature search(arity);
-        setBits(search, pattern);
+        SearchSignature search = setBits(arity, pattern);
         order.addSearch(search);
         nodes.insert(search);
     }

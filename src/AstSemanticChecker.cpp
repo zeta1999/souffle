@@ -882,16 +882,24 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     }
 }
 
-void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& type) {
-    if (!typeEnv.isType(type.getBaseType())) {
-        report.addError(format("Undefined base type %s in definition of type %s", type.getBaseType(),
-                                type.getQualifiedName()),
-                type.getSrcLoc());
+void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& astType) {
+    if (!typeEnv.isType(astType.getBaseType())) {
+        report.addError(format("Undefined base type %s in definition of type %s", astType.getBaseType(),
+                                astType.getQualifiedName()),
+                astType.getSrcLoc());
     }
 
-    if (typeEnvAnalysis.isCyclic(type.getQualifiedName())) {
-        report.addError("Infinite descent in the definition of type " + toString(type.getQualifiedName()),
-                type.getSrcLoc());
+    if (typeEnvAnalysis.isCyclic(astType.getQualifiedName())) {
+        report.addError(format("Infinite descent in the definition of type %s", astType.getQualifiedName()),
+                astType.getSrcLoc());
+    }
+
+    auto& rootType = getRootIfSubsetType(typeEnv.getType(astType.getQualifiedName()));
+
+    if (isA<UnionType>(rootType)) {
+        report.addError(format("Subset type %s can't be derived from union %s", astType.getQualifiedName(),
+                                rootType.getName()),
+                astType.getSrcLoc());
     }
 }
 

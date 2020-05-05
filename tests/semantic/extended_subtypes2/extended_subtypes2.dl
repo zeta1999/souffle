@@ -24,3 +24,13 @@
 
 .decl relY(y : Y)
 relY(1).
+
+
+// Undefined type in record.
+.type RecA = [a: RecA, b:Z]
+
+
+// Subtypes of unions are not allowed
+.type U = number
+
+.type W <: U

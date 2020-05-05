@@ -469,28 +469,6 @@ bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
 }
 
 /**
- * Convert a type analysis' type/set of type to the the TypeAttribute
- */
-template <typename T>  // T = Type or T = Typeset
-TypeAttribute getTypeAttribute(const T& type) {
-    TypeAttribute primitiveType;
-    if (isNumberType(type)) {
-        primitiveType = TypeAttribute::Signed;
-    } else if (isUnsignedType(type)) {
-        primitiveType = TypeAttribute::Unsigned;
-    } else if (isFloatType(type)) {
-        primitiveType = TypeAttribute::Float;
-    } else if (isRecordType(type)) {
-        primitiveType = TypeAttribute::Record;
-    } else if (isSymbolType(type)) {
-        primitiveType = TypeAttribute::Symbol;
-    } else {
-        fatal("Unknown type class");
-    }
-    return primitiveType;
-}
-
-/**
  * Determines whether the type is numeric.
  */
 template <typename T>  // T = Type or T = Typeset
@@ -501,6 +479,17 @@ inline bool isNumericType(const T& type) {
 template <typename T>  // T = Type or T = Typeset
 inline bool isOrderableType(const T& type) {
     return isNumericType(type) || isSymbolType(type);
+}
+
+/**
+ * Utility function. Return a root if given the subset type, otherwise simply return the type.
+ */
+inline const Type& getRootIfSubsetType(const Type& type) {
+    if (isA<SubsetType>(type)) {
+        auto& baseType = static_cast<const SubsetType&>(type).getBaseType();
+        return getRootIfSubsetType(baseType);
+    }
+    return type;
 }
 
 /**

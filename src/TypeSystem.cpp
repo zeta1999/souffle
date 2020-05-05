@@ -223,23 +223,20 @@ std::string getTypeQualifier(const Type& type) {
         std::string visitType(const Type& type) const override {
             std::string str;
 
-            switch (getTypeAttribute(type)) {
-                case TypeAttribute::Signed:
-                    str.append("i");
-                    break;
-                case TypeAttribute::Unsigned:
-                    str.append("u");
-                    break;
-                case TypeAttribute::Float:
-                    str.append("f");
-                    break;
-                case TypeAttribute::Symbol:
-                    str.append("s");
-                    break;
-                case TypeAttribute::Record:
-                    str.append("r");
-                    break;
+            if (isNumberType(type)) {
+                str.append("i");
+            } else if (isUnsignedType(type)) {
+                str.append("u");
+            } else if (isFloatType(type)) {
+                str.append("f");
+            } else if (isSymbolType(type)) {
+                str.append("s");
+            } else if (isRecordType(type)) {
+                str.append("r");
+            } else {
+                fatal("Unsupported kind");
             }
+
             str.append(":");
             str.append(toString(type.getName()));
             seen[&type] = str;
@@ -295,7 +292,7 @@ bool isSymbolType(const TypeSet& s) {
 }
 
 bool isRecordType(const Type& type) {
-    return isA<RecordType>(type);
+    return isA<RecordType>(getRootIfSubsetType(type));
 }
 
 bool isRecordType(const TypeSet& s) {

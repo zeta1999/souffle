@@ -250,7 +250,15 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     // all nil constants are used as records
     visitDepthFirst(nodes, [&](const AstNilConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        if (!isRecordType(types)) {
+        if (types.isAll() || types.size() != 1) {
+            report.addError("Nil constant used as a non-record", constant.getSrcLoc());
+            return;
+        }
+
+        // At this point we know that there is exactly one type in set, so we can take it.
+        auto& recordType = getRootIfSubsetType(dynamic_cast<const Type&>(*types.begin()));
+
+        if (!isA<RecordType>(recordType)) {
             report.addError("Nil constant used as a non-record", constant.getSrcLoc());
         }
     });
@@ -259,15 +267,20 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
 
-        if (!isRecordType(types) || types.size() != 1) {
+        if (types.isAll() || types.size() != 1) {
             report.addError("Ambiguous record", constant.getSrcLoc());
             return;
         }
 
         // At this point we know that there is exactly one type in set, so we can take it.
-        const RecordType* recordType = dynamic_cast<const RecordType*>(&(*types.begin()));
+        auto& recordType = getRootIfSubsetType(dynamic_cast<const Type&>(*types.begin()));
 
-        if (recordType->getFields().size() != constant.getArguments().size()) {
+        if (!isA<RecordType>(recordType)) {
+            report.addError("Ambiguous record", constant.getSrcLoc());
+            return;
+        }
+
+        if (static_cast<const RecordType&>(recordType).getFields().size() != constant.getArguments().size()) {
             report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
         }
     });
@@ -849,8 +862,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     auto&& fields = type.getFields();
     // check proper definition of all field types
     for (auto&& field : fields) {
-        if (!typeEnv.isPrimitiveType(field->getTypeName()) &&
-                (getType(program, field->getTypeName()) == nullptr)) {
+        if (!typeEnv.isType(field->getTypeName())) {
             report.addError(format("Undefined type %s in definition of field %s", field->getTypeName(),
                                     field->getName()),
                     field->getSrcLoc());
@@ -895,6 +907,8 @@ void AstSemanticCheckerImpl::checkType(const AstType& type) {
         checkRecordType(static_cast<const AstRecordType&>(type));
     } else if (isA<AstSubsetType>(type)) {
         checkSubsetType(static_cast<const AstSubsetType&>(type));
+    } else {
+        fatal("unsupported type construct: %s", typeid(type).name());
     }
 }
 

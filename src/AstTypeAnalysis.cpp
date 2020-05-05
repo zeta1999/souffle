@@ -205,7 +205,6 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
                 while (auto subset = dynamic_cast<const SubsetType*>(type)) {
                     type = &subset->getBaseType();
                 };
-                assert(isA<ConstantType>(*type) && "Root of subset type must be a constant type");
                 return *type;
             };
 
@@ -323,21 +322,22 @@ TypeConstraint isSubtypeOfComponent(
             TypeSet newRecordTypes;
 
             for (const Type& type : recordTypes) {
-                // only retain records
-                if (!isRecordType(type)) {
+                // A type must be either a record type or a subset of a record type
+                if (!isRecordType(getRootIfSubsetType(type))) {
                     continue;
                 }
-                const auto& typeAsRecord = static_cast<const RecordType&>(type);
+
+                const auto& typeAsRecord = static_cast<const RecordType&>(getRootIfSubsetType(type));
 
                 // Wrong size => skip.
                 if (typeAsRecord.getFields().size() <= index) {
                     continue;
                 }
 
-                // Valid record type
-                newRecordTypes.insert(typeAsRecord);
+                // Valid type for record.
+                newRecordTypes.insert(type);
 
-                // and its corresponding field for a
+                // and its corresponding field for a field.
                 newElementTypes.insert(typeAsRecord.getFields()[index]);
             }
 
@@ -460,7 +460,7 @@ private:
 
     void visitSink(const AstAtom& atom) {
         iterateOverAtom(atom, [&](const AstArgument& argument, const Type& attributeType) {
-            if (isA<RecordType>(attributeType)) {
+            if (isA<RecordType>(getRootIfSubsetType(attributeType))) {
                 addConstraint(isSubtypeOf(getVar(argument), attributeType));
                 return;
             }

@@ -5,7 +5,6 @@ aliases:
   - &docker
     os: linux
     services: docker
-    sudo: false
     before_script:
       - docker pull souffle/ubuntu:bionic-base
       - docker run -d -t --name souf -w /souffle --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh

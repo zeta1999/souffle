@@ -30,10 +30,8 @@ InterpreterRelation::InterpreterRelation(std::size_t arity, std::size_t auxiliar
           attributeTypes(std::move(attributeTypes)) {
     for (auto order : orderSet.getAllOrders()) {
         // Expand the order to a total order
-        std::set<int> set;
-        for (const auto& i : order) {
-            set.insert(i);
-        }
+        AttributeSet set{order.begin(), order.end()};
+
         for (std::size_t i = 0; i < arity; ++i) {
             if (set.find(i) == set.end()) {
                 order.push_back(i);

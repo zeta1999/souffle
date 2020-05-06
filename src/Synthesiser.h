@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include "RamIndexAnalysis.h"
 #include "RamStatement.h"
 #include "RamTypes.h"
 #include "RecordTable.h"
@@ -70,9 +71,6 @@ protected:
 
     /** Get relation struct definition */
     void generateRelationTypeStruct(std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType);
-
-    /* Convert SearchColums to a template index */
-    std::string toIndex(SearchSignature key);
 
     /** Get referenced relations */
     std::set<const RamRelation*> getReferencedRelations(const RamOperation& op);

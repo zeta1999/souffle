@@ -28,7 +28,8 @@
 
 namespace souffle {
 
-void MaxMatching::addEdge(SearchSignature u, SearchSignature v) {
+void MaxMatching::addEdge(Node u, Node v) {
+    assert(u >= 1 && v >= 1 && "Nodes must be greater than or equal to 1");
     if (graph.find(u) == graph.end()) {
         Edges vals;
         vals.insert(v);
@@ -38,54 +39,55 @@ void MaxMatching::addEdge(SearchSignature u, SearchSignature v) {
     }
 }
 
-SearchSignature MaxMatching::getMatch(SearchSignature v) {
+MaxMatching::Node MaxMatching::getMatch(Node v) {
     auto it = match.find(v);
     if (it == match.end()) {
-        return RIA_NIL;
+        return NullVertex;
     }
     return it->second;
 }
 
-int MaxMatching::getDistance(SearchSignature v) {
+MaxMatching::Distance MaxMatching::getDistance(Node v) {
     auto it = distance.find(v);
     if (it == distance.end()) {
-        return RIA_INF;
+        return InfiniteDistance;
     }
     return it->second;
 }
 
 bool MaxMatching::bfSearch() {
-    SearchSignature u;
-    std::queue<SearchSignature> bfQueue;
+    Node u;
+    std::queue<Node> bfQueue;
     // Build layers
     for (auto& it : graph) {
-        if (getMatch(it.first) == RIA_NIL) {
+        if (getMatch(it.first) == NullVertex) {
             distance[it.first] = 0;
             bfQueue.push(it.first);
         } else {
-            distance[it.first] = RIA_INF;
+            distance[it.first] = InfiniteDistance;
         }
     }
-    distance[RIA_NIL] = RIA_INF;
+
+    distance[NullVertex] = InfiniteDistance;
     while (!bfQueue.empty()) {
         u = bfQueue.front();
         bfQueue.pop();
-        assert(u != RIA_NIL);
+        assert(u != NullVertex);
         const Edges& children = graph[u];
         for (auto it : children) {
-            SearchSignature mv = getMatch(it);
-            if (getDistance(mv) == RIA_INF) {
+            Node mv = getMatch(it);
+            if (getDistance(mv) == InfiniteDistance) {
                 distance[mv] = getDistance(u) + 1;
-                if (mv != RIA_NIL) {
+                if (mv != NullVertex) {
                     bfQueue.push(mv);
                 }
             }
         }
     }
-    return (getDistance(0) != RIA_INF);
+    return (getDistance(NullVertex) != InfiniteDistance);
 }
 
-bool MaxMatching::dfSearch(SearchSignature u) {
+bool MaxMatching::dfSearch(Node u) {
     if (u != 0) {
         Edges& children = graph[u];
         for (auto v : children) {
@@ -98,7 +100,7 @@ bool MaxMatching::dfSearch(SearchSignature u) {
             }
         }
 
-        distance[u] = RIA_INF;
+        distance[u] = InfiniteDistance;
         return false;
     }
     return true;
@@ -107,7 +109,7 @@ bool MaxMatching::dfSearch(SearchSignature u) {
 const MaxMatching::Matchings& MaxMatching::solve() {
     while (bfSearch()) {
         for (auto& it : graph) {
-            if (getMatch(it.first) == RIA_NIL) {
+            if (getMatch(it.first) == NullVertex) {
                 dfSearch(it.first);
             }
         }
@@ -121,12 +123,29 @@ void MinIndexSelection::solve() {
         return;
     }
 
+    // map the signatures of each searches to a unique index for the matching problem
+    AttributeIndex currentIndex = 1;
+    for (SearchSignature s : searches) {
+        // we skip if the search is empty
+        if (s.empty()) {
+            continue;
+        }
+
+        // map the signature to its unique index in each set
+        signatureToIndexA.insert({s, currentIndex});
+        signatureToIndexB.insert({s, currentIndex + 1});
+        // map each index back to the search signature
+        indexToSignature.insert({currentIndex, s});
+        indexToSignature.insert({currentIndex + 1, s});
+        currentIndex += 2;
+    }
+
     // Construct the matching poblem
     for (auto search : searches) {
         // For this node check if other nodes are strict subsets
         for (auto itt : searches) {
-            if (isStrictSubset(search, itt)) {
-                matching.addEdge(search, toB(itt));
+            if (search.isStrictSubset(itt)) {
+                matching.addEdge(signatureToIndexA[search], signatureToIndexB[itt]);
             }
         }
     }
@@ -141,14 +160,13 @@ void MinIndexSelection::solve() {
 
     // Should never get no chains back as we never call calculate on an empty graph
     assert(!chains.empty());
-
     for (const auto& chain : chains) {
-        std::vector<int> ids;
+        std::vector<uint32_t> ids;
         SearchSignature initDelta = *(chain.begin());
         insertIndex(ids, initDelta);
 
         for (auto iit = chain.begin(); next(iit) != chain.end(); ++iit) {
-            SearchSignature delta = *(next(iit)) - *iit;
+            SearchSignature delta = SearchSignature::getDelta(*next(iit), *iit);
             insertIndex(ids, delta);
         }
 
@@ -161,9 +179,9 @@ void MinIndexSelection::solve() {
     for (auto search : searches) {
         int idx = map(search);
         size_t l = card(search);
-        SearchSignature k = 0;
+        SearchSignature k(search.arity());
         for (size_t i = 0; i < l; i++) {
-            k = k + (1 << (orders[idx][i]));
+            k.set(orders[idx][i], AttributeConstraint::Equal);
         }
         assert(k == search && "incorrect lexicographical order");
     }
@@ -171,7 +189,7 @@ void MinIndexSelection::solve() {
 
 MinIndexSelection::Chain MinIndexSelection::getChain(
         const SearchSignature umn, const MaxMatching::Matchings& match) {
-    SearchSignature start = umn;  // start at an unmateched node
+    SearchSignature start = umn;  // start at an unmatched node
     Chain chain;
     // given an unmapped node from set A we follow it from set B until it cannot be matched from B
     //  if not mateched from B then umn is a chain
@@ -179,14 +197,15 @@ MinIndexSelection::Chain MinIndexSelection::getChain(
     // Assume : no circular mappings, i.e. a in A -> b in B -> ........ -> a in A is not allowed.
     // Given this, the loop will terminate
     while (true) {
-        auto mit = match.find(toB(start));  // we start from B side
+        auto mit = match.find(signatureToIndexB[start]);  // we start from B side
+        // on each iteration we swap sides when collecting the chain so we use the corresponding index map
         chain.insert(start);
 
         if (mit == match.end()) {
             return chain;
         }
 
-        SearchSignature a = mit->second;
+        SearchSignature a = indexToSignature.at(mit->second);
         chain.insert(a);
         start = a;
     }
@@ -315,13 +334,13 @@ void RamIndexAnalysis::print(std::ostream& os) const {
         os << "\tNumber of Primitive Searches: " << indexes.getSearches().size() << "\n";
 
         const auto& attrib = rel.getAttributeNames();
-        uint32_t arity = rel.getArity();
+        size_t arity = rel.getArity();
 
         /* print searches */
         for (auto& cols : indexes.getSearches()) {
             os << "\t\t";
-            for (uint32_t i = 0; i < arity; i++) {
-                if (((1UL << i) & cols) != 0u) {
+            for (size_t i = 0; i < arity; i++) {
+                if (cols[i] != AttributeConstraint::None) {
                     os << attrib[i] << " ";
                 }
             }
@@ -340,35 +359,45 @@ void RamIndexAnalysis::print(std::ostream& os) const {
 }
 
 namespace {
-constexpr int MAX_SEARCH_KEYS = int(sizeof(SearchSignature) * CHAR_BIT);
+// handles equality constraints
 template <typename Iter>
-SearchSignature searchSignature(Iter const& bgn, Iter const& end) {
-    SearchSignature keys = 0;
-    assert(std::distance(bgn, end) <= MAX_SEARCH_KEYS && "too many patterns for index signature");
+SearchSignature searchSignature(size_t arity, Iter const& bgn, Iter const& end) {
+    SearchSignature keys(arity);
 
     size_t i = 0;
     for (auto cur = bgn; cur != end; ++cur, ++i) {
         if (!isRamUndefValue(*cur)) {
-            keys |= SearchSignature(1) << i;
+            keys.set(i, AttributeConstraint::Equal);
         }
     }
     return keys;
 }
 
 template <typename Seq>
-SearchSignature searchSignature(Seq const& xs) {
-    return searchSignature(xs.begin(), xs.end());
+SearchSignature searchSignature(size_t arity, Seq const& xs) {
+    return searchSignature(arity, xs.begin(), xs.end());
 }
 }  // namespace
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamIndexOperation* search) const {
     size_t arity = search->getRelation().getArity();
+
+    auto lower = search->getRangePattern().first;
+    auto upper = search->getRangePattern().second;
+
+    SearchSignature keys(arity);
     for (size_t i = 0; i < arity; ++i) {
-        if (*(search->getRangePattern().first[i]) != *(search->getRangePattern().second[i])) {
-            fatal("Lower and upper bounds do not match when retrieving search signature.");
+        // if both bounds are undefined
+        if (isRamUndefValue(lower[i]) && isRamUndefValue(upper[i])) {
+            keys.set(i, AttributeConstraint::None);
+            // if bounds are equal we have an equality
+        } else if (*lower[i] == *upper[i]) {
+            keys.set(i, AttributeConstraint::Equal);
+        } else {
+            keys.set(i, AttributeConstraint::Inequal);
         }
     }
-    return searchSignature(search->getRangePattern().second);
+    return keys;
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(
@@ -378,16 +407,15 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
 
     // values.size() - auxiliaryArity because we discard the height annotations
     auto const numSig = values.size() - auxiliaryArity;
-    return searchSignature(values.begin(), values.begin() + numSig);
+    return searchSignature(auxiliaryArity, values.begin(), values.begin() + numSig);
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {
-    return searchSignature(existCheck->getValues());
+    return searchSignature(existCheck->getRelation().getArity(), existCheck->getValues());
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamRelation* ramRel) const {
-    assert(ramRel->getArity() <= MAX_SEARCH_KEYS && "relation is too big to fit in search key");
-    return (SearchSignature(1) << ramRel->getArity()) - 1;
+    return SearchSignature::getFullSearchSignature(ramRel->getArity());
 }
 
 bool RamIndexAnalysis::isTotalSignature(const RamAbstractExistenceCheck* existCheck) const {

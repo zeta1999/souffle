@@ -8,6 +8,7 @@
 
 #include "SynthesiserRelation.h"
 #include "Global.h"
+#include "RamIndexAnalysis.h"
 #include "RelationTag.h"
 #include "Util.h"
 #include <algorithm>
@@ -350,19 +351,21 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // empty lowerUpperRange method
-    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper, context& h) const "
+    out << "range<iterator> lowerUpperRange_" << SearchSignature(arity)
+        << "(const t_tuple& lower, const t_tuple& upper, context& h) const "
            "{\n";
 
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
-    out << "range<iterator> lowerUpperRange_0(const t_tuple& lower, const t_tuple& upper) const {\n";
+    out << "range<iterator> lowerUpperRange_" << SearchSignature(arity)
+        << "(const t_tuple& lower, const t_tuple& upper) const {\n";
 
     out << "return range<iterator>(ind_" << masterIndex << ".begin(),ind_" << masterIndex << ".end());\n";
     out << "}\n";
 
     // lowerUpperRange methods for each pattern which is used to search this relation
-    for (int64_t search : getMinIndexSelection().getSearches()) {
+    for (auto search : getMinIndexSelection().getSearches()) {
         auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
@@ -372,7 +375,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
-            if (((search >> column) & 1) != 0) {
+            if (search[column] != AttributeConstraint::None) {
                 indSize++;
             }
         }
@@ -388,8 +391,8 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             out << "t_tuple low(lower); t_tuple high(lower);\n";
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
-                // if bit number column is set
-                if (((search >> column) & 1) == 0) {
+                // if bit number column is not set
+                if (search[column] == AttributeConstraint::None) {
                     out << "low[" << column << "] = MIN_RAM_SIGNED;\n";
                     out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
@@ -653,7 +656,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // lowerUpperRange methods for each pattern which is used to search this relation
-    for (int64_t search : getMinIndexSelection().getSearches()) {
+    for (auto search : getMinIndexSelection().getSearches()) {
         auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
@@ -663,7 +666,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         // count size of search pattern
         size_t indSize = 0;
         for (size_t column = 0; column < arity; column++) {
-            if (((search >> column) & 1) != 0) {
+            if (search[column] != AttributeConstraint::None) {
                 indSize++;
             }
         }
@@ -679,8 +682,8 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             out << "t_tuple low(lower); t_tuple high(lower);\n";
             // check which indices to pad out
             for (size_t column = 0; column < arity; column++) {
-                // if bit number column is set
-                if (((search >> column) & 1) == 0) {
+                // if bit number column is not set
+                if (search[column] == AttributeConstraint::None) {
                     out << "low[" << column << "] = MIN_RAM_SIGNED;\n";
                     out << "high[" << column << "] = MAX_RAM_SIGNED;\n";
                 }
@@ -941,7 +944,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // loweUpperRange methods
-    for (int64_t search : getMinIndexSelection().getSearches()) {
+    for (auto search : getMinIndexSelection().getSearches()) {
         auto& lexOrder = getMinIndexSelection().getLexOrder(search);
         size_t indNum = indexToNumMap[lexOrder];
 
@@ -951,7 +954,7 @@ void SynthesiserBrieRelation::generateTypeStruct(std::ostream& out) {
         // compute size of sub-index
         size_t indSize = 0;
         for (size_t i = 0; i < arity; i++) {
-            if (((search >> i) & 1) != 0) {
+            if (search[i] != AttributeConstraint::None) {
                 indSize++;
             }
         }
@@ -1158,8 +1161,17 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
     out << "}\n";
 
     // lowerUpperRange methods, one for each of the 4 possible search patterns
+    size_t arity = 2;
     for (int i = 1; i < 4; i++) {
-        out << "range<iterator> lowerUpperRange_" << i;
+        SearchSignature s(arity);
+        // if the bit is set then set it in the search signature
+        for (size_t j = 0; j < arity; j++) {
+            if (i & (1 << j)) {
+                s.set(j, AttributeConstraint::Equal);
+            }
+        }
+
+        out << "range<iterator> lowerUpperRange_" << s;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
         // compute size of sub-index
         size_t indSize = 0;
@@ -1173,9 +1185,9 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
         out << "return make_range(iterator(r.begin()), iterator(r.end()));\n";
         out << "}\n";
 
-        out << "range<iterator> lowerUpperRange_" << i;
+        out << "range<iterator> lowerUpperRange_" << s;
         out << "(const t_tuple& lower, const t_tuple& upper) const {\n";
-        out << "context h; return lowerUpperRange_" << i << "(lower, upper, h);\n";
+        out << "context h; return lowerUpperRange_" << s << "(lower, upper, h);\n";
         out << "}\n";
     }
 

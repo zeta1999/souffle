@@ -560,8 +560,8 @@ private:
         const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
         SearchSignature signature = isa->getSearchSignature(&node);
         // A zero signature is equivalent as a full order signature.
-        if (signature == 0) {
-            signature = (1 << node.getRelation().getArity()) - 1;
+        if (signature.empty()) {
+            signature = SearchSignature::getFullSearchSignature(signature.arity());
         }
         auto i = orderSet.getLexOrderNum(signature);
         indexTable[&node] = i;

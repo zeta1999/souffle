@@ -108,10 +108,4 @@ constexpr RamUnsigned MAX_RAM_UNSIGNED = std::numeric_limits<RamUnsigned>::max()
 
 constexpr RamFloat MIN_RAM_FLOAT = std::numeric_limits<RamFloat>::min();
 constexpr RamFloat MAX_RAM_FLOAT = std::numeric_limits<RamFloat>::max();
-
-/** search signature of a RAM operation; each bit represents an attribute of a relation.
- * A one represents that the attribute has an assigned value; a zero represents that
- * no value exists (i.e. attribute is unbounded) in the search. */
-using SearchSignature = uint64_t;
-
 }  // end of namespace souffle

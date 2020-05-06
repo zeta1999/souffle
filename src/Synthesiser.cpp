@@ -130,26 +130,6 @@ void Synthesiser::generateRelationTypeStruct(
     relationType->generateTypeStruct(out);
 }
 
-/* Convert SearchColums to a template index */
-std::string Synthesiser::toIndex(SearchSignature key) {
-    std::stringstream tmp;
-    tmp << "<";
-    int i = 0;
-    while (key != 0) {
-        if ((key % 2) != 0u) {
-            tmp << i;
-            if (key > 1) {
-                tmp << ",";
-            }
-        }
-        key >>= 1;
-        i++;
-    }
-
-    tmp << ">";
-    return tmp.str();
-}
-
 /** Get referenced relations */
 std::set<const RamRelation*> Synthesiser::getReferencedRelations(const RamOperation& op) {
     std::set<const RamRelation*> res;
@@ -852,7 +832,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = isa->getSearchSignature(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == AggregateOp::COUNT && keys == 0 &&
+            if (aggregate.getFunction() == AggregateOp::COUNT && keys.empty() &&
                     isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -904,7 +884,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // check whether there is an index to use
-            if (keys == 0) {
+            if (keys.empty()) {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
             } else {
@@ -1330,7 +1310,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "[&]() -> bool {\n";
             out << "auto existenceCheck = " << relName << "->"
                 << "equalRange";
-            // out << synthesiser.toIndex(ne.getSearchSignature());
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">{{";
             auto parts = provExists.getValues().size() - auxiliaryArity + 1;

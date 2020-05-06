@@ -25,6 +25,8 @@ namespace souffle {
  */
 class InterpreterRelation {
 public:
+    using Attribute = uint32_t;
+    using AttributeSet = std::set<Attribute>;
     /**
      * Creates a relation, build all necessary indexes.
      */

@@ -1171,13 +1171,6 @@ void SynthesiserEqrelRelation::generateTypeStruct(std::ostream& out) {
             }
         }
 
-        if (i & 1) {
-            s.set(0, AttributeConstraint::Equal);
-        }
-        if (i & 2) {
-            s.set(1, AttributeConstraint::Equal);
-        }
-
         out << "range<iterator> lowerUpperRange_" << s;
         out << "(const t_tuple& lower, const t_tuple& upper, context& h) const {\n";
         // compute size of sub-index

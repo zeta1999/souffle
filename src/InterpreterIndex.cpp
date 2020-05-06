@@ -376,12 +376,14 @@ public:
 /* B-Tree Indirect indexes */
 class IndirectIndex : public InterpreterIndex {
 public:
+    using AttributeIndex = uint32_t;
+    using AttributeOrder = std::vector<AttributeIndex>;
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {
-        const std::vector<uint32_t> order;
+        const AttributeOrder order;
 
         /* constructor to initialize state */
-        comparator(std::vector<uint32_t> order) : order(std::move(order)) {}
+        comparator(AttributeOrder order) : order(std::move(order)) {}
 
         /* comparison function */
         int operator()(const TupleRef& x, const TupleRef& y) const {
@@ -481,7 +483,7 @@ public:
         }
     };
 
-    IndirectIndex(std::vector<uint32_t> order)
+    IndirectIndex(AttributeOrder order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)),
               arity(order.size()) {}
 
@@ -547,7 +549,7 @@ public:
 
 private:
     /** retain the index order used to construct an object of this class */
-    const std::vector<uint32_t> theOrder;
+    const AttributeOrder theOrder;
 
     /** set storing tuple pointers of table */
     index_set set;

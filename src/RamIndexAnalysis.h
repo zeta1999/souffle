@@ -79,17 +79,12 @@ public:
         return false;
     }
 
-    inline bool operator>(const SearchSignature& other) const {
-        return other < *this;
-    }
-
+    // needed for asserts
     inline bool operator==(const SearchSignature& other) const {
         assert(constraints.size() == other.constraints.size());
         return constraints == other.constraints;
     }
-    inline bool operator!=(const SearchSignature& other) const {
-        return !(other == *this);
-    }
+
     inline bool empty() const {
         size_t len = constraints.size();
         for (size_t i = 0; i < len; ++i) {

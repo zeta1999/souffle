@@ -131,12 +131,12 @@ public:
  */
 class Order {
     using Attribute = uint32_t;
-    using OrderAttributes = std::vector<Attribute>;
-    OrderAttributes order;
+    using AttributeOrder = std::vector<Attribute>;
+    AttributeOrder order;
 
 public:
     Order() = default;
-    Order(OrderAttributes pos) : order(std::move(pos)) {
+    Order(AttributeOrder pos) : order(std::move(pos)) {
         assert(valid());
     }
 
@@ -168,7 +168,7 @@ public:
         return res;
     }
 
-    const OrderAttributes& getOrder() const {
+    const AttributeOrder& getOrder() const {
         return this->order;
     }
 

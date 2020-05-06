@@ -35,11 +35,11 @@
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
 #include "json11.h"
-#include "tinyformat.h"
 #include "utility/FileUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>

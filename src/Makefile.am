@@ -51,7 +51,8 @@ souffle_utility_sources = \
         utility/MiscUtil.h                                 \
         utility/ParallelUtil.h                             \
         utility/StreamUtil.h                               \
-        utility/StringUtil.h
+        utility/StringUtil.h                               \
+        utility/tinyformat.h
 
 DIR := ${CURDIR}
 
@@ -256,7 +257,6 @@ soufflepublic_HEADERS = \
         WriteStream.h                                      \
         WriteStreamCSV.h                                   \
         json11.h                                           \
-        tinyformat.h                                       \
         $(souffle_utility_sources)                         \
         $(libz_sources)                                    \
         $(sqlite_sources)

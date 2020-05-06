@@ -27,12 +27,12 @@
 #include "AstType.h"
 #include "AstUtils.h"
 #include "ErrorReport.h"
-#include "tinyformat.h"
 #include "utility/ContainerUtil.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <memory>
 #include <utility>
 #include <vector>

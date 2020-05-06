@@ -31,9 +31,9 @@
 #include "FunctorOps.h"
 #include "Global.h"
 #include "RelationTag.h"
-#include "tinyformat.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
+#include "utility/tinyformat.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>

@@ -19,9 +19,9 @@
 #include "AstNode.h"
 #include "RamTypes.h"
 #include "SrcLocation.h"
-#include "tinyformat.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
+#include "utility/tinyformat.h"
 #include <cassert>
 #include <cstdlib>
 #include <ostream>

@@ -14,10 +14,12 @@
  *
  ***********************************************************************/
 
-#include "Constraints.h"
-#include "Util.h"
-#include "test.h"
+#include "test/test.h"
 
+#include "Constraints.h"
+#include "utility/StringUtil.h"
+#include <algorithm>
+#include <iosfwd>
 #include <set>
 #include <string>
 

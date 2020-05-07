@@ -147,6 +147,7 @@ namespace tfm = tinyformat;
 #include <algorithm>
 #include <iostream>
 #include <sstream>
+#include <string>
 
 #ifndef TINYFORMAT_ASSERT
 #   include <cassert>

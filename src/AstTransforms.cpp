@@ -16,31 +16,44 @@
 
 #include "AstTransforms.h"
 #include "AggregateOp.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
+#include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
 #include "AstQualifiedName.h"
 #include "AstRelation.h"
+#include "AstTranslationUnit.h"
 #include "AstTypeAnalysis.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "ErrorReport.h"
 #include "FunctorOps.h"
 #include "GraphUtils.h"
 #include "PrecedenceGraph.h"
 #include "RamTypes.h"
+#include "RelationTag.h"
 #include "TypeSystem.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StringUtil.h"
+#include <algorithm>
+#include <cassert>
 #include <cstddef>
 #include <functional>
 #include <map>
 #include <memory>
 #include <ostream>
 #include <set>
+#include <stdexcept>
 #include <utility>
 
 namespace souffle {
@@ -499,26 +512,22 @@ bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(const A
         return true;
     }
 
-    // inspect remaining atom more closely
+    // Inspect remaining atom more closely
     const AstAtom* atom = dynamic_cast<const AstAtom*>(agg.getBodyLiterals()[0]);
     if (atom == nullptr) {
-        // no atoms, so materialize
+        // No atoms, so materialize
         return true;
     }
 
-    // if the same variable occurs several times => materialize
+    // If the same variable occurs several times => materialize
     bool duplicates = false;
     std::set<std::string> vars;
     visitDepthFirst(*atom,
             [&](const AstVariable& var) { duplicates = duplicates || !vars.insert(var.getName()).second; });
 
-    // if there are duplicates a materialization is required
-    if (duplicates) {
-        return true;
-    }
-
+    // If there are duplicates a materialization is required
     // for all others the materialization can be skipped
-    return false;
+    return duplicates;
 }
 
 bool RemoveEmptyRelationsTransformer::removeEmptyRelations(AstTranslationUnit& translationUnit) {

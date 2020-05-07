@@ -20,6 +20,7 @@
 #include "AstClause.h"
 #include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
+#include "AstNode.h"
 #include "AstProgram.h"
 #include "AstQualifiedName.h"
 #include "AstRelation.h"
@@ -27,9 +28,11 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "Global.h"
-#include "Util.h"
+#include "utility/FileUtil.h"
+#include "utility/StreamUtil.h"
 #include <algorithm>
 #include <iterator>
+#include <memory>
 #include <set>
 #include <string>
 

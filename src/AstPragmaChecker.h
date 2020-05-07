@@ -17,8 +17,10 @@
 #pragma once
 
 #include "AstTransformer.h"
+#include <string>
 
 namespace souffle {
+class AstTranslationUnit;
 
 class AstPragmaChecker : public AstTransformer {
 public:

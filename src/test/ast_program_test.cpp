@@ -14,11 +14,27 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "AggregateOp.h"
+#include "AstAbstract.h"
+#include "AstArgument.h"
+#include "AstAttribute.h"
+#include "AstClause.h"
+#include "AstLiteral.h"
+#include "AstNode.h"
 #include "AstProgram.h"
+#include "AstRelation.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
+#include "DebugReport.h"
+#include "ErrorReport.h"
 #include "ParserDriver.h"
-#include "test.h"
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace souffle::test {
 

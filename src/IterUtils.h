@@ -17,6 +17,7 @@
 #pragma once
 
 #include <iterator>
+#include <type_traits>
 
 namespace souffle {
 

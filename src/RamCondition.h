@@ -21,14 +21,14 @@
 #include "RamExpression.h"
 #include "RamNode.h"
 #include "RamRelation.h"
-#include "SymbolTable.h"
-
-#include <algorithm>
-#include <queue>
+#include "utility/ContainerUtil.h"
+#include "utility/StreamUtil.h"
+#include <cassert>
+#include <memory>
 #include <sstream>
 #include <string>
-
-#include <cstdlib>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

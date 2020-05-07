@@ -16,15 +16,19 @@
 
 #pragma once
 
-#include "ParallelUtils.h"
 #include "RamTypes.h"
-#include "Util.h"
-#include <cassert>
+#include "utility/MiscUtil.h"
+#include "utility/ParallelUtil.h"
+#include "utility/StreamUtil.h"
+#include <algorithm>
+#include <cstdlib>
 #include <deque>
 #include <initializer_list>
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

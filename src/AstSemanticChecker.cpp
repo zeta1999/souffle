@@ -15,12 +15,14 @@
  ***********************************************************************/
 
 #include "AstSemanticChecker.h"
+#include "AggregateOp.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
-#include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
 #include "AstIO.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -37,15 +39,22 @@
 #include "FunctorOps.h"
 #include "Global.h"
 #include "GraphUtils.h"
+#include "IterUtils.h"
 #include "PrecedenceGraph.h"
 #include "RamTypes.h"
 #include "RelationTag.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
-#include "Util.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -789,13 +798,13 @@ void AstSemanticCheckerImpl::checkRelationDeclaration(const AstRelation& relatio
 
         /* check whether type exists */
         if (!typeEnv.isPrimitiveType(typeName) && !getType(program, typeName)) {
-            report.addError(format("Undefined type in attribute %s", *attr), attr->getSrcLoc());
+            report.addError(tfm::format("Undefined type in attribute %s", *attr), attr->getSrcLoc());
         }
 
         /* check whether name occurs more than once */
         for (size_t j = 0; j < i; j++) {
             if (attr->getName() == attributes[j]->getName()) {
-                report.addError(format("Doubly defined attribute name %s", *attr), attr->getSrcLoc());
+                report.addError(tfm::format("Doubly defined attribute name %s", *attr), attr->getSrcLoc());
             }
         }
     }
@@ -844,7 +853,7 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
                     type.getSrcLoc());
         } else if (!isA<AstUnionType>(subt) && !isA<AstSubsetType>(subt)) {
             report.addError(
-                    format("Union type %s contains the non-primitive type %s", type.getQualifiedName(), sub),
+                    tfm::format("Union type %s contains the non-primitive type %s", type.getQualifiedName(), sub),
                     type.getSrcLoc());
         }
     }
@@ -893,7 +902,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     for (auto&& field : fields) {
         if (!typeEnv.isPrimitiveType(field->getTypeName()) &&
                 (getType(program, field->getTypeName()) == nullptr)) {
-            report.addError(format("Undefined type %s in definition of field %s", field->getTypeName(),
+            report.addError(tfm::format("Undefined type %s in definition of field %s", field->getTypeName(),
                                     field->getName()),
                     field->getSrcLoc());
         }
@@ -904,7 +913,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
         auto&& cur_name = fields[i]->getName();
         for (std::size_t j = 0; j < i; j++) {
             if (fields[j]->getName() == cur_name) {
-                report.addError(format("Doubly defined field name %s in definition of type %s", cur_name,
+                report.addError(tfm::format("Doubly defined field name %s in definition of type %s", cur_name,
                                         type.getQualifiedName()),
                         fields[i]->getSrcLoc());
             }

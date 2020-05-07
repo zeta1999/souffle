@@ -15,24 +15,28 @@
  *
  ***********************************************************************/
 
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
 #include "AstProfileUse.h"
 #include "AstProgram.h"
-#include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "Global.h"
+#include <algorithm>
 #include <cmath>
+#include <functional>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace souffle {
+class AstRelation;
 
 // Type for SIPS functions
 // - Take in a vector of atoms to choose from and a set of bound variables

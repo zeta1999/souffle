@@ -15,19 +15,23 @@
  *
  ***********************************************************************/
 
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
-#include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
-#include "Util.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -38,6 +42,7 @@
 #include <vector>
 
 namespace souffle {
+class AstRelation;
 
 namespace {
 

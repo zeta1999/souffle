@@ -47,7 +47,7 @@
     #include "BinaryConstraintOps.h"
     #include "FunctorOps.h"
     #include "RamTypes.h"
-    #include "Util.h"
+    #include "utility/StringUtil.h"
 
     using namespace souffle;
 

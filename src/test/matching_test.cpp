@@ -14,20 +14,15 @@
  *
  ***********************************************************************/
 
-#include "../RamIndexAnalysis.h"
-#include "../RamRelation.h"
-#include "test.h"
+#include "test/test.h"
 
-#include <cmath>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <limits>
-#include <random>
-#include <sstream>
+#include "RamIndexAnalysis.h"
+#include <cstddef>
+#include <cstdint>
+#include <set>
+#include <string>
 
-using namespace std;
-using namespace souffle;
+namespace souffle {
 
 class TestAutoIndex : public MinIndexSelection {
 public:
@@ -38,7 +33,7 @@ public:
     }
 };
 
-using Nodes = set<SearchSignature>;
+using Nodes = std::set<SearchSignature>;
 
 SearchSignature setBits(size_t arity, uint64_t mask) {
     SearchSignature search(arity);
@@ -133,3 +128,5 @@ TEST(Matching, TestOver64BitSignature) {
 
     EXPECT_EQ(num, 3);
 }
+
+}  // namespace souffle

@@ -11,37 +11,48 @@ bin_PROGRAMS = souffle souffle-profile
 nodist_souffle_profile_SOURCES = $(BUILT_SOURCES)
 
 souffle_profile_sources = \
-        ProfileDatabase.h                         \
-        json11.h                                  \
-        profile/Cell.h                            \
-        profile/CellInterface.h                   \
-        profile/Cli.h                             \
-        profile/DataComparator.h                  \
-        profile/Iteration.h                       \
-        profile/OutputProcessor.h                 \
-        profile/ProgramRun.h                      \
-        profile/Reader.h                          \
-        profile/Relation.h                        \
-        profile/Row.h                             \
-        profile/Rule.h                            \
-        profile/StringUtils.h                     \
-        profile/Table.h                           \
-        profile/Tui.h                             \
-        profile/UserInputReader.h                 \
-        profile/htmlCssChartist.h                 \
-        profile/htmlJsChartistMin.h               \
-        profile/htmlJsMain.h                      \
-        profile/htmlJsUtil.h                      \
-        profile/htmlCssStyle.h                    \
-        profile/htmlJsChartistPlugin.h            \
-        profile/htmlJsTableSort.h                 \
-        profile/htmlMain.h                        \
-        profile/HtmlGenerator.h
+        ProfileDatabase.h                                  \
+        json11.h                                           \
+        profile/Cell.h                                     \
+        profile/CellInterface.h                            \
+        profile/Cli.h                                      \
+        profile/DataComparator.h                           \
+        profile/HtmlGenerator.h                            \
+        profile/Iteration.h                                \
+        profile/OutputProcessor.h                          \
+        profile/ProgramRun.h                               \
+        profile/Reader.h                                   \
+        profile/Relation.h                                 \
+        profile/Row.h                                      \
+        profile/Rule.h                                     \
+        profile/StringUtils.h                              \
+        profile/Table.h                                    \
+        profile/Tui.h                                      \
+        profile/UserInputReader.h                          \
+        profile/htmlCssChartist.h                          \
+        profile/htmlCssStyle.h                             \
+        profile/htmlJsChartistMin.h                        \
+        profile/htmlJsChartistPlugin.h                     \
+        profile/htmlJsMain.h                               \
+        profile/htmlJsTableSort.h                          \
+        profile/htmlJsUtil.h                               \
+        profile/htmlMain.h
 
 souffle_swig_sources = \
-        swig/SwigInterface.h                      \
-        swig/SwigInterface.cpp                    \
+        swig/SwigInterface.h                               \
         swig/SwigInterface.i
+
+souffle_utility_sources = \
+        utility/CacheUtil.h                                \
+        utility/ContainerUtil.h                            \
+        utility/FileUtil.h                                 \
+        utility/EvaluatorUtil.h                            \
+        utility/FunctionalUtil.h                           \
+        utility/MiscUtil.h                                 \
+        utility/ParallelUtil.h                             \
+        utility/StreamUtil.h                               \
+        utility/StringUtil.h                               \
+        utility/tinyformat.h
 
 DIR := ${CURDIR}
 
@@ -58,109 +69,140 @@ endif
 
 
 souffle_sources = \
-        AggregateOp.h                             \
-        AstAbstract.h                             \
-        AstAnalysis.h                             \
-        AuxArityAnalysis.cpp  AuxArityAnalysis.h  \
-        AstArgument.h                             \
-        AstAttribute.h                            \
-        AstClause.h                               \
-        AstComponent.h                            \
-        AstComponentChecker.cpp                   \
-        AstComponentChecker.h                     \
-        AstConstraintAnalysis.h                   \
-        AstFunctorDeclaration.h                   \
-        AstGroundAnalysis.cpp AstGroundAnalysis.h \
-        AstIO.h                                   \
-        AstIOTypeAnalysis.cpp AstIOTypeAnalysis.h \
-        AstLiteral.h                              \
-        AstNode.h                                 \
-        AstParserUtils.cpp    AstParserUtils.h    \
-        AstPragma.h                               \
-        AstPragmaChecker.cpp  AstPragmaChecker.h  \
-        AstProgram.h                              \
-        AstProfileUse.cpp     AstProfileUse.h     \
-        AstRelation.h                             \
-        AstQualifiedName.h                        \
-        AstSemanticChecker.cpp                    \
-        AstSemanticChecker.h                      \
-        AstTransformer.cpp    AstTransformer.h    \
-        AstTransforms.cpp     AstTransforms.h     \
-        AstTranslationUnit.h  ErrorReport.h       \
-        AstTranslator.cpp     AstTranslator.h     \
-        AstType.h                                 \
-        AstTypeAnalysis.cpp   AstTypeAnalysis.h   \
-        AstTypeEnvironmentAnalysis.cpp            \
-        AstTypeEnvironmentAnalysis.h              \
-        AstUtils.cpp          AstUtils.h          \
-        AstVisitor.h                              \
-        BinaryConstraintOps.h                     \
-        ComponentInstantiationTransformer.cpp     \
-        ComponentInstantiationTransformer.h       \
-        ComponentLookupAnalysis.cpp               \
-        ComponentLookupAnalysis.h                 \
-        Constraints.h                             \
-        DebugReport.cpp       DebugReport.h       \
-        DebugReporter.cpp     DebugReporter.h     \
-        EvaluatorUtils.h                          \
-        EventProcessor.h                          \
-        FunctorOps.h                              \
-        Global.cpp            Global.h            \
-        GraphUtils.h                              \
-        IOSystem.h                                \
-        RamIndexAnalysis.cpp  RamIndexAnalysis.h  \
-        InlineRelationsTransformer.cpp            \
-        LogStatement.h                            \
-        InterpreterIndex.h            InterpreterIndex.cpp \
-        InterpreterRelation.h         InterpreterRelation.cpp     \
-        MagicSet.cpp          MagicSet.h          \
-        MinimiseProgramTransformer.cpp            \
-        ParserDriver.cpp      ParserDriver.h      \
-        PrecedenceGraph.cpp   PrecedenceGraph.h   \
-        ProfileEvent.h                            \
-        ProvenanceTransformer.cpp                 \
-        RamAnalysis.h                             \
-        InterpreterContext.h                      \
-        InterpreterEngine.cpp InterpreterEngine.h \
-        InterpreterGenerator.h                    \
-        InterpreterIndex.h                        \
-        InterpreterNode.h		          \
-        InterpreterProgInterface.h                \
-        InterpreterPreamble.h			  \
-        RecordTable.h                             \
-        RamComplexityAnalysis.cpp  RamComplexityAnalysis.h  \
-        RamLevelAnalysis.cpp  RamLevelAnalysis.h  \
-        RamCondition.h                            \
-        RamNode.h                                 \
-        RamOperation.h                            \
-        RamProgram.h                              \
-        RamRelation.h                             \
-        RamStatement.h                            \
-        RamTransformer.cpp    RamTransformer.h    \
-        RamTransforms.cpp     RamTransforms.h     \
-        RamTranslationUnit.h                      \
-        RamTypes.h                                \
-        RamExpression.h                           \
-        RamUtils.h                                \
-        RamVisitor.h                              \
-        ReadStream.h                              \
-        ReadStreamCSV.h                           \
-        RelationTag.h                             \
-        ReorderLiteralsTransformer.cpp            \
-        ResolveAliasesTransformer.cpp             \
-        SignalHandler.h                           \
-        SrcLocation.cpp    SrcLocation.h          \
-        Synthesiser.cpp       Synthesiser.h       \
-        SynthesiserRelation.cpp                   \
-        SynthesiserRelation.h                     \
-        TypeSystem.cpp        TypeSystem.h        \
-        Util.cpp                                  \
-        WriteStream.h                             \
-        WriteStreamCSV.h                          \
-        parser.cc             parser.hh           \
-        scanner.cc            stack.hh            \
-        $(sqlite_sources)                         \
-        $(libz_sources)                           \
+        AggregateOp.h                                      \
+        AstAbstract.h                                      \
+        AstAnalysis.h                                      \
+        AstArgument.h                                      \
+        AstAttribute.h                                     \
+        AstClause.h                                        \
+        AstComponent.h                                     \
+        AstComponentChecker.cpp                            \
+        AstComponentChecker.h                              \
+        AstConstraintAnalysis.h                            \
+        AstFunctorDeclaration.h                            \
+        AstGroundAnalysis.cpp                              \
+        AstGroundAnalysis.h                                \
+        AstIO.h                                            \
+        AstIOTypeAnalysis.cpp                              \
+        AstIOTypeAnalysis.h                                \
+        AstLiteral.h                                       \
+        AstNode.h                                          \
+        AstParserUtils.cpp                                 \
+        AstParserUtils.h                                   \
+        AstPragma.h                                        \
+        AstPragmaChecker.cpp                               \
+        AstPragmaChecker.h                                 \
+        AstProfileUse.cpp                                  \
+        AstProfileUse.h                                    \
+        AstProgram.h                                       \
+        AstQualifiedName.h                                 \
+        AstRelation.h                                      \
+        AstSemanticChecker.cpp                             \
+        AstSemanticChecker.h                               \
+        AstTransformer.cpp                                 \
+        AstTransformer.h                                   \
+        AstTransforms.cpp                                  \
+        AstTransforms.h                                    \
+        AstTranslationUnit.h                               \
+        AstTranslator.cpp                                  \
+        AstTranslator.h                                    \
+        AstType.h                                          \
+        AstTypeAnalysis.cpp                                \
+        AstTypeAnalysis.h                                  \
+        AstTypeEnvironmentAnalysis.cpp                     \
+        AstTypeEnvironmentAnalysis.h                       \
+        AstUtils.cpp                                       \
+        AstUtils.h                                         \
+        AstVisitor.h                                       \
+        AuxArityAnalysis.cpp                               \
+        AuxArityAnalysis.h                                 \
+        BinaryConstraintOps.h                              \
+        ComponentInstantiationTransformer.cpp              \
+        ComponentInstantiationTransformer.h                \
+        ComponentLookupAnalysis.cpp                        \
+        ComponentLookupAnalysis.h                          \
+        Constraints.h                                      \
+        DebugReport.cpp                                    \
+        DebugReport.h                                      \
+        DebugReporter.cpp                                  \
+        DebugReporter.h                                    \
+        ErrorReport.h                                      \
+        EventProcessor.h                                   \
+        FunctorOps.h                                       \
+        Global.cpp                                         \
+        Global.h                                           \
+        GraphUtils.h                                       \
+        IOSystem.h                                         \
+        InlineRelationsTransformer.cpp                     \
+        InterpreterContext.h                               \
+        InterpreterEngine.cpp                              \
+        InterpreterEngine.h                                \
+        InterpreterGenerator.h                             \
+        InterpreterIndex.cpp                               \
+        InterpreterIndex.h                                 \
+        InterpreterNode.h                                  \
+        InterpreterPreamble.h                              \
+        InterpreterProgInterface.h                         \
+        InterpreterRelation.cpp                            \
+        InterpreterRelation.h                              \
+        LogStatement.h                                     \
+        MagicSet.cpp                                       \
+        MagicSet.h                                         \
+        MinimiseProgramTransformer.cpp                     \
+        ParserDriver.cpp                                   \
+        ParserDriver.h                                     \
+        PrecedenceGraph.cpp                                \
+        PrecedenceGraph.h                                  \
+        ProfileEvent.h                                     \
+        ProvenanceTransformer.cpp                          \
+        RamAnalysis.h                                      \
+        RamComplexityAnalysis.cpp                          \
+        RamComplexityAnalysis.h                            \
+        RamCondition.h                                     \
+        RamExpression.h                                    \
+        RamIndexAnalysis.cpp                               \
+        RamIndexAnalysis.h                                 \
+        RamLevelAnalysis.cpp                               \
+        RamLevelAnalysis.h                                 \
+        RamNode.h                                          \
+        RamOperation.h                                     \
+        RamProgram.h                                       \
+        RamRelation.h                                      \
+        RamStatement.h                                     \
+        RamTransformer.cpp                                 \
+        RamTransformer.h                                   \
+        RamTransforms.cpp                                  \
+        RamTransforms.h                                    \
+        RamTranslationUnit.h                               \
+        RamTypes.h                                         \
+        RamUtils.h                                         \
+        RamVisitor.h                                       \
+        ReadStream.h                                       \
+        ReadStreamCSV.h                                    \
+        RecordTable.h                                      \
+        RelationTag.h                                      \
+        ReorderLiteralsTransformer.cpp                     \
+        ResolveAliasesTransformer.cpp                      \
+        SerialisationStream.h                              \
+        SignalHandler.h                                    \
+        SrcLocation.cpp                                    \
+        SrcLocation.h                                      \
+        Synthesiser.cpp                                    \
+        Synthesiser.h                                      \
+        SynthesiserRelation.cpp                            \
+        SynthesiserRelation.h                              \
+        TypeSystem.cpp                                     \
+        TypeSystem.h                                       \
+        Util.cpp                                           \
+        WriteStream.h                                      \
+        WriteStreamCSV.h                                   \
+        parser.cc                                          \
+        scanner.cc                                         \
+        parser.hh                                          \
+        stack.hh                                           \
+        $(sqlite_sources)                                  \
+        $(libz_sources)                                    \
+        $(souffle_utility_sources)                         \
         $(souffle_profile_sources)
 
 # -- build souffle as a library so it can be reused in testing
@@ -173,7 +215,7 @@ souffle_SOURCES = main.cpp
 souffle_LDADD = libsouffle.la
 
 souffle_profile_SOURCES = souffle_prof.cpp
-souffle_profile_CXXFLAGS = $(souffle_CPPFLAGS) -DMAKEDIR='"$(DIR)"'
+souffle_profile_CXXFLAGS = $(souffle_CPPFLAGS)
 
 dist_bin_SCRIPTS = souffle-compile souffle-config
 
@@ -182,44 +224,41 @@ EXTRA_DIST = parser.yy scanner.ll  test/test.h
 soufflepublicdir = $(includedir)/souffle
 
 soufflepublic_HEADERS = \
-        CompiledOptions.h                         \
-        BinaryConstraintOps.h                     \
-        Brie.h                                    \
-        BTree.h                                   \
-        CompiledIndexUtils.h                      \
-        CompiledSouffle.h                         \
-        CompiledTuple.h                           \
-        EvaluatorUtils.h                          \
-        EventProcessor.h                          \
-        Explain.h                                 \
-        ExplainProvenance.h                       \
-        ExplainProvenanceImpl.h                   \
-        ExplainTree.h                             \
-        EquivalenceRelation.h                     \
-        IOSystem.h                                \
-        IterUtils.h                               \
-        LambdaBTree.h                             \
-        Logger.h                                  \
-        ParallelUtils.h                           \
-        PiggyList.h                               \
-        ProfileDatabase.h                         \
-        ProfileEvent.h                            \
-        RamTypes.h                                \
-        ReadStream.h                              \
-        ReadStreamCSV.h                           \
-        RecordTable.h                             \
-        SerialisationStream.h                     \
-        SignalHandler.h                           \
-        SouffleInterface.h                        \
-        SymbolTable.h                             \
-        Table.h                                   \
-        UnionFind.h                               \
-        Util.h                                    \
-        WriteStream.h                             \
-        WriteStreamCSV.h                          \
-        json11.h                                  \
-        tinyformat.h                              \
-        $(libz_sources)                           \
+        BTree.h                                            \
+        BinaryConstraintOps.h                              \
+        Brie.h                                             \
+        CompiledIndexUtils.h                               \
+        CompiledOptions.h                                  \
+        CompiledSouffle.h                                  \
+        CompiledTuple.h                                    \
+        EquivalenceRelation.h                              \
+        EventProcessor.h                                   \
+        Explain.h                                          \
+        ExplainProvenance.h                                \
+        ExplainProvenanceImpl.h                            \
+        ExplainTree.h                                      \
+        IOSystem.h                                         \
+        IterUtils.h                                        \
+        LambdaBTree.h                                      \
+        Logger.h                                           \
+        PiggyList.h                                        \
+        ProfileDatabase.h                                  \
+        ProfileEvent.h                                     \
+        RamTypes.h                                         \
+        ReadStream.h                                       \
+        ReadStreamCSV.h                                    \
+        RecordTable.h                                      \
+        SerialisationStream.h                              \
+        SignalHandler.h                                    \
+        SouffleInterface.h                                 \
+        SymbolTable.h                                      \
+        Table.h                                            \
+        UnionFind.h                                        \
+        WriteStream.h                                      \
+        WriteStreamCSV.h                                   \
+        json11.h                                           \
+        $(souffle_utility_sources)                         \
+        $(libz_sources)                                    \
         $(sqlite_sources)
 
 souffleprofiledir = $(soufflepublicdir)/profile
@@ -229,6 +268,10 @@ souffleprofile_HEADERS = $(souffle_profile_sources)
 souffleswigdir = $(soufflepublicdir)/swig
 
 souffleswig_HEADERS = $(souffle_swig_sources)
+
+souffleutilitydir = $(soufflepublicdir)/utility
+
+souffleutility_HEADERS = $(souffle_utility_sources)
 
 # files to clean
 CLEANFILES = $(BUILT_SOURCES)  parser.cc scanner.cc parser.hh stack.hh

@@ -20,7 +20,8 @@
 #include "AstTranslationUnit.h"
 #include "AstVisitor.h"
 #include "Global.h"
-#include "Util.h"
+#include <utility>
+#include <vector>
 
 namespace souffle {
 bool AstPragmaChecker::transform(AstTranslationUnit& translationUnit) {

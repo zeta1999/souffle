@@ -21,6 +21,8 @@
 
 namespace souffle {
 
+class AstTranslationUnit;
+
 class AstSemanticChecker : public AstTransformer {
 public:
     ~AstSemanticChecker() override = default;

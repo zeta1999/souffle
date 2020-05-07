@@ -18,11 +18,14 @@
 
 #include "AstAnalysis.h"
 #include "AstLiteral.h"
-#include "AstProgram.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
+#include <cstddef>
+#include <string>
 
 namespace souffle {
 class AstRelation;
+class AstProgram;
 
 /**
  * Determine the auxiliary arity for relations

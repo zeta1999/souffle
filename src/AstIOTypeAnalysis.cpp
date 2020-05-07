@@ -16,9 +16,15 @@
 
 #include "AstIOTypeAnalysis.h"
 #include "AstIO.h"
+#include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
+#include "AstUtils.h"
 #include "AstVisitor.h"
+#include "utility/StreamUtil.h"
+#include <ostream>
+#include <vector>
 
 namespace souffle {
 
@@ -30,12 +36,8 @@ void IOType::run(const AstTranslationUnit& translationUnit) {
             return;
         }
         switch (io.getType()) {
-            case AstIoType::input:
-                inputRelations.insert(relation);
-                break;
-            case AstIoType::output:
-                outputRelations.insert(relation);
-                break;
+            case AstIoType::input: inputRelations.insert(relation); break;
+            case AstIoType::output: outputRelations.insert(relation); break;
             case AstIoType::printsize:
                 printSizeRelations.insert(relation);
                 outputRelations.insert(relation);

@@ -17,17 +17,19 @@
 #pragma once
 
 #include "RamTypes.h"
-#include "RecordTable.h"
-#include "SymbolTable.h"
 #include "json11.h"
 
 #include <cassert>
+#include <cstddef>
 #include <map>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace souffle {
+
+class RecordTable;
+class SymbolTable;
 
 using json11::Json;
 

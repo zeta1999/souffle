@@ -15,8 +15,10 @@
  ***********************************************************************/
 
 #include "DebugReport.h"
+#include "Global.h"
+#include <fstream>
 #include <ostream>
-#include <utility>
+#include <sstream>
 #include <vector>
 
 namespace souffle {
@@ -76,14 +78,20 @@ void DebugReport::flush() {
     std::ofstream(dst) << *this;
 }
 
-void DebugReport::addSection(std::string id, std::string title, std::string code) {
-    while (true) {
-        size_t i = code.find("<");
+void DebugReport::addSection(std::string id, std::string title, const std::string_view code) {
+    std::ostringstream ss;
+    ss << "<pre>";
+    for (auto tail = code; !tail.empty();) {
+        auto i = tail.find("<");
+        ss << tail.substr(0, i);
         if (i == std::string::npos) break;
-        code.replace(i, 1, "&lt;");
-    }
 
-    addSection(DebugReportSection(std::move(id), std::move(title), "<pre>" + code + "</pre>\n"));
+        ss << "&lt";
+        tail = tail.substr(i + 1);
+    }
+    ss << "</pre>";
+
+    addSection(DebugReportSection(std::move(id), std::move(title), ss.str()));
 }
 
 void DebugReport::endSection(std::string currentSectionName, std::string currentSectionTitle) {

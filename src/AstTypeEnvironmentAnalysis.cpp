@@ -15,13 +15,18 @@
  ***********************************************************************/
 
 #include "AstTypeEnvironmentAnalysis.h"
+#include "AstAttribute.h"
 #include "AstProgram.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
 #include "GraphUtils.h"
 #include "TypeSystem.h"
-#include <cassert>
-#include <iostream>
+#include "utility/MiscUtil.h"
+#include <functional>
+#include <ostream>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

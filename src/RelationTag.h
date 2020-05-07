@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include "Util.h"
+#include "utility/MiscUtil.h"
+#include <ostream>
 
 namespace souffle {
 
@@ -59,10 +60,8 @@ inline bool isRelationRepresentationTag(const RelationTag& tag) {
     switch (tag) {
         case RelationTag::BRIE:
         case RelationTag::BTREE:
-        case RelationTag::EQREL:
-            return true;
-        default:
-            return false;
+        case RelationTag::EQREL: return true;
+        default: return false;
     }
 }
 
@@ -76,10 +75,8 @@ inline bool isRelationQualifierTag(const RelationTag& tag) {
         case RelationTag::PRINTSIZE:
         case RelationTag::OVERRIDABLE:
         case RelationTag::INLINE:
-        case RelationTag::SUPPRESSED:
-            return true;
-        default:
-            return false;
+        case RelationTag::SUPPRESSED: return true;
+        default: return false;
     }
 }
 
@@ -88,20 +85,13 @@ inline bool isRelationQualifierTag(const RelationTag& tag) {
  */
 inline RelationQualifier getRelationQualifierFromTag(const RelationTag& tag) {
     switch (tag) {
-        case RelationTag::INPUT:
-            return RelationQualifier::INPUT;
-        case RelationTag::OUTPUT:
-            return RelationQualifier::OUTPUT;
-        case RelationTag::PRINTSIZE:
-            return RelationQualifier::PRINTSIZE;
-        case RelationTag::OVERRIDABLE:
-            return RelationQualifier::OVERRIDABLE;
-        case RelationTag::INLINE:
-            return RelationQualifier::INLINE;
-        case RelationTag::SUPPRESSED:
-            return RelationQualifier::SUPPRESSED;
-        default:
-            fatal("invalid relation tag");
+        case RelationTag::INPUT: return RelationQualifier::INPUT;
+        case RelationTag::OUTPUT: return RelationQualifier::OUTPUT;
+        case RelationTag::PRINTSIZE: return RelationQualifier::PRINTSIZE;
+        case RelationTag::OVERRIDABLE: return RelationQualifier::OVERRIDABLE;
+        case RelationTag::INLINE: return RelationQualifier::INLINE;
+        case RelationTag::SUPPRESSED: return RelationQualifier::SUPPRESSED;
+        default: fatal("invalid relation tag");
     }
 }
 
@@ -110,14 +100,10 @@ inline RelationQualifier getRelationQualifierFromTag(const RelationTag& tag) {
  */
 inline RelationRepresentation getRelationRepresentationFromTag(const RelationTag& tag) {
     switch (tag) {
-        case RelationTag::BRIE:
-            return RelationRepresentation::BRIE;
-        case RelationTag::BTREE:
-            return RelationRepresentation::BTREE;
-        case RelationTag::EQREL:
-            return RelationRepresentation::EQREL;
-        default:
-            fatal("invalid relation tag");
+        case RelationTag::BRIE: return RelationRepresentation::BRIE;
+        case RelationTag::BTREE: return RelationRepresentation::BTREE;
+        case RelationTag::EQREL: return RelationRepresentation::EQREL;
+        default: fatal("invalid relation tag");
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -125,24 +111,15 @@ inline RelationRepresentation getRelationRepresentationFromTag(const RelationTag
 
 inline std::ostream& operator<<(std::ostream& os, RelationTag qualifier) {
     switch (qualifier) {
-        case RelationTag::INPUT:
-            return os << "input";
-        case RelationTag::OUTPUT:
-            return os << "output";
-        case RelationTag::PRINTSIZE:
-            return os << "printsize";
-        case RelationTag::OVERRIDABLE:
-            return os << "overridable";
-        case RelationTag::INLINE:
-            return os << "inline";
-        case RelationTag::SUPPRESSED:
-            return os << "suppressed";
-        case RelationTag::BRIE:
-            return os << "brie";
-        case RelationTag::BTREE:
-            return os << "btree";
-        case RelationTag::EQREL:
-            return os << "eqrel";
+        case RelationTag::INPUT: return os << "input";
+        case RelationTag::OUTPUT: return os << "output";
+        case RelationTag::PRINTSIZE: return os << "printsize";
+        case RelationTag::OVERRIDABLE: return os << "overridable";
+        case RelationTag::INLINE: return os << "inline";
+        case RelationTag::SUPPRESSED: return os << "suppressed";
+        case RelationTag::BRIE: return os << "brie";
+        case RelationTag::BTREE: return os << "btree";
+        case RelationTag::EQREL: return os << "eqrel";
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -150,18 +127,12 @@ inline std::ostream& operator<<(std::ostream& os, RelationTag qualifier) {
 
 inline std::ostream& operator<<(std::ostream& os, RelationQualifier qualifier) {
     switch (qualifier) {
-        case RelationQualifier::INPUT:
-            return os << "input";
-        case RelationQualifier::OUTPUT:
-            return os << "output";
-        case RelationQualifier::PRINTSIZE:
-            return os << "printsize";
-        case RelationQualifier::OVERRIDABLE:
-            return os << "overridable";
-        case RelationQualifier::INLINE:
-            return os << "inline";
-        case RelationQualifier::SUPPRESSED:
-            return os << "suppressed";
+        case RelationQualifier::INPUT: return os << "input";
+        case RelationQualifier::OUTPUT: return os << "output";
+        case RelationQualifier::PRINTSIZE: return os << "printsize";
+        case RelationQualifier::OVERRIDABLE: return os << "overridable";
+        case RelationQualifier::INLINE: return os << "inline";
+        case RelationQualifier::SUPPRESSED: return os << "suppressed";
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -169,16 +140,11 @@ inline std::ostream& operator<<(std::ostream& os, RelationQualifier qualifier) {
 
 inline std::ostream& operator<<(std::ostream& os, RelationRepresentation representation) {
     switch (representation) {
-        case RelationRepresentation::BTREE:
-            return os << "btree";
-        case RelationRepresentation::BRIE:
-            return os << "brie";
-        case RelationRepresentation::EQREL:
-            return os << "eqrel";
-        case RelationRepresentation::INFO:
-            return os << "info";
-        case RelationRepresentation::DEFAULT:
-            return os;
+        case RelationRepresentation::BTREE: return os << "btree";
+        case RelationRepresentation::BRIE: return os << "brie";
+        case RelationRepresentation::EQREL: return os << "eqrel";
+        case RelationRepresentation::INFO: return os << "info";
+        case RelationRepresentation::DEFAULT: return os;
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS

@@ -15,25 +15,32 @@
  ***********************************************************************/
 
 #include "AstTypeAnalysis.h"
+#include "AggregateOp.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstConstraintAnalysis.h"
-#include "AstFunctorDeclaration.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
-#include "AstType.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "Constraints.h"
+#include "FunctorOps.h"
 #include "Global.h"
+#include "RamTypes.h"
 #include "TypeSystem.h"
-#include "Util.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/StringUtil.h"
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <functional>
 #include <map>
 #include <memory>
 #include <optional>

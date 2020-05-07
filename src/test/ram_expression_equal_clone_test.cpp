@@ -14,9 +14,15 @@
  *
  ***********************************************************************/
 
-#include "RamExpression.h"
+#include "test/test.h"
 
-#include "test.h"
+#include "FunctorOps.h"
+#include "RamExpression.h"
+#include "RamTypes.h"
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

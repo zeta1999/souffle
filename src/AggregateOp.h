@@ -17,7 +17,10 @@
 #pragma once
 
 #include "RamTypes.h"
-#include "Util.h"
+#include "utility/MiscUtil.h"
+#include <cstdint>
+#include <ostream>
+#include <utility>
 
 namespace souffle {
 
@@ -41,26 +44,21 @@ enum class AggregateOp {
 
 inline std::ostream& operator<<(std::ostream& os, AggregateOp op) {
     switch (op) {
-        case AggregateOp::COUNT:
-            return os << "count";
+        case AggregateOp::COUNT: return os << "count";
 
-        case AggregateOp::MEAN:
-            return os << "mean";
+        case AggregateOp::MEAN: return os << "mean";
 
         case AggregateOp::MAX:
         case AggregateOp::UMAX:
-        case AggregateOp::FMAX:
-            return os << "max";
+        case AggregateOp::FMAX: return os << "max";
 
         case AggregateOp::MIN:
         case AggregateOp::UMIN:
-        case AggregateOp::FMIN:
-            return os << "min";
+        case AggregateOp::FMIN: return os << "min";
 
         case AggregateOp::SUM:
         case AggregateOp::USUM:
-        case AggregateOp::FSUM:
-            return os << "sum";
+        case AggregateOp::FSUM: return os << "sum";
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -69,8 +67,7 @@ inline std::ostream& operator<<(std::ostream& os, AggregateOp op) {
 // `[min, max]` # of arguments for each function
 inline std::pair<uint8_t, uint8_t> aggregateArity(AggregateOp op) {
     switch (op) {
-        case AggregateOp::COUNT:
-            return {0, 0};
+        case AggregateOp::COUNT: return {0, 0};
 
         case AggregateOp::FMAX:
         case AggregateOp::FMIN:
@@ -81,8 +78,7 @@ inline std::pair<uint8_t, uint8_t> aggregateArity(AggregateOp op) {
         case AggregateOp::SUM:
         case AggregateOp::UMAX:
         case AggregateOp::UMIN:
-        case AggregateOp::USUM:
-            return {1, 1};
+        case AggregateOp::USUM: return {1, 1};
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -96,19 +92,16 @@ inline TypeAttribute getTypeAttributeAggregate(const AggregateOp op) {
         case AggregateOp::COUNT:
         case AggregateOp::MAX:
         case AggregateOp::MIN:
-        case AggregateOp::SUM:
-            return TypeAttribute::Signed;
+        case AggregateOp::SUM: return TypeAttribute::Signed;
 
         case AggregateOp::MEAN:
         case AggregateOp::FMAX:
         case AggregateOp::FMIN:
-        case AggregateOp::FSUM:
-            return TypeAttribute::Float;
+        case AggregateOp::FSUM: return TypeAttribute::Float;
 
         case AggregateOp::UMAX:
         case AggregateOp::UMIN:
-        case AggregateOp::USUM:
-            return TypeAttribute::Unsigned;
+        case AggregateOp::USUM: return TypeAttribute::Unsigned;
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -118,15 +111,12 @@ inline bool isOverloadedAggregator(const AggregateOp op) {
     switch (op) {
         case AggregateOp::MAX:
         case AggregateOp::MIN:
-        case AggregateOp::SUM:
-            return true;
+        case AggregateOp::SUM: return true;
 
         case AggregateOp::MEAN:
-        case AggregateOp::COUNT:
-            return false;
+        case AggregateOp::COUNT: return false;
 
-        default:
-            fatal("likely mistaken use of overloaded aggregator op");
+        default: fatal("likely mistaken use of overloaded aggregator op");
     }
 }
 

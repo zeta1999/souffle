@@ -16,16 +16,21 @@
 
 #pragma once
 
+#include "AstAbstract.h"
 #include "AstArgument.h"
+#include "AstNode.h"
 #include "AstQualifiedName.h"
-#include "AuxArityAnalysis.h"
 #include "RamRelation.h"
-#include "RecordTable.h"
-#include "RelationTag.h"
+#include "RamStatement.h"
+#include "RamTypes.h"
 #include "SymbolTable.h"
-#include "Util.h"
 #include "json11.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
 #include <cassert>
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <optional>
@@ -33,6 +38,7 @@
 #include <set>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace souffle {
 
@@ -41,15 +47,13 @@ using json11::Json;
 // forward declarations
 class AstAtom;
 class AstClause;
-class AstLiteral;
 class AstProgram;
 class AstRelation;
 class AstTranslationUnit;
+class AuxiliaryArity;
 class RamCondition;
 class RamTupleElement;
 class RamOperation;
-class RamProgram;
-class RamStatement;
 class RamTranslationUnit;
 class RamExpression;
 class RecursiveClauses;
@@ -409,8 +413,7 @@ private:
                     return RamSignedFromString(numConstant->getConstant(), nullptr, 0);
                 case AstNumericConstant::Type::Uint:
                     return RamUnsignedFromString(numConstant->getConstant(), nullptr, 0);
-                case AstNumericConstant::Type::Float:
-                    return RamFloatFromString(numConstant->getConstant());
+                case AstNumericConstant::Type::Float: return RamFloatFromString(numConstant->getConstant());
             }
         }
 

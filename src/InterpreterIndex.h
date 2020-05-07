@@ -15,15 +15,14 @@
  ***********************************************************************/
 #pragma once
 
-#include "BTree.h"
 #include "CompiledTuple.h"
-#include "ParallelUtils.h"
 #include "RamTypes.h"
-#include "Util.h"
-
 #include <array>
-#include <deque>
-#include <map>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+#include <iosfwd>
+#include <iterator>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -130,11 +129,13 @@ public:
  * component to be considered in sorting tuples.
  */
 class Order {
-    std::vector<int> order;
+    using Attribute = uint32_t;
+    using AttributeOrder = std::vector<Attribute>;
+    AttributeOrder order;
 
 public:
     Order() = default;
-    Order(std::vector<int> pos) : order(std::move(pos)) {
+    Order(AttributeOrder pos) : order(std::move(pos)) {
         assert(valid());
     }
 
@@ -166,7 +167,7 @@ public:
         return res;
     }
 
-    const std::vector<int>& getOrder() const {
+    const AttributeOrder& getOrder() const {
         return this->order;
     }
 

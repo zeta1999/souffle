@@ -17,18 +17,12 @@
 
 #pragma once
 
-#include "Util.h"
-
+#include <cstdio>
 #include <iostream>
 #include <string>
-
 #include <getopt.h>
+#include <stdlib.h>
 #include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace souffle {
 
@@ -187,9 +181,7 @@ public:
                     std::cerr << "\nWarning: OpenMP was not enabled in compilation\n\n";
 #endif
                     break;
-                default:
-                    printHelpPage(exec_name);
-                    return false;
+                default: printHelpPage(exec_name); return false;
             }
         }
 

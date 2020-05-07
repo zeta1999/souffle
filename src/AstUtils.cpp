@@ -15,13 +15,25 @@
  ***********************************************************************/
 
 #include "AstUtils.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
+#include "AstFunctorDeclaration.h"
 #include "AstLiteral.h"
+#include "AstNode.h"
 #include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
 #include "AstType.h"
 #include "AstVisitor.h"
+#include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StringUtil.h"
+#include <algorithm>
+#include <cassert>
+#include <memory>
 
 namespace souffle {
 

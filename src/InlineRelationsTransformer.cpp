@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AggregateOp.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
@@ -28,7 +29,9 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
-#include "Util.h"
+#include "RelationTag.h"
+#include "utility/MiscUtil.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <memory>
@@ -600,28 +603,17 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // Utility lambda: get functor used to tie aggregators together.
                     auto aggregateToFunctor = [](AggregateOp op) {
                         switch (op) {
-                            case AggregateOp::MIN:
-                                return FunctorOp::MIN;
-                            case AggregateOp::FMIN:
-                                return FunctorOp::FMIN;
-                            case AggregateOp::UMIN:
-                                return FunctorOp::UMIN;
-                            case AggregateOp::MAX:
-                                return FunctorOp::MAX;
-                            case AggregateOp::FMAX:
-                                return FunctorOp::FMAX;
-                            case AggregateOp::UMAX:
-                                return FunctorOp::UMAX;
-                            case AggregateOp::SUM:
-                                return FunctorOp::ADD;
-                            case AggregateOp::FSUM:
-                                return FunctorOp::FADD;
-                            case AggregateOp::USUM:
-                                return FunctorOp::UADD;
-                            case AggregateOp::COUNT:
-                                return FunctorOp::ADD;
-                            case AggregateOp::MEAN:
-                                fatal("no translation");
+                            case AggregateOp::MIN: return FunctorOp::MIN;
+                            case AggregateOp::FMIN: return FunctorOp::FMIN;
+                            case AggregateOp::UMIN: return FunctorOp::UMIN;
+                            case AggregateOp::MAX: return FunctorOp::MAX;
+                            case AggregateOp::FMAX: return FunctorOp::FMAX;
+                            case AggregateOp::UMAX: return FunctorOp::UMAX;
+                            case AggregateOp::SUM: return FunctorOp::ADD;
+                            case AggregateOp::FSUM: return FunctorOp::FADD;
+                            case AggregateOp::USUM: return FunctorOp::UADD;
+                            case AggregateOp::COUNT: return FunctorOp::ADD;
+                            case AggregateOp::MEAN: fatal("no translation");
                         }
 
                         UNREACHABLE_BAD_CASE_ANALYSIS

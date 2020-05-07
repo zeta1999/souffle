@@ -17,18 +17,21 @@
 #pragma once
 
 #include "AstAnalysis.h"
+#include "AstQualifiedName.h"
 #include "GraphUtils.h"
 #include "RamTypes.h"
 #include "TypeSystem.h"
-#include "Util.h"
+#include "utility/ContainerUtil.h"
 #include <map>
 #include <ostream>
 #include <set>
+#include <string>
+#include <vector>
 
 namespace souffle {
 
-class AstProgram;
 class AstTranslationUnit;
+class AstType;
 
 class TypeEnvironmentAnalysis : public AstAnalysis {
 public:

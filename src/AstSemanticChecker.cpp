@@ -15,12 +15,14 @@
  ***********************************************************************/
 
 #include "AstSemanticChecker.h"
+#include "AggregateOp.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
-#include "AstFunctorDeclaration.h"
 #include "AstGroundAnalysis.h"
 #include "AstIO.h"
+#include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
@@ -37,15 +39,22 @@
 #include "FunctorOps.h"
 #include "Global.h"
 #include "GraphUtils.h"
+#include "IterUtils.h"
 #include "PrecedenceGraph.h"
 #include "RamTypes.h"
 #include "RelationTag.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
-#include "Util.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -55,6 +64,8 @@
 #include <vector>
 
 namespace souffle {
+
+using tinyformat::format;
 
 struct AstSemanticCheckerImpl {
     AstTranslationUnit& tu;
@@ -137,8 +148,12 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     }
 
     // check rules
-    for (auto* rel : program.getRelations()) checkRelation(*rel);
-    for (auto* clause : program.getClauses()) checkClause(*clause);
+    for (auto* rel : program.getRelations()) {
+        checkRelation(*rel);
+    }
+    for (auto* clause : program.getClauses()) {
+        checkClause(*clause);
+    }
 
     checkNamespaces();
     checkIO();
@@ -311,8 +326,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                 case TypeAttribute::Symbol:
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
-                case TypeAttribute::Record:
-                    fatal("Invalid return type");
+                case TypeAttribute::Record: fatal("Invalid return type");
             }
         }
 
@@ -339,8 +353,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     case TypeAttribute::Float:
                         report.addError("Non-float argument for functor", arg->getSrcLoc());
                         break;
-                    case TypeAttribute::Record:
-                        fatal("Invalid argument type");
+                    case TypeAttribute::Record: fatal("Invalid argument type");
                 }
             }
             ++i;
@@ -370,21 +383,11 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     ss << "Constraint requires an operand of type "
                        << join(opRamTypes, " or ", [&](auto& out, auto& ramTy) {
                               switch (ramTy) {
-                                  case TypeAttribute::Signed:
-                                      out << "`number`";
-                                      break;
-                                  case TypeAttribute::Symbol:
-                                      out << "`symbol`";
-                                      break;
-                                  case TypeAttribute::Unsigned:
-                                      out << "`unsigned`";
-                                      break;
-                                  case TypeAttribute::Float:
-                                      out << "`float`";
-                                      break;
-                                  case TypeAttribute::Record:
-                                      out << "a record";
-                                      break;
+                                  case TypeAttribute::Signed: out << "`number`"; break;
+                                  case TypeAttribute::Symbol: out << "`symbol`"; break;
+                                  case TypeAttribute::Unsigned: out << "`unsigned`"; break;
+                                  case TypeAttribute::Float: out << "`float`"; break;
+                                  case TypeAttribute::Record: out << "a record"; break;
                               }
                           });
                     report.addError(ss.str(), side.getSrcLoc());
@@ -771,13 +774,13 @@ void AstSemanticCheckerImpl::checkRelationDeclaration(const AstRelation& relatio
 
         /* check whether type exists */
         if (!typeEnv.isPrimitiveType(typeName) && !getType(program, typeName)) {
-            report.addError(format("Undefined type in attribute %s", *attr), attr->getSrcLoc());
+            report.addError(tfm::format("Undefined type in attribute %s", *attr), attr->getSrcLoc());
         }
 
         /* check whether name occurs more than once */
         for (size_t j = 0; j < i; j++) {
             if (attr->getName() == attributes[j]->getName()) {
-                report.addError(format("Doubly defined attribute name %s", *attr), attr->getSrcLoc());
+                report.addError(tfm::format("Doubly defined attribute name %s", *attr), attr->getSrcLoc());
             }
         }
     }
@@ -825,8 +828,8 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
                                     toString(type.getQualifiedName()),
                     type.getSrcLoc());
         } else if (!isA<AstUnionType>(subt) && !isA<AstSubsetType>(subt)) {
-            report.addError(
-                    format("Union type %s contains the non-primitive type %s", type.getQualifiedName(), sub),
+            report.addError(tfm::format("Union type %s contains the non-primitive type %s",
+                                    type.getQualifiedName(), sub),
                     type.getSrcLoc());
         }
     }
@@ -873,7 +876,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
         auto&& cur_name = fields[i]->getName();
         for (std::size_t j = 0; j < i; j++) {
             if (fields[j]->getName() == cur_name) {
-                report.addError(format("Doubly defined field name %s in definition of type %s", cur_name,
+                report.addError(tfm::format("Doubly defined field name %s in definition of type %s", cur_name,
                                         type.getQualifiedName()),
                         fields[i]->getSrcLoc());
             }

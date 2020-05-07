@@ -17,7 +17,9 @@
 #pragma once
 
 #include "AstAnalysis.h"
+#include <iosfwd>
 #include <set>
+#include <string>
 
 namespace souffle {
 

@@ -18,7 +18,6 @@
 #include "AstTranslationUnit.h"
 #include "ErrorReport.h"
 #include <chrono>
-#include <cstdlib>
 #include <iostream>
 
 namespace souffle {

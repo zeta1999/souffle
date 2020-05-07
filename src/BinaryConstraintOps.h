@@ -17,9 +17,9 @@
 #pragma once
 
 #include "RamTypes.h"
-#include "Util.h"
-#include <cassert>
+#include "utility/MiscUtil.h"
 #include <iostream>
+#include <string>
 #include <vector>
 
 namespace souffle {
@@ -68,10 +68,8 @@ inline std::ostream& operator<<(std::ostream& os, BinaryConstraintOp x) {
 inline bool isEqConstraint(const BinaryConstraintOp constraintOp) {
     switch (constraintOp) {
         case BinaryConstraintOp::EQ:
-        case BinaryConstraintOp::FEQ:
-            return true;
-        default:
-            break;
+        case BinaryConstraintOp::FEQ: return true;
+        default: break;
     }
     return false;
 }
@@ -82,10 +80,8 @@ inline bool isIneqConstraint(const BinaryConstraintOp constraintOp) {
         case BinaryConstraintOp::LT:
         case BinaryConstraintOp::GT:
         case BinaryConstraintOp::LE:
-        case BinaryConstraintOp::GE:
-            return true;
-        default:
-            break;
+        case BinaryConstraintOp::GE: return true;
+        default: break;
     }
     return false;
 }
@@ -117,10 +113,8 @@ inline bool isOverloaded(const BinaryConstraintOp constraintOp) {
         case BinaryConstraintOp::LT:
         case BinaryConstraintOp::LE:
         case BinaryConstraintOp::GT:
-        case BinaryConstraintOp::GE:
-            return true;
-        default:
-            break;
+        case BinaryConstraintOp::GE: return true;
+        default: break;
     }
     return false;
 }
@@ -163,8 +157,7 @@ inline BinaryConstraintOp convertOverloadedConstraint(
         COMPARE_CONSTRAINT(GT)
         COMPARE_CONSTRAINT(GE)
 
-        default:
-            fatal("invalid constraint conversion: constraint = %s", constraintOp);
+        default: fatal("invalid constraint conversion: constraint = %s", constraintOp);
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -180,59 +173,35 @@ inline BinaryConstraintOp convertOverloadedConstraint(
  */
 inline BinaryConstraintOp negatedConstraintOp(const BinaryConstraintOp op) {
     switch (op) {
-        case BinaryConstraintOp::EQ:
-            return BinaryConstraintOp::NE;
-        case BinaryConstraintOp::FEQ:
-            return BinaryConstraintOp::FNE;
-        case BinaryConstraintOp::NE:
-            return BinaryConstraintOp::EQ;
-        case BinaryConstraintOp::FNE:
-            return BinaryConstraintOp::FEQ;
+        case BinaryConstraintOp::EQ: return BinaryConstraintOp::NE;
+        case BinaryConstraintOp::FEQ: return BinaryConstraintOp::FNE;
+        case BinaryConstraintOp::NE: return BinaryConstraintOp::EQ;
+        case BinaryConstraintOp::FNE: return BinaryConstraintOp::FEQ;
 
-        case BinaryConstraintOp::LT:
-            return BinaryConstraintOp::GE;
-        case BinaryConstraintOp::ULT:
-            return BinaryConstraintOp::UGE;
-        case BinaryConstraintOp::FLT:
-            return BinaryConstraintOp::FGE;
-        case BinaryConstraintOp::SLT:
-            return BinaryConstraintOp::SGE;
+        case BinaryConstraintOp::LT: return BinaryConstraintOp::GE;
+        case BinaryConstraintOp::ULT: return BinaryConstraintOp::UGE;
+        case BinaryConstraintOp::FLT: return BinaryConstraintOp::FGE;
+        case BinaryConstraintOp::SLT: return BinaryConstraintOp::SGE;
 
-        case BinaryConstraintOp::LE:
-            return BinaryConstraintOp::GT;
-        case BinaryConstraintOp::ULE:
-            return BinaryConstraintOp::UGT;
-        case BinaryConstraintOp::FLE:
-            return BinaryConstraintOp::FGT;
-        case BinaryConstraintOp::SLE:
-            return BinaryConstraintOp::SGT;
+        case BinaryConstraintOp::LE: return BinaryConstraintOp::GT;
+        case BinaryConstraintOp::ULE: return BinaryConstraintOp::UGT;
+        case BinaryConstraintOp::FLE: return BinaryConstraintOp::FGT;
+        case BinaryConstraintOp::SLE: return BinaryConstraintOp::SGT;
 
-        case BinaryConstraintOp::GE:
-            return BinaryConstraintOp::LT;
-        case BinaryConstraintOp::UGE:
-            return BinaryConstraintOp::ULT;
-        case BinaryConstraintOp::FGE:
-            return BinaryConstraintOp::FLT;
-        case BinaryConstraintOp::SGE:
-            return BinaryConstraintOp::SLT;
+        case BinaryConstraintOp::GE: return BinaryConstraintOp::LT;
+        case BinaryConstraintOp::UGE: return BinaryConstraintOp::ULT;
+        case BinaryConstraintOp::FGE: return BinaryConstraintOp::FLT;
+        case BinaryConstraintOp::SGE: return BinaryConstraintOp::SLT;
 
-        case BinaryConstraintOp::GT:
-            return BinaryConstraintOp::LE;
-        case BinaryConstraintOp::UGT:
-            return BinaryConstraintOp::ULE;
-        case BinaryConstraintOp::FGT:
-            return BinaryConstraintOp::FLE;
-        case BinaryConstraintOp::SGT:
-            return BinaryConstraintOp::SLE;
+        case BinaryConstraintOp::GT: return BinaryConstraintOp::LE;
+        case BinaryConstraintOp::UGT: return BinaryConstraintOp::ULE;
+        case BinaryConstraintOp::FGT: return BinaryConstraintOp::FLE;
+        case BinaryConstraintOp::SGT: return BinaryConstraintOp::SLE;
 
-        case BinaryConstraintOp::MATCH:
-            return BinaryConstraintOp::NOT_MATCH;
-        case BinaryConstraintOp::NOT_MATCH:
-            return BinaryConstraintOp::MATCH;
-        case BinaryConstraintOp::CONTAINS:
-            return BinaryConstraintOp::NOT_CONTAINS;
-        case BinaryConstraintOp::NOT_CONTAINS:
-            return BinaryConstraintOp::CONTAINS;
+        case BinaryConstraintOp::MATCH: return BinaryConstraintOp::NOT_MATCH;
+        case BinaryConstraintOp::NOT_MATCH: return BinaryConstraintOp::MATCH;
+        case BinaryConstraintOp::CONTAINS: return BinaryConstraintOp::NOT_CONTAINS;
+        case BinaryConstraintOp::NOT_CONTAINS: return BinaryConstraintOp::CONTAINS;
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -244,39 +213,29 @@ inline BinaryConstraintOp negatedConstraintOp(const BinaryConstraintOp op) {
 inline char const* toBinaryConstraintSymbol(const BinaryConstraintOp op) {
     switch (op) {
         case BinaryConstraintOp::FEQ:
-        case BinaryConstraintOp::EQ:
-            return "=";
+        case BinaryConstraintOp::EQ: return "=";
         case BinaryConstraintOp::FNE:
-        case BinaryConstraintOp::NE:
-            return "!=";
+        case BinaryConstraintOp::NE: return "!=";
         case BinaryConstraintOp::SLT:
         case BinaryConstraintOp::ULT:
         case BinaryConstraintOp::FLT:
-        case BinaryConstraintOp::LT:
-            return "<";
+        case BinaryConstraintOp::LT: return "<";
         case BinaryConstraintOp::SLE:
         case BinaryConstraintOp::ULE:
         case BinaryConstraintOp::FLE:
-        case BinaryConstraintOp::LE:
-            return "<=";
+        case BinaryConstraintOp::LE: return "<=";
         case BinaryConstraintOp::SGT:
         case BinaryConstraintOp::UGT:
         case BinaryConstraintOp::FGT:
-        case BinaryConstraintOp::GT:
-            return ">";
+        case BinaryConstraintOp::GT: return ">";
         case BinaryConstraintOp::SGE:
         case BinaryConstraintOp::UGE:
         case BinaryConstraintOp::FGE:
-        case BinaryConstraintOp::GE:
-            return ">=";
-        case BinaryConstraintOp::MATCH:
-            return "match";
-        case BinaryConstraintOp::CONTAINS:
-            return "contains";
-        case BinaryConstraintOp::NOT_MATCH:
-            return "not_match";
-        case BinaryConstraintOp::NOT_CONTAINS:
-            return "not_contains";
+        case BinaryConstraintOp::GE: return ">=";
+        case BinaryConstraintOp::MATCH: return "match";
+        case BinaryConstraintOp::CONTAINS: return "contains";
+        case BinaryConstraintOp::NOT_MATCH: return "not_match";
+        case BinaryConstraintOp::NOT_CONTAINS: return "not_contains";
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -325,14 +284,12 @@ inline bool isOrderedBinaryConstraintOp(const BinaryConstraintOp op) {
         case BinaryConstraintOp::SLT:
         case BinaryConstraintOp::SLE:
         case BinaryConstraintOp::SGE:
-        case BinaryConstraintOp::SGT:
-            return true;
+        case BinaryConstraintOp::SGT: return true;
 
         case BinaryConstraintOp::MATCH:
         case BinaryConstraintOp::NOT_MATCH:
         case BinaryConstraintOp::CONTAINS:
-        case BinaryConstraintOp::NOT_CONTAINS:
-            return false;
+        case BinaryConstraintOp::NOT_CONTAINS: return false;
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS
@@ -366,8 +323,7 @@ inline std::vector<TypeAttribute> getBinaryConstraintTypes(const BinaryConstrain
         case BinaryConstraintOp::MATCH:
         case BinaryConstraintOp::NOT_MATCH:
         case BinaryConstraintOp::CONTAINS:
-        case BinaryConstraintOp::NOT_CONTAINS:
-            return {TypeAttribute::Symbol};
+        case BinaryConstraintOp::NOT_CONTAINS: return {TypeAttribute::Symbol};
     }
 
     UNREACHABLE_BAD_CASE_ANALYSIS

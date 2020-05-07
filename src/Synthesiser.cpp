@@ -26,6 +26,7 @@
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
+#include "RamStatement.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RamUtils.h"
@@ -33,15 +34,19 @@
 #include "RelationTag.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
-#include "Util.h"
 #include "json11.h"
+#include "utility/FileUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
-#include <cstdlib>
 #include <functional>
-#include <iostream>
+#include <map>
 #include <sstream>
+#include <type_traits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -128,26 +133,6 @@ void Synthesiser::generateRelationTypeStruct(
 
     // Generate the type struct for the relation
     relationType->generateTypeStruct(out);
-}
-
-/* Convert SearchColums to a template index */
-std::string Synthesiser::toIndex(SearchSignature key) {
-    std::stringstream tmp;
-    tmp << "<";
-    int i = 0;
-    while (key != 0) {
-        if ((key % 2) != 0u) {
-            tmp << i;
-            if (key > 1) {
-                tmp << ",";
-            }
-        }
-        key >>= 1;
-        i++;
-    }
-
-    tmp << ">";
-    return tmp.str();
 }
 
 /** Get referenced relations */
@@ -852,7 +837,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = isa->getSearchSignature(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == AggregateOp::COUNT && keys == 0 &&
+            if (aggregate.getFunction() == AggregateOp::COUNT && keys.empty() &&
                     isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -867,31 +852,17 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case AggregateOp::MIN:
-                    init = "MAX_RAM_SIGNED";
-                    break;
-                case AggregateOp::FMIN:
-                    init = "MAX_RAM_FLOAT";
-                    break;
-                case AggregateOp::UMIN:
-                    init = "MAX_RAM_UNSIGNED";
-                    break;
-                case AggregateOp::MAX:
-                    init = "MIN_RAM_SIGNED";
-                    break;
-                case AggregateOp::FMAX:
-                    init = "MIN_RAM_FLOAT";
-                    break;
-                case AggregateOp::UMAX:
-                    init = "MIN_RAM_UNSIGNED";
-                    break;
+                case AggregateOp::MIN: init = "MAX_RAM_SIGNED"; break;
+                case AggregateOp::FMIN: init = "MAX_RAM_FLOAT"; break;
+                case AggregateOp::UMIN: init = "MAX_RAM_UNSIGNED"; break;
+                case AggregateOp::MAX: init = "MIN_RAM_SIGNED"; break;
+                case AggregateOp::FMAX: init = "MIN_RAM_FLOAT"; break;
+                case AggregateOp::UMAX: init = "MIN_RAM_UNSIGNED"; break;
                 case AggregateOp::COUNT:
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
-                case AggregateOp::MEAN:
-                    init = "0";
-                    break;
+                case AggregateOp::MEAN: init = "0"; break;
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
                 case AggregateOp::SUM:
@@ -902,20 +873,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             std::string type;
             switch (getTypeAttributeAggregate(aggregate.getFunction())) {
-                case TypeAttribute::Signed:
-                    type = "RamSigned";
-                    break;
-                case TypeAttribute::Unsigned:
-                    type = "RamUnsigned";
-                    break;
-                case TypeAttribute::Float:
-                    type = "RamFloat";
-                    break;
+                case TypeAttribute::Signed: type = "RamSigned"; break;
+                case TypeAttribute::Unsigned: type = "RamUnsigned"; break;
+                case TypeAttribute::Float: type = "RamFloat"; break;
 
                 case TypeAttribute::Symbol:
-                case TypeAttribute::Record:
-                    type = "RamDomain";
-                    break;
+                case TypeAttribute::Record: type = "RamDomain"; break;
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
@@ -926,7 +889,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // check whether there is an index to use
-            if (keys == 0) {
+            if (keys.empty()) {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
             } else {
@@ -973,9 +936,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::COUNT:
-                    out << "++res" << identifier << "\n;";
-                    break;
+                case AggregateOp::COUNT: out << "++res" << identifier << "\n;"; break;
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
                 case AggregateOp::SUM:
@@ -1042,32 +1003,18 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // init result
             std::string init;
             switch (aggregate.getFunction()) {
-                case AggregateOp::MIN:
-                    init = "MAX_RAM_SIGNED";
-                    break;
-                case AggregateOp::FMIN:
-                    init = "MAX_RAM_FLOAT";
-                    break;
-                case AggregateOp::UMIN:
-                    init = "MAX_RAM_UNSIGNED";
-                    break;
-                case AggregateOp::MAX:
-                    init = "MIN_RAM_SIGNED";
-                    break;
-                case AggregateOp::FMAX:
-                    init = "MIN_RAM_FLOAT";
-                    break;
-                case AggregateOp::UMAX:
-                    init = "MIN_RAM_UNSIGNED";
-                    break;
+                case AggregateOp::MIN: init = "MAX_RAM_SIGNED"; break;
+                case AggregateOp::FMIN: init = "MAX_RAM_FLOAT"; break;
+                case AggregateOp::UMIN: init = "MAX_RAM_UNSIGNED"; break;
+                case AggregateOp::MAX: init = "MIN_RAM_SIGNED"; break;
+                case AggregateOp::FMAX: init = "MIN_RAM_FLOAT"; break;
+                case AggregateOp::UMAX: init = "MIN_RAM_UNSIGNED"; break;
                 case AggregateOp::COUNT:
                     init = "0";
                     out << "shouldRunNested = true;\n";
                     break;
 
-                case AggregateOp::MEAN:
-                    init = "0";
-                    break;
+                case AggregateOp::MEAN: init = "0"; break;
 
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
@@ -1079,20 +1026,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             char const* type;
             switch (getTypeAttributeAggregate(aggregate.getFunction())) {
-                case TypeAttribute::Signed:
-                    type = "RamSigned";
-                    break;
-                case TypeAttribute::Unsigned:
-                    type = "RamUnsigned";
-                    break;
-                case TypeAttribute::Float:
-                    type = "RamFloat";
-                    break;
+                case TypeAttribute::Signed: type = "RamSigned"; break;
+                case TypeAttribute::Unsigned: type = "RamUnsigned"; break;
+                case TypeAttribute::Float: type = "RamFloat"; break;
 
                 case TypeAttribute::Symbol:
-                case TypeAttribute::Record:
-                    type = "RamDomain";
-                    break;
+                case TypeAttribute::Record: type = "RamDomain"; break;
             }
             out << type << " res" << identifier << " = " << init << ";\n";
 
@@ -1128,9 +1067,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::COUNT:
-                    out << "++res" << identifier << "\n;";
-                    break;
+                case AggregateOp::COUNT: out << "++res" << identifier << "\n;"; break;
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
                 case AggregateOp::SUM:
@@ -1378,7 +1315,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "[&]() -> bool {\n";
             out << "auto existenceCheck = " << relName << "->"
                 << "equalRange";
-            // out << synthesiser.toIndex(ne.getSearchSignature());
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">{{";
             auto parts = provExists.getValues().size() - auxiliaryArity + 1;
@@ -1634,11 +1570,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 NARY_OP_ORDERED(MIN, std::min)
                     // clang-format on
 
-                case FunctorOp::SMAX:
-                    MINMAX_SYMBOL(std::max)
+                case FunctorOp::SMAX: MINMAX_SYMBOL(std::max)
 
-                case FunctorOp::SMIN:
-                    MINMAX_SYMBOL(std::min)
+                case FunctorOp::SMIN: MINMAX_SYMBOL(std::min)
 
                 // strings
                 case FunctorOp::CAT: {
@@ -1683,7 +1617,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
 
             auto emitHelper = [&](auto&& func) {
-                format(out, "%s(%s, [&](auto&& env%d) {\n", func,
+                tfm::format(out, "%s(%s, [&](auto&& env%d) {\n", func,
                         join(op.getArguments(), ",", [&](auto& os, auto* arg) { return visit(arg, os); }),
                         op.getTupleId());
                 visitTupleOperation(op, out);
@@ -1693,16 +1627,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             };
 
             auto emitRange = [&](char const* ty) {
-                return emitHelper(format("souffle::evaluator::runRange<%s>", ty));
+                return emitHelper(tfm::format("souffle::evaluator::runRange<%s>", ty));
             };
 
             switch (op.getFunction()) {
-                case RamNestedIntrinsicOp::RANGE:
-                    return emitRange("RamSigned");
-                case RamNestedIntrinsicOp::URANGE:
-                    return emitRange("RamUnsigned");
-                case RamNestedIntrinsicOp::FRANGE:
-                    return emitRange("RamFloat");
+                case RamNestedIntrinsicOp::RANGE: return emitRange("RamSigned");
+                case RamNestedIntrinsicOp::URANGE: return emitRange("RamUnsigned");
+                case RamNestedIntrinsicOp::FRANGE: return emitRange("RamFloat");
             }
 
             UNREACHABLE_BAD_CASE_ANALYSIS
@@ -1744,8 +1675,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                         visit(args[i], out);
                         out << ").c_str()";
                         break;
-                    case TypeAttribute::Record:
-                        fatal("unhandled type");
+                    case TypeAttribute::Record: fatal("unhandled type");
                 }
             }
             out << ")";
@@ -1858,22 +1788,18 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
         auto cppTypeDecl = [](TypeAttribute ty) -> char const* {
             switch (ty) {
-                case TypeAttribute::Signed:
-                    return "souffle::RamSigned";
-                case TypeAttribute::Unsigned:
-                    return "souffle::RamUnsigned";
-                case TypeAttribute::Float:
-                    return "souffle::RamFloat";
-                case TypeAttribute::Symbol:
-                    return "const char *";
-                case TypeAttribute::Record:
-                    fatal("records cannot be used by user-defined functors");
+                case TypeAttribute::Signed: return "souffle::RamSigned";
+                case TypeAttribute::Unsigned: return "souffle::RamUnsigned";
+                case TypeAttribute::Float: return "souffle::RamFloat";
+                case TypeAttribute::Symbol: return "const char *";
+                case TypeAttribute::Record: fatal("records cannot be used by user-defined functors");
             }
 
             UNREACHABLE_BAD_CASE_ANALYSIS
         };
 
-        format(os, "%s %s(%s);\n", cppTypeDecl(returnType), name, join(map(argsTypes, cppTypeDecl), ","));
+        tfm::format(
+                os, "%s %s(%s);\n", cppTypeDecl(returnType), name, join(map(argsTypes, cppTypeDecl), ","));
     }
     os << "}\n";
     os << "\n";

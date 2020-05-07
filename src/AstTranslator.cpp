@@ -15,23 +15,24 @@
  ***********************************************************************/
 
 #include "AstTranslator.h"
-#include "AggregateOp.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
+#include "AstAttribute.h"
 #include "AstClause.h"
-#include "AstFunctorDeclaration.h"
 #include "AstIO.h"
 #include "AstLiteral.h"
 #include "AstNode.h"
 #include "AstProgram.h"
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
-#include "AstTypeAnalysis.h"
+#include "AstType.h"
 #include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "AuxArityAnalysis.h"
 #include "BinaryConstraintOps.h"
 #include "DebugReport.h"
+#include "FunctorOps.h"
 #include "Global.h"
 #include "LogStatement.h"
 #include "PrecedenceGraph.h"
@@ -43,23 +44,25 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
-#include "RecordTable.h"
+#include "RamUtils.h"
+#include "RelationTag.h"
 #include "SrcLocation.h"
 #include "TypeSystem.h"
-#include "Util.h"
 #include "json11.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
 #include <algorithm>
 #include <cassert>
 #include <chrono>
 #include <cstddef>
-#include <fstream>
-#include <functional>
-#include <iostream>
 #include <map>
 #include <memory>
 #include <optional>
 #include <set>
-#include <typeinfo>
+#include <sstream>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -68,7 +71,6 @@ namespace souffle {
 using json11::Json;
 
 class ErrorReport;
-class SymbolTable;
 
 /** append statement to a list of statements */
 inline void appendStmt(
@@ -865,16 +867,11 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
 
             auto func_op = [&]() -> RamNestedIntrinsicOp {
                 switch (func->getFunction()) {
-                    case FunctorOp::RANGE:
-                        return RamNestedIntrinsicOp::RANGE;
-                    case FunctorOp::URANGE:
-                        return RamNestedIntrinsicOp::URANGE;
-                    case FunctorOp::FRANGE:
-                        return RamNestedIntrinsicOp::FRANGE;
+                    case FunctorOp::RANGE: return RamNestedIntrinsicOp::RANGE;
+                    case FunctorOp::URANGE: return RamNestedIntrinsicOp::URANGE;
+                    case FunctorOp::FRANGE: return RamNestedIntrinsicOp::FRANGE;
 
-                    default:
-                        assert(isFunctorMultiResult(func->getFunction()));
-                        abort();
+                    default: assert(isFunctorMultiResult(func->getFunction())); abort();
                 }
             };
 
@@ -967,12 +964,9 @@ std::unique_ptr<RamExpression> AstTranslator::translateConstant(AstConstant cons
 
     if (auto* const c_num = dynamic_cast<const AstNumericConstant*>(&c)) {
         switch (*c_num->getType()) {
-            case AstNumericConstant::Type::Int:
-                return std::make_unique<RamSignedConstant>(rawConstant);
-            case AstNumericConstant::Type::Uint:
-                return std::make_unique<RamUnsignedConstant>(rawConstant);
-            case AstNumericConstant::Type::Float:
-                return std::make_unique<RamFloatConstant>(rawConstant);
+            case AstNumericConstant::Type::Int: return std::make_unique<RamSignedConstant>(rawConstant);
+            case AstNumericConstant::Type::Uint: return std::make_unique<RamUnsignedConstant>(rawConstant);
+            case AstNumericConstant::Type::Float: return std::make_unique<RamFloatConstant>(rawConstant);
         }
     }
 

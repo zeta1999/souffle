@@ -14,12 +14,28 @@
  *
  ***********************************************************************/
 
-#include "Brie.h"
-#include "test.h"
-#include <cstring>
-#include <random>
+#include "test/test.h"
 
-using namespace souffle;
+#include "Brie.h"
+#include "CompiledTuple.h"
+#include "RamTypes.h"
+#include "utility/ContainerUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
+#include <algorithm>
+#include <bitset>
+#include <cstdint>
+#include <cstdlib>
+#include <iostream>
+#include <limits>
+#include <random>
+#include <set>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace souffle {
 
 TEST(SparseArray, Basic) {
     SparseArray<int> map;
@@ -716,7 +732,9 @@ namespace {
 template <typename Iter>
 int card(const range<Iter>& r) {
     int res = 0;
-    for (auto it = r.begin(); it != r.end(); ++it) res++;
+    for (auto it = r.begin(); it != r.end(); ++it) {
+        res++;
+    }
     return res;
 }
 
@@ -1553,8 +1571,8 @@ TEST(Trie, Merge_Stress) {
     for (int i = 0; i < M; i++) {
         Trie<2> b;
         for (int i = 0; i < N; i++) {
-            RamDomain x = rand() % (N / 2);
-            RamDomain y = rand() % (N / 2);
+            RamDomain x = rand(N / 2);
+            RamDomain y = rand(N / 2);
             if (!a.contains(x, y)) {
                 b.insert(x, y);
                 ref.insert(entry_t({{x, y}}));
@@ -1735,3 +1753,5 @@ TEST(Trie, Parallel) {
         EXPECT_EQ(should, is);
     }
 }
+
+}  // namespace souffle

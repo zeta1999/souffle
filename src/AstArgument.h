@@ -21,13 +21,16 @@
 #include "AggregateOp.h"
 #include "AstAbstract.h"
 #include "AstNode.h"
-#include "AstType.h"
+#include "AstQualifiedName.h"
 #include "FunctorOps.h"
-#include "SymbolTable.h"
-#include "Util.h"
+#include "RamTypes.h"
+#include "SrcLocation.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <initializer_list>
 #include <memory>
 #include <optional>
 #include <ostream>
@@ -269,7 +272,9 @@ private:
     static VecOwn<AstArgument> asVec(Operands... ops) {
         Own<AstArgument> ary[] = {std::move(ops)...};
         VecOwn<AstArgument> xs;
-        for (auto&& x : ary) xs.push_back(std::move(x));
+        for (auto&& x : ary) {
+            xs.push_back(std::move(x));
+        }
         return xs;
     }
 };

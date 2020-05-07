@@ -18,10 +18,15 @@
 #include "RecordTable.h"
 #include "SerialisationStream.h"
 #include "SymbolTable.h"
-#include "Util.h"
 #include "json11.h"
+#include "utility/MiscUtil.h"
+#include "utility/StringUtil.h"
 #include <cctype>
+#include <cstddef>
+#include <map>
 #include <memory>
+#include <ostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -89,23 +94,27 @@ protected:
             }
             consumeWhiteSpace(source, pos);
             switch (recordType[0]) {
-                case 's':
+                case 's': {
                     recordValues[i] = readStringInRecord(source, pos, &consumed);
                     break;
-                case 'i':
+                }
+                case 'i': {
                     recordValues[i] = RamSignedFromString(source.substr(pos), &consumed);
                     break;
-                case 'u':
+                }
+                case 'u': {
                     recordValues[i] = ramBitCast(RamUnsignedFromString(source.substr(pos), &consumed));
                     break;
-                case 'f':
+                }
+                case 'f': {
                     recordValues[i] = ramBitCast(RamFloatFromString(source.substr(pos), &consumed));
                     break;
-                case 'r':
+                }
+                case 'r': {
                     recordValues[i] = readRecord(source, recordType, pos, &consumed);
                     break;
-                default:
-                    fatal("Invalid type attribute");
+                }
+                default: fatal("Invalid type attribute");
             }
             pos += consumed;
         }

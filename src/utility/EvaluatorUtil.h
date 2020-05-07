@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include "CompiledTuple.h"
-#include "RamTypes.h"
-#include "Util.h"
+#include "../CompiledTuple.h"
+#include "../RamTypes.h"
 
 namespace souffle::evaluator {
 
@@ -26,10 +25,15 @@ template <typename A, typename F /* Tuple<RamDomain,1> -> void */>
 void runRange(A from, A to, A step, F&& go) {
 #define GO(x) go(Tuple<RamDomain, 1>{ramBitCast(x)})
     if (0 < step) {
-        for (auto x = from; x < to; x += step) GO(x);
+        for (auto x = from; x < to; x += step) {
+            GO(x);
+        }
     } else if (step < 0) {
-        for (auto x = from; to < x; x += step) GO(x);
-    } else if (from != to) {  // `step = 0` edge case, only if non-empty range
+        for (auto x = from; to < x; x += step) {
+            GO(x);
+        }
+    } else if (from != to) {
+        // `step = 0` edge case, only if non-empty range
         GO(from);
     }
 #undef GO

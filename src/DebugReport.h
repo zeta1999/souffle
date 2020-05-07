@@ -15,15 +15,10 @@
  ***********************************************************************/
 #pragma once
 
-#include "Global.h"
-
-#include <fstream>
-#include <memory>
 #include <ostream>
-#include <set>
-#include <sstream>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -93,7 +88,7 @@ public:
         buf.emplace_back(std::move(section));
     }
 
-    void addSection(std::string id, std::string title, std::string code);
+    void addSection(std::string id, std::string title, std::string_view code);
 
     void startSection() {
         currentSubsections.emplace();

@@ -14,22 +14,26 @@
 
 #pragma once
 
-#include "ParallelUtils.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
-#include "Util.h"
 #include "WriteStream.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/ParallelUtil.h"
 #ifdef USE_LIBZ
 #include "gzfstream.h"
 #endif
 
-#include <cassert>
-#include <fstream>
-#include <memory>
+#include <cstddef>
+#include <iostream>
+#include <map>
 #include <ostream>
 #include <string>
+#include <vector>
 
 namespace souffle {
+
+class RecordTable;
 
 class WriteStreamCSV : public WriteStream {
 protected:
@@ -53,23 +57,12 @@ protected:
 
     void writeNextTupleElement(std::ostream& destination, const std::string& type, RamDomain value) {
         switch (type[0]) {
-            case 's':
-                destination << symbolTable.unsafeResolve(value);
-                break;
-            case 'i':
-                destination << value;
-                break;
-            case 'u':
-                destination << ramBitCast<RamUnsigned>(value);
-                break;
-            case 'f':
-                destination << ramBitCast<RamFloat>(value);
-                break;
-            case 'r':
-                outputRecord(destination, value, type);
-                break;
-            default:
-                fatal("unsupported type attribute: `%c`", type[0]);
+            case 's': destination << symbolTable.unsafeResolve(value); break;
+            case 'i': destination << value; break;
+            case 'u': destination << ramBitCast<RamUnsigned>(value); break;
+            case 'f': destination << ramBitCast<RamFloat>(value); break;
+            case 'r': outputRecord(destination, value, type); break;
+            default: fatal("unsupported type attribute: `%c`", type[0]);
         }
     }
 };

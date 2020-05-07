@@ -23,8 +23,9 @@
 #include "AstType.h"
 #include "ComponentLookupAnalysis.h"
 #include "ErrorReport.h"
+#include "RelationTag.h"
 #include "SrcLocation.h"
-#include "Util.h"
+#include "utility/StringUtil.h"
 #include <functional>
 #include <map>
 #include <set>

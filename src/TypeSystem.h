@@ -16,12 +16,17 @@
 
 #pragma once
 
-#include "AstType.h"
+#include "AstQualifiedName.h"
 #include "IterUtils.h"
-#include "Util.h"
+#include "RamTypes.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
 #include <cassert>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>
@@ -366,16 +371,11 @@ public:
 
     const Type& getConstantType(TypeAttribute type) const {
         switch (type) {
-            case TypeAttribute::Signed:
-                return getType("__numberConstant");
-            case TypeAttribute::Unsigned:
-                return getType("__unsignedConstant");
-            case TypeAttribute::Float:
-                return getType("__floatConstant");
-            case TypeAttribute::Symbol:
-                return getType("__symbolConstant");
-            case TypeAttribute::Record:
-                break;
+            case TypeAttribute::Signed: return getType("__numberConstant");
+            case TypeAttribute::Unsigned: return getType("__unsignedConstant");
+            case TypeAttribute::Float: return getType("__floatConstant");
+            case TypeAttribute::Symbol: return getType("__symbolConstant");
+            case TypeAttribute::Record: break;
         }
 
         fatal("There is no constant record type");

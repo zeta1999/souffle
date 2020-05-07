@@ -18,18 +18,28 @@
 
 #include "BinaryConstraintOps.h"
 #include "ExplainProvenance.h"
-#include "Util.h"
-
+#include "ExplainTree.h"
+#include "RamTypes.h"
+#include "SouffleInterface.h"
+#include "SymbolTable.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
 #include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <cstdio>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <regex>
 #include <sstream>
 #include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
 #include <vector>
-
-#include <cstdio>
 
 namespace souffle {
 
@@ -700,8 +710,7 @@ public:
                         }
                         rd = ramBitCast(RamUnsignedFromString(rel.second[j]));
                         break;
-                    default:
-                        continue;
+                    default: continue;
                 }
 
                 constConstraints.push_back(std::make_pair(std::make_pair(idx, j), rd));
@@ -867,20 +876,11 @@ private:
 
                     solution << var.second.getSymbol() << " = ";
                     switch (var.second.getType()) {
-                        case 'i':
-                            solution << ramBitCast<RamSigned>(raw);
-                            break;
-                        case 'f':
-                            solution << ramBitCast<RamFloat>(raw);
-                            break;
-                        case 'u':
-                            solution << ramBitCast<RamUnsigned>(raw);
-                            break;
-                        case 's':
-                            solution << prog.getSymbolTable().resolve(raw);
-                            break;
-                        default:
-                            fatal("invalid type: `%c`", var.second.getType());
+                        case 'i': solution << ramBitCast<RamSigned>(raw); break;
+                        case 'f': solution << ramBitCast<RamFloat>(raw); break;
+                        case 'u': solution << ramBitCast<RamUnsigned>(raw); break;
+                        case 's': solution << prog.getSymbolTable().resolve(raw); break;
+                        default: fatal("invalid type: `%c`", var.second.getType());
                     }
 
                     auto sep = ++c < nameToEquivalence.size() ? ", " : " ";

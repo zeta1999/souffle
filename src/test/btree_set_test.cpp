@@ -14,19 +14,28 @@
  *
  ***********************************************************************/
 
-#include "BTree.h"
-#include "test.h"
+#include "test/test.h"
 
+#include "BTree.h"
+#include "utility/ContainerUtil.h"
+#include "utility/StreamUtil.h"
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <functional>
 #include <iomanip>
 #include <iostream>
+#include <memory>
 #include <random>
 #include <set>
+#include <string>
+#include <system_error>
 #include <tuple>
 #include <unordered_set>
 #include <vector>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 namespace std {
 
@@ -46,9 +55,7 @@ std::ostream& operator<<(std::ostream& out, const tuple<A, B>& t) {
 }
 }  // namespace std
 
-namespace souffle {
-
-namespace test {
+namespace souffle::test {
 
 TEST(BTreeSet, Basic) {
     const bool DEBUG = false;
@@ -543,7 +550,9 @@ TEST(BTreeSet, ChunkSplitStress) {
         // fill tree
         test_set t;
 
-        for (int x : data) t.insert(x);
+        for (int x : data) {
+            t.insert(x);
+        }
 
         for (int j = 1; j < 100; j++) {
             auto chunks = t.getChunks(j);
@@ -857,5 +866,4 @@ TEST(BTreeSet, ParallelScaling) {
 }
 
 #endif
-}  // namespace test
-}  // end namespace souffle
+}  // namespace souffle::test

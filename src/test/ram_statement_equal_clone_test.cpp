@@ -14,11 +14,22 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
+#include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
+#include "RamCondition.h"
+#include "RamExpression.h"
 #include "RamOperation.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
-
-#include "test.h"
+#include "RelationTag.h"
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

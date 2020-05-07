@@ -16,9 +16,8 @@
 
 #pragma once
 
-#include "RamStatement.h"
-#include "RamTypes.h"
 #include "RecordTable.h"
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -31,6 +30,7 @@ class RamOperation;
 class RamTranslationUnit;
 class SynthesiserRelation;
 class RamRelation;
+class RamStatement;
 
 /**
  * A RAM synthesiser: synthesises a C++ program from a RAM program.
@@ -70,9 +70,6 @@ protected:
 
     /** Get relation struct definition */
     void generateRelationTypeStruct(std::ostream& out, std::unique_ptr<SynthesiserRelation> relationType);
-
-    /* Convert SearchColums to a template index */
-    std::string toIndex(SearchSignature key);
 
     /** Get referenced relations */
     std::set<const RamRelation*> getReferencedRelations(const RamOperation& op);

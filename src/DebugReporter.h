@@ -16,10 +16,9 @@
 #pragma once
 
 #include "AstTransformer.h"
-#include "DebugReport.h"
-#include "Util.h"
-
+#include "utility/FileUtil.h"
 #include <memory>
+#include <ostream>
 #include <set>
 #include <string>
 #include <utility>

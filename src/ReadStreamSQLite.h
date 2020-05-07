@@ -16,17 +16,21 @@
 
 #include "RamTypes.h"
 #include "ReadStream.h"
-#include "RecordTable.h"
 #include "SymbolTable.h"
+#include "utility/MiscUtil.h"
+#include "utility/StringUtil.h"
+#include <cassert>
+#include <cstdint>
 #include <fstream>
+#include <map>
 #include <memory>
-#include <sstream>
 #include <stdexcept>
 #include <string>
-
+#include <vector>
 #include <sqlite3.h>
 
 namespace souffle {
+class RecordTable;
 
 class ReadStreamSQLite : public ReadStream {
 public:
@@ -69,17 +73,12 @@ protected:
             try {
                 auto&& ty = typeAttributes.at(column);
                 switch (ty[0]) {
-                    case 's':
-                        tuple[column] = symbolTable.unsafeLookup(element);
-                        break;
+                    case 's': tuple[column] = symbolTable.unsafeLookup(element); break;
                     case 'i':
                     case 'u':
                     case 'f':
-                    case 'r':
-                        tuple[column] = RamSignedFromString(element);
-                        break;
-                    default:
-                        fatal("invalid type attribute: `%c`", ty[0]);
+                    case 'r': tuple[column] = RamSignedFromString(element); break;
+                    default: fatal("invalid type attribute: `%c`", ty[0]);
                 }
             } catch (...) {
                 std::stringstream errorMessage;

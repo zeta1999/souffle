@@ -19,11 +19,13 @@
 #include "SerialisationStream.h"
 #include "SymbolTable.h"
 #include "json11.h"
-
+#include "utility/MiscUtil.h"
 #include <cassert>
+#include <cstddef>
 #include <map>
+#include <memory>
+#include <ostream>
 #include <string>
-#include <vector>
 
 namespace souffle {
 
@@ -102,23 +104,12 @@ protected:
             const RamDomain recordValue = tuplePtr[i];
 
             switch (recordType[0]) {
-                case 'i':
-                    destination << recordValue;
-                    break;
-                case 'f':
-                    destination << ramBitCast<RamFloat>(recordValue);
-                    break;
-                case 'u':
-                    destination << ramBitCast<RamUnsigned>(recordValue);
-                    break;
-                case 's':
-                    destination << symbolTable.unsafeResolve(recordValue);
-                    break;
-                case 'r':
-                    outputRecord(destination, recordValue, recordType);
-                    break;
-                default:
-                    fatal("Unsupported type attribute: `%c`", recordType[0]);
+                case 'i': destination << recordValue; break;
+                case 'f': destination << ramBitCast<RamFloat>(recordValue); break;
+                case 'u': destination << ramBitCast<RamUnsigned>(recordValue); break;
+                case 's': destination << symbolTable.unsafeResolve(recordValue); break;
+                case 'r': outputRecord(destination, recordValue, recordType); break;
+                default: fatal("Unsupported type attribute: `%c`", recordType[0]);
             }
         }
         destination << "]";

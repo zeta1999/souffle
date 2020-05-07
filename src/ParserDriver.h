@@ -16,11 +16,17 @@
 
 #pragma once
 
+#include "AstQualifiedName.h"
+#include "AstTranslationUnit.h"
+#include "RamTypes.h"
+#include "RelationTag.h"
 #include "SrcLocation.h"
 #include "parser.hh"
 #include <cstdio>
 #include <memory>
+#include <set>
 #include <string>
+#include <vector>
 
 namespace souffle {
 
@@ -32,7 +38,6 @@ class AstPragma;
 class AstRelation;
 class AstIO;
 class AstSubsetType;
-class AstTranslationUnit;
 class AstType;
 class DebugReport;
 class ErrorReport;

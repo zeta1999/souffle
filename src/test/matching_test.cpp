@@ -14,20 +14,15 @@
  *
  ***********************************************************************/
 
-#include "../RamIndexAnalysis.h"
-#include "../RamRelation.h"
-#include "test.h"
+#include "test/test.h"
 
-#include <cmath>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <limits>
-#include <random>
-#include <sstream>
+#include "RamIndexAnalysis.h"
+#include <cstddef>
+#include <cstdint>
+#include <set>
+#include <string>
 
-using namespace std;
-using namespace souffle;
+namespace souffle {
 
 class TestAutoIndex : public MinIndexSelection {
 public:
@@ -38,26 +33,30 @@ public:
     }
 };
 
-using Nodes = set<SearchSignature>;
+using Nodes = std::set<SearchSignature>;
+
+SearchSignature setBits(size_t arity, uint64_t mask) {
+    SearchSignature search(arity);
+    for (size_t i = 0; i < arity; ++i) {
+        if (mask % 2) {
+            search.set(i, AttributeConstraint::Equal);
+        }
+        mask /= 2;
+    }
+    return search;
+}
 
 TEST(Matching, StaticTest_1) {
     TestAutoIndex order;
     Nodes nodes;
+    size_t arity = 5;
 
-    order.addSearch(31);
-    nodes.insert(31);
-    order.addSearch(23);
-    nodes.insert(23);
-    order.addSearch(15);
-    nodes.insert(15);
-    order.addSearch(7);
-    nodes.insert(7);
-    order.addSearch(5);
-    nodes.insert(5);
-    order.addSearch(3);
-    nodes.insert(3);
-    order.addSearch(1);
-    nodes.insert(1);
+    uint64_t patterns[] = {1, 3, 5, 7, 15, 23, 31};
+    for (auto pattern : patterns) {
+        SearchSignature search = setBits(arity, pattern);
+        order.addSearch(search);
+        nodes.insert(search);
+    }
 
     order.solve();
     int num = order.getNumMatchings();
@@ -69,29 +68,65 @@ TEST(Matching, StaticTest_2) {
     TestAutoIndex order;
     Nodes nodes;
 
-    order.addSearch(121);
-    nodes.insert(121);
-    order.addSearch(104);
-    nodes.insert(104);
-    order.addSearch(53);
-    nodes.insert(53);
-    order.addSearch(49);
-    nodes.insert(49);
-    order.addSearch(39);
-    nodes.insert(39);
-    order.addSearch(33);
-    nodes.insert(33);
-    order.addSearch(32);
-    nodes.insert(32);
-    order.addSearch(23);
-    nodes.insert(23);
-    order.addSearch(11);
-    nodes.insert(11);
-    order.addSearch(7);
-    nodes.insert(7);
+    size_t arity = 7;
+
+    uint64_t patterns[] = {7, 11, 23, 32, 33, 39, 49, 53, 104, 121};
+    for (auto pattern : patterns) {
+        SearchSignature search = setBits(arity, pattern);
+        order.addSearch(search);
+        nodes.insert(search);
+    }
 
     order.solve();
     int num = order.getNumMatchings();
 
     EXPECT_EQ(num, 5);
 }
+
+TEST(Matching, TestOver64BitSignature) {
+    TestAutoIndex order;
+    Nodes nodes;
+
+    size_t arity = 100;
+    SearchSignature first(arity);
+    first.set(99, AttributeConstraint::Equal);
+    first.set(75, AttributeConstraint::Equal);
+    first.set(50, AttributeConstraint::Equal);
+    first.set(25, AttributeConstraint::Equal);
+    first.set(0, AttributeConstraint::Equal);
+
+    SearchSignature second(arity);
+    second.set(99, AttributeConstraint::Equal);
+    second.set(75, AttributeConstraint::Equal);
+    second.set(50, AttributeConstraint::Equal);
+
+    SearchSignature third(arity);
+    third.set(99, AttributeConstraint::Equal);
+    third.set(75, AttributeConstraint::Equal);
+
+    SearchSignature fourth(arity);
+    fourth.set(99, AttributeConstraint::Equal);
+
+    SearchSignature fifth(arity);
+    fifth.set(25, AttributeConstraint::Equal);
+    fifth.set(0, AttributeConstraint::Equal);
+
+    nodes.insert(first);
+    nodes.insert(second);
+    nodes.insert(third);
+    nodes.insert(fourth);
+    nodes.insert(fifth);
+
+    order.addSearch(first);
+    order.addSearch(second);
+    order.addSearch(third);
+    order.addSearch(fourth);
+    order.addSearch(fifth);
+
+    order.solve();
+    int num = order.getNumMatchings();
+
+    EXPECT_EQ(num, 3);
+}
+
+}  // namespace souffle

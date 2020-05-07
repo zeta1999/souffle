@@ -16,9 +16,11 @@
 
 #pragma once
 
+#include <functional>
 #include <map>
 #include <ostream>
 #include <set>
+#include <utility>
 
 namespace souffle {
 

@@ -14,18 +14,35 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
+#include "AstAbstract.h"
+#include "AstArgument.h"
+#include "AstClause.h"
 #include "AstGroundAnalysis.h"
+#include "AstLiteral.h"
+#include "AstNode.h"
+#include "AstProgram.h"
+#include "AstQualifiedName.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
-#include "AstTypeAnalysis.h"
-#include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
-#include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
+#include "DebugReport.h"
+#include "ErrorReport.h"
 #include "ParserDriver.h"
-#include "test.h"
+#include "utility/StringUtil.h"
+#include <algorithm>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace souffle::test {
+namespace souffle {
+class AstRelation;
+
+namespace test {
 
 TEST(AstUtils, Grounded) {
     // create an example clause:
@@ -317,4 +334,5 @@ TEST(AstUtils, ReorderClauseAtoms) {
             toString(*reorderedClause1));
 }
 
-}  // end namespace souffle::test
+}  // namespace test
+}  // namespace souffle

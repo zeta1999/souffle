@@ -15,15 +15,14 @@
  ***********************************************************************/
 #pragma once
 
-#include "BTree.h"
 #include "CompiledTuple.h"
-#include "ParallelUtils.h"
 #include "RamTypes.h"
-#include "Util.h"
-
 #include <array>
-#include <deque>
-#include <map>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+#include <iosfwd>
+#include <iterator>
 #include <memory>
 #include <utility>
 #include <vector>

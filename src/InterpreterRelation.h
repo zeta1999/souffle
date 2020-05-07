@@ -17,9 +17,19 @@
 #pragma once
 
 #include "InterpreterIndex.h"
-#include "RamIndexAnalysis.h"
+#include "RamTypes.h"
+#include <cstdint>
+#include <deque>
+#include <iterator>
+#include <memory>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace souffle {
+class MinIndexSelection;
+
 /**
  * A relation, composed of a collection of indexes.
  */

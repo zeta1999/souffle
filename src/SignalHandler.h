@@ -17,8 +17,9 @@
 #pragma once
 
 #include <atomic>
-#include <cassert>
 #include <csignal>
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <mutex>

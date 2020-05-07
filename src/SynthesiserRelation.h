@@ -10,9 +10,10 @@
 
 #include "RamIndexAnalysis.h"
 #include "RamRelation.h"
-
+#include <cstddef>
 #include <memory>
 #include <ostream>
+#include <set>
 #include <string>
 
 namespace souffle {

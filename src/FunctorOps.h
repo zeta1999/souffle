@@ -17,11 +17,10 @@
 #pragma once
 
 #include "RamTypes.h"
-#include "Util.h"
-
+#include "utility/MiscUtil.h"
 #include <cassert>
 #include <cstdlib>
-#include <iostream>
+#include <ostream>
 
 namespace souffle {
 

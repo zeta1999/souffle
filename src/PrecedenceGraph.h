@@ -20,6 +20,7 @@
 
 #include "AstAnalysis.h"
 #include "AstIOTypeAnalysis.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
 #include "GraphUtils.h"
 #include <algorithm>
@@ -30,6 +31,7 @@
 #include <map>
 #include <set>
 #include <stack>
+#include <string>
 #include <utility>
 #include <vector>
 

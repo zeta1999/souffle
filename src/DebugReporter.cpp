@@ -15,16 +15,12 @@
  ***********************************************************************/
 
 #include "DebugReporter.h"
+#include "AstProgram.h"
 #include "AstTranslationUnit.h"
-#include "AstTypeAnalysis.h"
-#include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "DebugReport.h"
-#include "PrecedenceGraph.h"
 #include <chrono>
 #include <cstdio>
-#include <fstream>
-#include <sstream>
 #include <utility>
 
 namespace souffle {

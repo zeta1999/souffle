@@ -14,9 +14,11 @@
  *
  ***********************************************************************/
 
-#include "test.h"
+#include "test/test.h"
 
 #include "CompiledIndexUtils.h"
+#include <iosfwd>
+#include <string>
 
 namespace souffle {
 namespace ram {

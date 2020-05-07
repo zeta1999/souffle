@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AggregateOp.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
@@ -28,7 +29,9 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
-#include "Util.h"
+#include "RelationTag.h"
+#include "utility/MiscUtil.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <memory>

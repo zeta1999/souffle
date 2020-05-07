@@ -15,6 +15,8 @@
  ***********************************************************************/
 
 #include "ComponentInstantiationTransformer.h"
+#include "AstArgument.h"
+#include "AstAttribute.h"
 #include "AstClause.h"
 #include "AstComponent.h"
 #include "AstIO.h"
@@ -23,12 +25,18 @@
 #include "AstQualifiedName.h"
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
+#include "AstType.h"
 #include "AstVisitor.h"
 #include "ComponentLookupAnalysis.h"
 #include "ErrorReport.h"
-#include "Util.h"
+#include "utility/StringUtil.h"
 #include <algorithm>
+#include <cstddef>
+#include <map>
 #include <memory>
+#include <set>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

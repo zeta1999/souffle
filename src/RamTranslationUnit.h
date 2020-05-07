@@ -18,18 +18,20 @@
 #pragma once
 
 #include "DebugReport.h"
-#include "ErrorReport.h"
+#include "Global.h"
 #include "RamAnalysis.h"
 #include "RamProgram.h"
-#include "RecordTable.h"
 #include "SymbolTable.h"
-
+#include <cassert>
+#include <iosfwd>
 #include <map>
 #include <memory>
-#include <mutex>
+#include <set>
 #include <string>
+#include <utility>
 
 namespace souffle {
+class ErrorReport;
 
 /**
  * @class RamTranslationUnit

@@ -18,8 +18,7 @@
 #include <string>
 
 namespace souffle {
-
-class AstComponent;
+class AstTranslationUnit;
 
 class ComponentInstantiationTransformer : public AstTransformer {
 public:

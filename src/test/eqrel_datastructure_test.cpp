@@ -15,13 +15,17 @@
  *
  ***********************************************************************/
 
-#include "test.h"
+#include "test/test.h"
 
-#include <algorithm>
-#include <iomanip>
+#include "BTree.h"
+#include "LambdaBTree.h"
+#include "utility/StreamUtil.h"
+#include <atomic>
+#include <cstddef>
+#include <functional>
 #include <iostream>
-#include <set>
-#include <thread>
+#include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 

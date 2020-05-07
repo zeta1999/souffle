@@ -14,9 +14,11 @@
  *
  ***********************************************************************/
 
-#include "RamExpression.h"
+#include "test/test.h"
 
-#include "test.h"
+#include "RamRelation.h"
+#include "RelationTag.h"
+#include <string>
 
 namespace souffle {
 

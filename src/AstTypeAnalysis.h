@@ -17,18 +17,17 @@
 #pragma once
 
 #include "AstAnalysis.h"
+#include "AstClause.h"
 #include "TypeSystem.h"
-#include <cassert>
 #include <map>
 #include <memory>
 #include <sstream>
-#include <utility>
+#include <string>
 #include <vector>
 
 namespace souffle {
 
 class AstArgument;
-class AstClause;
 class AstProgram;
 class AstTranslationUnit;
 

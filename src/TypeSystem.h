@@ -16,12 +16,17 @@
 
 #pragma once
 
-#include "AstType.h"
+#include "AstQualifiedName.h"
 #include "IterUtils.h"
-#include "Util.h"
+#include "RamTypes.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
 #include <cassert>
 #include <iostream>
 #include <map>
+#include <memory>
 #include <set>
 #include <string>
 #include <utility>

@@ -17,16 +17,12 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamOperation.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
-#include "RamTypes.h"
-#include "Util.h"
+#include "utility/MiscUtil.h"
 #include <cassert>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <iosfwd>
-#include <limits>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
@@ -39,6 +35,11 @@
 
 namespace souffle {
 
+class RamAbstractExistenceCheck;
+class RamExistenceCheck;
+class RamIndexOperation;
+class RamProvenanceExistenceCheck;
+class RamRelation;
 class RamTranslationUnit;
 
 enum class AttributeConstraint { None, Equal, Inequal };

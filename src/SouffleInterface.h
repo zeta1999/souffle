@@ -18,17 +18,18 @@
 
 #include "RamTypes.h"
 #include "SymbolTable.h"
-
-#include <initializer_list>
-#include <iostream>
-#include <iterator>
-#include <map>
-#include <string>
-#include <utility>
-#include <vector>
-
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

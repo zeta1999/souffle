@@ -16,25 +16,31 @@
 
 #pragma once
 
+#include "ExplainProvenance.h"
 #include "ExplainProvenanceImpl.h"
-
+#include "ExplainTree.h"
+#include <algorithm>
 #include <csignal>
+#include <cstdio>
+#include <fstream>
 #include <iostream>
+#include <map>
+#include <memory>
 #include <regex>
 #include <string>
+#include <utility>
+#include <vector>
 #include <unistd.h>
 
 #ifdef USE_NCURSES
 #include <ncurses.h>
 #endif
 
-#include "SouffleInterface.h"
-#include "WriteStreamCSV.h"
-
 #define MAX_TREE_HEIGHT 500
 #define MAX_TREE_WIDTH 500
 
 namespace souffle {
+class SouffleProgram;
 
 class ExplainConfig {
 public:

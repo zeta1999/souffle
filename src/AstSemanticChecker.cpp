@@ -751,9 +751,18 @@ void AstSemanticCheckerImpl::checkMultiRule(std::set<const AstClause*> multiRule
     std::map<std::string, int> var_count;
     std::map<std::string, const AstVariable*> var_pos;
 
-    // count variable occurrences
+    // count variable occurrences in a body only once
+    // TODO: for negation / disjunction this is not quite
+    //       right. We would more semantic information for
+    //       this.
+    for (auto literal : (*multiRule.begin())->getBodyLiterals()) {
+        visitDepthFirst(*literal, [&](const AstVariable& var) {
+            var_count[var.getName()]++;
+            var_pos[var.getName()] = &var;
+        });
+    }
     for (auto clause : multiRule) {
-        visitDepthFirst(*clause, [&](const AstVariable& var) {
+        visitDepthFirst(*(clause->getHead()), [&](const AstVariable& var) {
             var_count[var.getName()]++;
             var_pos[var.getName()] = &var;
         });
@@ -764,7 +773,7 @@ void AstSemanticCheckerImpl::checkMultiRule(std::set<const AstClause*> multiRule
         int numAppearances = cur.second;
         const auto& varName = cur.first;
         const auto& varLocation = var_pos[varName]->getSrcLoc();
-        if (numAppearances == 1) {
+        if (varName[0] != '_' && numAppearances == 1) {
             report.addWarning("Variable " + varName + " only occurs once", varLocation);
         }
     }

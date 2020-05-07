@@ -813,8 +813,8 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
                                     toString(type.getQualifiedName()),
                     type.getSrcLoc());
         } else if (!isA<AstUnionType>(subt) && !isA<AstSubsetType>(subt)) {
-            report.addError(
-                    tfm::format("Union type %s contains the non-primitive type %s", type.getQualifiedName(), sub),
+            report.addError(tfm::format("Union type %s contains the non-primitive type %s",
+                                    type.getQualifiedName(), sub),
                     type.getSrcLoc());
         }
     }

@@ -15,8 +15,10 @@
  ***********************************************************************/
 
 #include "DebugReport.h"
+#include "Global.h"
+#include <fstream>
 #include <ostream>
-#include <utility>
+#include <sstream>
 #include <vector>
 
 namespace souffle {

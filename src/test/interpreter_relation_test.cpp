@@ -14,14 +14,18 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "InterpreterProgInterface.h"
 #include "InterpreterRelation.h"
+#include "RamIndexAnalysis.h"
 #include "SouffleInterface.h"
-#include "test.h"
+#include "SymbolTable.h"
+#include <iosfwd>
+#include <string>
+#include <utility>
 
-using namespace souffle;
-
-namespace test {
+namespace souffle::test {
 
 TEST(Relation0, Construction) {
     // create a nullary relation
@@ -161,4 +165,4 @@ TEST(IndependentCopying, Iteration) {
     EXPECT_EQ(1, (*it)[0]);
 }
 
-}  // end namespace test
+}  // end namespace souffle::test

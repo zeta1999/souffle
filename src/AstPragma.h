@@ -17,7 +17,7 @@
 #pragma once
 
 #include "AstNode.h"
-#include <cassert>
+#include "SrcLocation.h"
 #include <ostream>
 #include <string>
 #include <utility>

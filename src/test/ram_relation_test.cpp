@@ -14,8 +14,11 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "DebugReport.h"
 #include "ErrorReport.h"
+#include "Global.h"
 #include "InterpreterEngine.h"
 #include "RamExpression.h"
 #include "RamOperation.h"
@@ -23,15 +26,18 @@
 #include "RamRelation.h"
 #include "RamStatement.h"
 #include "RamTranslationUnit.h"
+#include "RamTypes.h"
+#include "RelationTag.h"
 #include "SymbolTable.h"
 #include "json11.h"
-#include "test.h"
-
-#include <fstream>
+#include <algorithm>
+#include <cstddef>
+#include <iostream>
 #include <map>
-#include <random>
+#include <memory>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle::test {

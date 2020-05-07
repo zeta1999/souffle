@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file ParallelUtils.h
+ * @file ParallelUtil.h
  *
  * A set of utilities abstracting from the underlying parallel library.
  * Currently supported APIs: OpenMP and Cilk

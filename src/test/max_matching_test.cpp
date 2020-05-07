@@ -14,27 +14,21 @@
  *
  ***********************************************************************/
 
-#include "../RamIndexAnalysis.h"
-#include "../RamRelation.h"
-#include "test.h"
+#include "test/test.h"
 
-#include <cmath>
-#include <fstream>
-#include <functional>
-#include <iostream>
-#include <limits>
-#include <random>
-#include <sstream>
+#include "RamAnalysis.h"
+#include "RamIndexAnalysis.h"
+#include <set>
+#include <string>
 
-using namespace std;
-using namespace souffle;
+namespace souffle {
 
 class TestMaxMatching : public MaxMatching {
 public:
     TestMaxMatching() : MaxMatching() {}
 };
 
-using Nodes = set<SearchSignature>;
+using Nodes = std::set<SearchSignature>;
 
 TEST(Matching, StaticTest_1) {
     TestMaxMatching match;
@@ -73,3 +67,5 @@ TEST(Matching, StaticTest_2) {
 
     EXPECT_EQ(num, 5);
 }
+
+}  // namespace souffle

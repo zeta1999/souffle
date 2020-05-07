@@ -19,11 +19,13 @@
 #include "SerialisationStream.h"
 #include "SymbolTable.h"
 #include "json11.h"
-
+#include "utility/MiscUtil.h"
 #include <cassert>
+#include <cstddef>
 #include <map>
+#include <memory>
+#include <ostream>
 #include <string>
-#include <vector>
 
 namespace souffle {
 

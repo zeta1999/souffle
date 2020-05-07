@@ -14,9 +14,18 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "AstClause.h"
+#include "AstLiteral.h"
+#include "AstNode.h"
 #include "AstParserUtils.h"
-#include "test.h"
+#include "utility/ContainerUtil.h"
+#include "utility/StringUtil.h"
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

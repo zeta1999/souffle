@@ -14,12 +14,19 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "CompiledTuple.h"
+#include "RamTypes.h"
 #include "RecordTable.h"
-#include "test.h"
 #include <functional>
+#include <iostream>
+#include <limits>
 #include <random>
+#include <string>
 #include <vector>
+
+#include <cstddef>
 
 namespace souffle::test {
 

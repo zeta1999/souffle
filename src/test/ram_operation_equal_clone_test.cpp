@@ -14,11 +14,19 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "AggregateOp.h"
+#include "BinaryConstraintOps.h"
+#include "RamCondition.h"
+#include "RamExpression.h"
 #include "RamOperation.h"
 #include "RamRelation.h"
-
-#include "test.h"
+#include "RelationTag.h"
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace souffle::test {
 

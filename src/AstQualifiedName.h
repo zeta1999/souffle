@@ -18,11 +18,11 @@
 
 #pragma once
 
-#include "Util.h"
-
+#include "utility/StreamUtil.h"
 #include <algorithm>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {

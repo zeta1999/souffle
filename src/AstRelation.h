@@ -18,19 +18,20 @@
 #pragma once
 
 #include "AstAttribute.h"
-#include "AstClause.h"
-#include "AstIO.h"
 #include "AstNode.h"
 #include "AstQualifiedName.h"
-#include "AstType.h"
-#include "Global.h"
 #include "RelationTag.h"
-#include "Util.h"
-
+#include "SrcLocation.h"
+#include "utility/ContainerUtil.h"
+#include "utility/StreamUtil.h"
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <memory>
 #include <ostream>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {

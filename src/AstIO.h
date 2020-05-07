@@ -18,9 +18,13 @@
 
 #include "AstNode.h"
 #include "AstQualifiedName.h"
-
+#include "SrcLocation.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
 #include <map>
+#include <ostream>
 #include <string>
+#include <utility>
 
 namespace souffle {
 

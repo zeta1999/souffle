@@ -16,9 +16,16 @@
 
 #pragma once
 
+#include "RamNode.h"
+#include "RamRelation.h"
 #include "RamStatement.h"
+#include "utility/ContainerUtil.h"
+#include <cassert>
 #include <map>
 #include <memory>
+#include <ostream>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {

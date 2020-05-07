@@ -10,12 +10,15 @@
 #include "Global.h"
 #include "RamIndexAnalysis.h"
 #include "RelationTag.h"
-#include "Util.h"
+#include "utility/StreamUtil.h"
 #include <algorithm>
 #include <cassert>
+#include <iterator>
 #include <map>
 #include <numeric>
 #include <set>
+#include <sstream>
+#include <vector>
 
 namespace souffle {
 

@@ -22,13 +22,17 @@
 #include "RamOperation.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
-
+#include <cstddef>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 
 class RamProgram;
+class RamCondition;
+class RamExpression;
 
 /**
  * @class ExpandFilterTransformer

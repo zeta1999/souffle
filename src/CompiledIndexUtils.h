@@ -17,14 +17,8 @@
 
 #pragma once
 
-#include "CompiledTuple.h"
-#include "Util.h"
-#include <cassert>
-#include <iterator>
+#include <cstddef>
 #include <ostream>
-#include <string>
-#include <type_traits>
-#include <vector>
 
 namespace souffle {
 

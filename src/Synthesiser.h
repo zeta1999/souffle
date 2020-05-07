@@ -16,10 +16,8 @@
 
 #pragma once
 
-#include "RamIndexAnalysis.h"
-#include "RamStatement.h"
-#include "RamTypes.h"
 #include "RecordTable.h"
+#include <cstddef>
 #include <map>
 #include <memory>
 #include <ostream>
@@ -32,6 +30,7 @@ class RamOperation;
 class RamTranslationUnit;
 class SynthesiserRelation;
 class RamRelation;
+class RamStatement;
 
 /**
  * A RAM synthesiser: synthesises a C++ program from a RAM program.

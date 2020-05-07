@@ -178,7 +178,7 @@ public:
 
     void print(std::ostream& out) const override;
 
-private:
+protected:
     friend class TypeEnvironment;
 
     std::vector<std::reference_wrapper<const Type>> fields;

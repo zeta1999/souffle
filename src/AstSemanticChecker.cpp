@@ -80,6 +80,7 @@ private:
     void checkConstant(const AstArgument& argument);
     void checkFact(const AstClause& fact);
     void checkClause(const AstClause& clause);
+    void checkMultiRule(std::set<const AstClause*> multiRule);
     void checkRelationDeclaration(const AstRelation& relation);
     void checkRelation(const AstRelation& relation);
 
@@ -141,6 +142,16 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     }
     for (auto* clause : program.getClauses()) {
         checkClause(*clause);
+    }
+
+    // check multi-rules
+    std::map<SrcLocation, std::set<const AstClause*>> multiRuleMap;
+    for (auto* clause : program.getClauses()) {
+        // collect clauses of a multi rule, i.e., they have the same source locator
+        multiRuleMap[clause->getSrcLoc()].insert(clause);
+    }
+    for (const auto& multiRule : multiRuleMap) {
+        checkMultiRule(multiRule.second);
     }
 
     checkNamespaces();
@@ -690,28 +701,23 @@ void AstSemanticCheckerImpl::checkClause(const AstClause& clause) {
         checkFact(clause);
     }
 
-    // check for use-once variables
+    // check _<var> occurrences
     std::map<std::string, int> var_count;
     std::map<std::string, const AstVariable*> var_pos;
     visitDepthFirst(clause, [&](const AstVariable& var) {
         var_count[var.getName()]++;
         var_pos[var.getName()] = &var;
     });
-
-    // check for variables only occurring once
     for (const auto& cur : var_count) {
         int numAppearances = cur.second;
         const auto& varName = cur.first;
         const auto& varLocation = var_pos[varName]->getSrcLoc();
-
         if (varName[0] == '_') {
             assert(varName.size() > 1 && "named variable should not be a single underscore");
             if (numAppearances > 1) {
                 report.addWarning("Variable " + varName + " marked as singleton but occurs more than once",
                         varLocation);
             }
-        } else if (numAppearances == 1) {
-            report.addWarning("Variable " + varName + " only occurs once", varLocation);
         }
     }
 
@@ -732,11 +738,35 @@ void AstSemanticCheckerImpl::checkClause(const AstClause& clause) {
             }
         }
     }
+
     // check auto-increment
     if (recursiveClauses.recursive(&clause)) {
         visitDepthFirst(clause, [&](const AstCounter& ctr) {
             report.addError("Auto-increment functor in a recursive rule", ctr.getSrcLoc());
         });
+    }
+}
+
+void AstSemanticCheckerImpl::checkMultiRule(std::set<const AstClause*> multiRule) {
+    std::map<std::string, int> var_count;
+    std::map<std::string, const AstVariable*> var_pos;
+
+    // count variable occurrences
+    for (auto clause : multiRule) {
+        visitDepthFirst(*clause, [&](const AstVariable& var) {
+            var_count[var.getName()]++;
+            var_pos[var.getName()] = &var;
+        });
+    }
+
+    // check for variables only occurring once
+    for (const auto& cur : var_count) {
+        int numAppearances = cur.second;
+        const auto& varName = cur.first;
+        const auto& varLocation = var_pos[varName]->getSrcLoc();
+        if (numAppearances == 1) {
+            report.addWarning("Variable " + varName + " only occurs once", varLocation);
+        }
     }
 }
 

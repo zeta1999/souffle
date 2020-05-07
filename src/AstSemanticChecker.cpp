@@ -212,7 +212,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     // all string constants are used as symbols
     visitDepthFirst(nodes, [&](const AstStringConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        if (!isSymbolType(types)) {
+        if (!isOfKind(types, TypeAttribute::Symbol)) {
             report.addError("Symbol constant (type mismatch)", constant.getSrcLoc());
         }
     });
@@ -230,17 +230,17 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
         switch (*constant.getType()) {
             case AstNumericConstant::Type::Int:
-                if (!hasSignedType(types)) {
+                if (!isOfKind(types, TypeAttribute::Signed)) {
                     report.addError("Number constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
             case AstNumericConstant::Type::Uint:
-                if (!hasUnsignedType(types)) {
+                if (!isOfKind(types, TypeAttribute::Unsigned)) {
                     report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
             case AstNumericConstant::Type::Float:
-                if (!hasFloatType(types)) {
+                if (!isOfKind(types, TypeAttribute::Float)) {
                     report.addError("Float constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
@@ -297,7 +297,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
 
-        if (!eqTypeTypeAttribute(fun.getReturnType(), resultType)) {
+        if (!isOfKind(resultType, fun.getReturnType())) {
             switch (fun.getReturnType()) {
                 case TypeAttribute::Signed:
                     report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
@@ -325,7 +325,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
         size_t i = 0;
         for (auto arg : fun.getArguments()) {
-            if (!eqTypeTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
+            if (!isOfKind(typeAnalysis.getTypes(arg), fun.getArgType(i))) {
                 switch (fun.getArgType(i)) {
                     case TypeAttribute::Signed:
                         report.addError("Non-numeric argument for functor", arg->getSrcLoc());
@@ -362,9 +362,8 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
             report.addError("Cannot compare different types", constraint.getSrcLoc());
         } else {
             auto checkTyAttr = [&](AstArgument const& side) {
-                auto opMatchesType = any_of(opRamTypes, [&](auto& ramType) {
-                    return eqTypeTypeAttribute(ramType, typeAnalysis.getTypes(&side));
-                });
+                auto opMatchesType = any_of(opRamTypes,
+                        [&](auto& ramType) { return isOfKind(typeAnalysis.getTypes(&side), ramType); });
 
                 if (!opMatchesType) {
                     std::stringstream ss;
@@ -405,7 +404,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         TypeAttribute opType = getTypeAttributeAggregate(op);
 
         // Check if operation type and return type agree.
-        if (!eqTypeTypeAttribute(opType, aggregatorType)) {
+        if (!isOfKind(aggregatorType, opType)) {
             report.addError("Couldn't assign types to the aggregator", aggregator.getSrcLoc());
         }
     });

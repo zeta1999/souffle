@@ -449,39 +449,6 @@ bool isSubtypeOf(const Type& a, const Type& b);
 std::string getTypeQualifier(const Type& type);
 
 /**
- * Determine if a type analysis' result is equivalent to the given TypeAttribute.
- */
-template <typename T>  // T = Type or T = Typeset
-bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
-    switch (ramType) {
-        case TypeAttribute::Signed:
-            return isNumberType(type);
-        case TypeAttribute::Unsigned:
-            return isUnsignedType(type);
-        case TypeAttribute::Float:
-            return isFloatType(type);
-        case TypeAttribute::Symbol:
-            return isSymbolType(type);
-        case TypeAttribute::Record:
-            return isRecordType(type);
-    }
-    fatal("unhandled `TypeAttribute`");
-}
-
-/**
- * Determines whether the type is numeric.
- */
-template <typename T>  // T = Type or T = Typeset
-inline bool isNumericType(const T& type) {
-    return isFloatType(type) || isNumberType(type) || isUnsignedType(type);
-}
-
-template <typename T>  // T = Type or T = Typeset
-inline bool isOrderableType(const T& type) {
-    return isNumericType(type) || isSymbolType(type);
-}
-
-/**
  * Utility function. Return a root if given the subset type, otherwise simply return the type.
  */
 inline const Type& getRootIfSubsetType(const Type& type) {
@@ -493,69 +460,24 @@ inline const Type& getRootIfSubsetType(const Type& type) {
 }
 
 /**
- * Is any value in the set signed
- **/
-bool hasSignedType(const TypeSet& types);
-
-/**
- * Is any value in the set unsigned
- **/
-bool hasUnsignedType(const TypeSet& types);
-
-/**
- * Is any value in the set float
- **/
-bool hasFloatType(const TypeSet& types);
-
-/**
- * Determines whether the given type is a float type.
+ * Determines whether the given type is a sub-type of the given root type.
  */
-bool isFloatType(const Type& type);
+bool isOfRootType(const Type& type, const Type& root);
 
 /**
- * Determines whether all the types in the given set are float types.
+ * Check if the type is of a kind corresponding to the TypeAttribute.
  */
-bool isFloatType(const TypeSet& s);
+bool isOfKind(const Type& type, TypeAttribute kind);
+bool isOfKind(const TypeSet& typeSet, TypeAttribute kind);
 
-/**
- * Determines whether the given type is a number type.
- */
-bool isNumberType(const Type& type);
+inline bool isNumericType(const TypeSet& type) {
+    return isOfKind(type, TypeAttribute::Signed) || isOfKind(type, TypeAttribute::Unsigned) ||
+           isOfKind(type, TypeAttribute::Float);
+}
 
-/**
- * Determines whether all the types in the given set are number types.
- */
-bool isNumberType(const TypeSet& s);
-
-/**
- * Determines whether the given type is a number type.
- */
-bool isUnsignedType(const Type& type);
-
-/**
- * Determines whether all the types in the given set are number types.
- */
-bool isUnsignedType(const TypeSet& s);
-
-/**
- * Determines whether the given type is a symbol type.
- */
-bool isSymbolType(const Type& type);
-
-/**
- * Determines whether all the types in the given set are symbol types.
- */
-bool isSymbolType(const TypeSet& s);
-
-/**
- * Determines whether the given type is a record type.
- */
-bool isRecordType(const Type& type);
-
-/**
- * Determines whether all the types in the given set are record types.
- */
-bool isRecordType(const TypeSet& s);
+inline bool isOrderableType(const TypeSet& type) {
+    return isNumericType(type) || isOfKind(type, TypeAttribute::Symbol);
+}
 
 // -- Greatest Common Sub Types --------------------------------------
 

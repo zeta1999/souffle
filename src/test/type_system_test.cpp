@@ -51,42 +51,42 @@ TEST(TypeSystem, isNumberType) {
 
     auto& C = env.createType<SubsetType>("C", env.getType("symbol"));
 
-    EXPECT_TRUE(isNumberType(N));
-    EXPECT_TRUE(isNumberType(A));
-    EXPECT_TRUE(isNumberType(B));
-    EXPECT_TRUE(isSymbolType(C));
+    EXPECT_TRUE(isOfKind(N, TypeAttribute::Signed));
+    EXPECT_TRUE(isOfKind(A, TypeAttribute::Signed));
+    EXPECT_TRUE(isOfKind(B, TypeAttribute::Signed));
+    EXPECT_TRUE(isOfKind(C, TypeAttribute::Symbol));
 
-    EXPECT_FALSE(isSymbolType(N));
-    EXPECT_FALSE(isSymbolType(A));
-    EXPECT_FALSE(isSymbolType(B));
-    EXPECT_FALSE(isNumberType(C));
+    EXPECT_FALSE(isOfKind(N, TypeAttribute::Symbol));
+    EXPECT_FALSE(isOfKind(A, TypeAttribute::Symbol));
+    EXPECT_FALSE(isOfKind(B, TypeAttribute::Symbol));
+    EXPECT_FALSE(isOfKind(C, TypeAttribute::Signed));
 
     // check the union type
     {
         auto& U = env.createType<UnionType>("U");
-        EXPECT_TRUE(isNumberType(U));
-        EXPECT_TRUE(isSymbolType(U));
+        EXPECT_TRUE(isOfKind(U, TypeAttribute::Signed));
+        EXPECT_TRUE(isOfKind(U, TypeAttribute::Symbol));
         U.add(A);
-        EXPECT_TRUE(isNumberType(U));
-        EXPECT_FALSE(isSymbolType(U));
+        EXPECT_TRUE(isOfKind(U, TypeAttribute::Signed));
+        EXPECT_FALSE(isOfKind(U, TypeAttribute::Symbol));
         U.add(B);
-        EXPECT_TRUE(isNumberType(U));
-        EXPECT_FALSE(isSymbolType(U));
+        EXPECT_TRUE(isOfKind(U, TypeAttribute::Signed));
+        EXPECT_FALSE(isOfKind(U, TypeAttribute::Symbol));
         U.add(C);
-        EXPECT_FALSE(isNumberType(U));
-        EXPECT_FALSE(isSymbolType(U));
+        EXPECT_FALSE(isOfKind(U, TypeAttribute::Signed));
+        EXPECT_FALSE(isOfKind(U, TypeAttribute::Symbol));
     }
 
     // make type recursive
     {
         auto& U = env.createType<UnionType>("U2");
 
-        EXPECT_TRUE(isNumberType(U));
+        EXPECT_TRUE(isOfKind(U, TypeAttribute::Signed));
         U.add(A);
-        EXPECT_TRUE(isNumberType(U));
+        EXPECT_TRUE(isOfKind(U, TypeAttribute::Signed));
 
         U.add(U);
-        EXPECT_FALSE(isNumberType(U));
+        EXPECT_FALSE(isOfKind(U, TypeAttribute::Signed));
     }
 }
 

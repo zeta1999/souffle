@@ -323,7 +323,7 @@ TypeConstraint isSubtypeOfComponent(
 
             for (const Type& type : recordTypes) {
                 // A type must be either a record type or a subset of a record type
-                if (!isRecordType(getRootIfSubsetType(type))) {
+                if (!isOfKind(type, TypeAttribute::Record)) {
                     continue;
                 }
 

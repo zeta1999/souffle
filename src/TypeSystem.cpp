@@ -86,8 +86,6 @@ Type& TypeEnvironment::getType(const AstQualifiedName& ident) {
     return *types.at(ident);
 }
 
-namespace {
-
 /**
  * A visitor for Types.
  */
@@ -181,7 +179,17 @@ bool isOfRootType(const Type& type, const Type& root) {
     return visitor(root).visit(type);
 }
 
-}  // namespace
+bool isOfKind(const Type& type, TypeAttribute kind) {
+    if (kind == TypeAttribute::Record) {
+        return isA<RecordType>(getRootIfSubsetType(type));
+    }
+    return isOfRootType(type, type.getTypeEnvironment().getConstantType(kind));
+}
+
+bool isOfKind(const TypeSet& typeSet, TypeAttribute kind) {
+    return !typeSet.empty() && !typeSet.isAll() &&
+           all_of(typeSet, [&](const Type& type) { return isOfKind(type, kind); });
+}
 
 /* generate unique type qualifier string for a type */
 std::string getTypeQualifier(const Type& type) {
@@ -223,15 +231,15 @@ std::string getTypeQualifier(const Type& type) {
         std::string visitType(const Type& type) const override {
             std::string str;
 
-            if (isNumberType(type)) {
+            if (isOfKind(type, TypeAttribute::Signed)) {
                 str.append("i");
-            } else if (isUnsignedType(type)) {
+            } else if (isOfKind(type, TypeAttribute::Unsigned)) {
                 str.append("u");
-            } else if (isFloatType(type)) {
+            } else if (isOfKind(type, TypeAttribute::Float)) {
                 str.append("f");
-            } else if (isSymbolType(type)) {
+            } else if (isOfKind(type, TypeAttribute::Symbol)) {
                 str.append("s");
-            } else if (isRecordType(type)) {
+            } else if (isOfKind(type, TypeAttribute::Record)) {
                 str.append("r");
             } else {
                 fatal("Unsupported kind");
@@ -245,58 +253,6 @@ std::string getTypeQualifier(const Type& type) {
     };
 
     return visitor().visit(type);
-}
-
-bool hasSignedType(const TypeSet& types) {
-    return types.isAll() || any_of(types, (bool (*)(const Type&)) & isNumberType);
-}
-
-bool hasUnsignedType(const TypeSet& types) {
-    return types.isAll() || any_of(types, (bool (*)(const Type&)) & isUnsignedType);
-}
-
-bool hasFloatType(const TypeSet& types) {
-    return types.isAll() || any_of(types, (bool (*)(const Type&)) & isFloatType);
-}
-
-bool isFloatType(const Type& type) {
-    return isOfRootType(type, type.getTypeEnvironment().getConstantType(TypeAttribute::Float));
-}
-
-bool isFloatType(const TypeSet& s) {
-    return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isFloatType);
-}
-
-bool isNumberType(const Type& type) {
-    return isOfRootType(type, type.getTypeEnvironment().getConstantType(TypeAttribute::Signed));
-}
-
-bool isNumberType(const TypeSet& s) {
-    return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isNumberType);
-}
-
-bool isUnsignedType(const Type& type) {
-    return isOfRootType(type, type.getTypeEnvironment().getConstantType(TypeAttribute::Unsigned));
-}
-
-bool isUnsignedType(const TypeSet& s) {
-    return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isUnsignedType);
-}
-
-bool isSymbolType(const Type& type) {
-    return isOfRootType(type, type.getTypeEnvironment().getConstantType(TypeAttribute::Symbol));
-}
-
-bool isSymbolType(const TypeSet& s) {
-    return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isSymbolType);
-}
-
-bool isRecordType(const Type& type) {
-    return isA<RecordType>(getRootIfSubsetType(type));
-}
-
-bool isRecordType(const TypeSet& s) {
-    return !s.empty() && !s.isAll() && all_of(s, (bool (*)(const Type&)) & isA<RecordType>);
 }
 
 bool isSubtypeOf(const Type& a, const Type& b) {

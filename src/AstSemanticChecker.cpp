@@ -761,9 +761,8 @@ void AstSemanticCheckerImpl::checkMultiRule(std::set<const AstClause*> multiRule
     std::map<std::string, const AstVariable*> var_pos;
 
     // count variable occurrences in a body only once
-    // TODO: for negation / disjunction this is not quite
-    //       right. We would more semantic information for
-    //       this.
+    // TODO (b-scholz): for negation / disjunction this is not quite
+    // right; we would need more semantic information.
     for (auto literal : (*multiRule.begin())->getBodyLiterals()) {
         visitDepthFirst(*literal, [&](const AstVariable& var) {
             var_count[var.getName()]++;

@@ -472,13 +472,17 @@ public:
         return "IndexedInequalityTransformer";
     }
 
-    // converts a box query into a corresponding filter operation
+    // converts a box query into a corresponding partial box query operation
+    // currently this will turn every box query into a filter operation
     bool transformIndexToFilter(RamProgram& program);
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
+	idxAnalysis = translationUnit.getAnalysis<RamIndexAnalysis>();
         return transformIndexToFilter(translationUnit.getProgram());
     }
+
+    RamIndexAnalysis* idxAnalysis;
 };
 /**
  * @class IfConversionTransformer

@@ -30,6 +30,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <unordered_set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -284,6 +285,7 @@ public:
     using Chain = std::set<SearchSignature>;
     using ChainOrderMap = std::vector<Chain>;
     using SearchSet = std::set<SearchSignature>;
+    using AttributeSet = std::unordered_set<AttributeIndex>;
 
     /** @Brief Add new key to an Index Set */
     inline void addSearch(SearchSignature cols) {
@@ -344,6 +346,22 @@ public:
             totalOrder.push_back(i);
         }
         orders.push_back(std::move(totalOrder));
+    }
+    
+    /** @Brief return the attribute position for each inequality that should be discharged */
+    // NOTE: For now, all inequalities will be discharged but later the lex-orders will be inspected
+    // If an inequality is not in the last position of a lex-order only then is it discharged
+    AttributeSet getAttributesToDischarge() {
+        AttributeSet attributesToDischarge;
+        for (auto search : searches) {
+            size_t arity = search.arity();
+            for (size_t i=0; i<arity; ++i) {
+                if (search[i] == AttributeConstraint::Inequal) {
+                    attributesToDischarge.insert(i);
+                }
+            }
+        }
+        return attributesToDischarge;
     }
 
 protected:

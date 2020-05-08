@@ -715,7 +715,7 @@ void AstSemanticCheckerImpl::checkClause(const AstClause& clause) {
     }
 
     // check whether named unnamed variables of the form _<ident>
-    // are only used once in a clause; if not, warnings will be 
+    // are only used once in a clause; if not, warnings will be
     // issued.
     std::map<std::string, int> var_count;
     std::map<std::string, const AstVariable*> var_pos;
@@ -766,8 +766,8 @@ void AstSemanticCheckerImpl::checkComplexRule(std::set<const AstClause*> multiRu
     std::map<std::string, int> var_count;
     std::map<std::string, const AstVariable*> var_pos;
 
-    // Count the variable occurrence for the body of a 
-    // complex rule only once. 
+    // Count the variable occurrence for the body of a
+    // complex rule only once.
     // TODO (b-scholz): for negation / disjunction this is not quite
     // right; we would need more semantic information here.
     for (auto literal : (*multiRule.begin())->getBodyLiterals()) {
@@ -777,7 +777,7 @@ void AstSemanticCheckerImpl::checkComplexRule(std::set<const AstClause*> multiRu
         });
     }
 
-    // Count variable occurrence for each head separately 
+    // Count variable occurrence for each head separately
     for (auto clause : multiRule) {
         visitDepthFirst(*(clause->getHead()), [&](const AstVariable& var) {
             var_count[var.getName()]++;
@@ -860,8 +860,8 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
                                     toString(type.getQualifiedName()),
                     type.getSrcLoc());
         } else if (!isA<AstUnionType>(subt) && !isA<AstSubsetType>(subt)) {
-            report.addError(
-                    tfm::format("Union type %s contains the non-primitive type %s", type.getQualifiedName(), sub),
+            report.addError(tfm::format("Union type %s contains the non-primitive type %s",
+                                    type.getQualifiedName(), sub),
                     type.getSrcLoc());
         }
     }

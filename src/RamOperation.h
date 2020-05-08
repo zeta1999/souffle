@@ -907,6 +907,8 @@ protected:
 /**
  * @class RamIndexAggregate
  * @brief Indexed aggregation on a relation
+ *
+ * TODO (rachel): Fix description!!
  */
 class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate {
 public:
@@ -960,6 +962,49 @@ protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexAggregate&>(node);
         return RamIndexOperation::equal(other) && RamAbstractAggregate::equal(other);
+    }
+};
+
+/**
+ * @class RamIndexAggregate
+ * @brief Indexed aggregation on a relation
+ *
+ * TODO (rachel): Fix description!!
+ */
+class RamParallelIndexAggregate : public RamIndexAggregate, public RamAbstractParallel {
+public:
+    RamParallelIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
+            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
+            std::unique_ptr<RamCondition> condition, RamPattern queryPattern, int ident)
+            : RamIndexAggregate(std::move(nested), fun, std::move(relRef), std::move(expression), 
+            std::move(condition), std::move(queryPattern), ident) {} 
+
+    RamIndexAggregate* clone() const override {
+        RamPattern pattern;
+        for (const auto& i : queryPattern.first) {
+            pattern.first.emplace_back(i->clone());
+        }
+        for (const auto& i : queryPattern.second) {
+            pattern.second.emplace_back(i->clone());
+        }
+        return new RamIndexAggregate(souffle::clone(&getOperation()), function,
+                std::unique_ptr<RamRelationReference>(relationRef->clone()),
+                std::unique_ptr<RamExpression>(expression->clone()),
+                std::unique_ptr<RamCondition>(condition->clone()), std::move(pattern), getTupleId());
+    }
+
+protected:
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "PARALLEL t" << getTupleId() << ".0=";
+        RamAbstractAggregate::print(os, tabpos);
+        os << "SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
+        printIndex(os);
+        if (!isRamTrue(condition.get())) {
+            os << " WHERE " << getCondition();
+        }
+        os << std::endl;
+        RamIndexOperation::print(os, tabpos + 1);
     }
 };
 

@@ -30,8 +30,8 @@
 #include <map>
 #include <memory>
 #include <set>
-#include <unordered_set>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -347,7 +347,7 @@ public:
         }
         orders.push_back(std::move(totalOrder));
     }
-    
+
     /** @Brief return the attribute position for each inequality that should be discharged */
     // NOTE: For now, all inequalities will be discharged but later the lex-orders will be inspected
     // If an inequality is not in the last position of a lex-order only then is it discharged
@@ -355,7 +355,7 @@ public:
         AttributeSet attributesToDischarge;
         for (auto search : searches) {
             size_t arity = search.arity();
-            for (size_t i=0; i<arity; ++i) {
+            for (size_t i = 0; i < arity; ++i) {
                 if (search[i] == AttributeConstraint::Inequal) {
                     attributesToDischarge.insert(i);
                 }

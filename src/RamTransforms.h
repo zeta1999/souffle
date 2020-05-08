@@ -478,7 +478,7 @@ public:
 
 protected:
     bool transform(RamTranslationUnit& translationUnit) override {
-	idxAnalysis = translationUnit.getAnalysis<RamIndexAnalysis>();
+        idxAnalysis = translationUnit.getAnalysis<RamIndexAnalysis>();
         return transformIndexToFilter(translationUnit.getProgram());
     }
 

@@ -631,8 +631,10 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                 [&](std::unique_ptr<RamNode> node) -> std::unique_ptr<RamNode> {
             // find a RamIndexOperation
             if (const RamIndexOperation* indexOperation = dynamic_cast<RamIndexOperation*>(node.get())) {
+                auto attributesToDischarge =
+                        idxAnalysis->getIndexes(indexOperation->getRelation()).getAttributesToDischarge();
+
                 auto pattern = indexOperation->getRangePattern();
-                size_t length = pattern.first.size();
                 std::unique_ptr<RamCondition> condition;
                 RamPattern updatedPattern;
 
@@ -643,16 +645,7 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                     updatedPattern.second.emplace_back(p->clone());
                 }
 
-                for (size_t i = 0; i < length; ++i) {
-                    // if both bounds are undefined we don't have a box query
-                    if (isRamUndefValue(pattern.first[i]) && isRamUndefValue(pattern.second[i])) {
-                        continue;
-                    }
-                    // if lower and upper bounds are equal its also not a box query
-                    if (*(pattern.first[i]) == *(pattern.second[i])) {
-                        continue;
-                    }
-
+                for (auto i : attributesToDischarge) {
                     // move constraints out of the indexed inequality and into a conjuction
                     std::unique_ptr<RamConstraint> lowerBound;
                     std::unique_ptr<RamConstraint> upperBound;

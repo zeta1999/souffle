@@ -30,6 +30,28 @@
 
 namespace souffle {
 
+namespace {
+
+Graph<AstQualifiedName> createTypeDependencyGraph(const std::vector<AstType*>& programTypes) {
+    Graph<AstQualifiedName> typeDependencyGraph;
+    for (const auto* astType : programTypes) {
+        if (auto type = dynamic_cast<const AstSubsetType*>(astType)) {
+            typeDependencyGraph.insert(type->getQualifiedName(), type->getBaseType());
+        } else if (dynamic_cast<const AstRecordType*>(astType) != nullptr) {
+            // do nothing
+        } else if (auto type = dynamic_cast<const AstUnionType*>(astType)) {
+            for (const auto& subtype : type->getTypes()) {
+                typeDependencyGraph.insert(type->getQualifiedName(), subtype);
+            }
+        } else {
+            fatal("unsupported type construct: %s", typeid(astType).name());
+        }
+    }
+    return typeDependencyGraph;
+}
+
+}  // namespace
+
 void TypeEnvironmentAnalysis::run(const AstTranslationUnit& translationUnit) {
     const AstProgram& program = *translationUnit.getProgram();
 
@@ -103,25 +125,6 @@ void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programType
             fatal("unsupported type construct: %s", typeid(astType).name());
         }
     }
-}
-
-Graph<AstQualifiedName> TypeEnvironmentAnalysis::createTypeDependencyGraph(
-        const std::vector<AstType*>& programTypes) {
-    Graph<AstQualifiedName> typeDependencyGraph;
-    for (const auto* astType : programTypes) {
-        if (auto type = dynamic_cast<const AstSubsetType*>(astType)) {
-            typeDependencyGraph.insert(type->getQualifiedName(), type->getBaseType());
-        } else if (dynamic_cast<const AstRecordType*>(astType) != nullptr) {
-            // do nothing
-        } else if (auto type = dynamic_cast<const AstUnionType*>(astType)) {
-            for (const auto& subtype : type->getTypes()) {
-                typeDependencyGraph.insert(type->getQualifiedName(), subtype);
-            }
-        } else {
-            fatal("unsupported type construct: %s", typeid(astType).name());
-        }
-    }
-    return typeDependencyGraph;
 }
 
 void TypeEnvironmentAnalysis::analyseCyclicTypes(

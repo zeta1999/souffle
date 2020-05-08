@@ -71,11 +71,6 @@ private:
     void linkTypes(const std::vector<AstType*>& program);
 
     /**
-     * Create a type dependency graph.
-     */
-    Graph<AstQualifiedName> createTypeDependencyGraph(const std::vector<AstType*>& programTypes);
-
-    /**
      * Check intersections of unions with primitive types.
      */
     void analysePrimitiveTypesInUnion(

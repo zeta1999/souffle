@@ -89,6 +89,7 @@ private:
     void checkConstant(const AstArgument& argument);
     void checkFact(const AstClause& fact);
     void checkClause(const AstClause& clause);
+    void checkComplexRule(std::set<const AstClause*> multiRule);
     void checkRelationDeclaration(const AstRelation& relation);
     void checkRelation(const AstRelation& relation);
 
@@ -150,6 +151,20 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     }
     for (auto* clause : program.getClauses()) {
         checkClause(*clause);
+    }
+
+    // Group clauses that stem from a single complex rule
+    // with multiple headers/disjunction etc. The grouping
+    // is performed via their source-location.
+    std::map<SrcLocation, std::set<const AstClause*>> multiRuleMap;
+    for (auto* clause : program.getClauses()) {
+        // collect clauses of a multi rule, i.e., they have the same source locator
+        multiRuleMap[clause->getSrcLoc()].insert(clause);
+    }
+
+    // check complex rule
+    for (const auto& multiRule : multiRuleMap) {
+        checkComplexRule(multiRule.second);
     }
 
     checkNamespaces();
@@ -699,28 +714,25 @@ void AstSemanticCheckerImpl::checkClause(const AstClause& clause) {
         checkFact(clause);
     }
 
-    // check for use-once variables
+    // check whether named unnamed variables of the form _<ident>
+    // are only used once in a clause; if not, warnings will be
+    // issued.
     std::map<std::string, int> var_count;
     std::map<std::string, const AstVariable*> var_pos;
     visitDepthFirst(clause, [&](const AstVariable& var) {
         var_count[var.getName()]++;
         var_pos[var.getName()] = &var;
     });
-
-    // check for variables only occurring once
     for (const auto& cur : var_count) {
         int numAppearances = cur.second;
         const auto& varName = cur.first;
         const auto& varLocation = var_pos[varName]->getSrcLoc();
-
         if (varName[0] == '_') {
             assert(varName.size() > 1 && "named variable should not be a single underscore");
             if (numAppearances > 1) {
                 report.addWarning("Variable " + varName + " marked as singleton but occurs more than once",
                         varLocation);
             }
-        } else if (numAppearances == 1) {
-            report.addWarning("Variable " + varName + " only occurs once", varLocation);
         }
     }
 
@@ -741,11 +753,46 @@ void AstSemanticCheckerImpl::checkClause(const AstClause& clause) {
             }
         }
     }
+
     // check auto-increment
     if (recursiveClauses.recursive(&clause)) {
         visitDepthFirst(clause, [&](const AstCounter& ctr) {
             report.addError("Auto-increment functor in a recursive rule", ctr.getSrcLoc());
         });
+    }
+}
+
+void AstSemanticCheckerImpl::checkComplexRule(std::set<const AstClause*> multiRule) {
+    std::map<std::string, int> var_count;
+    std::map<std::string, const AstVariable*> var_pos;
+
+    // Count the variable occurrence for the body of a
+    // complex rule only once.
+    // TODO (b-scholz): for negation / disjunction this is not quite
+    // right; we would need more semantic information here.
+    for (auto literal : (*multiRule.begin())->getBodyLiterals()) {
+        visitDepthFirst(*literal, [&](const AstVariable& var) {
+            var_count[var.getName()]++;
+            var_pos[var.getName()] = &var;
+        });
+    }
+
+    // Count variable occurrence for each head separately
+    for (auto clause : multiRule) {
+        visitDepthFirst(*(clause->getHead()), [&](const AstVariable& var) {
+            var_count[var.getName()]++;
+            var_pos[var.getName()] = &var;
+        });
+    }
+
+    // Check that a variables occurs more than once
+    for (const auto& cur : var_count) {
+        int numAppearances = cur.second;
+        const auto& varName = cur.first;
+        const auto& varLocation = var_pos[varName]->getSrcLoc();
+        if (varName[0] != '_' && numAppearances == 1) {
+            report.addWarning("Variable " + varName + " only occurs once", varLocation);
+        }
     }
 }
 

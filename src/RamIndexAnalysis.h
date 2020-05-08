@@ -356,7 +356,7 @@ public:
         AttributeSet attributesToDischarge;
         for (auto search : searches) {
             size_t arity = search.arity();
-            for (size_t i=0; i<arity; ++i) {
+            for (size_t i = 0; i < arity; ++i) {
                 if (search[i] == AttributeConstraint::Inequal) {
                     attributesToDischarge.insert(i);
                 }

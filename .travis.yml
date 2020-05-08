@@ -1,7 +1,7 @@
 language: generic
 dist: bionic
 
-aliases:
+_aliases:
   - &docker
     os: linux
     services: docker

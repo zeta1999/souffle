@@ -1142,6 +1142,18 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                             std::unique_ptr<RamOperation>(indexChoice->getOperation().clone()),
                             indexChoice->getProfileText());
                 }
+            } else if(const RamAggregate *aggregate = dynamic_cast<RamAggregate*>(node.get())) { 
+                if (aggregate->getTupleId() == 0) {
+                    changed = true;
+                    return std::make_unique<RamParallelAggregate>( ... ) ; 
+                }
+            } else if(const RamIndexAggregate *indexAggregate = dynamic_cast<RamIndexAggregate*>(node.get())){
+                if (aggregate->getTupleId() == 0) {
+                    changed = true;
+                    const RamRelation& rel = indexChoice->getRelation();
+                    RamPattern queryPattern = clone(indexChoice->getRangePattern());
+                    return std::make_unique<RamParallelIndexAggregate>( ... ) ; 
+                }
             }
             node->apply(makeLambdaRamMapper(parallelRewriter));
             return node;

@@ -14,14 +14,17 @@
  *
  ***********************************************************************/
 
-#include "AstProgram.h"
-#include "test.h"
+#include "test/test.h"
 
-#include <functional>
+#include "SymbolTable.h"
+#include "utility/MiscUtil.h"
+#include <algorithm>
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <vector>
 
-using namespace souffle;
-
-namespace test {
+namespace souffle::test {
 
 TEST(SymbolTable, Basics) {
     SymbolTable table;
@@ -137,4 +140,4 @@ TEST(SymbolTable, Inserts) {
     }
 }
 
-}  // end namespace test
+}  // namespace souffle::test

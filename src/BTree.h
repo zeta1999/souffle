@@ -17,14 +17,19 @@
 
 #pragma once
 
-#include "ParallelUtils.h"
-#include "Util.h"
-
+#include "utility/CacheUtil.h"
+#include "utility/ContainerUtil.h"
+#include "utility/ParallelUtil.h"
+#include <algorithm>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 #include <iostream>
 #include <iterator>
+#include <string>
+#include <tuple>
 #include <type_traits>
-#include <utility>
+#include <typeinfo>
 #include <vector>
 
 namespace souffle {

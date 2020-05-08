@@ -22,13 +22,17 @@
 #include "RamOperation.h"
 #include "RamTransformer.h"
 #include "RamTranslationUnit.h"
-
+#include <cstddef>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 
 class RamProgram;
+class RamCondition;
+class RamExpression;
 
 /**
  * @class ExpandFilterTransformer
@@ -472,8 +476,9 @@ public:
         return "IndexedInequalityTransformer";
     }
 
-    // converts a box query into a corresponding partial box query operation
-    // currently this will turn every box query into a filter operation
+    /** Converts a box query into a corresponding partial box query operation.
+     *  This will turn every box query into a filter operation.
+     */
     bool transformIndexToFilter(RamProgram& program);
 
 protected:

@@ -16,24 +16,31 @@
 
 #pragma once
 
-#include "InterpreterContext.h"
+#include "Global.h"
 #include "InterpreterGenerator.h"
-#include "InterpreterNode.h"
-#include "InterpreterPreamble.h"
-#include "InterpreterRelation.h"
+#include "InterpreterIndex.h"
+#include "RamIndexAnalysis.h"
 #include "RamTranslationUnit.h"
-#include "RamVisitor.h"
+#include "RamTypes.h"
 #include "RecordTable.h"
+#include <atomic>
+#include <cstddef>
 #include <deque>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
-#include <dlfcn.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 namespace souffle {
 
 class InterpreterProgInterface;
+class InterpreterContext;
+class InterpreterNode;
+class InterpreterRelation;
+class SymbolTable;
 
 /**
  * @class InterpreterEngine

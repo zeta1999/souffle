@@ -16,18 +16,24 @@
 
 #pragma once
 
-#include "ExplainTree.h"
 #include "RamTypes.h"
 #include "SouffleInterface.h"
-#include "Util.h"
-#include "WriteStreamCSV.h"
+#include "SymbolTable.h"
+#include "utility/MiscUtil.h"
+#include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <map>
+#include <memory>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 namespace souffle {
+class TreeNode;
 
 /** Equivalence class for variables in query command */
 class Equivalence {
@@ -226,11 +232,11 @@ protected:
 
     std::string valueShow(const char type, const RamDomain value) const {
         switch (type) {
-            case 'i': return format("%d", ramBitCast<RamSigned>(value));
-            case 'u': return format("%d", ramBitCast<RamUnsigned>(value));
-            case 'f': return format("%f", ramBitCast<RamFloat>(value));
-            case 's': return format("\"%s\"", symTable.resolve(value));
-            case 'r': return format("record #%d", value);
+            case 'i': return tfm::format("%d", ramBitCast<RamSigned>(value));
+            case 'u': return tfm::format("%d", ramBitCast<RamUnsigned>(value));
+            case 'f': return tfm::format("%f", ramBitCast<RamFloat>(value));
+            case 's': return tfm::format("\"%s\"", symTable.resolve(value));
+            case 'r': return tfm::format("record #%d", value);
             default: fatal("unhandled type attr code");
         }
     }

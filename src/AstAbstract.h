@@ -20,8 +20,6 @@
 
 namespace souffle {
 
-class AstAtom;
-
 /**
  * Literal
  * e.g. atoms, binary relations, and negated atoms

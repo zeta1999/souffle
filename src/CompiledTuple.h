@@ -17,7 +17,10 @@
 
 #pragma once
 
+#include <cstddef>
+#include <functional>
 #include <iostream>
+#include <system_error>
 
 namespace souffle {
 

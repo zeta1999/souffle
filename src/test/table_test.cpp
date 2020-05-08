@@ -14,8 +14,11 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
 #include "Table.h"
-#include "test.h"
+#include <cstddef>
+#include <string>
 
 namespace souffle {
 

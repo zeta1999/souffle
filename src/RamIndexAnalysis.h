@@ -17,16 +17,12 @@
 #pragma once
 
 #include "RamAnalysis.h"
-#include "RamOperation.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
-#include "RamTypes.h"
-#include "Util.h"
+#include "utility/MiscUtil.h"
 #include <cassert>
+#include <cstdint>
 #include <cstdlib>
 #include <functional>
-#include <iosfwd>
-#include <limits>
+#include <iostream>
 #include <map>
 #include <memory>
 #include <set>
@@ -40,6 +36,11 @@
 
 namespace souffle {
 
+class RamAbstractExistenceCheck;
+class RamExistenceCheck;
+class RamIndexOperation;
+class RamProvenanceExistenceCheck;
+class RamRelation;
 class RamTranslationUnit;
 
 enum class AttributeConstraint { None, Equal, Inequal };
@@ -347,10 +348,10 @@ public:
         }
         orders.push_back(std::move(totalOrder));
     }
-
-    /** @Brief return the attribute position for each inequality that should be discharged */
-    // NOTE: For now, all inequalities will be discharged but later the lex-orders will be inspected
-    // If an inequality is not in the last position of a lex-order only then is it discharged
+    /** Return the attribute position for each inequality that should be discharged.
+     *  NOTE: For now, all inequalities will be discharged but later the lex-orders will be inspected
+     * If an inequality is not in the last position of a lex-order only then is it discharged
+     */
     AttributeSet getAttributesToDischarge() {
         AttributeSet attributesToDischarge;
         for (auto search : searches) {

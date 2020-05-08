@@ -21,24 +21,20 @@
 #include "AstNode.h"
 #include "AstQualifiedName.h"
 #include "BinaryConstraintOps.h"
-#include "Util.h"
-
+#include "SrcLocation.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <iostream>
-#include <list>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "AstAbstract.h"
-#include "AstNode.h"
-
 namespace souffle {
-
-class AstRelation;
-class AstClause;
-class AstProgram;
-class AstAtom;
 
 /**
  * Subclass of Literal that represents the use of a relation

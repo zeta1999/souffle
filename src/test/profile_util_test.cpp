@@ -14,12 +14,16 @@
  *
  ***********************************************************************/
 
+#include "test/test.h"
+
+#include "profile/CellInterface.h"
 #include "profile/StringUtils.h"
-#include "test.h"
-
+#include <chrono>
+#include <cmath>
+#include <iosfwd>
 #include <string>
+#include <vector>
 
-using namespace std;
 using namespace souffle;
 using namespace souffle::profile;
 

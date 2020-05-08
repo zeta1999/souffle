@@ -16,6 +16,7 @@
 
 #include "RamTransforms.h"
 #include "BinaryConstraintOps.h"
+#include "FunctorOps.h"
 #include "RamComplexityAnalysis.h"
 #include "RamCondition.h"
 #include "RamExpression.h"
@@ -27,8 +28,15 @@
 #include "RamTypes.h"
 #include "RamUtils.h"
 #include "RamVisitor.h"
+#include "RelationTag.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
 #include <algorithm>
-#include <list>
+#include <cassert>
+#include <cstddef>
+#include <functional>
+#include <map>
+#include <tuple>
 #include <utility>
 #include <vector>
 

@@ -16,10 +16,12 @@
 #pragma once
 
 #include "RamNode.h"
-#include "RamTypes.h"
 #include "RelationTag.h"
-#include "Util.h"
-
+#include "utility/ContainerUtil.h"
+#include <cassert>
+#include <cstddef>
+#include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 #include <vector>

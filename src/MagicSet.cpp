@@ -26,10 +26,11 @@
 #include "AstUtils.h"
 #include "BinaryConstraintOps.h"
 #include "Global.h"
-#include "RelationTag.h"
+#include "RamTypes.h"
 #include "SrcLocation.h"
-#include "Util.h"
-#include <cassert>
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StringUtil.h"
 #include <utility>
 
 namespace souffle {

@@ -16,7 +16,8 @@
 
 #pragma once
 
-#include "Util.h"
+#include "utility/MiscUtil.h"
+#include <ostream>
 
 namespace souffle {
 

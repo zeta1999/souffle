@@ -15,15 +15,10 @@
  ***********************************************************************/
 #pragma once
 
-#include "Global.h"
-
-#include <fstream>
-#include <memory>
 #include <ostream>
-#include <set>
-#include <sstream>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 

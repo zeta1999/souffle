@@ -55,75 +55,78 @@ Graph<AstQualifiedName> createTypeDependencyGraph(const std::vector<AstType*>& p
 void TypeEnvironmentAnalysis::run(const AstTranslationUnit& translationUnit) {
     const AstProgram& program = *translationUnit.getProgram();
 
-    // Filter redefinitions of predefined types.
+    auto rawProgramTypes = program.getTypes();
+    Graph<AstQualifiedName> typeDependencyGraph{createTypeDependencyGraph(rawProgramTypes)};
+
+    analyseCyclicTypes(typeDependencyGraph, rawProgramTypes);
+    analysePrimitiveTypesInUnion(typeDependencyGraph, rawProgramTypes);
+
+    std::map<AstQualifiedName, const AstType*> nameToAstType;
+
+    // Filter redefined primitive types and cyclic types.
     std::vector<AstType*> programTypes;
     for (auto* type : program.getTypes()) {
-        if (!env.isType(type->getQualifiedName())) {
-            programTypes.push_back(type);
-        }
-    }
-    createTypes(programTypes);
-    linkTypes(programTypes);
-
-    Graph<AstQualifiedName> typeDependencyGraph{createTypeDependencyGraph(programTypes)};
-
-    analyseCyclicTypes(typeDependencyGraph, programTypes);
-    analysePrimitiveTypesInUnion(typeDependencyGraph, programTypes);
-}
-
-void TypeEnvironmentAnalysis::createTypes(const std::vector<AstType*>& programTypes) {
-    for (const auto* astType : programTypes) {
-        // support invalid input with multiple definitions
-        if (env.isType(astType->getQualifiedName())) {
+        if (env.isType(type->getQualifiedName()) || isCyclic(type->getQualifiedName())) {
             continue;
         }
+        programTypes.push_back(type);
+        nameToAstType.insert({type->getQualifiedName(), type});
+    }
 
-        if (isA<AstSubsetType>(*astType)) {
-            env.createType<SubsetType>(astType->getQualifiedName());
-        } else if (isA<AstUnionType>(*astType)) {
-            env.createType<UnionType>(astType->getQualifiedName());
-        } else if (isA<AstRecordType>(*astType)) {
-            env.createType<RecordType>(astType->getQualifiedName());
-        } else {
-            fatal("unsupported type construct: %s", typeid(astType).name());
-        }
+    for (const auto* astType : programTypes) {
+        createType(astType->getQualifiedName(), typeDependencyGraph, nameToAstType);
     }
 }
 
-void TypeEnvironmentAnalysis::linkTypes(const std::vector<AstType*>& programTypes) {
-    for (const auto* astType : programTypes) {
-        Type& type = env.getType(astType->getQualifiedName());
-        if (auto* astSubsetType = dynamic_cast<const AstSubsetType*>(astType)) {
-            auto& subsetType = dynamic_cast<SubsetType&>(type);
+const Type* TypeEnvironmentAnalysis::createType(const AstQualifiedName& typeName,
+        const Graph<AstQualifiedName>& typeDependencyGraph,
+        const std::map<AstQualifiedName, const AstType*>& nameToAstType) {
+    // base case
+    if (env.isType(typeName)) {
+        return &env.getType(typeName);
+    }
 
-            // Handle non-existing base type.
-            try {
-                subsetType.setBaseType(env.getType(astSubsetType->getBaseType()));
-            } catch (std::out_of_range& e) {
-                subsetType.setBaseType(env.getType("number"));
-            }
+    auto iterToType = nameToAstType.find(typeName);
+    if (iterToType == nameToAstType.end()) {
+        return nullptr;
+    }
+    const AstType& astType = *iterToType->second;
 
-        } else if (auto* astUnion = dynamic_cast<const AstUnionType*>(astType)) {
-            auto& unionType = dynamic_cast<UnionType&>(type);
+    if (isA<AstSubsetType>(astType)) {
+        auto* baseType =
+                createType(as<AstSubsetType>(astType)->getBaseType(), typeDependencyGraph, nameToAstType);
 
-            // add element types
-            for (const auto& astType : astUnion->getTypes()) {
-                if (env.isType(astType)) {
-                    unionType.add(env.getType(astType));
-                }
-            }
-        } else if (auto* astRecord = dynamic_cast<const AstRecordType*>(astType)) {
-            auto& recordType = dynamic_cast<RecordType&>(type);
-
-            // add fields
-            for (const auto* field : astRecord->getFields()) {
-                if (env.isType(field->getTypeName())) {
-                    recordType.add(env.getType(field->getTypeName()));
-                }
-            }
-        } else {
-            fatal("unsupported type construct: %s", typeid(astType).name());
+        if (baseType == nullptr) {
+            return nullptr;
         }
+        return &env.createType<SubsetType>(typeName, *baseType);
+
+    } else if (isA<AstUnionType>(astType)) {
+        std::vector<const Type*> elements;
+        for (const auto& element : as<AstUnionType>(astType)->getTypes()) {
+            auto* elementType = createType(element, typeDependencyGraph, nameToAstType);
+            if (elementType == nullptr) {
+                return nullptr;
+            }
+            elements.push_back(elementType);
+        }
+        return &env.createType<UnionType>(typeName, std::move(elements));
+
+    } else if (isA<AstRecordType>(astType)) {
+        // Record type must be created upfront as it may be its-own member.
+        auto& recordType = env.createType<RecordType>(typeName);
+        std::vector<const Type*> elements;
+        for (const auto* field : as<AstRecordType>(astType)->getFields()) {
+            auto* elementType = createType(field->getTypeName(), typeDependencyGraph, nameToAstType);
+            if (elementType == nullptr) {
+                return nullptr;
+            }
+            elements.push_back(elementType);
+        }
+        recordType.setFields(std::move(elements));
+        return &recordType;
+    } else {
+        fatal("unsupported type construct: %s", typeid(astType).name());
     }
 }
 
@@ -131,14 +134,8 @@ void TypeEnvironmentAnalysis::analyseCyclicTypes(
         const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes) {
     for (const auto& astType : programTypes) {
         AstQualifiedName typeName = astType->getQualifiedName();
-        auto& type = env.getType(typeName);
 
         if (dependencyGraph.reaches(typeName, typeName)) {
-            if (auto* unionType = dynamic_cast<UnionType*>(&type)) {
-                unionType->clear();
-            } else if (auto* subsetType = dynamic_cast<SubsetType*>(&type)) {
-                subsetType->setBaseType(env.getType("number"));
-            }
             cyclicTypes.insert(std::move(typeName));
         }
     }

@@ -24,13 +24,7 @@
 namespace souffle {
 
 void SubsetType::print(std::ostream& out) const {
-    assert(baseType != nullptr);
-    out << getName() << " <: " << *baseType;
-}
-
-void UnionType::add(const Type& type) {
-    assert(environment.isType(type));
-    elementTypes.push_back(&type);
+    out << getName() << " <: " << baseType;
 }
 
 void UnionType::print(std::ostream& out) const {
@@ -45,7 +39,7 @@ void RecordType::print(std::ostream& out) const {
         return;
     }
     out << "( "
-        << join(fields, " , ", [&](std::ostream& out, const Type& fieldType) { out << fieldType.getName(); })
+        << join(fields, " , ", [&](std::ostream& out, const Type* fieldType) { out << fieldType->getName(); })
         << " )";
 }
 
@@ -82,9 +76,6 @@ bool TypeEnvironment::isType(const Type& type) const {
 }
 
 const Type& TypeEnvironment::getType(const AstQualifiedName& ident) const {
-    return *types.at(ident);
-}
-Type& TypeEnvironment::getType(const AstQualifiedName& ident) {
     return *types.at(ident);
 }
 
@@ -216,15 +207,15 @@ std::string getTypeQualifier(const Type& type) {
             std::string str = visitType(type);
             str += "{";
             bool first = true;
-            for (const Type& field : type.getFields()) {
+            for (const Type* field : type.getFields()) {
                 if (first) {
                     first = false;
                 } else {
                     str += ",";
                 }
-                str += field.getName().toString();
+                str += field->getName().toString();
                 str += "#";
-                str += visit(field);
+                str += visit(*field);
             }
             str += "}";
             return str;

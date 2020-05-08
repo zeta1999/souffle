@@ -81,7 +81,6 @@ protected:
     /** A reference to the type environment this type is associated to. */
     const TypeEnvironment& environment;
 
-    /** The name of this type. */
     AstQualifiedName name;
 };
 
@@ -104,24 +103,17 @@ public:
     void print(std::ostream& out) const override;
 
     const Type& getBaseType() const {
-        assert(baseType != nullptr);
-        return *baseType;
-    }
-
-    void setBaseType(const Type& newBase) {
-        baseType = &newBase;
+        return baseType;
     }
 
 protected:
-    SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name)
-            : Type(environment, name), baseType(nullptr){};
     SubsetType(const TypeEnvironment& environment, const AstQualifiedName& name, const Type& base)
-            : Type(environment, name), baseType(&base){};
+            : Type(environment, name), baseType(base){};
 
 private:
     friend class TypeEnvironment;
 
-    mutable const Type* baseType;
+    const Type& baseType;
 };
 
 /**
@@ -146,26 +138,19 @@ private:
  */
 class UnionType : public Type {
 public:
-    void add(const Type& type);
-
     const std::vector<const Type*>& getElementTypes() const {
         return elementTypes;
     }
 
     void print(std::ostream& out) const override;
 
-private:
+protected:
     friend class TypeEnvironment;
-    friend class TypeEnvironmentAnalysis;
-
-    void clear() {
-        elementTypes.clear();
-    }
-
-    /** The contained element types */
     std::vector<const Type*> elementTypes;
 
-    UnionType(const TypeEnvironment& environment, const AstQualifiedName& name) : Type(environment, name) {}
+    UnionType(const TypeEnvironment& environment, const AstQualifiedName& name,
+            std::vector<const Type*> elementTypes = {})
+            : Type(environment, name), elementTypes(elementTypes) {}
 };
 
 /**
@@ -173,11 +158,11 @@ private:
  */
 struct RecordType : public Type {
 public:
-    void add(const Type& type) {
-        fields.emplace_back(type);
+    void setFields(std::vector<const Type*> newFields) {
+        fields = std::move(newFields);
     }
 
-    const std::vector<std::reference_wrapper<const Type>>& getFields() const {
+    const std::vector<const Type*>& getFields() const {
         return fields;
     }
 
@@ -186,9 +171,11 @@ public:
 protected:
     friend class TypeEnvironment;
 
-    std::vector<std::reference_wrapper<const Type>> fields;
+    std::vector<const Type*> fields;
 
-    RecordType(const TypeEnvironment& environment, const AstQualifiedName& name) : Type(environment, name) {}
+    RecordType(const TypeEnvironment& environment, const AstQualifiedName& name,
+            const std::vector<const Type*> fields = {})
+            : Type(environment, name), fields(fields) {}
 };
 
 /**
@@ -356,9 +343,9 @@ public:
 
     /** create type in this environment */
     template <typename T, typename... Args>
-    T& createType(const AstQualifiedName& name, const Args&... args) {
+    T& createType(const AstQualifiedName& name, Args&&... args) {
         assert(types.find(name) == types.end() && "Error: registering present type!");
-        auto* newType = new T(*this, name, args...);
+        auto* newType = new T(*this, name, std::forward<Args>(args)...);
         types[name] = std::unique_ptr<Type>(newType);
         return *newType;
     }
@@ -367,7 +354,6 @@ public:
     bool isType(const Type& type) const;
 
     const Type& getType(const AstQualifiedName&) const;
-    Type& getType(const AstQualifiedName&);
 
     const Type& getConstantType(TypeAttribute type) const {
         switch (type) {
@@ -422,10 +408,10 @@ public:
     }
 
 private:
-    TypeSet initializePrimitiveTypes(void);
-    TypeSet initializeConstantTypes(void);
+    TypeSet initializePrimitiveTypes();
+    TypeSet initializeConstantTypes();
 
-    /** The list of covered types */
+    /** Map covering the namespace of user types. */
     std::map<AstQualifiedName, std::unique_ptr<Type>> types;
 
     const TypeSet constantTypes;

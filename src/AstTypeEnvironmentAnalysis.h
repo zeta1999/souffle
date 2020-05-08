@@ -61,14 +61,11 @@ private:
     std::set<AstQualifiedName> cyclicTypes;
 
     /**
-     * Populate Type Environment with Ast Types.
+     * Recursively create a type in env. (eg: Subset -> construct base and then the type itself).
      */
-    void createTypes(const std::vector<AstType*>& program);
-
-    /**
-     * Link unions and records to their types.
-     */
-    void linkTypes(const std::vector<AstType*>& program);
+    const Type* createType(const AstQualifiedName& typeName,
+            const Graph<AstQualifiedName>& typeDependencyGraph,
+            const std::map<AstQualifiedName, const AstType*>& nameToAstType);
 
     /**
      * Check intersections of unions with primitive types.

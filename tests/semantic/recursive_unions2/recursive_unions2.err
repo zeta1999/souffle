@@ -19,10 +19,4 @@ Error: Infinite descent in the definition of type G in file recursive_unions2.dl
 Error: Infinite descent in the definition of type H in file recursive_unions2.dl at line 25
 .type H = F
 ^-----------
-Error: Symbol constant (type mismatch) in file recursive_unions2.dl at line 28
-R("a", "b").
---^----------
-Error: Symbol constant (type mismatch) in file recursive_unions2.dl at line 28
-R("a", "b").
--------^-----
-9 errors generated, evaluation aborted
+7 errors generated, evaluation aborted

@@ -1729,8 +1729,8 @@ const Json AstTranslator::getRecordsTypes() {
             types.clear();
             recordType.clear();
 
-            for (const Type& field : static_cast<const RecordType&>(type).getFields()) {
-                types.push_back(getTypeQualifier(field));
+            for (const Type* field : static_cast<const RecordType&>(type).getFields()) {
+                types.push_back(getTypeQualifier(*field));
             }
             const size_t recordArity = types.size();
             Json recordInfo =

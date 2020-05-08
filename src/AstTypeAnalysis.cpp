@@ -120,10 +120,8 @@ TypeConstraint isSubtypeOf(const TypeVar& variable, const Type& type) {
         C(TypeVar variable, const Type& type) : variable(std::move(variable)), type(type) {}
 
         bool update(Assignment<TypeVar>& assignments) const override {
-            // get current value of variable a
             TypeSet& assignment = assignments[variable];
 
-            // remove all types that are not sub-types of b
             if (assignment.isAll()) {
                 assignment = TypeSet(type);
                 return true;
@@ -345,7 +343,7 @@ TypeConstraint isSubtypeOfComponent(
                 newRecordTypes.insert(type);
 
                 // and its corresponding field for a field.
-                newElementTypes.insert(typeAsRecord.getFields()[index]);
+                newElementTypes.insert(*typeAsRecord.getFields()[index]);
             }
 
             // combine with current types assigned to element

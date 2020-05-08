@@ -349,9 +349,10 @@ public:
         orders.push_back(std::move(totalOrder));
     }
     
-    /** @Brief return the attribute position for each inequality that should be discharged */
-    // NOTE: For now, all inequalities will be discharged but later the lex-orders will be inspected
-    // If an inequality is not in the last position of a lex-order only then is it discharged
+    /** Return the attribute position for each inequality that should be discharged.
+     *  NOTE: For now, all inequalities will be discharged but later the lex-orders will be inspected
+     * If an inequality is not in the last position of a lex-order only then is it discharged
+     */
     AttributeSet getAttributesToDischarge() {
         AttributeSet attributesToDischarge;
         for (auto search : searches) {

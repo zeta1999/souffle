@@ -332,7 +332,7 @@ TypeConstraint isSubtypeOfComponent(
                     continue;
                 }
 
-                const auto& typeAsRecord = static_cast<const RecordType&>(getRootIfSubsetType(type));
+                const auto& typeAsRecord = *as<RecordType>(type);
 
                 // Wrong size => skip.
                 if (typeAsRecord.getFields().size() <= index) {
@@ -465,7 +465,8 @@ private:
 
     void visitSink(const AstAtom& atom) {
         iterateOverAtom(atom, [&](const AstArgument& argument, const Type& attributeType) {
-            if (isA<RecordType>(getRootIfSubsetType(attributeType))) {
+            if (isA<RecordType>(attributeType)) {
+                // Todo: this isn't right.
                 addConstraint(isSubtypeOf(getVar(argument), attributeType));
                 return;
             }

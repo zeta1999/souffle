@@ -1724,12 +1724,12 @@ const Json AstTranslator::getRecordsTypes() {
 
     // Iterate over all record types in the program populating the records map.
     for (auto* astType : program->getTypes()) {
-        const auto& type = getRootIfSubsetType(typeEnv->getType(astType->getQualifiedName()));
+        const auto& type = typeEnv->getType(astType->getQualifiedName());
         if (isA<RecordType>(type)) {
             types.clear();
             recordType.clear();
 
-            for (const Type* field : static_cast<const RecordType&>(type).getFields()) {
+            for (const Type* field : as<RecordType>(type)->getFields()) {
                 types.push_back(getTypeQualifier(*field));
             }
             const size_t recordArity = types.size();

@@ -98,7 +98,7 @@ class ConstantType : public Type {
 /**
  * A type being a subset of another type.
  */
-class SubsetType : public Type {
+class SubsetType : virtual public Type {
 public:
     void print(std::ostream& out) const override;
 
@@ -128,7 +128,7 @@ public:
 
 private:
     PrimitiveType(const TypeEnvironment& environment, const AstQualifiedName& name, const ConstantType& base)
-            : SubsetType(environment, name, base) {}
+            : Type(environment, name), SubsetType(environment, name, base) {}
 
     friend class TypeEnvironment;
 };
@@ -156,7 +156,7 @@ protected:
 /**
  * A record type combining a list of fields into a new, aggregated type.
  */
-struct RecordType : public Type {
+struct RecordType : virtual public Type {
 public:
     void setFields(std::vector<const Type*> newFields) {
         fields = std::move(newFields);
@@ -176,6 +176,29 @@ protected:
     RecordType(const TypeEnvironment& environment, const AstQualifiedName& name,
             const std::vector<const Type*> fields = {})
             : Type(environment, name), fields(fields) {}
+};
+
+struct SubsetRecordType : public SubsetType, public RecordType {
+public:
+    void print(std::ostream& out) const override {
+        SubsetType::print(out);
+    }
+
+protected:
+    friend class TypeEnvironment;
+
+    SubsetRecordType(
+            const TypeEnvironment& environment, const AstQualifiedName& name, const RecordType& baseType)
+            : Type(environment, name), SubsetType(environment, name, baseType),
+              RecordType(environment, name, baseType.getFields()) {
+        // Update fields, replacing each occurrence of base with derived.
+        // so that if .type base = [a, base] and derived <: base, then derived = [a, derived].
+        for (auto& field : fields) {
+            if (field == &baseType) {
+                field = this;
+            }
+        }
+    };
 };
 
 /**
@@ -411,7 +434,7 @@ private:
     TypeSet initializePrimitiveTypes();
     TypeSet initializeConstantTypes();
 
-    /** Map covering the namespace of user types. */
+    /** The list of covered types. */
     std::map<AstQualifiedName, std::unique_ptr<Type>> types;
 
     const TypeSet constantTypes;
@@ -433,17 +456,6 @@ bool isSubtypeOf(const Type& a, const Type& b);
  * Returns full type qualifier for a given type
  */
 std::string getTypeQualifier(const Type& type);
-
-/**
- * Utility function. Return a root if given the subset type, otherwise simply return the type.
- */
-inline const Type& getRootIfSubsetType(const Type& type) {
-    if (isA<SubsetType>(type)) {
-        auto& baseType = static_cast<const SubsetType&>(type).getBaseType();
-        return getRootIfSubsetType(baseType);
-    }
-    return type;
-}
 
 /**
  * Determines whether the given type is a sub-type of the given root type.

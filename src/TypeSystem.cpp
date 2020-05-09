@@ -174,7 +174,7 @@ bool isOfRootType(const Type& type, const Type& root) {
 
 bool isOfKind(const Type& type, TypeAttribute kind) {
     if (kind == TypeAttribute::Record) {
-        return isA<RecordType>(getRootIfSubsetType(type));
+        return isA<RecordType>(type);
     }
     return isOfRootType(type, type.getTypeEnvironment().getConstantType(kind));
 }

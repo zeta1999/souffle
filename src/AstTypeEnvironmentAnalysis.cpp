@@ -99,6 +99,12 @@ const Type* TypeEnvironmentAnalysis::createType(const AstQualifiedName& typeName
         if (baseType == nullptr) {
             return nullptr;
         }
+
+        // Subset of a record is a special case.
+        if (isA<RecordType>(baseType)) {
+            return &env.createType<SubsetRecordType>(typeName, *as<RecordType>(baseType));
+        }
+
         return &env.createType<SubsetType>(typeName, *baseType);
 
     } else if (isA<AstUnionType>(astType)) {

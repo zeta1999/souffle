@@ -265,16 +265,9 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     // all nil constants are used as records
     visitDepthFirst(nodes, [&](const AstNilConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        if (types.isAll() || types.size() != 1) {
+        if (!isOfKind(types, TypeAttribute::Record)) {
             report.addError("Nil constant used as a non-record", constant.getSrcLoc());
             return;
-        }
-
-        // At this point we know that there is exactly one type in set, so we can take it.
-        auto& recordType = getRootIfSubsetType(dynamic_cast<const Type&>(*types.begin()));
-
-        if (!isA<RecordType>(recordType)) {
-            report.addError("Nil constant used as a non-record", constant.getSrcLoc());
         }
     });
 
@@ -282,20 +275,15 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
 
-        if (types.isAll() || types.size() != 1) {
+        if (!isOfKind(types, TypeAttribute::Record) || types.size() != 1) {
             report.addError("Ambiguous record", constant.getSrcLoc());
             return;
         }
 
         // At this point we know that there is exactly one type in set, so we can take it.
-        auto& recordType = getRootIfSubsetType(dynamic_cast<const Type&>(*types.begin()));
+        auto& recordType = *as<RecordType>(*types.begin());
 
-        if (!isA<RecordType>(recordType)) {
-            report.addError("Ambiguous record", constant.getSrcLoc());
-            return;
-        }
-
-        if (static_cast<const RecordType&>(recordType).getFields().size() != constant.getArguments().size()) {
+        if (as<RecordType>(recordType)->getFields().size() != constant.getArguments().size()) {
             report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
         }
     });
@@ -896,7 +884,7 @@ void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& astType) {
                 astType.getSrcLoc());
     }
 
-    auto& rootType = getRootIfSubsetType(typeEnv.getType(astType.getQualifiedName()));
+    auto& rootType = typeEnv.getType(astType.getBaseType());
 
     if (isA<UnionType>(rootType)) {
         report.addError(format("Subset type %s can't be derived from union %s", astType.getQualifiedName(),
@@ -912,11 +900,11 @@ void AstSemanticCheckerImpl::checkType(const AstType& type) {
     }
 
     if (isA<AstUnionType>(type)) {
-        checkUnionType(static_cast<const AstUnionType&>(type));
+        checkUnionType(*as<AstUnionType>(type));
     } else if (isA<AstRecordType>(type)) {
-        checkRecordType(static_cast<const AstRecordType&>(type));
+        checkRecordType(*as<AstRecordType>(type));
     } else if (isA<AstSubsetType>(type)) {
-        checkSubsetType(static_cast<const AstSubsetType&>(type));
+        checkSubsetType(*as<AstSubsetType>(type));
     } else {
         fatal("unsupported type construct: %s", typeid(type).name());
     }

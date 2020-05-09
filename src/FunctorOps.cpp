@@ -1,6 +1,7 @@
 
 #include "FunctorOps.h"
 #include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
 #include <vector>
 
 namespace souffle {
@@ -269,7 +270,7 @@ struct FUNCTOR_INTRINSIC_SANCHECKER {
         std::map<FunctorOp, IntrinsicFunctors> byOp;
         for (auto&& x : FUNCTOR_INTRINSICS) {
             byOp[x.op].push_back(x);
-            assert(!x.variadic || x.params.size() == 1 && "variadics must have a single parameter");
+            assert((!x.variadic || x.params.size() == 1) && "variadics must have a single parameter");
         }
 
         for (auto&& [_, xs] : byOp) {

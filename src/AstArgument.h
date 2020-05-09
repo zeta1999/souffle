@@ -346,7 +346,7 @@ protected:
     AstIntrinsicFunctor(
             std::string op, const IntrinsicFunctor* info, VecOwn<AstArgument> args, SrcLocation loc = {})
             : AstFunctor(std::move(args), std::move(loc)), function(std::move(op)), info(info) {
-        assert(!info || info->symbol == function && "functor info must match symbol");
+        assert((!info || info->symbol == function) && "functor info must match symbol");
     }
 
     void print(std::ostream& os) const override {

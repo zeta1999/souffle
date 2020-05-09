@@ -296,15 +296,20 @@ AM_COLOR_TESTS=always
 # init check programs
 check_PROGRAMS =
 
+# test description
+# check_PROGRAMS += test/testname
+# test_testname_SOURCES = test/cppfile
+# if needed
+# test_testname_LDADD = libsouffle.la
+# test_testname_CXXFLAGS = test-specific flags
+
 # profile utilities test
 check_PROGRAMS += test/profile_util_test
 test_profile_util_test_SOURCES = test/profile_util_test.cpp
-test_profile_util_test_LDADD = libsouffle.la
 
 # utils test
 check_PROGRAMS += test/util_test
 test_util_test_SOURCES = test/util_test.cpp
-test_util_test_LDADD = libsouffle.la
 
 # matching test
 check_PROGRAMS += test/matching_test
@@ -314,37 +319,30 @@ test_matching_test_LDADD = libsouffle.la
 # table test
 check_PROGRAMS += test/table_test
 test_table_test_SOURCES = test/table_test.cpp
-test_table_test_LDADD = libsouffle.la
 
 # b-tree set test
 check_PROGRAMS += test/btree_set_test
 test_btree_set_test_SOURCES = test/btree_set_test.cpp
-test_btree_set_test_LDADD = libsouffle.la
 
 # b-tree multi-set test
 check_PROGRAMS += test/btree_multiset_test
 test_btree_multiset_test_SOURCES = test/btree_multiset_test.cpp
-test_btree_multiset_test_LDADD = libsouffle.la
 
 # binary relation tests
 check_PROGRAMS += test/binary_relation_test
 test_binary_relation_test_SOURCES = test/binary_relation_test.cpp
-test_binary_relation_test_LDADD = libsouffle.la
 
 # pnappa's good ol fashioned data structure tests (auxilliary structures to binrel, and potentially useful outside)
 check_PROGRAMS += test/eqrel_datastructure_test
 test_eqrel_datastructure_test_SOURCES = test/eqrel_datastructure_test.cpp
-test_eqrel_datastructure_test_LDADD = libsouffle.la
 
 # compiled ram tuple test
 check_PROGRAMS += test/compiled_tuple_test
 test_compiled_tuple_test_SOURCES = test/compiled_tuple_test.cpp
-test_compiled_tuple_test_LDADD = libsouffle.la
 
 # compiled ram index utils test
 check_PROGRAMS += test/compiled_index_utils_test
 test_compiled_index_utils_test_SOURCES = test/compiled_index_utils_test.cpp
-test_compiled_index_utils_test_LDADD = libsouffle.la
 
 # interpreter relation test
 check_PROGRAMS += test/interpreter_relation_test
@@ -384,22 +382,18 @@ test_ast_parser_utils_test_LDADD = libsouffle.la
 # symbol table
 check_PROGRAMS += test/symbol_table_test
 test_symbol_table_test_SOURCES = test/symbol_table_test.cpp
-test_symbol_table_test_LDADD = libsouffle.la
 
 # graph utils
 check_PROGRAMS += test/graph_utils_test
 test_graph_utils_test_SOURCES = test/graph_utils_test.cpp
-test_graph_utils_test_LDADD = libsouffle.la
 
 # trie implementation
 check_PROGRAMS += test/brie_test
 test_brie_test_SOURCES = test/brie_test.cpp
-test_brie_test_LDADD = libsouffle.la
 
 # parallel utils implementation
 check_PROGRAMS += test/parallel_utils_test
 test_parallel_utils_test_SOURCES = test/parallel_utils_test.cpp
-test_parallel_utils_test_LDADD = libsouffle.la
 
 # interpreter relation test
 check_PROGRAMS += test/ram_condition_equal_clone_test
@@ -438,7 +432,6 @@ test_ram_type_conversion_test_LDADD = libsouffle.la
 
 check_PROGRAMS += test/record_table_test
 test_record_table_test_SOURCES = test/record_table_test.cpp
-test_record_table_test_LDADD = libsouffle.la
 
 # make all check-programs tests
 TESTS = $(check_PROGRAMS)

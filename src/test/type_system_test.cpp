@@ -39,7 +39,7 @@ TEST(TypeSystem, Basic) {
     EXPECT_EQ("B <: symbol", toString(B));
 
     EXPECT_EQ("U = A | B", toString(U));
-    EXPECT_EQ("R = ( A , B )", toString(R));
+    EXPECT_EQ("R = (A, B)", toString(R));
 }
 
 TEST(TypeSystem, isNumberType) {

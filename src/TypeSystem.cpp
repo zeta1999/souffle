@@ -24,23 +24,18 @@
 namespace souffle {
 
 void SubsetType::print(std::ostream& out) const {
-    out << getName() << " <: " << baseType;
+    out << tfm::format("%s <: %s", getName(), baseType);
 }
 
 void UnionType::print(std::ostream& out) const {
-    out << getName() << " = "
-        << join(elementTypes, " | ", [](std::ostream& out, const Type* type) { out << type->getName(); });
+    out << tfm::format("%s = %s", getName(),
+            join(elementTypes, " | ", [](std::ostream& out, const Type* type) { out << type->getName(); }));
 }
 
 void RecordType::print(std::ostream& out) const {
-    out << getName() << " = ";
-    if (fields.empty()) {
-        out << "()";
-        return;
-    }
-    out << "( "
-        << join(fields, " , ", [&](std::ostream& out, const Type* fieldType) { out << fieldType->getName(); })
-        << " )";
+    out << tfm::format("%s = (%s)", getName(),
+            join(fields, ", ",
+                    [&](std::ostream& out, const Type* fieldType) { out << fieldType->getName(); }));
 }
 
 TypeSet TypeEnvironment::initializeConstantTypes() {

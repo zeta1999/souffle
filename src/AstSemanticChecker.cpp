@@ -65,8 +65,6 @@
 
 namespace souffle {
 
-using tinyformat::format;
-
 struct AstSemanticCheckerImpl {
     AstTranslationUnit& tu;
     AstSemanticCheckerImpl(AstTranslationUnit& tu);
@@ -841,8 +839,9 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
 
         // Report error (if size == 0, then the union is cyclic)
         if (predefinedTypesInUnion.size() > 1) {
-            report.addError(format("Union type %s is defined over {%s} (multiple primitive types in union)",
-                                    name, join(predefinedTypesInUnion, ", ")),
+            report.addError(
+                    tfm::format("Union type %s is defined over {%s} (multiple primitive types in union)",
+                            name, join(predefinedTypesInUnion, ", ")),
                     type->getSrcLoc());
         }
     }
@@ -853,7 +852,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     // check proper definition of all field types
     for (auto&& field : fields) {
         if (!typeEnv.isType(field->getTypeName())) {
-            report.addError(format("Undefined type %s in definition of field %s", field->getTypeName(),
+            report.addError(tfm::format("Undefined type %s in definition of field %s", field->getTypeName(),
                                     field->getName()),
                     field->getSrcLoc());
         }
@@ -874,13 +873,14 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
 
 void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& astType) {
     if (typeEnvAnalysis.isCyclic(astType.getQualifiedName())) {
-        report.addError(format("Infinite descent in the definition of type %s", astType.getQualifiedName()),
+        report.addError(
+                tfm::format("Infinite descent in the definition of type %s", astType.getQualifiedName()),
                 astType.getSrcLoc());
         return;
     }
 
     if (!typeEnv.isType(astType.getBaseType())) {
-        report.addError(format("Undefined base type %s in definition of type %s", astType.getBaseType(),
+        report.addError(tfm::format("Undefined base type %s in definition of type %s", astType.getBaseType(),
                                 astType.getQualifiedName()),
                 astType.getSrcLoc());
         return;
@@ -889,8 +889,8 @@ void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& astType) {
     auto& rootType = typeEnv.getType(astType.getBaseType());
 
     if (isA<UnionType>(rootType)) {
-        report.addError(format("Subset type %s can't be derived from union %s", astType.getQualifiedName(),
-                                rootType.getName()),
+        report.addError(tfm::format("Subset type %s can't be derived from union %s",
+                                astType.getQualifiedName(), rootType.getName()),
                 astType.getSrcLoc());
     }
 }

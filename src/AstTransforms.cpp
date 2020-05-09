@@ -1223,7 +1223,7 @@ bool RemoveRedundantSumsTransformer::transform(AstTranslationUnit& translationUn
                         auto number = std::unique_ptr<AstNumericConstant>(constant->clone());
                         // Now it's constant * count : { ... }
                         auto result = std::make_unique<AstIntrinsicFunctor>(
-                                FunctorOp::MUL, std::move(number), std::move(count));
+                                "*", std::move(number), std::move(count));
 
                         return result;
                     }
@@ -1424,19 +1424,15 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                 }
 
                 // Handle functor
-                if (auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get())) {
-                    if (isOverloadedFunctor(functor->getFunction())) {
-                        auto attemptOverload = [&](TypeAttribute ty, auto& fn) {
-                            // All args must be of the same type.
-                            if (!all_of(functor->getArguments(), fn)) return false;
-
-                            functor->setFunction(convertOverloadedFunctor(functor->getFunction(), ty));
-                            return true;
-                        };
-
-                        if (attemptOverload(TypeAttribute::Float, isFloat) ||
-                                attemptOverload(TypeAttribute::Unsigned, isUnsigned) ||
-                                attemptOverload(TypeAttribute::Symbol, isSymbol)) {
+                auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get());
+                if (functor && !functor->getFunctionInfo()) {
+                    auto argTys = map(functor->getArguments(),
+                            [&](auto&& arg) { return getTypeAttribute(typeAnalysis.getTypes(arg)); });
+                    if (all_of(argTys, [&](auto&& x) { return (bool)x; })) {
+                        auto matches = functorBuiltIn(
+                                functor->getFunction(), map(argTys, [&](auto&& x) { return *x; }));
+                        if (matches.size() == 1) {
+                            functor->setFunctionInfo(matches.front().get());
                             changed = true;
                         }
                     }
@@ -1448,42 +1444,38 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                         // Get arguments
                         auto* leftArg = binaryConstraint->getLHS();
                         auto* rightArg = binaryConstraint->getRHS();
+                        auto oldOp = binaryConstraint->getOperator();
 
                         // Both args must be of the same type
                         if (isFloat(leftArg) && isFloat(rightArg)) {
-                            BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                    binaryConstraint->getOperator(), TypeAttribute::Float);
-                            binaryConstraint->setOperator(convertedConstraint);
-                            changed = true;
+                            binaryConstraint->setOperator(convertOverloadedConstraint(
+                                    binaryConstraint->getOperator(), TypeAttribute::Float));
                         } else if (isUnsigned(leftArg) && isUnsigned(rightArg)) {
-                            BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                    binaryConstraint->getOperator(), TypeAttribute::Unsigned);
-                            binaryConstraint->setOperator(convertedConstraint);
-                            changed = true;
+                            binaryConstraint->setOperator(convertOverloadedConstraint(
+                                    binaryConstraint->getOperator(), TypeAttribute::Unsigned));
                         } else if (isSymbol(leftArg) && isSymbol(rightArg)) {
-                            BinaryConstraintOp convertedConstraint = convertOverloadedConstraint(
-                                    binaryConstraint->getOperator(), TypeAttribute::Symbol);
-                            binaryConstraint->setOperator(convertedConstraint);
-                            changed = true;
+                            binaryConstraint->setOperator(convertOverloadedConstraint(
+                                    binaryConstraint->getOperator(), TypeAttribute::Symbol));
                         }
+
+                        changed = binaryConstraint->getOperator() != oldOp;
                     }
                 }
 
                 if (auto* aggregator = dynamic_cast<AstAggregator*>(node.get())) {
                     if (isOverloadedAggregator(aggregator->getOperator())) {
                         auto* targetExpression = aggregator->getTargetExpression();
+                        auto oldOp = aggregator->getOperator();
 
                         if (isFloat(targetExpression)) {
-                            AggregateOp convertedOperator = convertOverloadedAggregator(
-                                    aggregator->getOperator(), TypeAttribute::Float);
-                            aggregator->setOperator(convertedOperator);
-                            changed = true;
+                            aggregator->setOperator(convertOverloadedAggregator(
+                                    aggregator->getOperator(), TypeAttribute::Float));
                         } else if (isUnsigned(targetExpression)) {
-                            AggregateOp convertedOperator = convertOverloadedAggregator(
-                                    aggregator->getOperator(), TypeAttribute::Unsigned);
-                            aggregator->setOperator(convertedOperator);
-                            changed = true;
+                            aggregator->setOperator(convertOverloadedAggregator(
+                                    aggregator->getOperator(), TypeAttribute::Unsigned));
                         }
+
+                        changed = aggregator->getOperator() != oldOp;
                     }
                 }
             } catch (std::out_of_range&) {

@@ -165,7 +165,7 @@ TEST(Unary, UnsignedLogicalNeg) {
 }
 
 TEST(Unary, SingedTpUnsigned) {
-    FunctorOp functor = FunctorOp::ITOU;
+    FunctorOp functor = FunctorOp::I2U;
 
     for (auto randomNumber : testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, randomNumber);
@@ -174,7 +174,7 @@ TEST(Unary, SingedTpUnsigned) {
 }
 
 TEST(Unary, UnsignedToSigned) {
-    FunctorOp functor = FunctorOp::UTOI;
+    FunctorOp functor = FunctorOp::U2I;
 
     for (auto randomNumber : testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
@@ -183,7 +183,7 @@ TEST(Unary, UnsignedToSigned) {
 }
 
 TEST(Unary, SignedToFloat) {
-    FunctorOp functor = FunctorOp::ITOF;
+    FunctorOp functor = FunctorOp::I2F;
 
     for (auto randomNumber : testutil::generateRandomVector<RamDomain>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
@@ -192,7 +192,7 @@ TEST(Unary, SignedToFloat) {
 }
 
 TEST(Unary, FloatToSigned) {
-    FunctorOp functor = FunctorOp::FTOI;
+    FunctorOp functor = FunctorOp::F2I;
 
     for (auto randomNumber : testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
@@ -201,7 +201,7 @@ TEST(Unary, FloatToSigned) {
 }
 
 TEST(Unary, UnsignedToFloat) {
-    FunctorOp functor = FunctorOp::UTOF;
+    FunctorOp functor = FunctorOp::U2F;
 
     for (auto randomNumber : testutil::generateRandomVector<RamUnsigned>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));
@@ -210,7 +210,7 @@ TEST(Unary, UnsignedToFloat) {
 }
 
 TEST(Unary, FloatToUnsigned) {
-    FunctorOp functor = FunctorOp::FTOU;
+    FunctorOp functor = FunctorOp::F2U;
 
     for (auto randomNumber : testutil::generateRandomVector<RamFloat>(TESTS_PER_OPERATION)) {
         RamDomain result = evalUnary(functor, ramBitCast(randomNumber));

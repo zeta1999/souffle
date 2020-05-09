@@ -197,6 +197,14 @@ TypeConstraint hasSuperTypeInSet(const TypeVar& var, TypeSet values) {
     return std::make_shared<C>(var, values);
 }
 
+const Type& getBaseType(const Type* type) {
+    while (auto subset = dynamic_cast<const SubsetType*>(type)) {
+        type = &subset->getBaseType();
+    };
+    assert(isA<ConstantType>(*type) && "Root of subset type must be a constant type");
+    return *type;
+}
+
 /**
  * Ensure that types of left and right have the same base types.
  */
@@ -208,14 +216,6 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
         C(TypeVar left, TypeVar right) : left(std::move(left)), right(std::move(right)) {}
 
         bool update(Assignment<TypeVar>& assigment) const override {
-            auto getBaseType = [](const Type* type) -> const Type& {
-                while (auto subset = dynamic_cast<const SubsetType*>(type)) {
-                    type = &subset->getBaseType();
-                };
-                assert(isA<ConstantType>(*type) && "Root of subset type must be a constant type");
-                return *type;
-            };
-
             // get current value of variable a
             TypeSet& assigmentsLeft = assigment[left];
             TypeSet& assigmentsRight = assigment[right];
@@ -300,6 +300,78 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
     };
 
     return std::make_shared<C>(left, right);
+}
+
+/**
+ * Ensure that types of left and right have the same base types.
+ */
+TypeConstraint satisfiesOverload(const TypeEnvironment& typeEnv, IntrinsicFunctors overloads, TypeVar result,
+        std::vector<TypeVar> args) {
+    struct C : public Constraint<TypeVar> {
+        const TypeEnvironment& typeEnv;
+        mutable IntrinsicFunctors overloads;
+        TypeVar result;
+        std::vector<TypeVar> args;
+
+        C(const TypeEnvironment& typeEnv, IntrinsicFunctors overloads, TypeVar result,
+                std::vector<TypeVar> args)
+                : typeEnv(typeEnv), overloads(std::move(overloads)), result(std::move(result)),
+                  args(std::move(args)) {}
+
+        bool update(Assignment<TypeVar>& assigment) const override {
+            auto impossible = [&](TypeAttribute ty, const TypeVar& var) {
+                auto& curr = assigment[var];
+                return !curr.isAll() && !any_of(curr, [&](auto&& t) { return getTypeAttribute(t) == ty; });
+            };
+
+            auto invalidCandidate = [&](const IntrinsicFunctor& x) -> bool {
+                if (!x.variadic && args.size() != x.params.size()) return true;  // arity mismatch?
+                if (impossible(x.result, result)) return true;  // result type exclude overload?
+
+                for (size_t i = 0; i < args.size(); ++i)
+                    if (impossible(x.params[x.variadic ? 0 : i], args[i])) return true;
+
+                return false;
+            };
+
+            overloads.erase(
+                    std::remove_if(overloads.begin(), overloads.end(), invalidCandidate), overloads.end());
+
+            bool changed = false;
+            auto newResult = [&]() -> std::optional<TypeSet> {
+                if (0 == overloads.size()) return TypeSet();
+                if (1 < overloads.size()) return {};
+
+                auto& overload = overloads.front().get();
+                for (size_t i = 0; i < args.size(); ++i) {
+                    auto argTyAttr = overload.params[overload.variadic ? 0 : i];
+                    auto& argTy = typeEnv.getConstantType(argTyAttr);
+                    auto& currArg = assigment[args[i]];
+                    if (!currArg.isAll()) {
+                        auto newArg = currArg.filter({}, [&](auto&& t) { return isSubtypeOf(t, argTy); });
+                        changed |= currArg != newArg;
+                        currArg = std::move(newArg);
+                    }
+                }
+
+                return TypeSet{typeEnv.getConstantType(overload.result)};
+            }();
+
+            if (newResult) {
+                auto& curr = assigment[result];
+                changed |= curr != *newResult;
+                curr = std::move(*newResult);
+            }
+
+            return changed;
+        }
+
+        void print(std::ostream& out) const override {
+            out << "∃ t : (" << result << " <: t) where t is a base type";
+        }
+    };
+
+    return std::make_shared<C>(typeEnv, std::move(overloads), std::move(result), std::move(args));
 }
 
 /**
@@ -549,38 +621,35 @@ private:
     void visitFunctor(const AstFunctor& fun) override {
         auto functorVar = getVar(fun);
 
-        // In polymorphic case
-        // We only require arguments to share a base type with a return type.
-        // (instead of, for example, requiring them to be of the same type)
-        // This approach is related to old type semantics
-        // See #1296 and tests/semantic/type_system4
-        if (auto intrinsicFunctor = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
-            if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
-                for (auto* argument : intrinsicFunctor->getArguments()) {
-                    auto argumentVar = getVar(argument);
-                    addConstraint(subtypesOfTheSameBaseType(argumentVar, functorVar));
-                }
+        auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun);
+        if (intrFun) {
+            auto argVars = map(intrFun->getArguments(), [&](auto&& x) { return getVar(x); });
+            // In polymorphic case
+            // We only require arguments to share a base type with a return type.
+            // (instead of, for example, requiring them to be of the same type)
+            // This approach is related to old type semantics
+            // See #1296 and tests/semantic/type_system4
+            if (isInfixFunctorOp(intrFun->getFunction())) {
+                for (auto&& var : argVars)
+                    addConstraint(subtypesOfTheSameBaseType(var, functorVar));
+
+                return;
+            } else if (!intrFun->getFunctionInfo()) {
+                // The type of the user-defined function might not be set at this stage.
+                // If so then add overloads as alternatives
+                addConstraint(satisfiesOverload(
+                        typeEnv, functorBuiltIn(intrFun->getFunction()), functorVar, argVars));
 
                 return;
             }
-        }
-
-        // The type of the user-defined function might not be set at this stage.
-        try {
-            fun.getReturnType();
-        } catch (std::bad_optional_access& e) {
-            return;
         }
 
         // add a constraint for the return type of the functor
         addConstraint(isSubtypeOf(functorVar, typeEnv.getConstantType(fun.getReturnType())));
 
         // Special case. Ord returns the ram representation of any object.
-        if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
-            if (intrFun->getFunction() == FunctorOp::ORD) {
-                return;
-            }
-        }
+        if (intrFun && intrFun->getFunctionInfo()->op == FunctorOp::ORD) return;
+
         auto arguments = fun.getArguments();
         for (size_t i = 0; i < arguments.size(); ++i) {
             addConstraint(isSubtypeOf(getVar(arguments[i]), typeEnv.getConstantType(fun.getArgType(i))));

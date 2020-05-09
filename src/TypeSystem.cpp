@@ -410,4 +410,22 @@ TypeSet getGreatestCommonSubtypes(const TypeSet& a, const TypeSet& b) {
     return res;
 }
 
+TypeAttribute getTypeAttribute(const Type& type) {
+    if (isNumberType(type)) return TypeAttribute::Signed;
+    if (isUnsignedType(type)) return TypeAttribute::Unsigned;
+    if (isFloatType(type)) return TypeAttribute::Float;
+    if (isRecordType(type)) return TypeAttribute::Record;
+    if (isSymbolType(type)) return TypeAttribute::Symbol;
+    fatal("Unknown type class");
+}
+
+std::optional<TypeAttribute> getTypeAttribute(const TypeSet& type) {
+    if (isNumberType(type)) return TypeAttribute::Signed;
+    if (isUnsignedType(type)) return TypeAttribute::Unsigned;
+    if (isFloatType(type)) return TypeAttribute::Float;
+    if (isRecordType(type)) return TypeAttribute::Record;
+    if (isSymbolType(type)) return TypeAttribute::Symbol;
+    return {};
+}
+
 }  // end of namespace souffle

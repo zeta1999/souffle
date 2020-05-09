@@ -264,6 +264,16 @@ public:
         return result;
     }
 
+    template <typename F>
+    TypeSet filter(TypeSet whenAll, F&& f) const {
+        if (all) return whenAll;
+
+        TypeSet cpy;
+        for (auto&& t : *this)
+            if (f(t)) cpy.insert(t);
+        return cpy;
+    }
+
     /** Inserts all the types of the given set into this set */
     void insert(const TypeSet& set) {
         if (all) {
@@ -465,24 +475,8 @@ bool eqTypeTypeAttribute(const TypeAttribute ramType, const T& type) {
 /**
  * Convert a type analysis' type/set of type to the the TypeAttribute
  */
-template <typename T>  // T = Type or T = Typeset
-TypeAttribute getTypeAttribute(const T& type) {
-    TypeAttribute primitiveType;
-    if (isNumberType(type)) {
-        primitiveType = TypeAttribute::Signed;
-    } else if (isUnsignedType(type)) {
-        primitiveType = TypeAttribute::Unsigned;
-    } else if (isFloatType(type)) {
-        primitiveType = TypeAttribute::Float;
-    } else if (isRecordType(type)) {
-        primitiveType = TypeAttribute::Record;
-    } else if (isSymbolType(type)) {
-        primitiveType = TypeAttribute::Symbol;
-    } else {
-        fatal("Unknown type class");
-    }
-    return primitiveType;
-}
+TypeAttribute getTypeAttribute(const Type&);
+std::optional<TypeAttribute> getTypeAttribute(const TypeSet&);
 
 /**
  * Determines whether the type is numeric.

@@ -1487,6 +1487,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     NARY_OP(   opcode, RamSigned  , op) \
     NARY_OP(U##opcode, RamUnsigned, op) \
     NARY_OP(F##opcode, RamFloat   , op)
+
+
+#define CONV_TO_STRING(opcode, ty)                \
+    case FunctorOp::opcode: {                     \
+        out << "symTable.lookup(std::to_string("; \
+        visit(args[0], out);                      \
+        out << "))";                              \
+    } break;
+#define CONV_FROM_STRING(opcode, ty)                                            \
+    case FunctorOp::opcode: {                                                   \
+        out << "souffle::evaluator::symbol2numeric<" #ty ">(symTable.resolve("; \
+        visit(args[0], out);                                                    \
+        out << "))";                                                            \
+    } break;
             // clang-format on
 
             auto args = op.getArguments();
@@ -1503,18 +1517,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ").size())";
                     break;
                 }
-                case FunctorOp::TOSTRING: {
-                    out << "symTable.lookup(std::to_string(";
-                    visit(args[0], out);
-                    out << "))";
-                    break;
-                }
-                case FunctorOp::TONUMBER: {
-                    out << "(wrapper_tonumber(symTable.resolve((size_t)";
-                    visit(args[0], out);
-                    out << ")))";
-                    break;
-                }
 
                     // clang-format off
                 UNARY_OP_I(NEG, -)
@@ -1523,14 +1525,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 UNARY_OP_INTEGRAL(BNOT, ~)
                 UNARY_OP_INTEGRAL(LNOT, (RamDomain)!)
 
-                // Numeric coercions.
-                // Behaviour is similar to C++ except we saturate instead of overflowing.
-                UNARY_OP(FTOI, RamFloat   , static_cast<RamSigned>)
-                UNARY_OP(UTOI, RamUnsigned, static_cast<RamSigned>)
-                UNARY_OP(FTOU, RamFloat   , static_cast<RamUnsigned>)
-                UNARY_OP(ITOU, RamSigned  , static_cast<RamUnsigned>)
-                UNARY_OP(ITOF, RamSigned  , static_cast<RamFloat>)
-                UNARY_OP(UTOF, RamUnsigned, static_cast<RamFloat>)
+                /** numeric coersions follow C++ semantics. */
+                UNARY_OP(F2I, RamFloat   , static_cast<RamSigned>)
+                UNARY_OP(F2U, RamFloat   , static_cast<RamUnsigned>)
+                UNARY_OP(I2U, RamSigned  , static_cast<RamUnsigned>)
+                UNARY_OP(I2F, RamSigned  , static_cast<RamFloat>)
+                UNARY_OP(U2I, RamUnsigned, static_cast<RamSigned>)
+                UNARY_OP(U2F, RamUnsigned, static_cast<RamFloat>)
+
+                CONV_TO_STRING(F2S, RamFloat)
+                CONV_TO_STRING(I2S, RamSigned)
+                CONV_TO_STRING(U2S, RamUnsigned)
+
+                CONV_FROM_STRING(S2F, RamFloat)
+                CONV_FROM_STRING(S2I, RamSigned)
+                CONV_FROM_STRING(S2U, RamUnsigned)
 
                 /** Binary Functor Operators */
                 // arithmetic
@@ -1554,6 +1563,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
                 BINARY_OP_LOGICAL(LAND, &&)
                 BINARY_OP_LOGICAL(LOR , ||)
+                BINARY_OP_LOGICAL(LXOR, + souffle::evaluator::lxor_infix() +)
 
                 BINARY_OP_BITWISE(BAND, &)
                 BINARY_OP_BITWISE(BOR , |)
@@ -1836,18 +1846,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "     std::cerr << \"warning: wrong index position provided by substr(\\\"\";\n";
     os << "     std::cerr << str << \"\\\",\" << (int32_t)idx << \",\" << (int32_t)len << \") "
           "functor.\\n\";\n";
-    os << "   } return result;\n";
-    os << "}\n";
-
-    // to number wrapper
-    os << "private:\n";
-    os << "static inline RamDomain wrapper_tonumber(const std::string& str) {\n";
-    os << "   RamDomain result=0; \n";
-    os << "   try { result = RamSignedFromString(str); } catch(...) { \n";
-    os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
-    os << R"(     std::cerr << str << "\") )";
-    os << "functor.\\n\";\n";
-    os << "     raise(SIGFPE);\n";
     os << "   } return result;\n";
     os << "}\n";
 

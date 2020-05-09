@@ -191,7 +191,8 @@ bool isFact(const AstClause& clause) {
         }
 
         auto func = dynamic_cast<const AstIntrinsicFunctor*>(&arg);
-        if (func && isFunctorMultiResult(func->getFunction())) {
+        auto info = func ? func->getFunctionInfo() : nullptr;
+        if (info && info->multipleResults) {
             hasAggregatesOrMultiResultFunctor = true;
         }
     });

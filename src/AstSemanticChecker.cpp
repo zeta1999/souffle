@@ -307,7 +307,30 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     });
 
     // - functors -
-    visitDepthFirst(nodes, [&](const AstFunctor& fun) {
+    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
+        if (!fun.getFunctionInfo()) {  // no info => no overload found during inference
+            auto args = fun.getArguments();
+            if (!isValidFunctorOpArity(fun.getFunction(), args.size())) {
+                report.addError("invalid overload (arity mismatch)", fun.getSrcLoc());
+                return;
+            }
+
+            auto argTys = map(fun.getArguments(),
+                    [&](auto&& arg) { return getTypeAttribute(typeAnalysis.getTypes(arg)); });
+            if (all_of(argTys, [&](auto&& x) { return (bool)x; })) {
+                auto matches = functorBuiltIn(fun.getFunction(), map(argTys, [&](auto&& x) { return *x; }));
+                if (matches.size() == 1) fatal("polymorphic transformation wasn't runned?");
+
+                if (matches.empty()) {
+                    report.addError("no valid overloads", fun.getSrcLoc());
+                } else {
+                    report.addError("multiple valid overloads", fun.getSrcLoc());
+                }
+            }
+        }
+    });
+
+    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
 
@@ -326,13 +349,6 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
                 case TypeAttribute::Record: fatal("Invalid return type");
-            }
-        }
-
-        // Special case
-        if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
-            if (intrFun->getFunction() == FunctorOp::ORD) {
-                return;
             }
         }
 
@@ -409,13 +425,6 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         // Check if operation type and return type agree.
         if (!eqTypeTypeAttribute(opType, aggregatorType)) {
             report.addError("Couldn't assign types to the aggregator", aggregator.getSrcLoc());
-        }
-    });
-
-    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& func) {
-        auto n_args = func.getArguments().size();
-        if (!isValidFunctorOpArity(func.getFunction(), n_args)) {
-            report.addError("invalid overload (arity mismatch)", func.getSrcLoc());
         }
     });
 

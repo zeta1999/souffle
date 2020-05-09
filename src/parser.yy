@@ -294,7 +294,7 @@
 %type <Mov<Own<AstExecutionPlan>>>          exec_plan_list
 %type <Mov<Own<AstClause>>>                 fact
 %type <Mov<std::vector<TypeAttribute>>>     functor_arg_type_list
-%type <char const*>                         functor_built_in
+%type <Mov<std::string>>                    functor_built_in
 %type <Mov<Own<AstFunctorDeclaration>>>     functor_decl
 %type <Mov<VecOwn<AstAtom>>>                head
 %type <Mov<AstQualifiedName>>               identifier

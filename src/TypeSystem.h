@@ -202,12 +202,6 @@ public:
 
     TypeSet(bool all = false) : all(all) {}
 
-    TypeSet(const TypeSet& other) = default;
-
-    TypeSet(TypeSet&& other) noexcept : all(other.all), types() {
-        types.swap(other.types);
-    }
-
     template <typename... Types>
     explicit TypeSet(const Types&... types) : all(false) {
         for (const Type* cur : toVector<const Type*>(&types...)) {
@@ -215,7 +209,10 @@ public:
         }
     }
 
+    TypeSet(const TypeSet& other) = default;
+    TypeSet(TypeSet&& other) = default;
     TypeSet& operator=(const TypeSet& other) = default;
+    TypeSet& operator=(TypeSet&& other) = default;
 
     /** Emptiness check */
     bool empty() const {

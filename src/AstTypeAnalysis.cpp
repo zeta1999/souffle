@@ -350,7 +350,8 @@ TypeConstraint satisfiesOverload(const TypeEnvironment& typeEnv, IntrinsicFuncto
                     if (!currArg.isAll()) {
                         auto newArg = currArg.filter({}, [&](auto&& t) { return isSubtypeOf(t, argTy); });
                         changed |= currArg != newArg;
-                        currArg = std::move(newArg);
+                        // 2020-05-09: CI linter says to remove `std::move`, but clang-tidy-10 is happy.
+                        currArg = std::move(newArg);  // NOLINT
                     }
                 }
 
@@ -360,7 +361,8 @@ TypeConstraint satisfiesOverload(const TypeEnvironment& typeEnv, IntrinsicFuncto
             if (newResult) {
                 auto& curr = assigment[result];
                 changed |= curr != *newResult;
-                curr = std::move(*newResult);
+                // 2020-05-09: CI linter says to remove `std::move`, but clang-tidy-10 is happy.
+                curr = std::move(*newResult);  // NOLINT
             }
 
             return changed;

@@ -184,41 +184,18 @@ bool isOfKind(const TypeSet& typeSet, TypeAttribute kind) {
            all_of(typeSet, [&](const Type& type) { return isOfKind(type, kind); });
 }
 
-/* generate unique type qualifier string for a type */
 std::string getTypeQualifier(const Type& type) {
     struct visitor : public VisitOnceTypeVisitor<std::string> {
         std::string visitUnionType(const UnionType& type) const override {
-            std::string str = visitType(type);
-            str += "[";
-            bool first = true;
-            for (auto unionType : type.getElementTypes()) {
-                if (first) {
-                    first = false;
-                } else {
-                    str += ",";
-                }
-                str += visit(*unionType);
-            }
-            str += "]";
-            return str;
+            return tfm::format("%s[%s]", visitType(type),
+                    join(type.getElementTypes(), ", ",
+                            [&](std::ostream& out, const auto* elementType) { out << visit(*elementType); }));
         }
 
         std::string visitRecordType(const RecordType& type) const override {
-            std::string str = visitType(type);
-            str += "{";
-            bool first = true;
-            for (const Type* field : type.getFields()) {
-                if (first) {
-                    first = false;
-                } else {
-                    str += ",";
-                }
-                str += field->getName().toString();
-                str += "#";
-                str += visit(*field);
-            }
-            str += "}";
-            return str;
+            return tfm::format("%s{%s}", visitType(type),
+                    join(type.getFields(), ", ",
+                            [&](std::ostream& out, const auto* field) { out << visit(*field); }));
         }
 
         std::string visitType(const Type& type) const override {

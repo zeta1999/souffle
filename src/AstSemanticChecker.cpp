@@ -873,15 +873,17 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
 }
 
 void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& astType) {
+    if (typeEnvAnalysis.isCyclic(astType.getQualifiedName())) {
+        report.addError(format("Infinite descent in the definition of type %s", astType.getQualifiedName()),
+                astType.getSrcLoc());
+        return;
+    }
+
     if (!typeEnv.isType(astType.getBaseType())) {
         report.addError(format("Undefined base type %s in definition of type %s", astType.getBaseType(),
                                 astType.getQualifiedName()),
                 astType.getSrcLoc());
-    }
-
-    if (typeEnvAnalysis.isCyclic(astType.getQualifiedName())) {
-        report.addError(format("Infinite descent in the definition of type %s", astType.getQualifiedName()),
-                astType.getSrcLoc());
+        return;
     }
 
     auto& rootType = typeEnv.getType(astType.getBaseType());

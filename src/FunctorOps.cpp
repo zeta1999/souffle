@@ -203,7 +203,7 @@ const std::vector<IntrinsicFunctor> FUNCTOR_INTRINSICS = {
 
         VARIADIC(CAT, Symbol),
         OP_1(STRLEN, Symbol, Signed),
-        OP_3_MONO(SUBSTR, Symbol, false),
+        OP_3(SUBSTR, Symbol, Signed, Signed, Symbol, false),
 };
 
 template <typename F>

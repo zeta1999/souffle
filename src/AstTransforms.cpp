@@ -1424,17 +1424,13 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                 }
 
                 // Handle functor
-                auto* functor = dynamic_cast<AstIntrinsicFunctor*>(node.get());
+                auto* functor = as<AstIntrinsicFunctor>(node);
                 if (functor && !functor->getFunctionInfo()) {
-                    auto argTys = map(functor->getArguments(),
-                            [&](auto&& arg) { return getTypeAttribute(typeAnalysis.getTypes(arg)); });
-                    if (all_of(argTys, [&](auto&& x) { return (bool)x; })) {
-                        auto matches = functorBuiltIn(
-                                functor->getFunction(), map(argTys, [&](auto&& x) { return *x; }));
-                        if (matches.size() == 1) {
-                            functor->setFunctionInfo(matches.front().get());
-                            changed = true;
-                        }
+                    // any valid candidate will do. pick the first.
+                    auto candidates = validOverloads(typeAnalysis, *functor);
+                    if (!candidates.empty()) {
+                        functor->setFunctionInfo(candidates.front().get());
+                        changed = true;
                     }
                 }
 
@@ -1458,7 +1454,7 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                                     binaryConstraint->getOperator(), TypeAttribute::Symbol));
                         }
 
-                        changed = binaryConstraint->getOperator() != oldOp;
+                        changed |= binaryConstraint->getOperator() != oldOp;
                     }
                 }
 
@@ -1475,7 +1471,7 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                                     aggregator->getOperator(), TypeAttribute::Unsigned));
                         }
 
-                        changed = aggregator->getOperator() != oldOp;
+                        changed |= aggregator->getOperator() != oldOp;
                     }
                 }
             } catch (std::out_of_range&) {

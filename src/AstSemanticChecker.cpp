@@ -315,18 +315,8 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                 return;
             }
 
-            auto argTys = map(fun.getArguments(),
-                    [&](auto&& arg) { return getTypeAttribute(typeAnalysis.getTypes(arg)); });
-            if (all_of(argTys, [&](auto&& x) { return (bool)x; })) {
-                auto matches = functorBuiltIn(fun.getFunction(), map(argTys, [&](auto&& x) { return *x; }));
-                if (matches.size() == 1) fatal("polymorphic transformation wasn't runned?");
-
-                if (matches.empty()) {
-                    report.addError("no valid overloads", fun.getSrcLoc());
-                } else {
-                    report.addError("multiple valid overloads", fun.getSrcLoc());
-                }
-            }
+            assert(validOverloads(typeAnalysis, fun).empty() && "polymorphic transformation wasn't applied?");
+            report.addError("no valid overloads", fun.getSrcLoc());
         }
     });
 

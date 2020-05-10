@@ -646,11 +646,11 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     if (dynamic_cast<const AstNumericConstant*>(&argument) != nullptr) {
         return true;
     }
-    if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
+    if (auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         // Check return type.
-        if (!isNumericType(functor->getReturnType())) {
-            return false;
-        }
+        auto* info = functor->getFunctionInfo();
+        if (!(info && isNumericType(info->result))) return false;
+
         // Check arguments
         return all_of(functor->getArguments(), [](auto* arg) { return isConstantArithExpr(*arg); });
     }

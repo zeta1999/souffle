@@ -343,15 +343,21 @@ TypeConstraint satisfiesOverload(const TypeEnvironment& typeEnv, IntrinsicFuncto
                 if (1 < overloads.size()) return {};
 
                 auto& overload = overloads.front().get();
-                for (size_t i = 0; i < args.size(); ++i) {
-                    auto argTyAttr = overload.params[overload.variadic ? 0 : i];
-                    auto& argTy = typeEnv.getConstantType(argTyAttr);
-                    auto& currArg = assigment[args[i]];
-                    if (!currArg.isAll()) {
-                        auto newArg = currArg.filter({}, [&](auto&& t) { return isSubtypeOf(t, argTy); });
-                        changed |= currArg != newArg;
-                        // 2020-05-09: CI linter says to remove `std::move`, but clang-tidy-10 is happy.
-                        currArg = std::move(newArg);  // NOLINT
+                // `ord` is freakin' magical: it has the signature `a -> Int`.
+                // As a consequence, we might be given non-primitive arguments (i.e. types for which
+                // `TypeEnv::getConstantType` is undefined).
+                // Handle this by not imposing constraints on the arguments.
+                if (overload.op != FunctorOp::ORD) {
+                    for (size_t i = 0; i < args.size(); ++i) {
+                        auto argTyAttr = overload.params[overload.variadic ? 0 : i];
+                        auto& argTy = typeEnv.getConstantType(argTyAttr);
+                        auto& currArg = assigment[args[i]];
+                        if (!currArg.isAll()) {
+                            auto newArg = currArg.filter({}, [&](auto&& t) { return isSubtypeOf(t, argTy); });
+                            changed |= currArg != newArg;
+                            // 2020-05-09: CI linter says to remove `std::move`, but clang-tidy-10 is happy.
+                            currArg = std::move(newArg);  // NOLINT
+                        }
                     }
                 }
 

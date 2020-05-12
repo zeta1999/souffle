@@ -2,6 +2,11 @@ language: generic
 dist: bionic
 arch: amd64
 
+# Travis-ci bugs prevent completion. A workaround is to disable secret filtering
+# In early 2018 said they are working on fixing their filter script, and in 10/2019
+# they were still working on it.
+filter_secrets: false
+
 _aliases:
   - &docker
     os: linux
@@ -208,13 +213,9 @@ jobs:
   - stage: Packaging
     name: "Debian arm64 package"
     arch: arm64
-    filter_secrets: false
     <<: *docker
     script:
       - docker exec souf /bin/sh -c ".travis/linux/install_debian_deps.sh"
-        # Travis-ci bugs prevent completion. A workaround is to disable secret filtering
-        # In early 2018 said they are working on fixing their filter script, and in 10/2019
-        # they were still working on it.
       - travis_wait 40 docker exec souf /bin/sh -c ".travis/linux/make_debian_package.sh"
     before_deploy:
       - .travis/bintray_json.sh debian arm64

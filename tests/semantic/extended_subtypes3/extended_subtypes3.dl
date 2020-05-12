@@ -30,10 +30,7 @@ SymbolChain(b, b, b) :- SymbolChain(_, b, _).
 
 .decl RecordSubtypes(a: List, b: S1List, c: S2List)
 RecordSubtypes([1, [1, nil]], [2, nil], [3, nil]).
-// RecordSubtypes(x, [1, x], x) :- RecordSubtypes(x, _, _). // error in [1, x]
-// RecordSubtypes([1, y], y, y) :- RecordSubtypes(y, y, _). // Should be error in second place
+RecordSubtypes(x, [1, x], x) :- RecordSubtypes(x, _, _). // error in [1, x] and x
+RecordSubtypes(y, y, y) :- RecordSubtypes(y, _, _). // Should be error in second place and third place.
 
 .output RecordSubtypes(IO=stdout)
-
-
-// Should S1List = [head: number, tail: List] or [head: number, tail: SList1]

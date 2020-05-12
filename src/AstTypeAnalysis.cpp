@@ -466,8 +466,11 @@ private:
     void visitSink(const AstAtom& atom) {
         iterateOverAtom(atom, [&](const AstArgument& argument, const Type& attributeType) {
             if (isA<RecordType>(attributeType)) {
-                // Todo: this isn't right.
-                addConstraint(isSubtypeOf(getVar(argument), attributeType));
+                auto base = &attributeType;
+                while (isA<SubsetType>(base)) {
+                    base = &as<SubsetType>(base)->getBaseType();
+                }
+                addConstraint(isSubtypeOf(getVar(argument), *base));
                 return;
             }
             for (auto& constantType : typeEnv.getConstantTypes()) {

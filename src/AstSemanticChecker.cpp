@@ -195,10 +195,11 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                 }
 
                 // Attribute and argument type agree if, argument type is a subtype of declared type or is of
-                // the appropriate constant type.
+                // the appropriate constant type or a anonymous record type.
                 bool validAttribute = all_of(argTypes, [&attributeType](const Type& type) {
-                    return isSubtypeOf(type, attributeType) ||
-                           (isA<ConstantType>(type) && isSubtypeOf(attributeType, type));
+                    if (isSubtypeOf(type, attributeType)) return true;
+                    if (isA<ConstantType>(type) && isSubtypeOf(attributeType, type)) return true;
+                    return isA<RecordType>(type) && !isA<SubsetType>(type);
                 });
                 if (!validAttribute) {
                     if (Global::config().has("legacy")) {
@@ -281,8 +282,9 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         // At this point we know that there is exactly one type in set, so we can take it.
         auto& recordType = *as<RecordType>(*types.begin());
 
-        if (as<RecordType>(recordType)->getFields().size() != constant.getArguments().size()) {
+        if (recordType.getFields().size() != constant.getArguments().size()) {
             report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
+            return;
         }
     });
 
@@ -851,7 +853,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     auto&& fields = type.getFields();
     // check proper definition of all field types
     for (auto&& field : fields) {
-        if (!typeEnv.isType(field->getTypeName())) {
+        if (!typeEnv.isType(field->getTypeName()) && field->getTypeName() != type.getQualifiedName()) {
             report.addError(tfm::format("Undefined type %s in definition of field %s", field->getTypeName(),
                                     field->getName()),
                     field->getSrcLoc());

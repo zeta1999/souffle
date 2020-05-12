@@ -22,6 +22,7 @@
 #include "GraphUtils.h"
 #include "TypeSystem.h"
 #include "utility/MiscUtil.h"
+#include "utility/tinyformat.h"
 #include <functional>
 #include <ostream>
 #include <typeinfo>
@@ -168,17 +169,26 @@ const Type* TypeEnvironmentAnalysis::createType(
         return &env.createType<UnionType>(typeName, std::move(elements));
 
     } else if (isA<AstRecordType>(astType)) {
-        // Record type must be created upfront as it may be its-own member.
-        auto& recordType = env.createType<RecordType>(typeName);
+        // Create anonymous base first.
+        auto& recordBase = env.createType<RecordType>(tfm::format("__%sConstant", typeName));
+
         std::vector<const Type*> elements;
         for (const auto* field : as<AstRecordType>(astType)->getFields()) {
+            if (field->getTypeName() == typeName) {
+                elements.push_back(&recordBase);
+                continue;
+            }
+
             auto* elementType = createType(field->getTypeName(), nameToAstType);
             if (elementType == nullptr) {
                 return nullptr;
             }
             elements.push_back(elementType);
         }
-        recordType.setFields(std::move(elements));
+        recordBase.setFields(std::move(elements));
+
+        auto& recordType = env.createType<SubsetRecordType>(typeName, recordBase);
+
         return &recordType;
 
     } else {

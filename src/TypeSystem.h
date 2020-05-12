@@ -178,6 +178,9 @@ protected:
             : Type(environment, name), fields(fields) {}
 };
 
+/**
+ * Type representing a subset type derived from the record type.
+ */
 struct SubsetRecordType : public SubsetType, public RecordType {
 public:
     void print(std::ostream& out) const override {

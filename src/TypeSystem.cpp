@@ -24,7 +24,7 @@
 namespace souffle {
 
 void SubsetType::print(std::ostream& out) const {
-    out << tfm::format("%s <: %s", getName(), baseType);
+    out << tfm::format("%s <: %s", getName(), baseType.getName());
 }
 
 void UnionType::print(std::ostream& out) const {

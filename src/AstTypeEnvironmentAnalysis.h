@@ -64,20 +64,7 @@ private:
      * Recursively create a type in env. (eg: Subset -> construct base and then the type itself).
      */
     const Type* createType(const AstQualifiedName& typeName,
-            const Graph<AstQualifiedName>& typeDependencyGraph,
             const std::map<AstQualifiedName, const AstType*>& nameToAstType);
-
-    /**
-     * Check intersections of unions with primitive types.
-     */
-    void analysePrimitiveTypesInUnion(
-            const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes);
-
-    /**
-     * Find cyclic types.
-     */
-    void analyseCyclicTypes(
-            const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes);
 };
 
 }  // end of namespace souffle

@@ -50,94 +50,12 @@ Graph<AstQualifiedName> createTypeDependencyGraph(const std::vector<AstType*>& p
     return typeDependencyGraph;
 }
 
-}  // namespace
-
-void TypeEnvironmentAnalysis::run(const AstTranslationUnit& translationUnit) {
-    const AstProgram& program = *translationUnit.getProgram();
-
-    auto rawProgramTypes = program.getTypes();
-    Graph<AstQualifiedName> typeDependencyGraph{createTypeDependencyGraph(rawProgramTypes)};
-
-    analyseCyclicTypes(typeDependencyGraph, rawProgramTypes);
-    analysePrimitiveTypesInUnion(typeDependencyGraph, rawProgramTypes);
-
-    std::map<AstQualifiedName, const AstType*> nameToAstType;
-
-    // Filter redefined primitive types and cyclic types.
-    std::vector<AstType*> programTypes;
-    for (auto* type : program.getTypes()) {
-        if (env.isType(type->getQualifiedName()) || isCyclic(type->getQualifiedName())) {
-            continue;
-        }
-        programTypes.push_back(type);
-        nameToAstType.insert({type->getQualifiedName(), type});
-    }
-
-    for (const auto* astType : programTypes) {
-        createType(astType->getQualifiedName(), typeDependencyGraph, nameToAstType);
-    }
-}
-
-const Type* TypeEnvironmentAnalysis::createType(const AstQualifiedName& typeName,
-        const Graph<AstQualifiedName>& typeDependencyGraph,
-        const std::map<AstQualifiedName, const AstType*>& nameToAstType) {
-    // base case
-    if (env.isType(typeName)) {
-        return &env.getType(typeName);
-    }
-
-    auto iterToType = nameToAstType.find(typeName);
-    if (iterToType == nameToAstType.end()) {
-        return nullptr;
-    }
-    const AstType& astType = *iterToType->second;
-
-    if (isA<AstSubsetType>(astType)) {
-        auto* baseType =
-                createType(as<AstSubsetType>(astType)->getBaseType(), typeDependencyGraph, nameToAstType);
-
-        if (baseType == nullptr) {
-            return nullptr;
-        }
-
-        // Subset of a record is a special case.
-        if (isA<RecordType>(baseType)) {
-            return &env.createType<SubsetRecordType>(typeName, *as<RecordType>(baseType));
-        }
-
-        return &env.createType<SubsetType>(typeName, *baseType);
-
-    } else if (isA<AstUnionType>(astType)) {
-        std::vector<const Type*> elements;
-        for (const auto& element : as<AstUnionType>(astType)->getTypes()) {
-            auto* elementType = createType(element, typeDependencyGraph, nameToAstType);
-            if (elementType == nullptr) {
-                return nullptr;
-            }
-            elements.push_back(elementType);
-        }
-        return &env.createType<UnionType>(typeName, std::move(elements));
-
-    } else if (isA<AstRecordType>(astType)) {
-        // Record type must be created upfront as it may be its-own member.
-        auto& recordType = env.createType<RecordType>(typeName);
-        std::vector<const Type*> elements;
-        for (const auto* field : as<AstRecordType>(astType)->getFields()) {
-            auto* elementType = createType(field->getTypeName(), typeDependencyGraph, nameToAstType);
-            if (elementType == nullptr) {
-                return nullptr;
-            }
-            elements.push_back(elementType);
-        }
-        recordType.setFields(std::move(elements));
-        return &recordType;
-    } else {
-        fatal("unsupported type construct: %s", typeid(astType).name());
-    }
-}
-
-void TypeEnvironmentAnalysis::analyseCyclicTypes(
+/**
+ * Find all the type with a cyclic definition (in terms of being a subtype)
+ */
+std::set<AstQualifiedName> analyseCyclicTypes(
         const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes) {
+    std::set<AstQualifiedName> cyclicTypes;
     for (const auto& astType : programTypes) {
         AstQualifiedName typeName = astType->getQualifiedName();
 
@@ -145,10 +63,17 @@ void TypeEnvironmentAnalysis::analyseCyclicTypes(
             cyclicTypes.insert(std::move(typeName));
         }
     }
+    return cyclicTypes;
 }
 
-void TypeEnvironmentAnalysis::analysePrimitiveTypesInUnion(
-        const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes) {
+/**
+ * Find all the primitive types that are the subtypes of the union types.
+ */
+std::map<AstQualifiedName, std::set<AstQualifiedName>> analysePrimitiveTypesInUnion(
+        const Graph<AstQualifiedName>& dependencyGraph, const std::vector<AstType*>& programTypes,
+        const TypeEnvironment& env) {
+    std::map<AstQualifiedName, std::set<AstQualifiedName>> primitiveTypesInUnions;
+
     for (const auto& astType : programTypes) {
         auto unionType = dynamic_cast<const AstUnionType*>(astType);
         if (unionType == nullptr) {
@@ -171,6 +96,93 @@ void TypeEnvironmentAnalysis::analysePrimitiveTypesInUnion(
                 associatedTypes.insert(type.getName());
             }
         }
+    }
+    return primitiveTypesInUnions;
+}
+
+}  // namespace
+
+void TypeEnvironmentAnalysis::run(const AstTranslationUnit& translationUnit) {
+    const AstProgram& program = *translationUnit.getProgram();
+
+    auto rawProgramTypes = program.getTypes();
+    Graph<AstQualifiedName> typeDependencyGraph{createTypeDependencyGraph(rawProgramTypes)};
+
+    cyclicTypes = analyseCyclicTypes(typeDependencyGraph, rawProgramTypes);
+    primitiveTypesInUnions = analysePrimitiveTypesInUnion(typeDependencyGraph, rawProgramTypes, env);
+
+    std::map<AstQualifiedName, const AstType*> nameToAstType;
+
+    // Filter redefined primitive types and cyclic types.
+    std::vector<AstType*> programTypes;
+    for (auto* type : program.getTypes()) {
+        if (env.isType(type->getQualifiedName()) || isCyclic(type->getQualifiedName())) {
+            continue;
+        }
+        programTypes.push_back(type);
+        nameToAstType.insert({type->getQualifiedName(), type});
+    }
+
+    for (const auto* astType : programTypes) {
+        createType(astType->getQualifiedName(), nameToAstType);
+    }
+}
+
+const Type* TypeEnvironmentAnalysis::createType(
+        const AstQualifiedName& typeName, const std::map<AstQualifiedName, const AstType*>& nameToAstType) {
+    // base case
+    if (env.isType(typeName)) {
+        return &env.getType(typeName);
+    }
+
+    // Handle undeclared type in the definition of another type.
+    auto iterToType = nameToAstType.find(typeName);
+    if (iterToType == nameToAstType.end()) {
+        return nullptr;
+    }
+    const AstType& astType = *iterToType->second;
+
+    if (isA<AstSubsetType>(astType)) {
+        auto* baseType = createType(as<AstSubsetType>(astType)->getBaseType(), nameToAstType);
+
+        if (baseType == nullptr) {
+            return nullptr;
+        }
+
+        // Subset of a record is a special case.
+        if (isA<RecordType>(baseType)) {
+            return &env.createType<SubsetRecordType>(typeName, *as<RecordType>(baseType));
+        }
+
+        return &env.createType<SubsetType>(typeName, *baseType);
+
+    } else if (isA<AstUnionType>(astType)) {
+        std::vector<const Type*> elements;
+        for (const auto& element : as<AstUnionType>(astType)->getTypes()) {
+            auto* elementType = createType(element, nameToAstType);
+            if (elementType == nullptr) {
+                return nullptr;
+            }
+            elements.push_back(elementType);
+        }
+        return &env.createType<UnionType>(typeName, std::move(elements));
+
+    } else if (isA<AstRecordType>(astType)) {
+        // Record type must be created upfront as it may be its-own member.
+        auto& recordType = env.createType<RecordType>(typeName);
+        std::vector<const Type*> elements;
+        for (const auto* field : as<AstRecordType>(astType)->getFields()) {
+            auto* elementType = createType(field->getTypeName(), nameToAstType);
+            if (elementType == nullptr) {
+                return nullptr;
+            }
+            elements.push_back(elementType);
+        }
+        recordType.setFields(std::move(elements));
+        return &recordType;
+
+    } else {
+        fatal("unsupported type construct: %s", typeid(astType).name());
     }
 }
 

@@ -36,11 +36,11 @@ namespace {
 Graph<AstQualifiedName> createTypeDependencyGraph(const std::vector<AstType*>& programTypes) {
     Graph<AstQualifiedName> typeDependencyGraph;
     for (const auto* astType : programTypes) {
-        if (auto type = dynamic_cast<const AstSubsetType*>(astType)) {
+        if (auto type = as<AstSubsetType>(astType)) {
             typeDependencyGraph.insert(type->getQualifiedName(), type->getBaseType());
-        } else if (dynamic_cast<const AstRecordType*>(astType) != nullptr) {
+        } else if (isA<AstRecordType>(astType)) {
             // do nothing
-        } else if (auto type = dynamic_cast<const AstUnionType*>(astType)) {
+        } else if (auto type = as<AstUnionType>(astType)) {
             for (const auto& subtype : type->getTypes()) {
                 typeDependencyGraph.insert(type->getQualifiedName(), subtype);
             }
@@ -76,7 +76,7 @@ std::map<AstQualifiedName, std::set<AstQualifiedName>> analysePrimitiveTypesInUn
     std::map<AstQualifiedName, std::set<AstQualifiedName>> primitiveTypesInUnions;
 
     for (const auto& astType : programTypes) {
-        auto unionType = dynamic_cast<const AstUnionType*>(astType);
+        auto* unionType = as<AstUnionType>(astType);
         if (unionType == nullptr) {
             continue;
         }
@@ -166,11 +166,12 @@ const Type* TypeEnvironmentAnalysis::createType(
             }
             elements.push_back(elementType);
         }
-        return &env.createType<UnionType>(typeName, std::move(elements));
+        return &env.createType<UnionType>(typeName, elements);
 
     } else if (isA<AstRecordType>(astType)) {
         // Create anonymous base first.
         auto& recordBase = env.createType<RecordType>(tfm::format("__%sConstant", typeName));
+        auto& recordType = env.createType<SubsetRecordType>(typeName, recordBase);
 
         std::vector<const Type*> elements;
         for (const auto* field : as<AstRecordType>(astType)->getFields()) {
@@ -185,9 +186,11 @@ const Type* TypeEnvironmentAnalysis::createType(
             }
             elements.push_back(elementType);
         }
-        recordBase.setFields(std::move(elements));
 
-        auto& recordType = env.createType<SubsetRecordType>(typeName, recordBase);
+        recordBase.setFields(elements);
+        std::replace(elements.begin(), elements.end(), dynamic_cast<Type*>(&recordBase),
+                dynamic_cast<Type*>(&recordType));
+        recordType.setFields(std::move(elements));
 
         return &recordType;
 

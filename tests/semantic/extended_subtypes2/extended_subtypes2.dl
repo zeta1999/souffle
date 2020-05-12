@@ -30,6 +30,11 @@ relY(1).
 .type RecA = [a: RecA, b:Z]
 
 
+// Check if mutually recursive record type definitions work
+.type RecX = [y : RecY]
+.type RecY = [x : RecX]
+
+
 // Subtypes of unions are not allowed
 .type U = number
 

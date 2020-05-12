@@ -61,7 +61,8 @@ private:
     std::set<AstQualifiedName> cyclicTypes;
 
     /**
-     * Recursively create a type in env. (eg: Subset -> construct base and then the type itself).
+     * Recursively create a type in env, that is
+     * first create its base types and then the type itself.
      */
     const Type* createType(const AstQualifiedName& typeName,
             const std::map<AstQualifiedName, const AstType*>& nameToAstType);

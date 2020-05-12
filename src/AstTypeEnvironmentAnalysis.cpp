@@ -141,9 +141,10 @@ const Type* TypeEnvironmentAnalysis::createType(
     if (iterToType == nameToAstType.end()) {
         return nullptr;
     }
-    const AstType& astType = *iterToType->second;
+    const auto& astType = iterToType->second;
 
     if (isA<AstSubsetType>(astType)) {
+        // First create a base type.
         auto* baseType = createType(as<AstSubsetType>(astType)->getBaseType(), nameToAstType);
 
         if (baseType == nullptr) {
@@ -158,6 +159,7 @@ const Type* TypeEnvironmentAnalysis::createType(
         return &env.createType<SubsetType>(typeName, *baseType);
 
     } else if (isA<AstUnionType>(astType)) {
+        // Create all elements and then the type itself
         std::vector<const Type*> elements;
         for (const auto& element : as<AstUnionType>(astType)->getTypes()) {
             auto* elementType = createType(element, nameToAstType);
@@ -169,7 +171,9 @@ const Type* TypeEnvironmentAnalysis::createType(
         return &env.createType<UnionType>(typeName, elements);
 
     } else if (isA<AstRecordType>(astType)) {
-        // Create anonymous base first.
+        // Create anonymous base type first.
+        // The types need to be initialized upfront,
+        // because we may have mutually recursive record definitions.
         auto& recordBase = env.createType<RecordType>(tfm::format("__%sConstant", typeName));
         auto& recordType = env.createType<SubsetRecordType>(typeName, recordBase);
 
@@ -195,7 +199,7 @@ const Type* TypeEnvironmentAnalysis::createType(
         return &recordType;
 
     } else {
-        fatal("unsupported type construct: %s", typeid(astType).name());
+        fatal("unsupported type construct: %s", typeid(*astType).name());
     }
 }
 

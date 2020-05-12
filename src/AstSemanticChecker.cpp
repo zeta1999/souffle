@@ -209,11 +209,12 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     continue;  // This will be reported later.
                 }
 
-                // Attribute and argument type agree if, argument type is a subtype of declared type or is of
-                // the appropriate constant type or a anonymous record type.
+                // Attribute and argument type agree if, argument type is a subtype of declared type
+                // or is of the appropriate constant type or the (constant) record type.
                 bool validAttribute = all_of(argTypes, [&attributeType](const Type& type) {
                     if (isSubtypeOf(type, attributeType)) return true;
-                    if (isA<ConstantType>(type) && isSubtypeOf(attributeType, type)) return true;
+                    if (!isSubtypeOf(attributeType, type)) return false;
+                    if (isA<ConstantType>(type)) return true;
                     return isA<RecordType>(type) && !isA<SubsetType>(type);
                 });
                 if (!validAttribute) {
@@ -899,7 +900,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     auto&& fields = type.getFields();
     // check proper definition of all field types
     for (auto&& field : fields) {
-        if (!typeEnv.isType(field->getTypeName()) && field->getTypeName() != type.getQualifiedName()) {
+        if (!typeEnv.isType(field->getTypeName())) {
             report.addError(tfm::format("Undefined type %s in definition of field %s", field->getTypeName(),
                                     field->getName()),
                     field->getSrcLoc());
@@ -944,7 +945,7 @@ void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& astType) {
 }
 
 void AstSemanticCheckerImpl::checkType(const AstType& type) {
-    if (typeEnv.isPredefinedType(type.getQualifiedName())) {
+    if (typeEnv.isPrimitiveType(type.getQualifiedName())) {
         report.addError("Redefinition of the predefined type", type.getSrcLoc());
         return;
     }

@@ -182,47 +182,47 @@ TEST(TypeSystem, GreatestCommonSubtype) {
 
     // // bring in unions
 
-    // auto& U = env.createType<UnionType>("U");
-    // auto& S = env.createType<UnionType>("S");
+    auto& U = env.createType<UnionType>("U");
+    auto& S = env.createType<UnionType>("S");
 
-    // U.add(A);  // U = {A}
-    // EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
+    U.setElements(toVector(&A));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
 
-    // S.add(A);  // S = {A} = U
-    // EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S)));
+    S.setElements(toVector(&A));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S)));
 
-    // U.add(B);  // U = {A, B}
-    // EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
-    // EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S, N)));
+    U.setElements(toVector(&A, &B));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(U, S, N)));
 
-    // S.add(B);  // S = {A, B} = U
-    // EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S)));
-    // EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S, N)));
+    S.setElements(toVector(&A, &B));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, S, N)));
 
-    // // bring in a union of unions
-    // auto& R = env.createType<UnionType>("R");
+    // bring in a union of unions
+    auto& R = env.createType<UnionType>("R");
 
-    // EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R)));
-    // EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R)));
+    EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R)));
+    EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R)));
 
-    // EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R, N)));
-    // EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R, N)));
+    EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(U, R, N)));
+    EXPECT_EQ("{R}", toString(getGreatestCommonSubtypes(S, R, N)));
 
-    // R.add(U);  // R = U = S
+    R.setElements(toVector(static_cast<const Type*>(&U)));  // R = U = S
 
-    // EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
-    // EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
 
-    // EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
-    // EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
 
-    // R.add(S);
+    R.setElements(toVector(static_cast<const Type*>(&U), static_cast<const Type*>(&S)));
 
-    // EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
-    // EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R)));
 
-    // EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
-    // EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
+    EXPECT_EQ("{U}", toString(getGreatestCommonSubtypes(U, R, N)));
+    EXPECT_EQ("{S}", toString(getGreatestCommonSubtypes(S, R, N)));
 }
 
 TEST(TypeSystem, complexSubsetTypes) {

@@ -199,6 +199,8 @@ const Type& getBaseType(const Type* type) {
     while (auto subset = dynamic_cast<const SubsetType*>(type)) {
         type = &subset->getBaseType();
     };
+    assert(isA<ConstantType>(type) ||
+            isA<RecordType>(type) && "Root must be a constant type or a record type");
     return *type;
 }
 
@@ -426,7 +428,7 @@ TypeConstraint isSubtypeOfComponent(
                 // Valid type for record.
                 newRecordTypes.insert(type);
 
-                // and its corresponding field for a field.
+                // and its corresponding field.
                 newElementTypes.insert(*typeAsRecord.getFields()[index]);
             }
 

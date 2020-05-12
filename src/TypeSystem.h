@@ -142,6 +142,10 @@ public:
         return elementTypes;
     }
 
+    void setElements(std::vector<const Type*> elements) {
+        elementTypes = std::move(elements);
+    }
+
     void print(std::ostream& out) const override;
 
 protected:
@@ -150,7 +154,7 @@ protected:
 
     UnionType(const TypeEnvironment& environment, const AstQualifiedName& name,
             std::vector<const Type*> elementTypes = {})
-            : Type(environment, name), elementTypes(elementTypes) {}
+            : Type(environment, name), elementTypes(std::move(elementTypes)) {}
 };
 
 /**
@@ -196,11 +200,8 @@ protected:
               RecordType(environment, name, baseType.getFields()) {
         // Update fields, replacing each occurrence of base with derived.
         // so that if .type base = [a, base] and derived <: base, then derived = [a, derived].
-        for (auto& field : fields) {
-            if (field == &baseType) {
-                field = this;
-            }
-        }
+        std::replace(fields.begin(), fields.end(), dynamic_cast<const Type*>(&baseType),
+                dynamic_cast<const Type*>(this));
     };
 };
 
@@ -400,16 +401,6 @@ public:
         fatal("There is no constant record type");
     }
 
-    bool isPredefinedType(const AstQualifiedName& identifier) const {
-        if (!isType(identifier)) {
-            return false;
-        }
-
-        const auto& type = getType(identifier);
-
-        return primitiveTypes.contains(type) || constantTypes.contains(type);
-    }
-
     bool isPrimitiveType(const AstQualifiedName& identifier) const {
         if (isType(identifier)) {
             return isPrimitiveType(getType(identifier));
@@ -466,11 +457,6 @@ bool isSubtypeOf(const Type& a, const Type& b);
  * Returns full type qualifier for a given type
  */
 std::string getTypeQualifier(const Type& type);
-
-/**
- * Determines whether the given type is a sub-type of the given root type.
- */
-bool isOfRootType(const Type& type, const Type& root);
 
 /**
  * Check if the type is of a kind corresponding to the TypeAttribute.

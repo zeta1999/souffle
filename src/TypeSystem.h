@@ -216,12 +216,6 @@ public:
 
     TypeSet(bool all = false) : all(all) {}
 
-    TypeSet(const TypeSet& other) = default;
-
-    TypeSet(TypeSet&& other) noexcept : all(other.all), types() {
-        types.swap(other.types);
-    }
-
     template <typename... Types>
     explicit TypeSet(const Types&... types) : all(false) {
         for (const Type* cur : toVector<const Type*>(&types...)) {
@@ -229,7 +223,10 @@ public:
         }
     }
 
+    TypeSet(const TypeSet& other) = default;
+    TypeSet(TypeSet&& other) = default;
     TypeSet& operator=(const TypeSet& other) = default;
+    TypeSet& operator=(TypeSet&& other) = default;
 
     bool empty() const {
         return !all && types.empty();
@@ -275,6 +272,16 @@ public:
         }
 
         return result;
+    }
+
+    template <typename F>
+    TypeSet filter(TypeSet whenAll, F&& f) const {
+        if (all) return whenAll;
+
+        TypeSet cpy;
+        for (auto&& t : *this)
+            if (f(t)) cpy.insert(t);
+        return cpy;
     }
 
     /** Inserts all the types of the given set into this set */
@@ -470,6 +477,9 @@ bool isOfRootType(const Type& type, const Type& root);
  */
 bool isOfKind(const Type& type, TypeAttribute kind);
 bool isOfKind(const TypeSet& typeSet, TypeAttribute kind);
+
+TypeAttribute getTypeAttribute(const Type&);
+std::optional<TypeAttribute> getTypeAttribute(const TypeSet&);
 
 inline bool isNumericType(const TypeSet& type) {
     return isOfKind(type, TypeAttribute::Signed) || isOfKind(type, TypeAttribute::Unsigned) ||

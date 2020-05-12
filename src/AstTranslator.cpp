@@ -337,10 +337,12 @@ std::unique_ptr<RamExpression> AstTranslator::translateValue(
                 values.push_back(translator.translateValue(cur, index));
             }
 
-            if (isFunctorMultiResult(inf.getFunction())) {
+            auto* info = inf.getFunctionInfo();
+            assert(info && "no overload picked for instrinsic; missing transform pass?");
+            if (info->multipleResults) {
                 return translator.makeRamTupleElement(index.getGeneratorLoc(inf));
             } else {
-                return std::make_unique<RamIntrinsicOperator>(inf.getFunction(), std::move(values));
+                return std::make_unique<RamIntrinsicOperator>(info->op, std::move(values));
             }
         }
 
@@ -582,7 +584,7 @@ void AstTranslator::ClauseTranslator::createValueIndex(const AstClause& clause) 
         }
 
         auto func = dynamic_cast<const AstIntrinsicFunctor*>(&arg);
-        if (func && isFunctorMultiResult(func->getFunction())) {
+        if (func && func->getFunctionInfo()->multipleResults) {
             addGenerator();
         }
     });
@@ -866,12 +868,14 @@ std::unique_ptr<RamStatement> AstTranslator::ClauseTranslator::translateClause(
             }
 
             auto func_op = [&]() -> RamNestedIntrinsicOp {
-                switch (func->getFunction()) {
+                switch (func->getFunctionInfo()->op) {
                     case FunctorOp::RANGE: return RamNestedIntrinsicOp::RANGE;
                     case FunctorOp::URANGE: return RamNestedIntrinsicOp::URANGE;
                     case FunctorOp::FRANGE: return RamNestedIntrinsicOp::FRANGE;
 
-                    default: assert(isFunctorMultiResult(func->getFunction())); abort();
+                    default:
+                        assert(func->getFunctionInfo()->multipleResults);
+                        fatal("missing case handler or bad code-gen");
                 }
             };
 

@@ -1,11 +1,10 @@
 language: generic
 dist: bionic
 
-aliases:
+_aliases:
   - &docker
     os: linux
     services: docker
-    sudo: false
     before_script:
       - docker pull souffle/ubuntu:bionic-base
       - docker run -d -t --name souf -w /souffle --mount src="$(pwd)",target=/souffle,type=bind souffle/ubuntu:bionic-base /bin/sh
@@ -180,7 +179,7 @@ jobs:
     # https://docs.travis-ci.com/user/deployment/bintray
     deploy:
       - provider: bintray
-        skip-cleanup: true
+        skip_cleanup: true
         file: bintray-deb-unstable.json
         user: souffle-lang
         key: $BINTRAY_KEY
@@ -188,7 +187,7 @@ jobs:
           branch: master
           repo: souffle-lang/souffle
       - provider: bintray
-        skip-cleanup: true
+        skip_cleanup: true
         file: bintray-deb-stable.json
         user: souffle-lang
         key: $BINTRAY_KEY
@@ -197,7 +196,7 @@ jobs:
           tags: true
       - provider: releases
         skip_cleanup: true
-        api_key: $GHRELEASES_TOKEN
+        token: $GHRELEASES_TOKEN
         file_glob: true
         file: deploy/*
         on:
@@ -217,7 +216,7 @@ jobs:
     # https://docs.travis-ci.com/user/deployment/bintray
     deploy:
       - provider: bintray
-        skip-cleanup: true
+        skip_cleanup: true
         file: bintray-rpm-unstable.json
         user: souffle-lang
         key: $BINTRAY_KEY
@@ -225,7 +224,7 @@ jobs:
           branch: master
           repo: souffle-lang/souffle
       - provider: bintray
-        skip-cleanup: true
+        skip_cleanup: true
         file: bintray-rpm-stable.json
         user: souffle-lang
         key: $BINTRAY_KEY
@@ -247,7 +246,7 @@ jobs:
     # https://docs.travis-ci.com/user/deployment/bintray
     deploy:
       - provider: bintray
-        skip-cleanup: true
+        skip_cleanup: true
         file: bintray-rpm-unstable.json
         user: souffle-lang
         key: $BINTRAY_KEY
@@ -255,7 +254,7 @@ jobs:
           branch: master
           repo: souffle-lang/souffle
       - provider: bintray
-        skip-cleanup: true
+        skip_cleanup: true
         file: bintray-rpm-stable.json
         user: souffle-lang
         key: $BINTRAY_KEY
@@ -271,14 +270,14 @@ jobs:
     deploy:
       - provider: releases
         skip_cleanup: true
-        api_key: $GHRELEASES_TOKEN
+        token: $GHRELEASES_TOKEN
         file_glob: true
         file: deploy/*
         on:
           repo: souffle-lang/souffle
           tags: true
       - provider: bintray
-        skip-cleanup: true
+        skip_cleanup: true
         file: bintray-osx.json
         user: souffle-lang
         key: $BINTRAY_KEY
@@ -286,7 +285,7 @@ jobs:
           tags: true
           repo: souffle-lang/souffle
       - provider: script
-        skip-cleanup: true
+        skip_cleanup: true
         script: ".travis/osx/brew.sh $HOMEBREW_SOUFFLE_KEY"
         on:
           tags: true
@@ -302,10 +301,10 @@ jobs:
     # https://pages.github.com/
     deploy:
       provider: pages
-      skip-cleanup: true
-      github-token: $GHPAGES_TOKEN
-      keep-history: false
-      local-dir: doc/html
+      skip_cleanup: true
+      token: $GHPAGES_TOKEN
+      keep_history: false
+      local_dir: doc/html
       on:
         branch: master
         condition: -n $GHPAGES_TOKEN

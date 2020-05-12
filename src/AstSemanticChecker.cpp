@@ -307,7 +307,20 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     });
 
     // - functors -
-    visitDepthFirst(nodes, [&](const AstFunctor& fun) {
+    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& fun) {
+        if (!fun.getFunctionInfo()) {  // no info => no overload found during inference
+            auto args = fun.getArguments();
+            if (!isValidFunctorOpArity(fun.getFunction(), args.size())) {
+                report.addError("invalid overload (arity mismatch)", fun.getSrcLoc());
+                return;
+            }
+
+            assert(validOverloads(typeAnalysis, fun).empty() && "polymorphic transformation wasn't applied?");
+            report.addError("no valid overloads", fun.getSrcLoc());
+        }
+    });
+
+    visitDepthFirst(nodes, [&](const AstUserDefinedFunctor& fun) {
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
 
@@ -326,13 +339,6 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     report.addError("Non-symbolic use for symbolic functor", fun.getSrcLoc());
                     break;
                 case TypeAttribute::Record: fatal("Invalid return type");
-            }
-        }
-
-        // Special case
-        if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
-            if (intrFun->getFunction() == FunctorOp::ORD) {
-                return;
             }
         }
 
@@ -409,13 +415,6 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         // Check if operation type and return type agree.
         if (!eqTypeTypeAttribute(opType, aggregatorType)) {
             report.addError("Couldn't assign types to the aggregator", aggregator.getSrcLoc());
-        }
-    });
-
-    visitDepthFirst(nodes, [&](const AstIntrinsicFunctor& func) {
-        auto n_args = func.getArguments().size();
-        if (!isValidFunctorOpArity(func.getFunction(), n_args)) {
-            report.addError("invalid overload (arity mismatch)", func.getSrcLoc());
         }
     });
 
@@ -637,11 +636,11 @@ static bool isConstantArithExpr(const AstArgument& argument) {
     if (dynamic_cast<const AstNumericConstant*>(&argument) != nullptr) {
         return true;
     }
-    if (const auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
+    if (auto* functor = dynamic_cast<const AstIntrinsicFunctor*>(&argument)) {
         // Check return type.
-        if (!isNumericType(functor->getReturnType())) {
-            return false;
-        }
+        auto* info = functor->getFunctionInfo();
+        if (!(info && isNumericType(info->result))) return false;
+
         // Check arguments
         return all_of(functor->getArguments(), [](auto* arg) { return isConstantArithExpr(*arg); });
     }

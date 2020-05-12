@@ -197,6 +197,14 @@ TypeConstraint hasSuperTypeInSet(const TypeVar& var, TypeSet values) {
     return std::make_shared<C>(var, values);
 }
 
+const Type& getBaseType(const Type* type) {
+    while (auto subset = dynamic_cast<const SubsetType*>(type)) {
+        type = &subset->getBaseType();
+    };
+    assert(isA<ConstantType>(*type) && "Root of subset type must be a constant type");
+    return *type;
+}
+
 /**
  * Ensure that types of left and right have the same base types.
  */
@@ -208,14 +216,6 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
         C(TypeVar left, TypeVar right) : left(std::move(left)), right(std::move(right)) {}
 
         bool update(Assignment<TypeVar>& assigment) const override {
-            auto getBaseType = [](const Type* type) -> const Type& {
-                while (auto subset = dynamic_cast<const SubsetType*>(type)) {
-                    type = &subset->getBaseType();
-                };
-                assert(isA<ConstantType>(*type) && "Root of subset type must be a constant type");
-                return *type;
-            };
-
             // get current value of variable a
             TypeSet& assigmentsLeft = assigment[left];
             TypeSet& assigmentsRight = assigment[right];
@@ -300,6 +300,90 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
     };
 
     return std::make_shared<C>(left, right);
+}
+
+/**
+ * Given a set of overloads, wait the list of candidates to reduce to one and then apply its constraints.
+ * NOTE:  `subtypeResult` implies that `func <: overload-return-type`, rather than
+ *        `func = overload-return-type`. This is required for old type semantics.
+ *        See #1296 and tests/semantic/type_system4
+ */
+TypeConstraint satisfiesOverload(const TypeEnvironment& typeEnv, IntrinsicFunctors overloads, TypeVar result,
+        std::vector<TypeVar> args, bool subtypeResult) {
+    struct C : public Constraint<TypeVar> {
+        const TypeEnvironment& typeEnv;
+        mutable IntrinsicFunctors overloads;
+        TypeVar result;
+        std::vector<TypeVar> args;
+        bool subtypeResult;
+
+        C(const TypeEnvironment& typeEnv, IntrinsicFunctors overloads, TypeVar result,
+                std::vector<TypeVar> args, bool subtypeResult)
+                : typeEnv(typeEnv), overloads(std::move(overloads)), result(std::move(result)),
+                  args(std::move(args)), subtypeResult(subtypeResult) {}
+
+        bool update(Assignment<TypeVar>& assigment) const override {
+            auto subtypesOf = [&](const TypeSet& src, TypeAttribute tyAttr) {
+                auto& ty = typeEnv.getConstantType(tyAttr);
+                return src.filter(TypeSet(true), [&](auto&& x) { return isSubtypeOf(x, ty); });
+            };
+
+            auto possible = [&](TypeAttribute ty, const TypeVar& var) {
+                auto& curr = assigment[var];
+                return curr.isAll() || any_of(curr, [&](auto&& t) { return getTypeAttribute(t) == ty; });
+            };
+
+            overloads = filterNot(std::move(overloads), [&](const IntrinsicFunctor& x) -> bool {
+                if (!x.variadic && args.size() != x.params.size()) return true;  // arity mismatch?
+
+                for (size_t i = 0; i < args.size(); ++i)
+                    if (!possible(x.params[x.variadic ? 0 : i], args[i])) return true;
+
+                return !possible(x.result, result);
+            });
+
+            bool changed = false;
+            auto newResult = [&]() -> std::optional<TypeSet> {
+                if (0 == overloads.size()) return TypeSet();
+                if (1 < overloads.size()) return {};
+
+                auto& overload = overloads.front().get();
+                // `ord` is freakin' magical: it has the signature `a -> Int`.
+                // As a consequence, we might be given non-primitive arguments (i.e. types for which
+                // `TypeEnv::getConstantType` is undefined).
+                // Handle this by not imposing constraints on the arguments.
+                if (overload.op != FunctorOp::ORD) {
+                    for (size_t i = 0; i < args.size(); ++i) {
+                        auto argTy = overload.params[overload.variadic ? 0 : i];
+                        auto& currArg = assigment[args[i]];
+                        auto newArg = subtypesOf(currArg, argTy);
+                        changed |= currArg != newArg;
+                        // 2020-05-09: CI linter says to remove `std::move`, but clang-tidy-10 is happy.
+                        currArg = std::move(newArg);  // NOLINT
+                    }
+                }
+
+                return subtypeResult ? subtypesOf(assigment[result], overload.result)
+                                     : TypeSet{typeEnv.getConstantType(overload.result)};
+            }();
+
+            if (newResult) {
+                auto& curr = assigment[result];
+                changed |= curr != *newResult;
+                // 2020-05-09: CI linter says to remove `std::move`, but clang-tidy-10 is happy.
+                curr = std::move(*newResult);  // NOLINT
+            }
+
+            return changed;
+        }
+
+        void print(std::ostream& out) const override {
+            out << "∃ t : (" << result << " <: t) where t is a base type";
+        }
+    };
+
+    return std::make_shared<C>(
+            typeEnv, std::move(overloads), std::move(result), std::move(args), subtypeResult);
 }
 
 /**
@@ -549,38 +633,36 @@ private:
     void visitFunctor(const AstFunctor& fun) override {
         auto functorVar = getVar(fun);
 
-        // In polymorphic case
-        // We only require arguments to share a base type with a return type.
-        // (instead of, for example, requiring them to be of the same type)
-        // This approach is related to old type semantics
-        // See #1296 and tests/semantic/type_system4
-        if (auto intrinsicFunctor = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
-            if (isOverloadedFunctor(intrinsicFunctor->getFunction())) {
-                for (auto* argument : intrinsicFunctor->getArguments()) {
-                    auto argumentVar = getVar(argument);
-                    addConstraint(subtypesOfTheSameBaseType(argumentVar, functorVar));
-                }
+        auto intrFun = as<AstIntrinsicFunctor>(fun);
+        if (intrFun) {
+            auto argVars = map(intrFun->getArguments(), [&](auto&& x) { return getVar(x); });
+            // The type of the user-defined function might not be set at this stage.
+            // If so then add overloads as alternatives
+            if (!intrFun->getFunctionInfo())
+                addConstraint(satisfiesOverload(typeEnv, functorBuiltIn(intrFun->getFunction()), functorVar,
+                        argVars, isInfixFunctorOp(intrFun->getFunction())));
+
+            // In polymorphic case
+            // We only require arguments to share a base type with a return type.
+            // (instead of, for example, requiring them to be of the same type)
+            // This approach is related to old type semantics
+            // See #1296 and tests/semantic/type_system4
+            if (isInfixFunctorOp(intrFun->getFunction())) {
+                for (auto&& var : argVars)
+                    addConstraint(subtypesOfTheSameBaseType(var, functorVar));
 
                 return;
             }
-        }
 
-        // The type of the user-defined function might not be set at this stage.
-        try {
-            fun.getReturnType();
-        } catch (std::bad_optional_access& e) {
-            return;
+            if (!intrFun->getFunctionInfo()) return;
         }
 
         // add a constraint for the return type of the functor
         addConstraint(isSubtypeOf(functorVar, typeEnv.getConstantType(fun.getReturnType())));
 
         // Special case. Ord returns the ram representation of any object.
-        if (auto intrFun = dynamic_cast<const AstIntrinsicFunctor*>(&fun)) {
-            if (intrFun->getFunction() == FunctorOp::ORD) {
-                return;
-            }
-        }
+        if (intrFun && intrFun->getFunctionInfo()->op == FunctorOp::ORD) return;
+
         auto arguments = fun.getArguments();
         for (size_t i = 0; i < arguments.size(); ++i) {
             addConstraint(isSubtypeOf(getVar(arguments[i]), typeEnv.getConstantType(fun.getArgType(i))));

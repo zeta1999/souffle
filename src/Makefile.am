@@ -128,6 +128,7 @@ souffle_sources = \
         DebugReporter.h                                    \
         ErrorReport.h                                      \
         EventProcessor.h                                   \
+        FunctorOps.cpp                                     \
         FunctorOps.h                                       \
         Global.cpp                                         \
         Global.h                                           \

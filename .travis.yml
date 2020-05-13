@@ -193,7 +193,7 @@ jobs:
   # Make the linux deb packages and if successful upload to github releases and bintray
   # All PRs go to bintray unstable, tagged releases to bintray stable
   - stage: Packaging
-    name: "Debian package"
+    name: "Debian amd64 package"
     <<: *docker
     script:
       - docker exec souf /bin/sh -c ".travis/linux/install_debian_deps.sh"
@@ -224,6 +224,34 @@ jobs:
         token: $GHRELEASES_TOKEN
         file_glob: true
         file: deploy/*
+        on:
+          repo: souffle-lang/souffle
+          tags: true
+  - stage: Packaging
+    name: "Debian arm64 package"
+    arch: arm64
+    <<: *docker
+    script:
+      - docker exec souf /bin/sh -c ".travis/linux/install_debian_deps.sh"
+      - docker exec souf /bin/sh -c ".travis/linux/make_debian_package.sh"
+    before_deploy:
+      - .travis/bintray_json.sh debian arm64
+    # deploy to bintray if we're in the souffle-lang repo
+    # https://docs.travis-ci.com/user/deployment/bintray
+    deploy:
+      - provider: bintray
+        skip_cleanup: true
+        file: bintray-deb-unstable.json
+        user: souffle-lang
+        key: $BINTRAY_KEY
+        on:
+          branch: master
+          repo: souffle-lang/souffle
+      - provider: bintray
+        skip_cleanup: true
+        file: bintray-deb-stable.json
+        user: souffle-lang
+        key: $BINTRAY_KEY
         on:
           repo: souffle-lang/souffle
           tags: true

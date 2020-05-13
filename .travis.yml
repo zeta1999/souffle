@@ -112,6 +112,8 @@ jobs:
         - git
         - graphviz
         - make
+    env:
+    - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
     before_script: ".travis/init_test.sh"
     script: ".travis/run_test.sh"
     after_failure: ".travis/after_failure.sh"

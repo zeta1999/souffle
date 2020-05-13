@@ -84,6 +84,8 @@ jobs:
     os: linux
     compiler: gcc
     language: cpp
+    # workaround travis-ci bugs
+    filter_secrets: false
     addons:
       apt:
         packages:

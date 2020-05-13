@@ -1,5 +1,6 @@
 language: generic
 dist: bionic
+arch: amd64
 
 _aliases:
   - &docker
@@ -47,6 +48,17 @@ jobs:
         paths: .
     script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig'"
   - stage: Warmup
+    name: "Build Bionic arm64  g++"
+    arch: arm64
+    # workaround travis-ci bugs
+    filter_secrets: false
+    <<: *docker
+    workspaces:
+      create:
+        name: bionic_gcc_arm
+        paths: .
+    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig'"
+  - stage: Warmup
     name: "Build Bionic g++ 64bit"
     <<: *docker
     workspaces:
@@ -78,48 +90,6 @@ jobs:
       - docker exec souf /bin/sh -c ".travis/init_test.sh '--disable-openmp'"
       - docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
 
-  - stage: Testing
-    name: "arm-gcc-setup"
-    sudo: false
-    os: linux
-    compiler: gcc
-    language: cpp
-    # workaround travis-ci bugs
-    filter_secrets: false
-    addons:
-      apt:
-        packages:
-        - automake
-        - autoconf
-        - bison
-        - build-essential
-        - flex
-        - gdb
-        - libffi-dev
-        - libncurses5-dev
-        - libopenmpi-dev
-        - libsqlite3-dev
-        - libtool
-        - lsb-release
-        - mcpp
-        - pkg-config
-        - sqlite3
-        - swig
-        - zlib1g-dev
-        - bash-completion
-        - debhelper
-        - devscripts
-        - doxygen
-        - fakeroot
-        - git
-        - graphviz
-        - make
-    env:
-    - SOUFFLE_CATEGORY=Unit,Interface,Profile,Provenance SOUFFLE_CONFS=",-c"
-    before_script: ".travis/init_test.sh"
-    script: ".travis/run_test.sh"
-    after_failure: ".travis/after_failure.sh"
-    arch: arm64
 # Testing stage without Evaluation tests (-j8,-c -j8)
   - stage: Testing
     <<: *osxgcc
@@ -139,6 +109,17 @@ jobs:
     <<: *docker
     workspaces:
       use: bionic_gcc
+    env:
+    - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
+    script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
+  - stage: Testing
+    name: "Linux arm64 gcc non-eval"
+    arch: arm64
+    <<: *docker
+    workspaces:
+      use: bionic_gcc_arm
+    # workaround travis-ci bugs
+    filter_secrets: false
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
     script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"

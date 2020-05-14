@@ -1716,31 +1716,28 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     }
 }
 
-const Json AstTranslator::getRecordsTypes(void) {
+const Json AstTranslator::getRecordsTypes() {
     // Check if the types where already constructed
     if (!RamRecordTypes.is_null()) {
         return RamRecordTypes;
     }
 
-    std::vector<std::string> types;
+    std::vector<std::string> elementTypes;
     std::map<std::string, Json> records;
-    std::string recordType;
 
     // Iterate over all record types in the program populating the records map.
     for (auto* astType : program->getTypes()) {
-        if (const auto* elementType = dynamic_cast<const AstRecordType*>(astType)) {
-            types.clear();
-            recordType.clear();
+        const auto& type = typeEnv->getType(astType->getQualifiedName());
+        if (isA<RecordType>(type)) {
+            elementTypes.clear();
 
-            recordType = getTypeQualifier(typeEnv->getType(elementType->getQualifiedName()));
-
-            for (auto&& field : elementType->getFields()) {
-                types.push_back(getTypeQualifier(typeEnv->getType(field->getTypeName())));
+            for (const Type* field : as<RecordType>(type)->getFields()) {
+                elementTypes.push_back(getTypeQualifier(*field));
             }
-            const size_t recordArity = types.size();
-            Json recordInfo =
-                    Json::object{{"types", std::move(types)}, {"arity", static_cast<long long>(recordArity)}};
-            records.emplace(std::move(recordType), std::move(recordInfo));
+            const size_t recordArity = elementTypes.size();
+            Json recordInfo = Json::object{
+                    {"types", std::move(elementTypes)}, {"arity", static_cast<long long>(recordArity)}};
+            records.emplace(getTypeQualifier(type), std::move(recordInfo));
         }
     }
 

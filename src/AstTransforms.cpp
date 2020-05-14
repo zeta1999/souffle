@@ -456,8 +456,8 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
             std::map<const AstArgument*, TypeSet> argTypes =
                     TypeAnalysis::analyseTypes(env, *aggClause, program);
             for (const auto& cur : head->getArguments()) {
-                rel->addAttribute(std::make_unique<AstAttribute>(
-                        toString(*cur), (isNumberType(argTypes[cur])) ? "number" : "symbol"));
+                rel->addAttribute(std::make_unique<AstAttribute>(toString(*cur),
+                        (isOfKind(argTypes[cur], TypeAttribute::Signed)) ? "number" : "symbol"));
             }
 
             program.addClause(std::unique_ptr<AstClause>(aggClause));
@@ -1389,13 +1389,13 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             // Utility lambdas to determine if all args are of the same type.
             auto isFloat = [&](const AstArgument* argument) {
-                return isFloatType(typeAnalysis.getTypes(argument));
+                return isOfKind(typeAnalysis.getTypes(argument), TypeAttribute::Float);
             };
             auto isUnsigned = [&](const AstArgument* argument) {
-                return isUnsignedType(typeAnalysis.getTypes(argument));
+                return isOfKind(typeAnalysis.getTypes(argument), TypeAttribute::Unsigned);
             };
             auto isSymbol = [&](const AstArgument* argument) {
-                return isSymbolType(typeAnalysis.getTypes(argument));
+                return isOfKind(typeAnalysis.getTypes(argument), TypeAttribute::Symbol);
             };
 
             // rewrite sub-expressions first
@@ -1410,13 +1410,16 @@ bool PolymorphicObjectsTransformer::transform(AstTranslationUnit& translationUni
                     if (!numericConstant->getType().has_value()) {
                         TypeSet types = typeAnalysis.getTypes(numericConstant);
 
-                        if (hasSignedType(types)) {
+                        auto hasOfKind = [&](TypeAttribute kind) -> bool {
+                            return any_of(types, [&](const Type& type) { return isOfKind(type, kind); });
+                        };
+                        if (hasOfKind(TypeAttribute::Signed)) {
                             numericConstant->setType(AstNumericConstant::Type::Int);
                             changed = true;
-                        } else if (hasUnsignedType(types)) {
+                        } else if (hasOfKind(TypeAttribute::Unsigned)) {
                             numericConstant->setType(AstNumericConstant::Type::Uint);
                             changed = true;
-                        } else if (hasFloatType(types)) {
+                        } else if (hasOfKind(TypeAttribute::Float)) {
                             numericConstant->setType(AstNumericConstant::Type::Float);
                             changed = true;
                         }

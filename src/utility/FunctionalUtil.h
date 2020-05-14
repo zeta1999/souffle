@@ -137,7 +137,7 @@ bool none_of(const Container& c, UnaryPredicate p) {
 template <typename A, typename F>
 std::vector<A> filterNot(std::vector<A> xs, F&& f) {
     xs.erase(std::remove_if(xs.begin(), xs.end(), std::forward<F>(f)), xs.end());
-    return std::move(xs);
+    return xs;
 }
 
 /**

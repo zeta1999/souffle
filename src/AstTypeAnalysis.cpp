@@ -120,10 +120,8 @@ TypeConstraint isSubtypeOf(const TypeVar& variable, const Type& type) {
         C(TypeVar variable, const Type& type) : variable(std::move(variable)), type(type) {}
 
         bool update(Assignment<TypeVar>& assignments) const override {
-            // get current value of variable a
             TypeSet& assignment = assignments[variable];
 
-            // remove all types that are not sub-types of b
             if (assignment.isAll()) {
                 assignment = TypeSet(type);
                 return true;
@@ -201,7 +199,8 @@ const Type& getBaseType(const Type* type) {
     while (auto subset = dynamic_cast<const SubsetType*>(type)) {
         type = &subset->getBaseType();
     };
-    assert(isA<ConstantType>(*type) && "Root of subset type must be a constant type");
+    assert(isA<ConstantType>(type) ||
+            isA<RecordType>(type) && "Root must be a constant type or a record type");
     return *type;
 }
 
@@ -230,7 +229,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             // Iterate over possible types extracting base types.
             // Left
             if (!assigmentsLeft.isAll()) {
-                for (const auto& type : assigmentsLeft) {
+                for (const Type& type : assigmentsLeft) {
                     if (isA<SubsetType>(type) || isA<ConstantType>(type)) {
                         baseTypesLeft.insert(getBaseType(&type));
                     }
@@ -238,7 +237,7 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
             }
             // Right
             if (!assigmentsRight.isAll()) {
-                for (const auto& type : assigmentsRight) {
+                for (const Type& type : assigmentsRight) {
                     if (isA<SubsetType>(type) || isA<ConstantType>(type)) {
                         baseTypesRight.insert(getBaseType(&type));
                     }
@@ -414,22 +413,23 @@ TypeConstraint isSubtypeOfComponent(
             TypeSet newRecordTypes;
 
             for (const Type& type : recordTypes) {
-                // only retain records
-                if (!isRecordType(type)) {
+                // A type must be either a record type or a subset of a record type
+                if (!isOfKind(type, TypeAttribute::Record)) {
                     continue;
                 }
-                const auto& typeAsRecord = static_cast<const RecordType&>(type);
+
+                const auto& typeAsRecord = *as<RecordType>(type);
 
                 // Wrong size => skip.
                 if (typeAsRecord.getFields().size() <= index) {
                     continue;
                 }
 
-                // Valid record type
-                newRecordTypes.insert(typeAsRecord);
+                // Valid type for record.
+                newRecordTypes.insert(type);
 
-                // and its corresponding field for a
-                newElementTypes.insert(typeAsRecord.getFields()[index].type);
+                // and its corresponding field.
+                newElementTypes.insert(*typeAsRecord.getFields()[index]);
             }
 
             // combine with current types assigned to element
@@ -552,7 +552,7 @@ private:
     void visitSink(const AstAtom& atom) {
         iterateOverAtom(atom, [&](const AstArgument& argument, const Type& attributeType) {
             if (isA<RecordType>(attributeType)) {
-                addConstraint(isSubtypeOf(getVar(argument), attributeType));
+                addConstraint(isSubtypeOf(getVar(argument), getBaseType(&attributeType)));
                 return;
             }
             for (auto& constantType : typeEnv.getConstantTypes()) {

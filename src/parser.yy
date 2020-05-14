@@ -381,13 +381,15 @@ identifier
 
 /* Type declarations */
 type
-  : TYPE IDENT SUBTYPE  predefined_type   { $$ = mk<AstSubsetType>($2, $4, @$); }
+  : TYPE IDENT[name] SUBTYPE IDENT[base_type_name] {
+        $$ = mk<AstSubsetType>($name, $base_type_name, @$);
+   }
   | TYPE IDENT EQUALS    union_type_list  { $$ = mk<AstUnionType >($2, $4, @$); }
   | TYPE IDENT EQUALS   record_type_list  { $$ = mk<AstRecordType>($2, $4, @$); }
     /* deprecated subset type forms */
-  | NUMBER_TYPE IDENT { $$ = driver.mkDeprecatedSubType($IDENT, TypeAttribute::Signed, @$); }
-  | SYMBOL_TYPE IDENT { $$ = driver.mkDeprecatedSubType($IDENT, TypeAttribute::Symbol, @$); }
-  | TYPE        IDENT { $$ = driver.mkDeprecatedSubType($IDENT, TypeAttribute::Symbol, @$); }
+  | NUMBER_TYPE IDENT { $$ = driver.mkDeprecatedSubType($IDENT, "number", @$); }
+  | SYMBOL_TYPE IDENT { $$ = driver.mkDeprecatedSubType($IDENT, "symbol", @$); }
+  | TYPE        IDENT { $$ = driver.mkDeprecatedSubType($IDENT, "symbol", @$); }
   ;
 
 /* Union type argument declarations */

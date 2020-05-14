@@ -95,6 +95,7 @@ private:
 
     void checkType(const AstType& type);
     void checkRecordType(const AstRecordType& type);
+    void checkSubsetType(const AstSubsetType& type);
     void checkUnionType(const AstUnionType& type);
 
     void checkNamespaces();
@@ -208,11 +209,13 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     continue;  // This will be reported later.
                 }
 
-                // Attribute and argument type agree if, argument type is a subtype of declared type or is of
-                // the appropriate constant type.
+                // Attribute and argument type agree if, argument type is a subtype of declared type
+                // or is of the appropriate constant type or the (constant) record type.
                 bool validAttribute = all_of(argTypes, [&attributeType](const Type& type) {
-                    return isSubtypeOf(type, attributeType) ||
-                           (isA<ConstantType>(type) && isSubtypeOf(attributeType, type));
+                    if (isSubtypeOf(type, attributeType)) return true;
+                    if (!isSubtypeOf(attributeType, type)) return false;
+                    if (isA<ConstantType>(type)) return true;
+                    return isA<RecordType>(type) && !isA<SubsetType>(type);
                 });
                 if (!validAttribute) {
                     if (Global::config().has("legacy")) {
@@ -239,7 +242,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     // all string constants are used as symbols
     visitDepthFirst(nodes, [&](const AstStringConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        if (!isSymbolType(types)) {
+        if (!isOfKind(types, TypeAttribute::Symbol)) {
             report.addError("Symbol constant (type mismatch)", constant.getSrcLoc());
         }
     });
@@ -257,17 +260,17 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
         switch (*constant.getType()) {
             case AstNumericConstant::Type::Int:
-                if (!hasSignedType(types)) {
+                if (!isOfKind(types, TypeAttribute::Signed)) {
                     report.addError("Number constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
             case AstNumericConstant::Type::Uint:
-                if (!hasUnsignedType(types)) {
+                if (!isOfKind(types, TypeAttribute::Unsigned)) {
                     report.addError("Unsigned constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
             case AstNumericConstant::Type::Float:
-                if (!hasFloatType(types)) {
+                if (!isOfKind(types, TypeAttribute::Float)) {
                     report.addError("Float constant (type mismatch)", constant.getSrcLoc());
                 }
                 break;
@@ -277,8 +280,9 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     // all nil constants are used as records
     visitDepthFirst(nodes, [&](const AstNilConstant& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
-        if (!isRecordType(types)) {
+        if (!isOfKind(types, TypeAttribute::Record)) {
             report.addError("Nil constant used as a non-record", constant.getSrcLoc());
+            return;
         }
     });
 
@@ -286,16 +290,17 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     visitDepthFirst(nodes, [&](const AstRecordInit& constant) {
         TypeSet types = typeAnalysis.getTypes(&constant);
 
-        if (!isRecordType(types) || types.size() != 1) {
+        if (!isOfKind(types, TypeAttribute::Record) || types.size() != 1) {
             report.addError("Ambiguous record", constant.getSrcLoc());
             return;
         }
 
         // At this point we know that there is exactly one type in set, so we can take it.
-        const RecordType* recordType = dynamic_cast<const RecordType*>(&(*types.begin()));
+        auto& recordType = *as<RecordType>(*types.begin());
 
-        if (recordType->getFields().size() != constant.getArguments().size()) {
+        if (recordType.getFields().size() != constant.getArguments().size()) {
             report.addError("Wrong number of arguments given to record", constant.getSrcLoc());
+            return;
         }
     });
 
@@ -324,7 +329,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         // check type of result
         const TypeSet& resultType = typeAnalysis.getTypes(&fun);
 
-        if (!eqTypeTypeAttribute(fun.getReturnType(), resultType)) {
+        if (!isOfKind(resultType, fun.getReturnType())) {
             switch (fun.getReturnType()) {
                 case TypeAttribute::Signed:
                     report.addError("Non-numeric use for numeric functor", fun.getSrcLoc());
@@ -344,7 +349,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
         size_t i = 0;
         for (auto arg : fun.getArguments()) {
-            if (!eqTypeTypeAttribute(fun.getArgType(i), typeAnalysis.getTypes(arg))) {
+            if (!isOfKind(typeAnalysis.getTypes(arg), fun.getArgType(i))) {
                 switch (fun.getArgType(i)) {
                     case TypeAttribute::Signed:
                         report.addError("Non-numeric argument for functor", arg->getSrcLoc());
@@ -380,9 +385,8 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
             report.addError("Cannot compare different types", constraint.getSrcLoc());
         } else {
             auto checkTyAttr = [&](AstArgument const& side) {
-                auto opMatchesType = any_of(opRamTypes, [&](auto& ramType) {
-                    return eqTypeTypeAttribute(ramType, typeAnalysis.getTypes(&side));
-                });
+                auto opMatchesType = any_of(opRamTypes,
+                        [&](auto& ramType) { return isOfKind(typeAnalysis.getTypes(&side), ramType); });
 
                 if (!opMatchesType) {
                     std::stringstream ss;
@@ -413,7 +417,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         TypeAttribute opType = getTypeAttributeAggregate(op);
 
         // Check if operation type and return type agree.
-        if (!eqTypeTypeAttribute(opType, aggregatorType)) {
+        if (!isOfKind(aggregatorType, opType)) {
             report.addError("Couldn't assign types to the aggregator", aggregator.getSrcLoc());
         }
     });
@@ -867,7 +871,8 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
 
     // Check if the union is recursive.
     if (typeEnvAnalysis.isCyclic(type.getQualifiedName())) {
-        report.addError("Recursive union " + toString(type.getQualifiedName()), type.getSrcLoc());
+        report.addError("Infinite descent in the definition of type " + toString(type.getQualifiedName()),
+                type.getSrcLoc());
     }
 
     /* check that union types do not mix different primitive types */
@@ -879,26 +884,14 @@ void AstSemanticCheckerImpl::checkUnionType(const AstUnionType& type) {
 
         const auto& name = type->getQualifiedName();
 
-        const std::set<TypeAttribute>& predefinedTypesInUnion =
-                typeEnvAnalysis.getPrimitiveTypesInUnion(name);
+        const auto& predefinedTypesInUnion = typeEnvAnalysis.getPrimitiveTypesInUnion(name);
 
         // Report error (if size == 0, then the union is cyclic)
         if (predefinedTypesInUnion.size() > 1) {
-            std::stringstream errorMessage;
-            auto toPrimitiveTypeName = [](std::ostream& out, TypeAttribute type) {
-                switch (type) {
-                    case TypeAttribute::Signed: out << "number"; break;
-                    case TypeAttribute::Unsigned: out << "unsigned"; break;
-                    case TypeAttribute::Float: out << "float"; break;
-                    case TypeAttribute::Symbol: out << "symbol"; break;
-                    case TypeAttribute::Record: fatal("Invalid type");
-                }
-            };
-            errorMessage << "Union type " << name << " is defined over {"
-                         << join(predefinedTypesInUnion, ", ", toPrimitiveTypeName) << "}"
-                         << " (multiple primitive types in union)";
-
-            report.addError(errorMessage.str(), type->getSrcLoc());
+            report.addError(
+                    tfm::format("Union type %s is defined over {%s} (multiple primitive types in union)",
+                            name, join(predefinedTypesInUnion, ", ")),
+                    type->getSrcLoc());
         }
     }
 }
@@ -907,8 +900,7 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     auto&& fields = type.getFields();
     // check proper definition of all field types
     for (auto&& field : fields) {
-        if (!typeEnv.isPrimitiveType(field->getTypeName()) &&
-                (getType(program, field->getTypeName()) == nullptr)) {
+        if (!typeEnv.isType(field->getTypeName())) {
             report.addError(tfm::format("Undefined type %s in definition of field %s", field->getTypeName(),
                                     field->getName()),
                     field->getSrcLoc());
@@ -928,11 +920,44 @@ void AstSemanticCheckerImpl::checkRecordType(const AstRecordType& type) {
     }
 }
 
+void AstSemanticCheckerImpl::checkSubsetType(const AstSubsetType& astType) {
+    if (typeEnvAnalysis.isCyclic(astType.getQualifiedName())) {
+        report.addError(
+                tfm::format("Infinite descent in the definition of type %s", astType.getQualifiedName()),
+                astType.getSrcLoc());
+        return;
+    }
+
+    if (!typeEnv.isType(astType.getBaseType())) {
+        report.addError(tfm::format("Undefined base type %s in definition of type %s", astType.getBaseType(),
+                                astType.getQualifiedName()),
+                astType.getSrcLoc());
+        return;
+    }
+
+    auto& rootType = typeEnv.getType(astType.getBaseType());
+
+    if (isA<UnionType>(rootType)) {
+        report.addError(tfm::format("Subset type %s can't be derived from union %s",
+                                astType.getQualifiedName(), rootType.getName()),
+                astType.getSrcLoc());
+    }
+}
+
 void AstSemanticCheckerImpl::checkType(const AstType& type) {
-    if (auto p = as<AstUnionType>(type)) {
-        checkUnionType(*p);
-    } else if (auto p = as<AstRecordType>(type)) {
-        checkRecordType(*p);
+    if (typeEnv.isPrimitiveType(type.getQualifiedName())) {
+        report.addError("Redefinition of the predefined type", type.getSrcLoc());
+        return;
+    }
+
+    if (isA<AstUnionType>(type)) {
+        checkUnionType(*as<AstUnionType>(type));
+    } else if (isA<AstRecordType>(type)) {
+        checkRecordType(*as<AstRecordType>(type));
+    } else if (isA<AstSubsetType>(type)) {
+        checkSubsetType(*as<AstSubsetType>(type));
+    } else {
+        fatal("unsupported type construct: %s", typeid(type).name());
     }
 }
 

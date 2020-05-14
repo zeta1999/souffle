@@ -99,16 +99,6 @@ typename C::value_type getIf(const C& container, std::function<bool(const typena
 }
 
 /**
- * A utility function enabling the creation of a vector with a fixed set of
- * elements within a single expression. This is the base case covering empty
- * vectors.
- */
-template <typename T>
-std::vector<T> toVector() {
-    return std::vector<T>();
-}
-
-/**
  * Get value for a given key; if not found, return default value.
  */
 template <typename C>
@@ -121,6 +111,16 @@ typename C::mapped_type const& getOr(
     } else {
         return defaultValue;
     }
+}
+
+/**
+ * A utility function enabling the creation of a vector with a fixed set of
+ * elements within a single expression. This is the base case covering empty
+ * vectors.
+ */
+template <typename T>
+std::vector<T> toVector() {
+    return std::vector<T>();
 }
 
 /**

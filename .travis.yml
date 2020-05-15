@@ -48,17 +48,6 @@ jobs:
         paths: .
     script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig'"
   - stage: Warmup
-    name: "Build Bionic arm64  g++"
-    arch: arm64
-    # workaround travis-ci bugs
-    filter_secrets: false
-    <<: *docker
-    workspaces:
-      create:
-        name: bionic_gcc_arm
-        paths: .
-    script: docker exec souf /bin/sh -c "export CXX=g++ && .travis/init_test.sh '--enable-swig'"
-  - stage: Warmup
     name: "Build Bionic g++ 64bit"
     <<: *docker
     workspaces:
@@ -111,19 +100,6 @@ jobs:
       use: bionic_gcc
     env:
     - SOUFFLE_CATEGORY=Unit,Syntactic,Semantic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
-    script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
-  - stage: Testing
-    name: "Linux arm64 gcc non-eval"
-    arch: arm64
-    <<: *docker
-    workspaces:
-      use: bionic_gcc_arm
-    # workaround travis-ci bugs
-    filter_secrets: false
-    # Semantic test will fail due to UB in negative_numbers test
-    #  a = std::pow(2,31) => max or min int depending on platform
-    env:
-    - SOUFFLE_CATEGORY=Unit,Syntactic,Interface,Profile SOUFFLE_CONFS="-j8,-c -j8"
     script: docker exec -e SOUFFLE_CATEGORY -e SOUFFLE_CONFS souf /bin/sh -c ".travis/run_test.sh"
 
 # Testing stage for Evaluation tests without OpenMP (,-c)

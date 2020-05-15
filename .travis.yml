@@ -33,6 +33,8 @@ stages:
   - Packaging
 
 jobs:
+  allow_failures:
+    - name: "Debian arm64 package"
   include:
 # Style check stage
   - stage: Warmup

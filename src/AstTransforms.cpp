@@ -1170,17 +1170,17 @@ bool ReplaceSingletonVariablesTransformer::transform(AstTranslationUnit& transla
 bool NameUnnamedVariablesTransformer::transform(AstTranslationUnit& translationUnit) {
     bool changed = false;
     static constexpr const char* boundPrefix = "+underscore";
+    static size_t underscoreCount = 0;
 
     struct nameVariables : public AstNodeMapper {
         mutable bool changed = false;
-        mutable size_t count = 0;
         nameVariables() = default;
 
         std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
             if (dynamic_cast<AstUnnamedVariable*>(node.get()) != nullptr) {
                 changed = true;
                 std::stringstream name;
-                name << boundPrefix << "_" << count++;
+                name << boundPrefix << "_" << underscoreCount++;
                 return std::make_unique<AstVariable>(name.str());
             }
             node->apply(*this);

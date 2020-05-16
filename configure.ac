@@ -11,6 +11,7 @@ m4_define([SOUFFLE_VERSION], m4_esyscmd([
   echo $souffle_version| tr -d '\n']))
 
 AC_INIT(souffle, SOUFFLE_VERSION, [https://github.com/souffle-lang/souffle/issues], souffle, [https://github.com/souffle-lang/souffle])
+AC_CONFIG_AUX_DIR([auxfiles])
 AC_PREREQ(2.68)
 AC_COPYRIGHT(['2013-15 Oracle and/or its affiliates'])
 

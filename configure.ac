@@ -270,7 +270,7 @@ AC_CONFIG_TESTDIR([tests])
 AC_CONFIG_FILES([
   Makefile
   src/Makefile
-  src/test/Makefile
+  src/tests/Makefile
   tests/Makefile
   tests/atlocal
   tests/interface/functors/Makefile

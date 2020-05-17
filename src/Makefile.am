@@ -4,7 +4,7 @@
 # - https://opensource.org/licenses/UPL
 # - <souffle root>/licenses/SOUFFLE-UPL.txt
 
-SUBDIRS = . test
+SUBDIRS = . tests
 
 SUFFIXES = .cpp .h .yy .ll .cc .hh .h
 

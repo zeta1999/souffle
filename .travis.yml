@@ -216,7 +216,7 @@ jobs:
     <<: *docker
     script:
       - docker exec souf /bin/sh -c ".travis/linux/install_debian_deps.sh"
-      - travis_wait 40 docker exec souf /bin/sh -c ".travis/linux/make_debian_package.sh"
+      - docker exec souf /bin/sh -c ".travis/linux/make_debian_package.sh 2"
     before_deploy:
       - .travis/bintray_json.sh debian arm64
     # deploy to bintray if we're in the souffle-lang repo

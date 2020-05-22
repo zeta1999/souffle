@@ -199,8 +199,8 @@ const Type& getBaseType(const Type* type) {
     while (auto subset = dynamic_cast<const SubsetType*>(type)) {
         type = &subset->getBaseType();
     };
-    assert(isA<ConstantType>(type) ||
-            isA<RecordType>(type) && "Root must be a constant type or a record type");
+    assert((isA<ConstantType>(type) || isA<RecordType>(type)) &&
+            "Root must be a constant type or a record type");
     return *type;
 }
 
@@ -310,6 +310,9 @@ TypeConstraint subtypesOfTheSameBaseType(const TypeVar& left, const TypeVar& rig
 TypeConstraint satisfiesOverload(const TypeEnvironment& typeEnv, IntrinsicFunctors overloads, TypeVar result,
         std::vector<TypeVar> args, bool subtypeResult) {
     struct C : public Constraint<TypeVar> {
+        // Check if there already was a non-monotonic update
+        mutable bool nonMonotonicUpdate = false;
+
         const TypeEnvironment& typeEnv;
         mutable IntrinsicFunctors overloads;
         TypeVar result;
@@ -362,8 +365,12 @@ TypeConstraint satisfiesOverload(const TypeEnvironment& typeEnv, IntrinsicFuncto
                     }
                 }
 
-                return subtypeResult ? subtypesOf(assigment[result], overload.result)
-                                     : TypeSet{typeEnv.getConstantType(overload.result)};
+                if (nonMonotonicUpdate || subtypeResult) {
+                    return subtypesOf(assigment[result], overload.result);
+                } else {
+                    nonMonotonicUpdate = true;
+                    return TypeSet{typeEnv.getConstantType(overload.result)};
+                }
             }();
 
             if (newResult) {
@@ -377,7 +384,8 @@ TypeConstraint satisfiesOverload(const TypeEnvironment& typeEnv, IntrinsicFuncto
         }
 
         void print(std::ostream& out) const override {
-            out << "∃ t : (" << result << " <: t) where t is a base type";
+            // TODO (darth_tytus): is this description correct?
+            out << "∃ t : " << result << " <: t where t is a base type";
         }
     };
 

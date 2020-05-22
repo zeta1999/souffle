@@ -218,10 +218,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     return isA<RecordType>(type) && !isA<SubsetType>(type);
                 });
                 if (!validAttribute) {
-                    if (Global::config().has("legacy")) {
-                        report.addWarning("Atoms argument type is not a subtype of its declared type",
-                                arguments[i]->getSrcLoc());
-                    } else {
+                    if (!Global::config().has("legacy")) {
                         report.addError("Atoms argument type is not a subtype of its declared type",
                                 arguments[i]->getSrcLoc());
                     }

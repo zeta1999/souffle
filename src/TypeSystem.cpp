@@ -331,6 +331,44 @@ TypeSet getGreatestCommonSubtypes(const TypeSet& a, const TypeSet& b) {
     return res;
 }
 
+TypeSet getLeastCommonSupertypes(const Type& a, const Type& b) {
+    assert(&a.getTypeEnvironment() == &b.getTypeEnvironment() &&
+            "Types must be in the same type environment");
+
+    // if they are equal it is easy
+    if (a == b) {
+        return TypeSet(a);
+    }
+
+    // equally simple - check whether one is a sub-type of the other
+    if (isSubtypeOf(a, b)) {
+        return TypeSet(b);
+    }
+    if (isSubtypeOf(b, a)) {
+        return TypeSet(a);
+    }
+
+    // harder: no obvious relation => hard way
+    TypeSet superTypes;
+    TypeSet all = a.getTypeEnvironment().getTypes();
+    for (const Type& cur : all) {
+        if (isSubtypeOf(a, cur) && isSubtypeOf(b, cur)) {
+            superTypes.insert(cur);
+        }
+    }
+
+    // filter out non-least super types
+    TypeSet res;
+    for (const Type& cur : superTypes) {
+        bool least = !any_of(superTypes, [&](const Type& t) { return t != cur && isSubtypeOf(t, cur); });
+        if (least) {
+            res.insert(cur);
+        }
+    }
+
+    return res;
+}
+
 TypeAttribute getTypeAttribute(const Type& type) {
     for (auto typeAttribute : {TypeAttribute::Signed, TypeAttribute::Unsigned, TypeAttribute::Float,
                  TypeAttribute::Record, TypeAttribute::Symbol}) {

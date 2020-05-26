@@ -326,7 +326,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
         auto& castTy = *castTypes.begin();
         auto& argTy = *argTypes.begin();
 
-        if (getLeastCommonSupertypes(castTy, argTy).empty()) {
+        if (!haveCommonSupertype(castTy, argTy)) {
             report.addError(
                     tfm::format(
                             "The argument type \"%s\" and its type destination \"%s\" are of different kind",

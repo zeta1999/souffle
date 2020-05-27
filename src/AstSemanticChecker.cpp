@@ -328,7 +328,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
 
         if (!haveCommonSupertype(castTy, argTy)) {
             report.addError(
-                    tfm::format("Type \"%s\" can't be converted to \"%s\"", argTy, castTy), cast.getSrcLoc());
+                    tfm::format(R"(Type "%s" can't be converted to "%s")", argTy, castTy), cast.getSrcLoc());
             return;
         }
     });

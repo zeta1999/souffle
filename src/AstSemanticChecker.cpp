@@ -304,7 +304,32 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     // type casts name a valid type
     visitDepthFirst(nodes, [&](const AstTypeCast& cast) {
         if (!typeEnv.isType(cast.getType())) {
-            report.addError("Type cast is to undeclared type " + toString(cast.getType()), cast.getSrcLoc());
+            report.addError(
+                    tfm::format("Type cast to the undeclared type \"%s\"", cast.getType()), cast.getSrcLoc());
+            return;
+        }
+
+        auto& castTypes = typeAnalysis.getTypes(&cast);
+        auto& argTypes = typeAnalysis.getTypes(cast.getValue());
+
+        if (castTypes.isAll() || castTypes.size() != 1) {
+            report.addError("Unable to deduce type of the argument (cast)", cast.getSrcLoc());
+            return;
+        }
+
+        // This should be reported elsewhere
+        if (argTypes.isAll() || castTypes.size() != 1) {
+            return;
+        }
+
+        // We know that both sets have size 1.
+        auto& castTy = *castTypes.begin();
+        auto& argTy = *argTypes.begin();
+
+        if (!haveCommonSupertype(castTy, argTy)) {
+            report.addError(
+                    tfm::format(R"(Type "%s" can't be converted to "%s")", argTy, castTy), cast.getSrcLoc());
+            return;
         }
     });
 

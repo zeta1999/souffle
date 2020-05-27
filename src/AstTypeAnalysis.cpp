@@ -678,8 +678,24 @@ private:
     }
 
     void visitCounter(const AstCounter& counter) override {
-        // counter must be an int.
         addConstraint(isSubtypeOf(getVar(counter), typeEnv.getConstantType(TypeAttribute::Signed)));
+    }
+
+    void visitTypeCast(const AstTypeCast& typeCast) override {
+        auto& typeName = typeCast.getType();
+        if (!typeEnv.isType(typeName)) {
+            return;
+        }
+
+        addConstraint(isSubtypeOf(getVar(typeCast), typeEnv.getType(typeName)));
+
+        // If we are dealing with a constant then its type must be deduced from the cast
+        // Otherwise, expression like: to_string(as(2, float)) couldn't be typed.
+        auto* value = typeCast.getValue();
+
+        if (isA<AstConstant>(value)) {
+            addConstraint(isSubtypeOf(getVar(*value), typeEnv.getType(typeName)));
+        }
     }
 
     void visitRecordInit(const AstRecordInit& record) override {

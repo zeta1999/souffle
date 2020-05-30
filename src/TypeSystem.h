@@ -431,6 +431,14 @@ public:
         return out;
     }
 
+    TypeSet getTypes() const {
+        TypeSet types;
+        for (auto& type : types) {
+            types.insert(type);
+        }
+        return types;
+    }
+
 private:
     TypeSet initializePrimitiveTypes();
     TypeSet initializeConstantTypes();
@@ -500,5 +508,10 @@ template <typename... Types>
 TypeSet getGreatestCommonSubtypes(const Types&... types) {
     return getGreatestCommonSubtypes(TypeSet(types...));
 }
+
+/**
+ * Determine if there exist a type t such that a <: t and b <: t
+ */
+bool haveCommonSupertype(const Type& a, const Type& b);
 
 }  // end namespace souffle

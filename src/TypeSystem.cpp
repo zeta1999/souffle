@@ -331,6 +331,22 @@ TypeSet getGreatestCommonSubtypes(const TypeSet& a, const TypeSet& b) {
     return res;
 }
 
+bool haveCommonSupertype(const Type& a, const Type& b) {
+    assert(&a.getTypeEnvironment() == &b.getTypeEnvironment() &&
+            "Types must be in the same type environment");
+
+    if (a == b) {
+        return true;
+    }
+
+    if (isSubtypeOf(a, b) || isSubtypeOf(b, a)) {
+        return true;
+    }
+
+    return any_of(a.getTypeEnvironment().getTypes(),
+            [&](const Type& type) { return isSubtypeOf(a, type) && isSubtypeOf(b, type); });
+}
+
 TypeAttribute getTypeAttribute(const Type& type) {
     for (auto typeAttribute : {TypeAttribute::Signed, TypeAttribute::Unsigned, TypeAttribute::Float,
                  TypeAttribute::Record, TypeAttribute::Symbol}) {

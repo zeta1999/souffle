@@ -2264,7 +2264,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "public:\n";
     os << "factory_" << classname << "() : ProgramFactory(\"" << id << "\"){}\n";
     os << "};\n";
-    os << "static factory_" << classname << " __factory_" << classname << "_instance;\n";
+    os << "extern \"C\" {\n";
+    os << "factory_" << classname << " __factory_" << classname << "_instance;\n";
+    os << "}\n";
     os << "}\n";
     os << "#else\n";
     os << "}\n";

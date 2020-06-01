@@ -2274,8 +2274,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";  // end of subroutine
             subroutineNum++;
         }
-        os << "};\n";  // end of class declaration
     }
+    os << "};\n";  // end of class declaration
 
     // hidden hooks
     os << "SouffleProgram *newInstance_" << id << "(){return new " << classname << ";}\n";

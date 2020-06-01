@@ -410,12 +410,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitLoop(const RamLoop& loop, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "iter = 0;\n";
+            out << "{std::atomic<size_t> iter(0);\n";
             out << "for(;;) {\n";
             visit(loop.getBody(), out);
             out << "iter++;\n";
             out << "}\n";
-            out << "iter = 0;\n";
+            out << "}\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -441,6 +441,17 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "if(";
             visit(exit.getCondition(), out);
             out << ") break;\n";
+            PRINT_END_COMMENT(out);
+        }
+
+        void visitCall(const RamCall &call, std::ostream& out) override { 
+            PRINT_BEGIN_COMMENT(out);
+            const RamProgram &prog = synthesiser.getTranslationUnit().getProgram(); 
+            const auto &subs = prog.getSubroutines(); 
+            out << "{\n";
+            out << " std::vector<RamDomain> args, ret;\n";
+            out << "subroutine_" << distance(subs.begin(),subs.find(call.getName())) << "(args, ret);\n";
+            out << "}\n";
             PRINT_END_COMMENT(out);
         }
 
@@ -1996,22 +2007,30 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";
 
     // -- run function --
-    os << "private:\nvoid runFunction(std::string inputDirectory = \".\", "
+    os << "private:\n";
+    os << "std::string inputDirectory;\n";
+    os << "std::string outputDirectory;\n";
+    os << "bool performIO;\n"; 
+
+    // issue counter for $ operator 
+    bool hasIncrement = false;
+    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement&) { hasIncrement = true; });
+    if (hasIncrement) {
+        os << "std::atomic<RamDomain> ctr(0);\n\n";
+    }
+
+    os << "void runFunction(std::string inputDirectory = \".\", "
           "std::string outputDirectory = \".\", bool performIO = false) "
           "{\n";
+
+    os << "this->inputDirectory = inputDirectory;\n";
+    os << "this->outputDirectory = outputDirectory;\n";
+    os << "this->performIO = performIO;\n";
 
     os << "SignalHandler::instance()->set();\n";
     if (Global::config().has("verbose")) {
         os << "SignalHandler::instance()->enableLogging();\n";
     }
-    bool hasIncrement = false;
-    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement&) { hasIncrement = true; });
-    // initialize counter
-    if (hasIncrement) {
-        os << "// -- initialize counter --\n";
-        os << "std::atomic<RamDomain> ctr(0);\n\n";
-    }
-    os << "std::atomic<size_t> iter(0);\n\n";
 
     // set default threads (in embedded mode)
     // if this is not set, and omp is used, the default omp setting of number of cores is used.
@@ -2214,19 +2233,23 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";
         }
 
+    }
+
+    if (!prog.getSubroutines().empty()) { 
         // generate subroutine adapter
         os << "void executeSubroutine(std::string name, const std::vector<RamDomain>& args, "
               "std::vector<RamDomain>& ret) override {\n";
-
         // subroutine number
         size_t subroutineNum = 0;
         for (auto& sub : prog.getSubroutines()) {
             os << "if (name == \"" << sub.first << "\") {\n"
-               << "subproof_" << subroutineNum
-               << "(args, ret);\n"  // subproof_i to deal with special characters in relation names
+               << "subroutine_" << subroutineNum
+               << "(args, ret);\n"  // subroutine_<i> to deal with special characters in relation names
+               << "return;" 
                << "}\n";
             subroutineNum++;
         }
+        os << "fatal(\"unknown subroutine\");\n"; 
         os << "}\n";  // end of executeSubroutine
 
         // generate method for each subroutine
@@ -2234,11 +2257,14 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         for (auto& sub : prog.getSubroutines()) {
             // method header
             os << "void "
-               << "subproof_" << subroutineNum
+               << "subroutine_" << subroutineNum
                << "(const std::vector<RamDomain>& args, "
                   "std::vector<RamDomain>& ret) {\n";
 
             // a lock is needed when filling the subroutine return vectors
+            // for provenance subroutines
+            // TODO (b-scholz): can we encapsulate the lock in the return 
+            //                  statement 
             os << "std::mutex lock;\n";
 
             // generate code for body
@@ -2248,8 +2274,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";  // end of subroutine
             subroutineNum++;
         }
+        os << "};\n";  // end of class declaration
     }
-    os << "};\n";  // end of class declaration
 
     // hidden hooks
     os << "SouffleProgram *newInstance_" << id << "(){return new " << classname << ";}\n";

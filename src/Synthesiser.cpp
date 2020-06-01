@@ -1886,7 +1886,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
-        visitDepthFirst(prog.getMain(), [&](const RamStatement&) { numFreq++; });
+        visitDepthFirst(prog, [&](const RamStatement&) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
         for (auto rel : prog.getRelations()) {
@@ -1907,7 +1907,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     std::set<const RamIO*> storeIOs;
 
     // collect load/store operations/relations
-    visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
+    visitDepthFirst(prog, [&](const RamIO& io) {
         auto op = io.get("operation");
         if (op == "input") {
             loadRelations.insert(io.getRelation().getName());

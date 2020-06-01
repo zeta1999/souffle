@@ -17,7 +17,10 @@
 #pragma once
 
 #include "RamTypes.h"
-#include "Util.h"
+#include "utility/MiscUtil.h"
+#include <cstdint>
+#include <ostream>
+#include <utility>
 
 namespace souffle {
 
@@ -113,7 +116,7 @@ inline bool isOverloadedAggregator(const AggregateOp op) {
         case AggregateOp::MEAN:
         case AggregateOp::COUNT: return false;
 
-        default: fatal("likely mistaken use of overloaded aggregator op");
+        default: return false;
     }
 }
 

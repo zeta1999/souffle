@@ -28,9 +28,11 @@
 
 #include <map>
 #include <memory>
+#include <stdexcept>
 #include <string>
 
 namespace souffle {
+class RecordTable;
 
 class IOSystem {
 public:

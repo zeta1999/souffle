@@ -24,10 +24,12 @@
 #include "RamProgram.h"
 #include "RamRelation.h"
 #include "RamStatement.h"
-
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include <cstddef>
 #include <functional>
+#include <type_traits>
 #include <typeinfo>
-#include <utility>
 #include <vector>
 
 namespace souffle {

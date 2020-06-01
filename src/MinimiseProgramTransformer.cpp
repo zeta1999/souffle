@@ -14,26 +14,32 @@
  *
  ***********************************************************************/
 
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
-#include "AstIO.h"
 #include "AstIOTypeAnalysis.h"
 #include "AstLiteral.h"
+#include "AstNode.h"
 #include "AstProgram.h"
 #include "AstQualifiedName.h"
-#include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
 #include "AstUtils.h"
 #include "AstVisitor.h"
-#include "Util.h"
+#include "utility/ContainerUtil.h"
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <map>
 #include <memory>
+#include <set>
 #include <stack>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {
+class AstRelation;
 
 /**
  * Extract valid permutations from a given permutation matrix of valid moves.
@@ -281,6 +287,15 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
 
     // head atoms must have the same arity
     if (left->getHead()->getArity() != right->getHead()->getArity()) {
+        return false;
+    }
+
+    // rules must have the same number of distinct variables
+    std::set<std::string> leftVariableNames;
+    std::set<std::string> rightVariableNames;
+    visitDepthFirst(*left, [&](const AstVariable& var) { leftVariableNames.insert(var.getName()); });
+    visitDepthFirst(*right, [&](const AstVariable& var) { rightVariableNames.insert(var.getName()); });
+    if (leftVariableNames.size() != rightVariableNames.size()) {
         return false;
     }
 

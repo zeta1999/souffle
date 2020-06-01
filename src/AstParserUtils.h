@@ -16,15 +16,16 @@
 
 #pragma once
 
-#include "AstLiteral.h"
-
+#include "AstAbstract.h"
 #include <iosfwd>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace souffle {
 
 class AstClause;
+class AstAtom;
 
 class RuleBody {
 public:

@@ -26,6 +26,7 @@
 #include "RamOperation.h"
 #include "RamProgram.h"
 #include "RamRelation.h"
+#include "RamStatement.h"
 #include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "RamUtils.h"
@@ -33,15 +34,19 @@
 #include "RelationTag.h"
 #include "SymbolTable.h"
 #include "SynthesiserRelation.h"
-#include "Util.h"
 #include "json11.h"
+#include "utility/FileUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <algorithm>
 #include <cassert>
 #include <cctype>
-#include <cstdlib>
 #include <functional>
-#include <iostream>
+#include <map>
 #include <sstream>
+#include <type_traits>
 #include <typeinfo>
 #include <utility>
 #include <vector>
@@ -128,26 +133,6 @@ void Synthesiser::generateRelationTypeStruct(
 
     // Generate the type struct for the relation
     relationType->generateTypeStruct(out);
-}
-
-/* Convert SearchColums to a template index */
-std::string Synthesiser::toIndex(SearchSignature key) {
-    std::stringstream tmp;
-    tmp << "<";
-    int i = 0;
-    while (key != 0) {
-        if ((key % 2) != 0u) {
-            tmp << i;
-            if (key > 1) {
-                tmp << ",";
-            }
-        }
-        key >>= 1;
-        i++;
-    }
-
-    tmp << ">";
-    return tmp.str();
 }
 
 /** Get referenced relations */
@@ -852,7 +837,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto keys = isa->getSearchSignature(&aggregate);
 
             // special case: counting number elements over an unrestricted predicate
-            if (aggregate.getFunction() == AggregateOp::COUNT && keys == 0 &&
+            if (aggregate.getFunction() == AggregateOp::COUNT && keys.empty() &&
                     isRamTrue(&aggregate.getCondition())) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
@@ -904,7 +889,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             // check whether there is an index to use
-            if (keys == 0) {
+            if (keys.empty()) {
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
             } else {
@@ -1330,7 +1315,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "[&]() -> bool {\n";
             out << "auto existenceCheck = " << relName << "->"
                 << "equalRange";
-            // out << synthesiser.toIndex(ne.getSearchSignature());
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">{{";
             auto parts = provExists.getValues().size() - auxiliaryArity + 1;
@@ -1503,6 +1487,20 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
     NARY_OP(   opcode, RamSigned  , op) \
     NARY_OP(U##opcode, RamUnsigned, op) \
     NARY_OP(F##opcode, RamFloat   , op)
+
+
+#define CONV_TO_STRING(opcode, ty)                \
+    case FunctorOp::opcode: {                     \
+        out << "symTable.lookup(std::to_string("; \
+        visit(args[0], out);                      \
+        out << "))";                              \
+    } break;
+#define CONV_FROM_STRING(opcode, ty)                                            \
+    case FunctorOp::opcode: {                                                   \
+        out << "souffle::evaluator::symbol2numeric<" #ty ">(symTable.resolve("; \
+        visit(args[0], out);                                                    \
+        out << "))";                                                            \
+    } break;
             // clang-format on
 
             auto args = op.getArguments();
@@ -1519,18 +1517,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     out << ").size())";
                     break;
                 }
-                case FunctorOp::TOSTRING: {
-                    out << "symTable.lookup(std::to_string(";
-                    visit(args[0], out);
-                    out << "))";
-                    break;
-                }
-                case FunctorOp::TONUMBER: {
-                    out << "(wrapper_tonumber(symTable.resolve((size_t)";
-                    visit(args[0], out);
-                    out << ")))";
-                    break;
-                }
 
                     // clang-format off
                 UNARY_OP_I(NEG, -)
@@ -1539,14 +1525,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 UNARY_OP_INTEGRAL(BNOT, ~)
                 UNARY_OP_INTEGRAL(LNOT, (RamDomain)!)
 
-                // Numeric coercions.
-                // Behaviour is similar to C++ except we saturate instead of overflowing.
-                UNARY_OP(FTOI, RamFloat   , static_cast<RamSigned>)
-                UNARY_OP(UTOI, RamUnsigned, static_cast<RamSigned>)
-                UNARY_OP(FTOU, RamFloat   , static_cast<RamUnsigned>)
-                UNARY_OP(ITOU, RamSigned  , static_cast<RamUnsigned>)
-                UNARY_OP(ITOF, RamSigned  , static_cast<RamFloat>)
-                UNARY_OP(UTOF, RamUnsigned, static_cast<RamFloat>)
+                /** numeric coersions follow C++ semantics. */
+                UNARY_OP(F2I, RamFloat   , static_cast<RamSigned>)
+                UNARY_OP(F2U, RamFloat   , static_cast<RamUnsigned>)
+                UNARY_OP(I2U, RamSigned  , static_cast<RamUnsigned>)
+                UNARY_OP(I2F, RamSigned  , static_cast<RamFloat>)
+                UNARY_OP(U2I, RamUnsigned, static_cast<RamSigned>)
+                UNARY_OP(U2F, RamUnsigned, static_cast<RamFloat>)
+
+                CONV_TO_STRING(F2S, RamFloat)
+                CONV_TO_STRING(I2S, RamSigned)
+                CONV_TO_STRING(U2S, RamUnsigned)
+
+                CONV_FROM_STRING(S2F, RamFloat)
+                CONV_FROM_STRING(S2I, RamSigned)
+                CONV_FROM_STRING(S2U, RamUnsigned)
 
                 /** Binary Functor Operators */
                 // arithmetic
@@ -1570,6 +1563,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
                 BINARY_OP_LOGICAL(LAND, &&)
                 BINARY_OP_LOGICAL(LOR , ||)
+                BINARY_OP_LOGICAL(LXOR, + souffle::evaluator::lxor_infix() +)
 
                 BINARY_OP_BITWISE(BAND, &)
                 BINARY_OP_BITWISE(BOR , |)
@@ -1633,7 +1627,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
 
             auto emitHelper = [&](auto&& func) {
-                format(out, "%s(%s, [&](auto&& env%d) {\n", func,
+                tfm::format(out, "%s(%s, [&](auto&& env%d) {\n", func,
                         join(op.getArguments(), ",", [&](auto& os, auto* arg) { return visit(arg, os); }),
                         op.getTupleId());
                 visitTupleOperation(op, out);
@@ -1643,7 +1637,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             };
 
             auto emitRange = [&](char const* ty) {
-                return emitHelper(format("souffle::evaluator::runRange<%s>", ty));
+                return emitHelper(tfm::format("souffle::evaluator::runRange<%s>", ty));
             };
 
             switch (op.getFunction()) {
@@ -1814,7 +1808,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             UNREACHABLE_BAD_CASE_ANALYSIS
         };
 
-        format(os, "%s %s(%s);\n", cppTypeDecl(returnType), name, join(map(argsTypes, cppTypeDecl), ","));
+        tfm::format(
+                os, "%s %s(%s);\n", cppTypeDecl(returnType), name, join(map(argsTypes, cppTypeDecl), ","));
     }
     os << "}\n";
     os << "\n";
@@ -1851,18 +1846,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "     std::cerr << \"warning: wrong index position provided by substr(\\\"\";\n";
     os << "     std::cerr << str << \"\\\",\" << (int32_t)idx << \",\" << (int32_t)len << \") "
           "functor.\\n\";\n";
-    os << "   } return result;\n";
-    os << "}\n";
-
-    // to number wrapper
-    os << "private:\n";
-    os << "static inline RamDomain wrapper_tonumber(const std::string& str) {\n";
-    os << "   RamDomain result=0; \n";
-    os << "   try { result = RamSignedFromString(str); } catch(...) { \n";
-    os << "     std::cerr << \"error: wrong string provided by to_number(\\\"\";\n";
-    os << R"(     std::cerr << str << "\") )";
-    os << "functor.\\n\";\n";
-    os << "     raise(SIGFPE);\n";
     os << "   } return result;\n";
     os << "}\n";
 

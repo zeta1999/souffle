@@ -18,12 +18,11 @@
 
 #include "InterpreterIndex.h"
 #include "InterpreterRelation.h"
-#include "RamIndexAnalysis.h"
-#include "RamNode.h"
 #include "RamTypes.h"
 #include <cassert>
+#include <cstddef>
 #include <memory>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace souffle {

@@ -14,6 +14,7 @@
  *
  ***********************************************************************/
 
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstAttribute.h"
 #include "AstClause.h"
@@ -24,17 +25,19 @@
 #include "AstRelation.h"
 #include "AstTransforms.h"
 #include "AstTranslationUnit.h"
-#include "AstType.h"
 #include "AstUtils.h"
-#include "AstVisitor.h"
 #include "AuxArityAnalysis.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
 #include "RelationTag.h"
-#include "Util.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/tinyformat.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <iosfwd>
 #include <memory>
 #include <string>
@@ -100,9 +103,15 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             constName << *constant;
             return constName.str();
         }
-        if (nullptr != dynamic_cast<AstUnnamedVariable*>(arg)) return "_";
-        if (nullptr != dynamic_cast<AstFunctor*>(arg)) return format("functor_%d", functorNumber++);
-        if (nullptr != dynamic_cast<AstAggregator*>(arg)) return format("agg_%d", aggregateNumber++);
+        if (nullptr != dynamic_cast<AstUnnamedVariable*>(arg)) {
+            return "_";
+        }
+        if (nullptr != dynamic_cast<AstFunctor*>(arg)) {
+            return tfm::format("functor_%d", functorNumber++);
+        }
+        if (nullptr != dynamic_cast<AstAggregator*>(arg)) {
+            return tfm::format("agg_%d", aggregateNumber++);
+        }
 
         fatal("Unhandled argument type");
     };
@@ -240,32 +249,22 @@ void transformEqrelRelation(AstProgram& program, AstRelation& rel) {
     program.addClause(std::unique_ptr<AstClause>(reflexiveClause));
 }
 
+namespace {
+std::unique_ptr<AstArgument> getNextLevelNumber(const std::vector<AstArgument*>& levels) {
+    if (levels.empty()) return mk<AstNumericConstant>(0);
+
+    auto max = levels.size() == 1
+                       ? std::unique_ptr<AstArgument>(levels[0])
+                       : mk<AstIntrinsicFunctor>("max",
+                                 map(levels, [](auto&& x) { return std::unique_ptr<AstArgument>(x); }));
+
+    return mk<AstIntrinsicFunctor>("+", std::move(max), mk<AstNumericConstant>(1));
+}
+}  // namespace
+
 bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translationUnit) {
     static auto program = translationUnit.getProgram();
     const auto& auxArityAnalysis = *translationUnit.getAnalysis<AuxiliaryArity>();
-
-    // get next level number
-    auto getNextLevelNumber = [&](std::vector<AstArgument*> levels) {
-        if (levels.empty()) {
-            return static_cast<AstArgument*>(new AstNumericConstant(0));
-        }
-
-        if (levels.size() == 1) {
-            return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
-                    std::unique_ptr<AstArgument>(levels[0]), std::make_unique<AstNumericConstant>(1)));
-        }
-
-        auto currentMax = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>(levels[0]),
-                std::unique_ptr<AstArgument>(levels[1]));
-
-        for (size_t i = 2; i < levels.size(); i++) {
-            currentMax = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>(currentMax),
-                    std::unique_ptr<AstArgument>(levels[i]));
-        }
-
-        return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
-                std::unique_ptr<AstArgument>(currentMax), std::make_unique<AstNumericConstant>(1)));
-    };
 
     for (auto relation : program->getRelations()) {
         if (relation->getRepresentation() == RelationRepresentation::EQREL) {
@@ -362,7 +361,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
                 // rule number
                 clause->getHead()->addArgument(std::make_unique<AstNumericConstant>(clauseNum));
                 // max level
-                clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
+                clause->getHead()->addArgument(getNextLevelNumber(bodyLevels));
                 // level numbers
                 size_t numAtoms = getBodyLiterals<AstAtom>(*clause).size();
                 for (size_t j = 0; j < numAtoms; j++) {
@@ -380,29 +379,6 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
 
 bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUnit) {
     auto program = translationUnit.getProgram();
-
-    // get next level number
-    auto getNextLevelNumber = [&](std::vector<AstArgument*> levels) {
-        if (levels.empty()) {
-            return static_cast<AstArgument*>(new AstNumericConstant(0));
-        }
-
-        if (levels.size() == 1) {
-            return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
-                    std::unique_ptr<AstArgument>(levels[0]), std::make_unique<AstNumericConstant>(1)));
-        }
-
-        auto currentMax = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>(levels[0]),
-                std::unique_ptr<AstArgument>(levels[1]));
-
-        for (size_t i = 2; i < levels.size(); i++) {
-            currentMax = new AstIntrinsicFunctor(FunctorOp::MAX, std::unique_ptr<AstArgument>(currentMax),
-                    std::unique_ptr<AstArgument>(levels[i]));
-        }
-
-        return static_cast<AstArgument*>(new AstIntrinsicFunctor(FunctorOp::ADD,
-                std::unique_ptr<AstArgument>(currentMax), std::make_unique<AstNumericConstant>(1)));
-    };
 
     for (auto relation : program->getRelations()) {
         if (relation->getRepresentation() == RelationRepresentation::EQREL) {
@@ -478,7 +454,7 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
 
                 // add two provenance columns to head lit
                 clause->getHead()->addArgument(std::make_unique<AstNumericConstant>(clauseNum));
-                clause->getHead()->addArgument(std::unique_ptr<AstArgument>(getNextLevelNumber(bodyLevels)));
+                clause->getHead()->addArgument(getNextLevelNumber(bodyLevels));
             }
         }
     }

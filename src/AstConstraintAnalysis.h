@@ -16,8 +16,10 @@
 
 #pragma once
 
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
+#include "AstNode.h"
 #include "AstVisitor.h"
 #include "Constraints.h"
 #include <map>

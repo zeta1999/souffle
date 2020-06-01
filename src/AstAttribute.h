@@ -18,11 +18,10 @@
 
 #include "AstNode.h"
 #include "AstQualifiedName.h"
-
+#include "SrcLocation.h"
 #include <ostream>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace souffle {
 

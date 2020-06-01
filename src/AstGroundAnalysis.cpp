@@ -24,7 +24,10 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "Constraints.h"
-#include "Util.h"
+#include "PrecedenceGraph.h"
+#include "RelationTag.h"
+#include "utility/StreamUtil.h"
+#include <algorithm>
 #include <map>
 #include <memory>
 #include <ostream>

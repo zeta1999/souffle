@@ -16,10 +16,9 @@
 #pragma once
 
 #include "AstTransformer.h"
-#include "DebugReport.h"
-#include "Util.h"
-
+#include "utility/FileUtil.h"
 #include <memory>
+#include <ostream>
 #include <set>
 #include <string>
 #include <utility>
@@ -57,25 +56,6 @@ public:
 
     std::string getName() const override {
         return "DebugReporter";
-    }
-
-    /**
-     * Generate a full-content diff between two sources.
-     * Both arguments are passed into a `std::ostream` so you may exploit stream implementations.
-     */
-    template <typename A, typename B>
-    static std::string generateDiff(const A& prev, const B& curr) {
-        TempFileStream in_prev;
-        TempFileStream in_curr;
-        in_prev << prev;
-        in_curr << curr;
-        in_prev.flush();
-        in_curr.flush();
-        std::string diff_cmd =
-                "diff --new-line-format='+%L' "
-                "     --old-line-format='-%L' "
-                "     --unchanged-line-format=' %L' ";
-        return execStdOut(diff_cmd + in_prev.getFileName() + " " + in_curr.getFileName()).str();
     }
 
 private:

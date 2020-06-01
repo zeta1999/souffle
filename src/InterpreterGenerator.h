@@ -18,13 +18,31 @@
 #pragma once
 
 #include "Global.h"
+#include "InterpreterIndex.h"
 #include "InterpreterNode.h"
 #include "InterpreterPreamble.h"
+#include "InterpreterRelation.h"
+#include "RamCondition.h"
+#include "RamExpression.h"
 #include "RamIndexAnalysis.h"
+#include "RamNode.h"
+#include "RamOperation.h"
+#include "RamRelation.h"
+#include "RamStatement.h"
+#include "RamTypes.h"
+#include "RamUtils.h"
 #include "RamVisitor.h"
-#include <cassert>
+#include "RelationTag.h"
+#include "utility/MiscUtil.h"
+#include <algorithm>
+#include <cstddef>
 #include <memory>
 #include <queue>
+#include <string>
+#include <typeinfo>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 
@@ -565,8 +583,8 @@ private:
         const MinIndexSelection& orderSet = isa->getIndexes(node.getRelation());
         SearchSignature signature = isa->getSearchSignature(&node);
         // A zero signature is equivalent as a full order signature.
-        if (signature == 0) {
-            signature = (1 << node.getRelation().getArity()) - 1;
+        if (signature.empty()) {
+            signature = SearchSignature::getFullSearchSignature(signature.arity());
         }
         auto i = orderSet.getLexOrderNum(signature);
         indexTable[&node] = i;

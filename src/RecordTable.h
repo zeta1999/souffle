@@ -18,13 +18,13 @@
 #pragma once
 
 #include "CompiledTuple.h"
-#include "ParallelUtils.h"
 #include "RamTypes.h"
 #include <cassert>
-#include <iostream>
+#include <cstddef>
 #include <limits>
-#include <map>
+#include <memory>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace souffle {

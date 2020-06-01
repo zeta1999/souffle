@@ -17,13 +17,17 @@
 
 #pragma once
 
-#include "RamExpression.h"
+#include "RamCondition.h"
 #include "RamNode.h"
 #include "RamOperation.h"
 #include "RamRelation.h"
-#include "Util.h"
-
+#include "utility/ContainerUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
 #include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <map>
 #include <memory>
 #include <ostream>
 #include <string>

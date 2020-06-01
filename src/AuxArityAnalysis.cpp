@@ -16,12 +16,11 @@
 
 #include "AuxArityAnalysis.h"
 #include "AstClause.h"
-#include "AstProgram.h"
-#include "AstQualifiedName.h"
-#include "AstRelation.h"
 #include "AstUtils.h"
 #include "Global.h"
+#include <algorithm>
 #include <string>
+#include <vector>
 
 namespace souffle {
 

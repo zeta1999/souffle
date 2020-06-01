@@ -17,15 +17,21 @@
 #include "RamTypes.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
-
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <map>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
-
+#include <vector>
 #include <sqlite3.h>
 
 namespace souffle {
+
+class RecordTable;
 
 class WriteStreamSQLite : public WriteStream {
 public:

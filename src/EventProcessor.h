@@ -17,16 +17,18 @@
 
 #pragma once
 
+#include "ProfileDatabase.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
 #include <cassert>
 #include <chrono>
 #include <cstdarg>
+#include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
-
-#include "ProfileDatabase.h"
-#include "Util.h"
 
 namespace souffle {
 namespace profile {

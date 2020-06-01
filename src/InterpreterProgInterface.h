@@ -17,11 +17,27 @@
 #pragma once
 
 #include "InterpreterEngine.h"
+#include "InterpreterIndex.h"
+#include "InterpreterRelation.h"
+#include "RamNode.h"
+#include "RamProgram.h"
+#include "RamRelation.h"
+#include "RamStatement.h"
+#include "RamTranslationUnit.h"
+#include "RamTypes.h"
 #include "RamVisitor.h"
 #include "SouffleInterface.h"
-
-#include <array>
+#include "SymbolTable.h"
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <iosfwd>
+#include <map>
+#include <memory>
+#include <string>
+#include <typeinfo>
 #include <utility>
+#include <vector>
 
 namespace souffle {
 

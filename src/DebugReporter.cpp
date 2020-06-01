@@ -15,16 +15,12 @@
  ***********************************************************************/
 
 #include "DebugReporter.h"
+#include "AstProgram.h"
 #include "AstTranslationUnit.h"
-#include "AstTypeAnalysis.h"
-#include "AstTypeEnvironmentAnalysis.h"
 #include "AstUtils.h"
 #include "DebugReport.h"
-#include "PrecedenceGraph.h"
 #include <chrono>
 #include <cstdio>
-#include <fstream>
-#include <sstream>
 #include <utility>
 
 namespace souffle {
@@ -46,25 +42,9 @@ bool DebugReporter::transform(AstTranslationUnit& translationUnit) {
     return changed;
 }
 
-DebugReportSection formatCodeSection(const std::string& id, const std::string& title, std::string code) {
-    std::stringstream codeHTML;
-    std::string escapedCode = std::move(code);
-    while (true) {
-        size_t i = escapedCode.find("<");
-        if (i == std::string::npos) {
-            break;
-        }
-        escapedCode.replace(i, 1, "&lt;");
-    }
-    codeHTML << "<pre>" << escapedCode << "</pre>\n";
-    return DebugReportSection(id, title, codeHTML.str());
-}
-
 void DebugReporter::generateDebugReport(AstTranslationUnit& tu, const std::string& preTransformDatalog) {
-    auto datalogSpec = pprint(*tu.getProgram());
-    tu.getDebugReport().addSection("dl", "Datalog",
-            preTransformDatalog.empty() ? std::move(datalogSpec)
-                                        : generateDiff(preTransformDatalog, datalogSpec));
+    tu.getDebugReport().addCodeSection(
+            "dl", "Datalog", "souffle", preTransformDatalog, pprint(*tu.getProgram()));
 }
 
 }  // end of namespace souffle

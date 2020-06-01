@@ -17,16 +17,14 @@
 #pragma once
 
 #include "SrcLocation.h"
-#include "Util.h"
-
-#include <limits>
+#include "utility/ContainerUtil.h"
+#include <cassert>
+#include <iosfwd>
 #include <memory>
+#include <string>
 #include <typeinfo>
-
-#include <cstddef>
-#include <cstring>
-#include <libgen.h>
-#include <unistd.h>
+#include <utility>
+#include <vector>
 
 namespace souffle {
 

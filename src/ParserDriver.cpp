@@ -25,11 +25,17 @@
 #include "AstRelation.h"
 #include "AstTranslationUnit.h"
 #include "AstType.h"
-#include "DebugReport.h"
+#include "AstUtils.h"
 #include "ErrorReport.h"
-#include "Util.h"
+#include "utility/ContainerUtil.h"
+#include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <memory>
 #include <utility>
+#include <vector>
 
 using YY_BUFFER_STATE = struct yy_buffer_state*;
 extern YY_BUFFER_STATE yy_scan_string(const char*, yyscan_t scanner);
@@ -170,7 +176,9 @@ void ParserDriver::addIoFromDeprecatedTag(AstRelation& rel) {
 
 std::set<RelationTag> ParserDriver::addDeprecatedTag(
         RelationTag tag, SrcLocation tagLoc, std::set<RelationTag> tags) {
-    warning(tagLoc, format("Deprecated %s qualifier was used", tag));
+    if (!Global::config().has("legacy")) {
+        warning(tagLoc, tfm::format("Deprecated %s qualifier was used", tag));
+    }
     return addTag(tag, std::move(tagLoc), std::move(tags));
 }
 
@@ -187,7 +195,7 @@ std::set<RelationTag> ParserDriver::addTag(RelationTag tag, SrcLocation tagLoc, 
 std::set<RelationTag> ParserDriver::addTag(RelationTag tag, std::vector<RelationTag> incompatible,
         SrcLocation tagLoc, std::set<RelationTag> tags) {
     if (any_of(incompatible, [&](auto&& x) { return contains(tags, x); })) {
-        error(tagLoc, format("%s qualifier already set", join(incompatible, "/")));
+        error(tagLoc, tfm::format("%s qualifier already set", join(incompatible, "/")));
     }
 
     tags.insert(tag);
@@ -195,9 +203,11 @@ std::set<RelationTag> ParserDriver::addTag(RelationTag tag, std::vector<Relation
 }
 
 Own<AstSubsetType> ParserDriver::mkDeprecatedSubType(
-        AstQualifiedName name, TypeAttribute attr, SrcLocation loc) {
-    warning(loc, "Deprecated type declaration used");
-    return mk<AstSubsetType>(std::move(name), attr, std::move(loc));
+        AstQualifiedName name, AstQualifiedName baseTypeName, SrcLocation loc) {
+    if (!Global::config().has("legacy")) {
+        warning(loc, "Deprecated type declaration used");
+    }
+    return mk<AstSubsetType>(std::move(name), std::move(baseTypeName), std::move(loc));
 }
 
 void ParserDriver::warning(const SrcLocation& loc, const std::string& msg) {

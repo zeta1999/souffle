@@ -19,11 +19,17 @@
 #include "AstClause.h"
 #include "AstIO.h"
 #include "AstNode.h"
+#include "AstQualifiedName.h"
 #include "AstRelation.h"
 #include "AstType.h"
-#include "Util.h"
-
+#include "SrcLocation.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include <algorithm>
 #include <memory>
+#include <ostream>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>

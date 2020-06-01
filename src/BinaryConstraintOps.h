@@ -17,9 +17,9 @@
 #pragma once
 
 #include "RamTypes.h"
-#include "Util.h"
-#include <cassert>
+#include "utility/MiscUtil.h"
 #include <iostream>
+#include <string>
 #include <vector>
 
 namespace souffle {

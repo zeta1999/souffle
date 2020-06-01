@@ -17,10 +17,9 @@
 #pragma once
 
 #include "SrcLocation.h"
-
 #include <algorithm>
 #include <cassert>
-#include <ostream>
+#include <iostream>
 #include <set>
 #include <string>
 #include <utility>
@@ -181,7 +180,9 @@ public:
     }
 
     void exitIfErrors() {
-        if (getNumErrors() == 0) return;
+        if (getNumErrors() == 0) {
+            return;
+        }
 
         std::cerr << *this << getNumErrors() << " errors generated, evaluation aborted\n";
         exit(EXIT_FAILURE);

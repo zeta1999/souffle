@@ -15,11 +15,17 @@
  ***********************************************************************/
 
 #include "InterpreterIndex.h"
+#include "BTree.h"
 #include "Brie.h"
 #include "CompiledIndexUtils.h"
 #include "EquivalenceRelation.h"
-#include "Util.h"
+#include "PiggyList.h"
+#include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
+#include "utility/StreamUtil.h"
+#include <algorithm>
 #include <atomic>
+#include <ostream>
 
 namespace souffle {
 
@@ -376,12 +382,14 @@ public:
 /* B-Tree Indirect indexes */
 class IndirectIndex : public InterpreterIndex {
 public:
+    using AttributeIndex = uint32_t;
+    using AttributeOrder = std::vector<AttributeIndex>;
     /* lexicographical comparison operation on two tuple pointers */
     struct comparator {
-        const std::vector<int> order;
+        const AttributeOrder order;
 
         /* constructor to initialize state */
-        comparator(std::vector<int> order) : order(std::move(order)) {}
+        comparator(AttributeOrder order) : order(std::move(order)) {}
 
         /* comparison function */
         int operator()(const TupleRef& x, const TupleRef& y) const {
@@ -481,7 +489,7 @@ public:
         }
     };
 
-    IndirectIndex(std::vector<int> order)
+    IndirectIndex(AttributeOrder order)
             : theOrder(std::move(order)), set(comparator(theOrder), comparator(theOrder)),
               arity(order.size()) {}
 
@@ -547,7 +555,7 @@ public:
 
 private:
     /** retain the index order used to construct an object of this class */
-    const std::vector<int> theOrder;
+    const AttributeOrder theOrder;
 
     /** set storing tuple pointers of table */
     index_set set;
@@ -659,6 +667,22 @@ std::unique_ptr<InterpreterIndex> createBTreeProvenanceIndex(const Order& order)
         case 12: return std::make_unique<BTreeProvenanceIndex<12>>(order);
         case 13: return std::make_unique<BTreeProvenanceIndex<13>>(order);
         case 14: return std::make_unique<BTreeProvenanceIndex<14>>(order);
+        case 15: return std::make_unique<BTreeProvenanceIndex<15>>(order);
+        case 16: return std::make_unique<BTreeProvenanceIndex<16>>(order);
+        case 17: return std::make_unique<BTreeProvenanceIndex<17>>(order);
+        case 18: return std::make_unique<BTreeProvenanceIndex<18>>(order);
+        case 19: return std::make_unique<BTreeProvenanceIndex<19>>(order);
+        case 20: return std::make_unique<BTreeProvenanceIndex<20>>(order);
+        case 21: return std::make_unique<BTreeProvenanceIndex<21>>(order);
+        case 22: return std::make_unique<BTreeProvenanceIndex<22>>(order);
+        case 23: return std::make_unique<BTreeProvenanceIndex<23>>(order);
+        case 24: return std::make_unique<BTreeProvenanceIndex<24>>(order);
+        case 25: return std::make_unique<BTreeProvenanceIndex<25>>(order);
+        case 26: return std::make_unique<BTreeProvenanceIndex<26>>(order);
+        case 27: return std::make_unique<BTreeProvenanceIndex<27>>(order);
+        case 28: return std::make_unique<BTreeProvenanceIndex<28>>(order);
+        case 29: return std::make_unique<BTreeProvenanceIndex<29>>(order);
+        case 30: return std::make_unique<BTreeProvenanceIndex<30>>(order);
     }
 
     fatal("Requested arity not yet supported. Feel free to add it.");

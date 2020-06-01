@@ -15,6 +15,7 @@
  ***********************************************************************/
 
 #include "AggregateOp.h"
+#include "AstAbstract.h"
 #include "AstArgument.h"
 #include "AstClause.h"
 #include "AstLiteral.h"
@@ -28,7 +29,9 @@
 #include "AstVisitor.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
-#include "Util.h"
+#include "RelationTag.h"
+#include "utility/MiscUtil.h"
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <memory>
@@ -500,9 +503,7 @@ void renameVariables(AstArgument* arg) {
 // Performs a given binary op on a list of aggregators recursively.
 // E.g. ( <aggr1, aggr2, aggr3, ...>, o > = (aggr1 o (aggr2 o (agg3 o (...))))
 // TODO (azreika): remove aggregator support
-AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, FunctorOp fun) {
-    assert(isValidFunctorOpArity(fun, 2) && "not a binary functor");
-
+AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, std::string fun) {
     // Due to variable scoping issues with aggregators, we rename all variables uniquely in the
     // added aggregator
     renameVariables(aggrs[0]);
@@ -514,7 +515,7 @@ AstArgument* combineAggregators(std::vector<AstAggregator*> aggrs, FunctorOp fun
     AstArgument* rhs = combineAggregators(std::vector<AstAggregator*>(aggrs.begin() + 1, aggrs.end()), fun);
 
     AstArgument* result = new AstIntrinsicFunctor(
-            fun, std::unique_ptr<AstArgument>(aggrs[0]), std::unique_ptr<AstArgument>(rhs));
+            std::move(fun), std::unique_ptr<AstArgument>(aggrs[0]), std::unique_ptr<AstArgument>(rhs));
 
     return result;
 }
@@ -600,16 +601,16 @@ NullableVector<AstArgument*> getInlinedArgument(AstProgram& program, const AstAr
                     // Utility lambda: get functor used to tie aggregators together.
                     auto aggregateToFunctor = [](AggregateOp op) {
                         switch (op) {
-                            case AggregateOp::MIN: return FunctorOp::MIN;
-                            case AggregateOp::FMIN: return FunctorOp::FMIN;
-                            case AggregateOp::UMIN: return FunctorOp::UMIN;
-                            case AggregateOp::MAX: return FunctorOp::MAX;
-                            case AggregateOp::FMAX: return FunctorOp::FMAX;
-                            case AggregateOp::UMAX: return FunctorOp::UMAX;
-                            case AggregateOp::SUM: return FunctorOp::ADD;
-                            case AggregateOp::FSUM: return FunctorOp::FADD;
-                            case AggregateOp::USUM: return FunctorOp::UADD;
-                            case AggregateOp::COUNT: return FunctorOp::ADD;
+                            case AggregateOp::MIN:
+                            case AggregateOp::FMIN:
+                            case AggregateOp::UMIN: return "min";
+                            case AggregateOp::MAX:
+                            case AggregateOp::FMAX:
+                            case AggregateOp::UMAX: return "max";
+                            case AggregateOp::SUM:
+                            case AggregateOp::FSUM:
+                            case AggregateOp::USUM:
+                            case AggregateOp::COUNT: return "+";
                             case AggregateOp::MEAN: fatal("no translation");
                         }
 

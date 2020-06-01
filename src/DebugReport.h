@@ -15,15 +15,10 @@
  ***********************************************************************/
 #pragma once
 
-#include "Global.h"
-
-#include <fstream>
-#include <memory>
 #include <ostream>
-#include <set>
-#include <sstream>
 #include <stack>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -93,7 +88,9 @@ public:
         buf.emplace_back(std::move(section));
     }
 
-    void addSection(std::string id, std::string title, std::string code);
+    void addSection(std::string id, std::string title, std::string_view code);
+    void addCodeSection(std::string id, std::string title, std::string_view language, std::string_view prev,
+            std::string_view curr);
 
     void startSection() {
         currentSubsections.emplace();
@@ -121,6 +118,7 @@ public:
 private:
     std::vector<DebugReportSection> sections;
     std::stack<std::vector<DebugReportSection>> currentSubsections;
+    uint32_t nextUniqueId = 0;  // used for generating unique HTML `id` tags
 
     bool empty() const {
         return sections.empty();

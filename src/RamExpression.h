@@ -18,17 +18,16 @@
 
 #include "FunctorOps.h"
 #include "RamNode.h"
-#include "RamRelation.h"
-#include "SymbolTable.h"
-#include "Util.h"
-
-#include <algorithm>
-#include <array>
+#include "RamTypes.h"
+#include "utility/ContainerUtil.h"
+#include "utility/StreamUtil.h"
+#include <cassert>
+#include <cstdlib>
+#include <memory>
 #include <sstream>
 #include <string>
-
-#include <cstdlib>
 #include <utility>
+#include <vector>
 
 namespace souffle {
 
@@ -112,15 +111,9 @@ public:
 protected:
     void print(std::ostream& os) const override {
         if (isInfixFunctorOp(operation)) {
-            os << "(";
-            os << join(arguments, getSymbolForFunctorOp(operation),
-                    print_deref<std::unique_ptr<RamExpression>>());
-            os << ")";
+            os << "(" << join(arguments, tfm::format("%s", operation)) << ")";
         } else {
-            os << getSymbolForFunctorOp(operation);
-            os << "(";
-            os << join(arguments, ",", print_deref<std::unique_ptr<RamExpression>>());
-            os << ")";
+            os << operation << "(" << join(arguments) << ")";
         }
     }
 

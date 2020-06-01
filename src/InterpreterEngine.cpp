@@ -186,8 +186,15 @@ void InterpreterEngine::executeMain() {
         SignalHandler::instance()->enableLogging();
     }
 
-    RamStatement& program = tUnit.getProgram().getMain();
-    auto entry = generator.generateTree(program);
+    const RamProgram& program = tUnit.getProgram();
+    const RamStatement& main = program.getMain(); 
+
+    // generate intermediate representation of main and the subroutines 
+    auto entry = generator.generateTree(main, program);
+    for(const auto &sub: program.getSubroutines()) { 
+        subroutine.push_back(generator.generateTree(*sub.second, program));
+    } 
+  
     InterpreterContext ctxt;
 
     if (!profileEnabled) {
@@ -244,9 +251,9 @@ void InterpreterEngine::executeSubroutine(
     InterpreterContext ctxt;
     ctxt.setReturnValues(ret);
     ctxt.setArguments(args);
-
-    auto entry = generator.generateTree(tUnit.getProgram().getSubroutine(name));
-    execute(entry.get(), ctxt);
+    auto subs = tUnit.getProgram().getSubroutines(); 
+    size_t i = distance(subs.begin(),subs.find(name));
+    execute(subroutine[i].get(), ctxt);
 }
 
 RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterContext& ctxt) {
@@ -1120,7 +1127,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Clear)
 
         CASE_NO_CAST(Call)
-            node->getRelation()->purge();
+            execute(subroutine[node->getData(0)].get(), ctxt); 
             return true;
         ESAC(Call)
 

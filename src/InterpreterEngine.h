@@ -104,8 +104,8 @@ private:
 
     /** If profile is enable in this program */
     const bool profileEnabled;
-    /** subroutines */ 
-    std::vector<std::unique_ptr<InterpreterNode>> subroutine; 
+    /** subroutines */
+    std::vector<std::unique_ptr<InterpreterNode>> subroutine;
     /** Number of threads enabled for this program */
     size_t numOfThreads;
     /** Profile counter */

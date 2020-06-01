@@ -776,9 +776,9 @@ protected:
 
 /**
  * @class RamCall
- * @brief Call a subroutine 
+ * @brief Call a subroutine
  *
- * Calls a subroutine 
+ * Calls a subroutine
  *
  * The following example shows how subroutine A is invoked
  * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -788,11 +788,10 @@ protected:
 
 class RamCall : public RamStatement {
 public:
-    RamCall(std::string name) : name(std::move(name)) {
-    }
+    RamCall(std::string name) : name(std::move(name)) {}
 
     /** @brief Get exit condition */
-    const std::string &getName() const {
+    const std::string& getName() const {
         return name;
     }
 
@@ -811,8 +810,7 @@ protected:
     }
 
     /** name of subroutine */
-    std::string name; 
+    std::string name;
 };
-
 
 }  // end of namespace souffle

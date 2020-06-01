@@ -1554,7 +1554,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
     // get auxiliary arity analysis
     auxArityAnalysis = translationUnit.getAnalysis<AuxiliaryArity>();
 
-
     // handle the case of an empty SCC graph
     if (sccGraph.getNumberOfSCCs() == 0) return;
 
@@ -1676,15 +1675,15 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             }
         }
 
-        // create subroutine for this stratum 
-        ramSubs["stratum_"+std::to_string(indexOfScc)] = std::make_unique<RamSequence>(std::move(current));
+        // create subroutine for this stratum
+        ramSubs["stratum_" + std::to_string(indexOfScc)] = std::make_unique<RamSequence>(std::move(current));
         indexOfScc++;
     }
 
     // invoke all strata
     std::vector<std::unique_ptr<RamStatement>> res;
-    for(size_t i=0;i < indexOfScc; i++) {
-        appendStmt(res, std::make_unique<RamCall>("stratum_" + std::to_string(i))); 
+    for (size_t i = 0; i < indexOfScc; i++) {
+        appendStmt(res, std::make_unique<RamCall>("stratum_" + std::to_string(i)));
     }
 
     // add main timer if profiling

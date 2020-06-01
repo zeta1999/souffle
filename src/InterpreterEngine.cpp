@@ -187,14 +187,14 @@ void InterpreterEngine::executeMain() {
     }
 
     const RamProgram& program = tUnit.getProgram();
-    const RamStatement& main = program.getMain(); 
+    const RamStatement& main = program.getMain();
 
-    // generate intermediate representation of main and the subroutines 
+    // generate intermediate representation of main and the subroutines
     auto entry = generator.generateTree(main, program);
-    for(const auto &sub: program.getSubroutines()) { 
+    for (const auto& sub : program.getSubroutines()) {
         subroutine.push_back(generator.generateTree(*sub.second, program));
-    } 
-  
+    }
+
     InterpreterContext ctxt;
 
     if (!profileEnabled) {
@@ -251,8 +251,15 @@ void InterpreterEngine::executeSubroutine(
     InterpreterContext ctxt;
     ctxt.setReturnValues(ret);
     ctxt.setArguments(args);
-    auto subs = tUnit.getProgram().getSubroutines(); 
-    size_t i = distance(subs.begin(),subs.find(name));
+    const RamProgram& program = tUnit.getProgram();
+    const RamStatement& main = program.getMain();
+    auto subs = program.getSubroutines();
+    if (subroutine.empty()) {
+        for (const auto& sub : program.getSubroutines()) {
+            subroutine.push_back(generator.generateTree(*sub.second, program));
+        }
+    }
+    size_t i = distance(subs.begin(), subs.find(name));
     execute(subroutine[i].get(), ctxt);
 }
 
@@ -1127,7 +1134,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Clear)
 
         CASE_NO_CAST(Call)
-            execute(subroutine[node->getData(0)].get(), ctxt); 
+            execute(subroutine[node->getData(0)].get(), ctxt);
             return true;
         ESAC(Call)
 
@@ -1206,7 +1213,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             execute(node->getChild(0), ctxt);
             return true;
         ESAC(Query)
-
 
         CASE_NO_CAST(Extend)
             InterpreterRelation& src = *getRelationHandle(node->getData(0));

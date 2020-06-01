@@ -179,7 +179,7 @@ protected:
     LINK(LogTimer, Statement);
     LINK(LogRelationTimer, Statement);
     LINK(DebugInfo, Statement);
-    LINK(Call, Statement); 
+    LINK(Call, Statement);
 
     LINK(Statement, Node);
 

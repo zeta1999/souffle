@@ -442,13 +442,13 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitCall(const RamCall &call, std::ostream& out) override { 
+        void visitCall(const RamCall& call, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            const RamProgram &prog = synthesiser.getTranslationUnit().getProgram(); 
-            const auto &subs = prog.getSubroutines(); 
+            const RamProgram& prog = synthesiser.getTranslationUnit().getProgram();
+            const auto& subs = prog.getSubroutines();
             out << "{\n";
             out << " std::vector<RamDomain> args, ret;\n";
-            out << "subroutine_" << distance(subs.begin(),subs.find(call.getName())) << "(args, ret);\n";
+            out << "subroutine_" << distance(subs.begin(), subs.find(call.getName())) << "(args, ret);\n";
             out << "}\n";
             PRINT_END_COMMENT(out);
         }
@@ -2005,10 +2005,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";
 
     os << "private:\n";
-    // issue state variables for the evaluation 
+    // issue state variables for the evaluation
     os << "std::string inputDirectory;\n";
     os << "std::string outputDirectory;\n";
-    os << "bool performIO;\n"; 
+    os << "bool performIO;\n";
     os << "std::atomic<RamDomain> ctr{};\n\n";
     os << "std::atomic<size_t> iter{};\n";
 
@@ -2225,10 +2225,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             }
             os << "}\n";
         }
-
     }
 
-    if (!prog.getSubroutines().empty()) { 
+    if (!prog.getSubroutines().empty()) {
         // generate subroutine adapter
         os << "void executeSubroutine(std::string name, const std::vector<RamDomain>& args, "
               "std::vector<RamDomain>& ret) override {\n";
@@ -2238,11 +2237,11 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "if (name == \"" << sub.first << "\") {\n"
                << "subroutine_" << subroutineNum
                << "(args, ret);\n"  // subroutine_<i> to deal with special characters in relation names
-               << "return;" 
+               << "return;"
                << "}\n";
             subroutineNum++;
         }
-        os << "fatal(\"unknown subroutine\");\n"; 
+        os << "fatal(\"unknown subroutine\");\n";
         os << "}\n";  // end of executeSubroutine
 
         // generate method for each subroutine
@@ -2256,10 +2255,10 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
             // a lock is needed when filling the subroutine return vectors
             // for provenance subroutines
-            // TODO (b-scholz): Can we encapsulate this in RamReturn? 
-            std::string pre("stratum_"); 
-            if ((sub.first).substr(0,pre.length())!="stratum_") { 
-               os << "std::mutex lock;\n";
+            // TODO (b-scholz): Can we encapsulate this in RamReturn?
+            std::string pre("stratum_");
+            if ((sub.first).substr(0, pre.length()) != "stratum_") {
+                os << "std::mutex lock;\n";
             }
 
             // generate code for body

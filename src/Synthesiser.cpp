@@ -410,11 +410,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitLoop(const RamLoop& loop, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "{std::atomic<size_t> iter(0);\n";
-            out << "for(;;) {\n";
+            out << "iter=0;\nfor(;;) {\n";
             visit(loop.getBody(), out);
             out << "iter++;\n";
-            out << "}\n";
             out << "}\n";
             PRINT_END_COMMENT(out);
         }
@@ -2012,6 +2010,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "std::string outputDirectory;\n";
     os << "bool performIO;\n"; 
     os << "std::atomic<RamDomain> ctr{};\n\n";
+    os << "std::atomic<size_t> iter{};\n";
 
     os << "void runFunction(std::string inputDirectory = \".\", "
           "std::string outputDirectory = \".\", bool performIO = false) "

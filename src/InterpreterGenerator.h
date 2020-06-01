@@ -397,6 +397,11 @@ public:
         return std::make_unique<InterpreterNode>(I_Exit, &exit, std::move(children));
     }
 
+    NodePtr visitCall(const RamCall& call) override { 
+        std::vector<size_t> data;
+        return std::make_unique<InterpreterNode>(I_Call, &call, NodePtrVec{}, nullptr, std::move(data));
+    } 
+
     NodePtr visitLogRelationTimer(const RamLogRelationTimer& timer) override {
         size_t relId = encodeRelation(timer.getRelation());
         auto rel = relations[relId].get();

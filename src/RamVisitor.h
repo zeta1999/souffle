@@ -139,6 +139,7 @@ struct RamVisitor : public ram_visitor_tag {
         FORWARD(LogTimer);
         FORWARD(LogRelationTimer);
         FORWARD(DebugInfo);
+        FORWARD(Call);
 
 #undef FORWARD
 
@@ -176,6 +177,7 @@ protected:
     LINK(LogTimer, Statement);
     LINK(LogRelationTimer, Statement);
     LINK(DebugInfo, Statement);
+    LINK(Call, Statement); 
 
     LINK(Statement, Node);
 

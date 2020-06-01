@@ -1120,6 +1120,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(Clear)
 
+        CASE_NO_CAST(Call)
+            node->getRelation()->purge();
+            return true;
+        ESAC(Call)
+
         CASE(LogSize)
             const InterpreterRelation& rel = *node->getRelation();
             ProfileEventSingleton::instance().makeQuantityEvent(
@@ -1195,6 +1200,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             execute(node->getChild(0), ctxt);
             return true;
         ESAC(Query)
+
 
         CASE_NO_CAST(Extend)
             InterpreterRelation& src = *getRelationHandle(node->getData(0));

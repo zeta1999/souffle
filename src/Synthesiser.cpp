@@ -2006,18 +2006,12 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "~" << classname << "() {\n";
     os << "}\n";
 
-    // -- run function --
     os << "private:\n";
+    // issue state variables for the evaluation 
     os << "std::string inputDirectory;\n";
     os << "std::string outputDirectory;\n";
     os << "bool performIO;\n"; 
-
-    // issue counter for $ operator 
-    bool hasIncrement = false;
-    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement&) { hasIncrement = true; });
-    if (hasIncrement) {
-        os << "std::atomic<RamDomain> ctr(0);\n\n";
-    }
+    os << "std::atomic<RamDomain> ctr{};\n\n";
 
     os << "void runFunction(std::string inputDirectory = \".\", "
           "std::string outputDirectory = \".\", bool performIO = false) "
@@ -2263,9 +2257,11 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
             // a lock is needed when filling the subroutine return vectors
             // for provenance subroutines
-            // TODO (b-scholz): can we encapsulate the lock in the return 
-            //                  statement 
-            os << "std::mutex lock;\n";
+            // TODO (b-scholz): Can we encapsulate this in RamReturn? 
+            std::string pre("stratum_"); 
+            if ((sub.first).substr(0,pre.length())!="stratum_") { 
+               os << "std::mutex lock;\n";
+            }
 
             // generate code for body
             emitCode(os, *sub.second);

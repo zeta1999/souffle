@@ -68,6 +68,8 @@ public:
             const std::string& name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret);
 
 private:
+    /** @brief Generate intermediate representation from RAM */
+    void generateIR();
     /** @brief Remove a relation from the environment */
     void dropRelation(const size_t relId);
     /** @brief Swap the content of two relations */
@@ -106,6 +108,8 @@ private:
     const bool profileEnabled;
     /** subroutines */
     std::vector<std::unique_ptr<InterpreterNode>> subroutine;
+    /** main program */
+    std::unique_ptr<InterpreterNode> main;
     /** Number of threads enabled for this program */
     size_t numOfThreads;
     /** Profile counter */

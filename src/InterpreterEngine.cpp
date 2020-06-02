@@ -186,23 +186,18 @@ void InterpreterEngine::executeMain() {
         SignalHandler::instance()->enableLogging();
     }
 
-    const RamProgram& program = tUnit.getProgram();
-    const RamStatement& main = program.getMain();
-
-    // generate intermediate representation of main and the subroutines
-    auto entry = generator.generateTree(main, program);
-    for (const auto& sub : program.getSubroutines()) {
-        subroutine.push_back(generator.generateTree(*sub.second, program));
-    }
+    generateIR();
+    assert(main != nullptr && "Executing an empty program");
 
     InterpreterContext ctxt;
 
     if (!profileEnabled) {
         InterpreterContext ctxt;
-        execute(entry.get(), ctxt);
+        execute(main.get(), ctxt);
     } else {
         ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
         // Prepare the frequency table for threaded use
+        const RamProgram& program = tUnit.getProgram();
         visitDepthFirst(program, [&](const RamTupleOperation& node) {
             if (!node.getProfileText().empty()) {
                 frequencies.emplace(node.getProfileText(), std::deque<std::atomic<size_t>>());
@@ -232,7 +227,7 @@ void InterpreterEngine::executeMain() {
         ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
 
         InterpreterContext ctxt;
-        execute(entry.get(), ctxt);
+        execute(main.get(), ctxt);
         ProfileEventSingleton::instance().stopTimer();
         for (auto const& cur : frequencies) {
             for (size_t i = 0; i < cur.second.size(); ++i) {
@@ -246,19 +241,27 @@ void InterpreterEngine::executeMain() {
     }
     SignalHandler::instance()->reset();
 }
-void InterpreterEngine::executeSubroutine(
-        const std::string& name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret) {
-    InterpreterContext ctxt;
-    ctxt.setReturnValues(ret);
-    ctxt.setArguments(args);
+
+void InterpreterEngine::generateIR() {
     const RamProgram& program = tUnit.getProgram();
-    const RamStatement& main = program.getMain();
-    auto subs = program.getSubroutines();
     if (subroutine.empty()) {
         for (const auto& sub : program.getSubroutines()) {
             subroutine.push_back(generator.generateTree(*sub.second, program));
         }
     }
+    if (main == nullptr) {
+        main = generator.generateTree(program.getMain(), program);
+    }
+}
+
+void InterpreterEngine::executeSubroutine(
+        const std::string& name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret) {
+    InterpreterContext ctxt;
+    ctxt.setReturnValues(ret);
+    ctxt.setArguments(args);
+    generateIR();
+    const RamProgram& program = tUnit.getProgram();
+    auto subs = program.getSubroutines();
     size_t i = distance(subs.begin(), subs.find(name));
     execute(subroutine[i].get(), ctxt);
 }

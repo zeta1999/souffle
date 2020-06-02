@@ -2259,7 +2259,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
     // dumpFreqs method
     //  Frequency counts must be emitted after subroutines otherwise lookup tables
-    //  are not populated. 
+    //  are not populated.
     if (Global::config().has("profile")) {
         os << "private:\n";
         os << "void dumpFreqs() {\n";

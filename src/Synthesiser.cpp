@@ -410,10 +410,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitLoop(const RamLoop& loop, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
-            out << "iter=0;\nfor(;;) {\n";
+            out << "iter = 0;\n";
+            out << "for(;;) {\n";
             visit(loop.getBody(), out);
             out << "iter++;\n";
             out << "}\n";
+            out << "iter = 0;\n";
             PRINT_END_COMMENT(out);
         }
 

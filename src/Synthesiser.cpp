@@ -2126,20 +2126,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
     os << "}\n";  // end of printAll() method
 
-    // dumpFreqs method
-    if (Global::config().has("profile")) {
-        os << "private:\n";
-        os << "void dumpFreqs() {\n";
-        for (auto const& cur : idxMap) {
-            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(" << cur.first << ")_\", freqs["
-               << cur.second << "],0);\n";
-        }
-        for (auto const& cur : neIdxMap) {
-            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(@relation-reads;" << cur.first
-               << ")_\", reads[" << cur.second << "],0);\n";
-        }
-        os << "}\n";  // end of dumpFreqs() method
-    }
     // issue loadAll method
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
@@ -2270,6 +2256,22 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";  // end of subroutine
             subroutineNum++;
         }
+    }
+    // dumpFreqs method
+    //  Frequency counts must be emitted after subroutines otherwise lookup tables
+    //  are not populated. 
+    if (Global::config().has("profile")) {
+        os << "private:\n";
+        os << "void dumpFreqs() {\n";
+        for (auto const& cur : idxMap) {
+            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(" << cur.first << ")_\", freqs["
+               << cur.second << "],0);\n";
+        }
+        for (auto const& cur : neIdxMap) {
+            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(@relation-reads;" << cur.first
+               << ")_\", reads[" << cur.second << "],0);\n";
+        }
+        os << "}\n";  // end of dumpFreqs() method
     }
     os << "};\n";  // end of class declaration
 

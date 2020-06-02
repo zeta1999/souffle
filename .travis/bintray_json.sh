@@ -31,7 +31,7 @@ then
 
   #Fedora 27 x86_64
   DIST='centos'
-  RELEASE='7'
+  RELEASE='8'
   ARCH="$5"
 
   FILES="[{\"includePattern\": \"deploy/(.*\.rpm)\", \"uploadPattern\": \"$DIST/$RELEASE/$ARCH/\$1\"

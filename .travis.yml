@@ -244,8 +244,8 @@ jobs:
   - stage: Packaging
     name: "CentOS package"
     <<: *docker
-    before_script: docker pull centos:7
-    script: docker run --mount src="$(pwd)",target=/souffle,type=bind centos:7 /bin/sh -c "cd /souffle && .travis/linux/install_centos_deps.sh && .travis/linux/make_centos_package.sh"
+    before_script: docker pull centos:8
+    script: docker run --mount src="$(pwd)",target=/souffle,type=bind centos:8 /bin/sh -c "cd /souffle && .travis/linux/install_centos_deps.sh && .travis/linux/make_centos_package.sh"
     before_deploy:
       - .travis/bintray_json.sh centos
     # deploy to bintray if we're in the souffle-lang repo

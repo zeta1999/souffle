@@ -1730,7 +1730,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         // -- subroutine return --
 
-        void visitSubroutineReturnValue(const RamSubroutineReturnValue& ret, std::ostream& out) override {
+        void visitSubroutineReturn(const RamSubroutineReturn& ret, std::ostream& out) override {
             out << "std::lock_guard<std::mutex> guard(lock);\n";
             for (auto val : ret.getValues()) {
                 if (isRamUndefValue(val)) {
@@ -2243,7 +2243,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
             // issue lock variable for return statements
             bool needLock = false;
-            visitDepthFirst(*sub.second, [&](const RamSubroutineReturnValue&) { needLock = true; });
+            visitDepthFirst(*sub.second, [&](const RamSubroutineReturn&) { needLock = true; });
             if (needLock) {
                 os << "std::mutex lock;\n";
             }

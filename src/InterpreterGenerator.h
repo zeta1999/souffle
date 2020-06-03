@@ -384,7 +384,7 @@ public:
         for (const auto& value : ret.getValues()) {
             children.push_back(visit(value));
         }
-        return std::make_unique<InterpreterNode>(I_SubroutineReturnValue, &ret, std::move(children));
+        return std::make_unique<InterpreterNode>(I_SubroutineReturn, &ret, std::move(children));
     }
 
     NodePtr visitSequence(const RamSequence& seq) override {

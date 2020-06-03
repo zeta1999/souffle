@@ -1073,7 +1073,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(Project)
 
-        CASE(SubroutineReturnValue)
+        CASE(SubroutineReturn)
             for (size_t i = 0; i < cur.getValues().size(); ++i) {
                 if (node->getChild(i) == nullptr) {
                     ctxt.addReturnValue(0);
@@ -1082,7 +1082,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 }
             }
             return true;
-        ESAC(SubroutineReturnValue)
+        ESAC(SubroutineReturn)
 
         CASE_NO_CAST(Sequence)
             for (const auto& child : node->getChildren()) {

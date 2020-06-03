@@ -790,7 +790,7 @@ class RamCall : public RamStatement {
 public:
     RamCall(std::string name) : name(std::move(name)) {}
 
-    /** @brief Get exit condition */
+    /** @brief Get call name */
     const std::string& getName() const {
         return name;
     }

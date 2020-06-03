@@ -444,6 +444,17 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
+        void visitCall(const RamCall& call, std::ostream& out) override {
+            PRINT_BEGIN_COMMENT(out);
+            const RamProgram& prog = synthesiser.getTranslationUnit().getProgram();
+            const auto& subs = prog.getSubroutines();
+            out << "{\n";
+            out << " std::vector<RamDomain> args, ret;\n";
+            out << "subroutine_" << distance(subs.begin(), subs.find(call.getName())) << "(args, ret);\n";
+            out << "}\n";
+            PRINT_END_COMMENT(out);
+        }
+
         void visitLogRelationTimer(const RamLogRelationTimer& timer, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
             // create local scope for name resolution
@@ -1877,7 +1888,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     if (Global::config().has("profile")) {
         os << "private:\n";
         size_t numFreq = 0;
-        visitDepthFirst(prog.getMain(), [&](const RamStatement&) { numFreq++; });
+        visitDepthFirst(prog, [&](const RamStatement&) { numFreq++; });
         os << "  size_t freqs[" << numFreq << "]{};\n";
         size_t numRead = 0;
         for (auto rel : prog.getRelations()) {
@@ -1898,7 +1909,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     std::set<const RamIO*> storeIOs;
 
     // collect load/store operations/relations
-    visitDepthFirst(prog.getMain(), [&](const RamIO& io) {
+    visitDepthFirst(prog, [&](const RamIO& io) {
         auto op = io.get("operation");
         if (op == "input") {
             loadRelations.insert(io.getRelation().getName());
@@ -1995,23 +2006,26 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "~" << classname << "() {\n";
     os << "}\n";
 
-    // -- run function --
-    os << "private:\nvoid runFunction(std::string inputDirectory = \".\", "
+    os << "private:\n";
+    // issue state variables for the evaluation
+    os << "std::string inputDirectory;\n";
+    os << "std::string outputDirectory;\n";
+    os << "bool performIO;\n";
+    os << "std::atomic<RamDomain> ctr{};\n\n";
+    os << "std::atomic<size_t> iter{};\n";
+
+    os << "void runFunction(std::string inputDirectory = \".\", "
           "std::string outputDirectory = \".\", bool performIO = false) "
           "{\n";
+
+    os << "this->inputDirectory = inputDirectory;\n";
+    os << "this->outputDirectory = outputDirectory;\n";
+    os << "this->performIO = performIO;\n";
 
     os << "SignalHandler::instance()->set();\n";
     if (Global::config().has("verbose")) {
         os << "SignalHandler::instance()->enableLogging();\n";
     }
-    bool hasIncrement = false;
-    visitDepthFirst(prog.getMain(), [&](const RamAutoIncrement&) { hasIncrement = true; });
-    // initialize counter
-    if (hasIncrement) {
-        os << "// -- initialize counter --\n";
-        os << "std::atomic<RamDomain> ctr(0);\n\n";
-    }
-    os << "std::atomic<size_t> iter(0);\n\n";
 
     // set default threads (in embedded mode)
     // if this is not set, and omp is used, the default omp setting of number of cores is used.
@@ -2112,20 +2126,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     }
     os << "}\n";  // end of printAll() method
 
-    // dumpFreqs method
-    if (Global::config().has("profile")) {
-        os << "private:\n";
-        os << "void dumpFreqs() {\n";
-        for (auto const& cur : idxMap) {
-            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(" << cur.first << ")_\", freqs["
-               << cur.second << "],0);\n";
-        }
-        for (auto const& cur : neIdxMap) {
-            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(@relation-reads;" << cur.first
-               << ")_\", reads[" << cur.second << "],0);\n";
-        }
-        os << "}\n";  // end of dumpFreqs() method
-    }
     // issue loadAll method
     os << "public:\n";
     os << "void loadAll(std::string inputDirectory = \".\") override {\n";
@@ -2213,20 +2213,23 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             }
             os << "}\n";
         }
+    }
 
+    if (!prog.getSubroutines().empty()) {
         // generate subroutine adapter
         os << "void executeSubroutine(std::string name, const std::vector<RamDomain>& args, "
               "std::vector<RamDomain>& ret) override {\n";
-
         // subroutine number
         size_t subroutineNum = 0;
         for (auto& sub : prog.getSubroutines()) {
             os << "if (name == \"" << sub.first << "\") {\n"
-               << "subproof_" << subroutineNum
-               << "(args, ret);\n"  // subproof_i to deal with special characters in relation names
+               << "subroutine_" << subroutineNum
+               << "(args, ret);\n"  // subroutine_<i> to deal with special characters in relation names
+               << "return;"
                << "}\n";
             subroutineNum++;
         }
+        os << "fatal(\"unknown subroutine\");\n";
         os << "}\n";  // end of executeSubroutine
 
         // generate method for each subroutine
@@ -2234,12 +2237,17 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         for (auto& sub : prog.getSubroutines()) {
             // method header
             os << "void "
-               << "subproof_" << subroutineNum
+               << "subroutine_" << subroutineNum
                << "(const std::vector<RamDomain>& args, "
                   "std::vector<RamDomain>& ret) {\n";
 
             // a lock is needed when filling the subroutine return vectors
-            os << "std::mutex lock;\n";
+            // for provenance subroutines
+            // TODO (b-scholz): Can we encapsulate this in RamReturn?
+            std::string pre("stratum_");
+            if ((sub.first).substr(0, pre.length()) != "stratum_") {
+                os << "std::mutex lock;\n";
+            }
 
             // generate code for body
             emitCode(os, *sub.second);
@@ -2248,6 +2256,22 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             os << "}\n";  // end of subroutine
             subroutineNum++;
         }
+    }
+    // dumpFreqs method
+    //  Frequency counts must be emitted after subroutines otherwise lookup tables
+    //  are not populated.
+    if (Global::config().has("profile")) {
+        os << "private:\n";
+        os << "void dumpFreqs() {\n";
+        for (auto const& cur : idxMap) {
+            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(" << cur.first << ")_\", freqs["
+               << cur.second << "],0);\n";
+        }
+        for (auto const& cur : neIdxMap) {
+            os << "\tProfileEventSingleton::instance().makeQuantityEvent(R\"_(@relation-reads;" << cur.first
+               << ")_\", reads[" << cur.second << "],0);\n";
+        }
+        os << "}\n";  // end of dumpFreqs() method
     }
     os << "};\n";  // end of class declaration
 

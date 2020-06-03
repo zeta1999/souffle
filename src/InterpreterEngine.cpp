@@ -186,16 +186,18 @@ void InterpreterEngine::executeMain() {
         SignalHandler::instance()->enableLogging();
     }
 
-    RamStatement& program = tUnit.getProgram().getMain();
-    auto entry = generator.generateTree(program);
+    generateIR();
+    assert(main != nullptr && "Executing an empty program");
+
     InterpreterContext ctxt;
 
     if (!profileEnabled) {
         InterpreterContext ctxt;
-        execute(entry.get(), ctxt);
+        execute(main.get(), ctxt);
     } else {
         ProfileEventSingleton::instance().setOutputFile(Global::config().get("profile"));
         // Prepare the frequency table for threaded use
+        const RamProgram& program = tUnit.getProgram();
         visitDepthFirst(program, [&](const RamTupleOperation& node) {
             if (!node.getProfileText().empty()) {
                 frequencies.emplace(node.getProfileText(), std::deque<std::atomic<size_t>>());
@@ -225,7 +227,7 @@ void InterpreterEngine::executeMain() {
         ProfileEventSingleton::instance().makeConfigRecord("ruleCount", std::to_string(ruleCount));
 
         InterpreterContext ctxt;
-        execute(entry.get(), ctxt);
+        execute(main.get(), ctxt);
         ProfileEventSingleton::instance().stopTimer();
         for (auto const& cur : frequencies) {
             for (size_t i = 0; i < cur.second.size(); ++i) {
@@ -239,14 +241,29 @@ void InterpreterEngine::executeMain() {
     }
     SignalHandler::instance()->reset();
 }
+
+void InterpreterEngine::generateIR() {
+    const RamProgram& program = tUnit.getProgram();
+    if (subroutine.empty()) {
+        for (const auto& sub : program.getSubroutines()) {
+            subroutine.push_back(generator.generateTree(*sub.second, program));
+        }
+    }
+    if (main == nullptr) {
+        main = generator.generateTree(program.getMain(), program);
+    }
+}
+
 void InterpreterEngine::executeSubroutine(
         const std::string& name, const std::vector<RamDomain>& args, std::vector<RamDomain>& ret) {
     InterpreterContext ctxt;
     ctxt.setReturnValues(ret);
     ctxt.setArguments(args);
-
-    auto entry = generator.generateTree(tUnit.getProgram().getSubroutine(name));
-    execute(entry.get(), ctxt);
+    generateIR();
+    const RamProgram& program = tUnit.getProgram();
+    auto subs = program.getSubroutines();
+    size_t i = distance(subs.begin(), subs.find(name));
+    execute(subroutine[i].get(), ctxt);
 }
 
 RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterContext& ctxt) {
@@ -1118,6 +1135,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             node->getRelation()->purge();
             return true;
         ESAC(Clear)
+
+        CASE_NO_CAST(Call)
+            execute(subroutine[node->getData(0)].get(), ctxt);
+            return true;
+        ESAC(Call)
 
         CASE(LogSize)
             const InterpreterRelation& rel = *node->getRelation();

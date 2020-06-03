@@ -2243,7 +2243,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
             // issue lock variable for return statements
             bool needLock = false;
-            visitDepthFirst(*sub.second, [&](const RamSubroutineReturnValue&) { needLock = true; });
+            visitDepthFirst(*sub.second, [&](const RamSubroutineReturn&) { needLock = true; });
             if (needLock) {
                 os << "std::mutex lock;\n";
             }

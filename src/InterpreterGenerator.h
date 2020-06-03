@@ -417,11 +417,11 @@ public:
     }
 
     NodePtr visitCall(const RamCall& call) override {
-        // translate a subroutine name to an index 
+        // translate a subroutine name to an index
         // the index is used to identify the subroutine
         // in the interpreter. The index is stored in the
         // data array of the InterpreterNode as the first
-        // entry. 
+        // entry.
         auto subs = program->getSubroutines();
         size_t i = distance(subs.begin(), subs.find(call.getName()));
         std::vector<size_t> data;

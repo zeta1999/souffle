@@ -379,7 +379,7 @@ public:
     }
 
     // -- return from subroutine --
-    NodePtr visitSubroutineReturnValue(const RamSubroutineReturn& ret) override {
+    NodePtr visitSubroutineReturn(const RamSubroutineReturn& ret) override {
         NodePtrVec children;
         for (const auto& value : ret.getValues()) {
             children.push_back(visit(value));

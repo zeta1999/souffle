@@ -2241,7 +2241,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                << "(const std::vector<RamDomain>& args, "
                   "std::vector<RamDomain>& ret) {\n";
 
-            // issue lock variable for return statements 
+            // issue lock variable for return statements
             bool needLock = false;
             visitDepthFirst(*sub.second, [&](const RamSubroutineReturnValue&) { needLock = true; });
             if (needLock) {
@@ -2251,8 +2251,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
             // emit code for subroutine
             emitCode(os, *sub.second);
 
-            // issue end of subroutine 
-            os << "}\n";  
+            // issue end of subroutine
+            os << "}\n";
             subroutineNum++;
         }
     }

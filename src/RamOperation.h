@@ -1250,8 +1250,7 @@ protected:
  */
 class RamSubroutineReturn : public RamOperation {
 public:
-    RamSubroutineReturn(std::vector<std::unique_ptr<RamExpression>> vals)
-            : expressions(std::move(vals)) {
+    RamSubroutineReturn(std::vector<std::unique_ptr<RamExpression>> vals) : expressions(std::move(vals)) {
         for (const auto& expr : expressions) {
             assert(expr != nullptr && "Expression is a null-pointer");
         }

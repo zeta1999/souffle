@@ -1,7 +1,7 @@
 # Welcome!
 
 This is the official repository for the [Soufflé](https://souffle-lang.github.io) language project.  
-Soufflé language is similar to Datalog (but has terms known as records), and is frequently used as a 
+The Soufflé language is similar to Datalog (but has terms known as records), and is frequently used as a 
 domain-specific language for analysis problems. 
 
 [![License: UPL](https://img.shields.io/badge/License-UPL--1.0-blue.svg)](https://github.com/souffle-lang/souffle/blob/master/LICENSE)

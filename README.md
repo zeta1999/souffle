@@ -44,7 +44,7 @@ The general workflow is as follows.
 2. Fork the [souffle-lang/souffle](http://github.com/souffle-lang/souffle.git) repo.
 3. Push your changes to a branch in your forked repo. 
 4. Submit a pull request to souffle-lang/souffle from your forked repo.
-We enforce coding guidelines while running continuous integration framework such as clang-format and linter. 
+Our continuous integration framework enforces coding guidelines with the help of clang-format and clang-tidy. 
 
 For more information on building and developing Souffle, please read the [developer tutorial](https://souffle-lang.github.io/development).
 

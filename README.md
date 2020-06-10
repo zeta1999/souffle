@@ -35,7 +35,7 @@ Alternatively, please add the following line to the start of your source-code:
 ## How to contribute
 
 Issues and bug reports for Souffle are found in the [issue list](https://github.com/souffle-lang/souffle/issues). 
-This list is also where new contributors may find good first extensions / bug fixes to work on.
+This list is also where new contributors may find extensions / bug fixes to work on.
 
 To contribute in this repo, please open a pull request from your fork of this repository.
 The general workflow is as follows.

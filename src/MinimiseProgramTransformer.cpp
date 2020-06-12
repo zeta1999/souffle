@@ -491,7 +491,7 @@ bool removeRedundantClauses(AstTranslationUnit& translationUnit) {
     for (auto& clause : clausesToRemove) {
         program.removeClause(clause.get());
     }
-    return clausesToRemove.empty();
+    return !clausesToRemove.empty();
 }
 
 /**
@@ -499,7 +499,43 @@ bool removeRedundantClauses(AstTranslationUnit& translationUnit) {
  * @return true iff the program has changed
  */
 bool reduceClauseBodies(AstTranslationUnit& translationUnit) {
-    return false;
+    auto& program = *translationUnit.getProgram();
+    std::set<std::unique_ptr<AstClause>> clausesToAdd;
+    std::set<std::unique_ptr<AstClause>> clausesToRemove;
+
+    for (const auto* clause : program.getClauses()) {
+        auto bodyLiterals = clause->getBodyLiterals();
+        std::set<size_t> redundantPositions;
+        for (size_t i = 0; i < bodyLiterals.size(); i++) {
+            for (size_t j = 0; j < i; j++) {
+                if (*bodyLiterals[i] == *bodyLiterals[j]) {
+                    redundantPositions.insert(j);
+                    break;
+                }
+            }
+        }
+
+        if (!redundantPositions.empty()) {
+            auto minimisedClause = std::make_unique<AstClause>();
+            minimisedClause->setHead(std::unique_ptr<AstAtom>(clause->getHead()->clone()));
+            for (size_t i = 0; i < bodyLiterals.size(); i++) {
+                if (!contains(redundantPositions, i)) {
+                    minimisedClause->addToBody(std::unique_ptr<AstLiteral>(bodyLiterals[i]->clone()));
+                }
+            }
+            clausesToAdd.insert(std::move(minimisedClause));
+            clausesToRemove.insert(std::unique_ptr<AstClause>(clause->clone()));
+        }
+    }
+
+    for (auto& clause : clausesToRemove) {
+        program.removeClause(clause.get());
+    }
+    for (auto& clause : clausesToAdd) {
+        program.addClause(std::unique_ptr<AstClause>(clause->clone()));
+    }
+
+    return !clausesToAdd.empty();
 }
 
 bool MinimiseProgramTransformer::transform(AstTranslationUnit& translationUnit) {

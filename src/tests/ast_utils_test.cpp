@@ -334,5 +334,44 @@ TEST(AstUtils, ReorderClauseAtoms) {
             toString(*reorderedClause1));
 }
 
+TEST(AstUtils, RemoveClauseRedundancies) {
+    ErrorReport e;
+    DebugReport d;
+
+    std::unique_ptr<AstTranslationUnit> tu = ParserDriver::parseTranslationUnit(
+            R"(
+                .decl a,b,c(X:number)
+                a(0).
+                b(1).
+                c(X) :- b(X).
+
+                a(X) :- b(X), c(X).
+                a(X) :- a(X).
+                a(X) :- a(X), X != 1.
+
+                q(X) :- a(X).
+
+                .decl q(X:number)
+                .output q()
+            )", e, d);
+    std::make_unique<RemoveRelationCopiesTransformer>()->apply(*tu);
+    std::make_unique<MinimiseProgramTransformer>()->apply(*tu);
+    const auto& program = *tu->getProgram();
+    EXPECT_EQ(3, program.getRelations().size());
+
+    auto aClauses = getClauses(program, "a");
+    EXPECT_EQ(2, aClauses.size());
+    EXPECT_EQ("a(0).", toString(*aClauses[0]));
+    EXPECT_EQ("a(X) :- \n   b(X).", toString(*aClauses[1]));
+
+    auto bClauses = getClauses(program, "b");
+    EXPECT_EQ(1, bClauses.size());
+    EXPECT_EQ("b(1).", toString(*bClauses[0]));
+
+    auto qClauses = getClauses(program, "q");
+    EXPECT_EQ(1, qClauses.size());
+    EXPECT_EQ("q(X) :- \n   a(X).", toString(*qClauses[0]));
+}
+
 }  // namespace test
 }  // namespace souffle

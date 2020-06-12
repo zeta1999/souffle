@@ -241,7 +241,6 @@ soufflepublic_HEADERS = \
         ExplainProvenanceImpl.h                            \
         ExplainTree.h                                      \
         IOSystem.h                                         \
-        IterUtils.h                                        \
         LambdaBTree.h                                      \
         Logger.h                                           \
         PiggyList.h                                        \

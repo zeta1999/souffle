@@ -16,12 +16,12 @@
 
 #include "RamTransformer.h"
 #include "DebugReport.h"
-#include "DebugReporter.h"
 #include "ErrorReport.h"
 #include "Global.h"
 #include "RamNode.h"
 #include "RamProgram.h"
 #include "RamTranslationUnit.h"
+#include "ast/transforms/DebugReporter.h"
 #include <chrono>
 #include <cstdlib>
 #include <iostream>

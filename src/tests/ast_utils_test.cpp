@@ -334,6 +334,15 @@ TEST(AstUtils, ReorderClauseAtoms) {
             toString(*reorderedClause1));
 }
 
+/**
+ * Test the removal of redundancies within clauses using the MinimiseProgramTransformer.
+ *
+ * In particular, the removal of:
+ *      - intraclausal literals equivalent to another literal in the body
+ *          e.g. a(x) :- b(x), b(x), c(x). --> a(x) :- b(x), c(x).
+ *      - clauses that are only trivially satisfiable
+ *          e.g. a(x) :- a(x), x != 0. is only true if a(x) is already true
+ */
 TEST(AstUtils, RemoveClauseRedundancies) {
     ErrorReport e;
     DebugReport d;
@@ -355,9 +364,21 @@ TEST(AstUtils, RemoveClauseRedundancies) {
                 .output q()
             )",
             e, d);
-    std::make_unique<RemoveRelationCopiesTransformer>()->apply(*tu);
-    std::make_unique<MinimiseProgramTransformer>()->apply(*tu);
+
     const auto& program = *tu->getProgram();
+
+    // Invoking the `RemoveRelationCopiesTransformer` to create some extra redundancy
+    // In particular: The relation `c` will be replaced with `b` throughout, creating
+    // the clause b(x) :- b(x).
+    std::make_unique<RemoveRelationCopiesTransformer>()->apply(*tu);
+    EXPECT_EQ(nullptr, getRelation(program, "c"));
+    auto bIntermediateClauses = getClauses(program, "b");
+    EXPECT_EQ(2, bIntermediateClauses.size());
+    EXPECT_EQ("b(1).", toString(*bIntermediateClauses[0]));
+    EXPECT_EQ("b(X) :- \n   b(X).", toString(*bIntermediateClauses[1]));
+
+    // Attempt to minimise the program
+    std::make_unique<MinimiseProgramTransformer>()->apply(*tu);
     EXPECT_EQ(3, program.getRelations().size());
 
     auto aClauses = getClauses(program, "a");

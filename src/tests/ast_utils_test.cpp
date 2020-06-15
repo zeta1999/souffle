@@ -353,7 +353,8 @@ TEST(AstUtils, RemoveClauseRedundancies) {
 
                 .decl q(X:number)
                 .output q()
-            )", e, d);
+            )",
+            e, d);
     std::make_unique<RemoveRelationCopiesTransformer>()->apply(*tu);
     std::make_unique<MinimiseProgramTransformer>()->apply(*tu);
     const auto& program = *tu->getProgram();

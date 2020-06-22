@@ -1,0 +1,18 @@
+// Souffle - A Datalog Compiler
+// Copyright (c) 2020, The Souffle Developers. All rights reserved
+// Licensed under the Universal Permissive License v 1.0 as shown at:
+// - https://opensource.org/licenses/UPL
+// - <souffle root>/licenses/SOUFFLE-UPL.txt
+
+// Checks that functors in body records operate correctly
+.type BoxedNumber = [x:number]
+.type BoxedBoxedNumber = [x:BoxedNumber]
+
+.decl A(x:number)
+A(X) :- B(X, [Y], [[X*X*X]]), Y = -X*1.
+A(X+1) :- B(_, [X+1], _), A(X).
+
+.decl B(x:number, y:BoxedNumber, z:BoxedBoxedNumber)
+.input B()
+
+.output A()

@@ -384,6 +384,21 @@ std::unique_ptr<AstClause> ResolveAliasesTransformer::removeComplexTermsInAtoms(
         }
     }
 
+    // find all functors in records too
+    visitDepthFirst(atoms, [&](const AstRecordInit& rec) {
+        for (const AstArgument* arg : rec.getArguments()) {
+            // ignore if not a functor
+            if (dynamic_cast<const AstFunctor*>(arg) == nullptr) {
+                continue;
+            }
+
+            // add this functor if not seen yet
+            if (!any_of(terms, [&](const AstArgument* cur) { return *cur == *arg; })) {
+                terms.push_back(arg);
+            }
+        }
+    });
+
     // substitute them with new variables (a real map would compare pointers)
     using substitution_map =
             std::vector<std::pair<std::unique_ptr<AstArgument>, std::unique_ptr<AstVariable>>>;

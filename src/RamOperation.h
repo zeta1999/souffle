@@ -1046,6 +1046,12 @@ public:
     }
 
 protected:
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "UNPACK t" << getTupleId() << " FROM " << *expression << "\n";
+        RamNestedOperation::print(os, tabpos + 1);
+    }
+
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamUnpackRecord&>(node);
         return RamTupleOperation::equal(other) && equal_ptr(expression, other.expression) &&

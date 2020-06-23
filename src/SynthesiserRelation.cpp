@@ -100,11 +100,7 @@ void SynthesiserDirectRelation::computeIndices() {
     MinIndexSelection::OrderCollection inds = indices.getAllOrders();
 
     // generate a full index if no indices exist
-    if (inds.empty()) {
-        MinIndexSelection::LexOrder fullInd(getArity());
-        std::iota(fullInd.begin(), fullInd.end(), 0);
-        inds.push_back(fullInd);
-    }
+    assert(!inds.empty() && "no full index in relation");
 
     size_t index_nr = 0;
     // expand all search orders to be full
@@ -123,7 +119,6 @@ void SynthesiserDirectRelation::computeIndices() {
                     ind.push_back(i);
                 }
             }
-
             if (Global::config().get("provenance") == "subtreeHeights") {
                 // TODO (sarah): assumption index is used exclusively for provenance in case a height
                 // parameter occurs in order of columns before regular columns (at least only in this case it
@@ -179,25 +174,12 @@ void SynthesiserDirectRelation::computeIndices() {
                 ind.push_back(getArity() - relation.getAuxiliaryArity());
                 masterIndex = 0;
             }
-
-        } else if (ind.size() < getArity()) {
-            // expand index to be full
-            for (size_t i = 0; i < getArity(); i++) {
-                if (curIndexElems.find(i) == curIndexElems.end()) {
-                    ind.push_back(i);
-                }
-            }
+        } else if (ind.size() == getArity()) {
+            masterIndex = index_nr;
         }
-
         index_nr++;
     }
-
-    if (!isProvenance) {
-        masterIndex = 0;
-    }
-
-    assert(masterIndex < inds.size());
-
+    assert(masterIndex < inds.size() && "no full index in relation");
     computedIndices = inds;
 }
 
@@ -474,34 +456,16 @@ void SynthesiserIndirectRelation::computeIndices() {
     MinIndexSelection::OrderCollection inds = indices.getAllOrders();
 
     // generate a full index if no indices exist
-    assert(!inds.empty() && "no full index exists");
+    assert(!inds.empty() && "no full index in relation");
 
-    // Expand the first index to be a full index if no full inds exist
-    bool fullExists = false;
-    // check for full index
+    // find master index
     for (size_t i = 0; i < inds.size(); i++) {
         auto& ind = inds[i];
         if (ind.size() == getArity()) {
-            fullExists = true;
-            if (masterIndex == (size_t)-1) {
-                masterIndex = i;
-            }
+            masterIndex = i;
         }
     }
-
-    // expand the first ind to be full, it is guaranteed that at least one index exists
-    if (!fullExists) {
-        std::set<int> curIndexElems(inds[0].begin(), inds[0].end());
-
-        // expand index to be full
-        for (size_t i = 0; i < getArity(); i++) {
-            if (curIndexElems.find(i) == curIndexElems.end()) {
-                inds[0].push_back(i);
-            }
-        }
-
-        masterIndex = 0;
-    }
+    assert(masterIndex < inds.size() && "no full index in relation");
 
     computedIndices = inds;
 }
@@ -750,11 +714,7 @@ void SynthesiserBrieRelation::computeIndices() {
     MinIndexSelection::OrderCollection inds = indices.getAllOrders();
 
     // generate a full index if no indices exist
-    if (inds.empty()) {
-        MinIndexSelection::LexOrder fullInd(getArity());
-        std::iota(fullInd.begin(), fullInd.end(), 0);
-        inds.push_back(fullInd);
-    }
+    assert(!inds.empty() && "No full index in relation");
 
     // expand all indexes to be full
     for (auto& ind : inds) {

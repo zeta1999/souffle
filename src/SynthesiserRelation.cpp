@@ -255,7 +255,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             out << "  return ";
             std::function<void(size_t)> genless = [&](size_t i) {
                 size_t attrib = ind[i];
-                out << " a[" << attrib << "] < b[" << attrib << "]"; 
+                out << " a[" << attrib << "] < b[" << attrib << "]";
                 if (i + 1 < bound) {
                     out << "|| (a[" << attrib << "] == b[" << attrib << "] && (";
                     genless(i + 1);
@@ -574,9 +574,11 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     // btree types
     for (size_t i = 0; i < inds.size(); i++) {
         auto ind = inds[i];
+
         if (i < getMinIndexSelection().getAllOrders().size()) {
             indexToNumMap[getMinIndexSelection().getAllOrders()[i]] = i;
         }
+
         std::string comparator = "t_comparator_" + std::to_string(i);
 
         out << "struct " << comparator << "{\n";
@@ -584,7 +586,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         out << "  return ";
         std::function<void(size_t)> gencmp = [&](size_t i) {
             size_t attrib = ind[i];
-            out << "(a[" << attrib << "] < b[" << attrib << "]) ? -1 : ((a[" << attrib << "] > b[" << attrib
+            out << "((*a)[" << attrib << "] < (*b)[" << attrib << "]) ? -1 : (((*a)[" << attrib << "] > (*b)[" << attrib
                 << "]) ? 1 :(";
             if (i + 1 < ind.size()) {
                 gencmp(i + 1);
@@ -596,23 +598,23 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         gencmp(0);
         out << ";\n }\n";
         out << "bool less(const t_tuple *a, const t_tuple *b) const {\n";
-        out << " return "; 
+        out << "  return ";
         std::function<void(size_t)> genless = [&](size_t i) {
-                size_t attrib = ind[i];
-                out << " a[" << attrib << "] < b[" << attrib << "]"; 
-                if (i + 1 < ind.size()) {
-                    out << "|| (a[" << attrib << "] == b[" << attrib << "] && (";
-                    genless(i + 1);
-                    out << "))";
-                }
-            };
+            size_t attrib = ind[i];
+            out << " (*a)[" << attrib << "] < (*b)[" << attrib << "]";
+            if (i + 1 < ind.size()) {
+                out << "|| ((*a)[" << attrib << "] == (*b)[" << attrib << "] && (";
+                genless(i + 1);
+                out << "))";
+            }
+        };
         genless(0);
         out << ";\n }\n";
         out << "bool equal(const t_tuple *a, const t_tuple *b) const {\n";
         out << "return ";
         std::function<void(size_t)> geneq = [&](size_t i) {
             size_t attrib = ind[i];
-            out << "a[" << attrib << "] == b[" << attrib << "]";
+            out << "(*a)[" << attrib << "] == (*b)[" << attrib << "]";
             if (i + 1 < ind.size()) {
                 out << "&&";
                 geneq(i + 1);
@@ -627,6 +629,7 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         } else {
             out << "using t_ind_" << i << " = btree_multiset<const t_tuple*," << comparator << ">;\n";
         }
+
         out << "t_ind_" << i << " ind_" << i << ";\n";
     }
 

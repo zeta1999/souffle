@@ -28,45 +28,6 @@
 
 namespace souffle {
 
-
-/**
- * A namespace enclosing template-meta-programming utilities for handling
- * parameter lists for templates.
- */
-namespace column_utils {
-
-// -- checks whether a given number is contained in a list of numbers --
-
-template <unsigned E, unsigned... List>
-struct contains;
-
-template <unsigned E>
-struct contains<E> {
-    static constexpr size_t value = 0u;
-};
-
-template <unsigned E, unsigned F, unsigned... Rest>
-struct contains<E, F, Rest...> {
-    static constexpr size_t value = (E == F) || contains<E, Rest...>::value;
-};
-
-// -- check uniqueness of a list of integer values --
-
-template <unsigned... List>
-struct unique;
-
-template <>
-struct unique<> {
-    static constexpr size_t value = 1u;
-};
-
-template <unsigned E, unsigned... Rest>
-struct unique<E, Rest...> {
-    static constexpr size_t value = !contains<E, Rest...>::value && unique<Rest...>::value;
-};
-
-}  // end namespace column_utils
-
 /**
  * A namespace enclosing utilities required by indices.
  */
@@ -109,55 +70,6 @@ struct comparator<> {
     }
 };
 
-// ----- a comparator wrapper dereferencing pointers ----------
-//         (required for handling indirect indices)
-
-template <typename Comp>
-struct deref_compare {
-    template <typename T>
-    int operator()(const T& a, const T& b) const {
-        Comp comp;
-        return comp(*a, *b);
-    }
-    template <typename T>
-    bool less(const T& a, const T& b) const {
-        Comp comp;
-        return comp.less(*a, *b);
-    }
-    template <typename T>
-    bool equal(const T& a, const T& b) const {
-        Comp comp;
-        return comp.equal(*a, *b);
-    }
-};
-
-// ----- a utility for printing lists of parameters -------
-//    (required for printing descriptions of relations)
-
-template <unsigned... Columns>
-struct print;
-
-template <>
-struct print<> {
-    friend std::ostream& operator<<(std::ostream& out, const print&) {
-        return out;
-    }
-};
-
-template <unsigned Last>
-struct print<Last> {
-    friend std::ostream& operator<<(std::ostream& out, const print&) {
-        return out << Last;
-    }
-};
-
-template <unsigned First, unsigned Second, unsigned... Rest>
-struct print<First, Second, Rest...> {
-    friend std::ostream& operator<<(std::ostream& out, const print&) {
-        return out << First << "," << print<Second, Rest...>();
-    }
-};
-
 }  // namespace index_utils
 
 /**
@@ -169,25 +81,8 @@ struct print<First, Second, Rest...> {
  */
 template <unsigned... Columns>
 struct index {
-    // check validity of this index - column fields need to be unique
-    static_assert(column_utils::unique<Columns...>::value, "Invalid duplication of columns!");
-
     // the comparator associated to this index
     using comparator = index_utils::comparator<Columns...>;
-
-    // enables to check whether the given column is covered by this index or not
-    template <unsigned Col>
-    struct covers {
-        static constexpr size_t value = column_utils::contains<Col, Columns...>::value;
-    };
-
-    // the length of the index
-    static constexpr size_t size = sizeof...(Columns);
-
-    // enables instances of this class to be printed (for printing relation-structure descriptions)
-    friend std::ostream& operator<<(std::ostream& out, const index&) {
-        return out << "<" << index_utils::print<Columns...>() << ">";
-    }
 };
 
 /**
@@ -236,21 +131,6 @@ struct contains<E, E, Rest...> {
     static constexpr size_t value = 1u;
 };
 
-// -- check whether a given list is a list of unique indices --
-
-template <typename... Index>
-struct unique;
-
-template <>
-struct unique<> {
-    static constexpr size_t value = 1u;
-};
-
-template <typename First, typename... Rest>
-struct unique<First, Rest...> {
-    static constexpr size_t value = all_indices<First, Rest...>::value && !contains<First, Rest...>::value;
-};
-
 // -- a utility extending a given index by another column --
 //   e.g. index<1,0>   =>    index<1,0,2>
 
@@ -275,7 +155,6 @@ struct get_full_index<0> {
 };
 
 }  // namespace index_utils
-
 
 std::ostream& operator<<(std::ostream& out, TupleRef ref) {
     out << "[";

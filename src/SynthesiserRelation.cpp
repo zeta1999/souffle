@@ -235,7 +235,51 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
         }
 
         std::string comparator = "t_comparator_" + std::to_string(i);
-        out << "using " << comparator << " = index_utils::comparator<" << join(ind) << ">;\n";
+        out << "struct " << comparator << "{\n";
+        out << " int operator()(const t_tuple& a, const t_tuple& b) const {\n";
+        out << "  return ";
+        std::function<void(size_t)> gencmp = [&](size_t i) {
+            size_t attrib = ind[i];
+            out << "(a[" << attrib << "] < b[" << attrib << "]) ? -1 : ((a[" << attrib << "] > b[" << attrib
+                << "]) ? 1 :(";
+            if (i < ind.size()) {
+                gencmp(i + 1);
+            } else {
+                out << "0";
+            }
+            out << "))";
+        };
+        gencmp(0);
+        out << ";\n }\n";
+
+        out << "bool less(const t_tuple& a, const t_tuple& b) const {\n";
+        out << "return ";
+        std::function<void(size_t)> genless = [&](size_t i) {
+            size_t attrib = ind[i];
+            out << "a[" << attrib << "] < b[" << attrib << "]";
+            if (i + 1 < ind.size()) {
+                out << "|| (a[" << attrib << "] == b[" << attrib << "] && ";
+                genless(i + 1);
+                out << ")";
+            }
+        };
+        genless(0);
+        out << ";\n }\n";
+
+        out << "bool equal(const t_tuple& a, const t_tuple& b) const {\n";
+        out << "return ";
+        std::function<void(size_t)> geneq = [&](size_t i) {
+            size_t attrib = ind[i];
+            out << "a[" << attrib << "] == b[" << attrib << "]";
+            if (i + 1 < ind.size()) {
+                out << "&&";
+                geneq(i + 1);
+            }
+        };
+        geneq(0);
+        out << ";\n }\n";
+
+        out << "};\n";
 
         // for provenance, all indices must be full so we use btree_set
         // also strong/weak comparators and updater methods

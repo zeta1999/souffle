@@ -234,64 +234,67 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             indexToNumMap[getMinIndexSelection().getAllOrders()[i]] = i;
         }
 
+        auto genstruct = [&](std::string name, size_t bound) {
+            out << "struct " << name << "{\n";
+            out << " int operator()(const t_tuple& a, const t_tuple& b) const {\n";
+            out << "  return ";
+            std::function<void(size_t)> gencmp = [&](size_t i) {
+                size_t attrib = ind[i];
+                out << "(a[" << attrib << "] < b[" << attrib << "]) ? -1 : ((a[" << attrib << "] > b["
+                    << attrib << "]) ? 1 :(";
+                if (i + 1 < bound) {
+                    gencmp(i + 1);
+                } else {
+                    out << "0";
+                }
+                out << "))";
+            };
+            gencmp(0);
+            out << ";\n }\n";
+            out << "bool less(const t_tuple& a, const t_tuple& b) const {\n";
+            std::function<void(size_t)> genless = [&](size_t i) {
+                size_t attrib = ind[i];
+                out << "if(a[" << attrib << "] < b[" << attrib << "]) { return true; } \n else {";
+                if (i + 1 < bound) {
+                    out << "if(a[" << attrib << "] == b[" << attrib << "]){";
+                    genless(i + 1);
+                    out << "} else { return false; }";
+                } else {
+                    out << "return false;\n";
+                }
+                out << "}\n";
+            };
+            genless(0);
+            out << "\n }\n";
+            out << "bool equal(const t_tuple& a, const t_tuple& b) const {\n";
+            out << "return ";
+            std::function<void(size_t)> geneq = [&](size_t i) {
+                size_t attrib = ind[i];
+                out << "a[" << attrib << "] == b[" << attrib << "]";
+                if (i + 1 < bound) {
+                    out << "&&";
+                    geneq(i + 1);
+                }
+            };
+            geneq(0);
+            out << ";\n }\n";
+            out << "};\n";
+        };
+
         std::string comparator = "t_comparator_" + std::to_string(i);
-        out << "struct " << comparator << "{\n";
-        out << " int operator()(const t_tuple& a, const t_tuple& b) const {\n";
-        out << "  return ";
-        std::function<void(size_t)> gencmp = [&](size_t i) {
-            size_t attrib = ind[i];
-            out << "(a[" << attrib << "] < b[" << attrib << "]) ? -1 : ((a[" << attrib << "] > b[" << attrib
-                << "]) ? 1 :(";
-            if (i < ind.size()) {
-                gencmp(i + 1);
-            } else {
-                out << "0";
-            }
-            out << "))";
-        };
-        gencmp(0);
-        out << ";\n }\n";
-
-        out << "bool less(const t_tuple& a, const t_tuple& b) const {\n";
-        out << "return ";
-        std::function<void(size_t)> genless = [&](size_t i) {
-            size_t attrib = ind[i];
-            out << "a[" << attrib << "] < b[" << attrib << "]";
-            if (i + 1 < ind.size()) {
-                out << "|| (a[" << attrib << "] == b[" << attrib << "] && ";
-                genless(i + 1);
-                out << ")";
-            }
-        };
-        genless(0);
-        out << ";\n }\n";
-
-        out << "bool equal(const t_tuple& a, const t_tuple& b) const {\n";
-        out << "return ";
-        std::function<void(size_t)> geneq = [&](size_t i) {
-            size_t attrib = ind[i];
-            out << "a[" << attrib << "] == b[" << attrib << "]";
-            if (i + 1 < ind.size()) {
-                out << "&&";
-                geneq(i + 1);
-            }
-        };
-        geneq(0);
-        out << ";\n }\n";
-
-        out << "};\n";
+        genstruct(comparator, ind.size());
 
         // for provenance, all indices must be full so we use btree_set
         // also strong/weak comparators and updater methods
         if (isProvenance) {
-            std::string comparator_aux = "t_comparator_" + std::to_string(i) + "_aux";
-            if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end()) {  // index for bottom up
-                out << "using " << comparator_aux << " = index_utils::comparator<"
-                    << join(ind.begin(), ind.end() - auxiliaryArity) << ">;\n";
-                // phase
-            } else {  // index for top down phase
-                out << "using " << comparator_aux << " = index_utils::comparator<"
-                    << join(ind.begin(), ind.end()) << ">;\n";
+            std::string comparator_aux;
+            if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end()) {
+                // index for bottom up phase
+                comparator_aux = "t_comparator_" + std::to_string(i) + "_aux";
+                genstruct(comparator_aux, ind.size() - 2);
+            } else {
+                // index for top down phase
+                comparator_aux = comparator;
             }
             out << "using t_ind_" << i << " = btree_set<t_tuple," << comparator
                 << ",std::allocator<t_tuple>,256,typename "
@@ -554,10 +557,52 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
             indexToNumMap[getMinIndexSelection().getAllOrders()[i]] = i;
         }
         std::string comparator = "t_comparator_" + std::to_string(i);
-        out << "using " << comparator
-            << " =index_utils::deref_compare<typename "
-               "index_utils::comparator<"
-            << join(ind) << ">>;\n";
+
+        out << "struct " << comparator << "{\n";
+        out << " int operator()(const t_tuple *a, const t_tuple *b) const {\n";
+        out << "  return ";
+        std::function<void(size_t)> gencmp = [&](size_t i) {
+            size_t attrib = ind[i];
+            out << "(a[" << attrib << "] < b[" << attrib << "]) ? -1 : ((a[" << attrib << "] > b[" << attrib
+                << "]) ? 1 :(";
+            if (i + 1 < ind.size()) {
+                gencmp(i + 1);
+            } else {
+                out << "0";
+            }
+            out << "))";
+        };
+        gencmp(0);
+        out << ";\n }\n";
+        out << "bool less(const t_tuple *a, const t_tuple *b) const {\n";
+        std::function<void(size_t)> genless = [&](size_t i) {
+            size_t attrib = ind[i];
+            out << "if(a[" << attrib << "] < b[" << attrib << "]) { return true; } \n else {";
+            if (i + 1 < ind.size()) {
+                out << "if(a[" << attrib << "] == b[" << attrib << "]){";
+                genless(i + 1);
+                out << "} else { return false; }";
+            } else {
+                out << "return false;\n";
+            }
+            out << "}\n";
+        };
+        genless(0);
+        out << "}\n";
+        out << "bool equal(const t_tuple *a, const t_tuple *b) const {\n";
+        out << "return ";
+        std::function<void(size_t)> geneq = [&](size_t i) {
+            size_t attrib = ind[i];
+            out << "a[" << attrib << "] == b[" << attrib << "]";
+            if (i + 1 < ind.size()) {
+                out << "&&";
+                geneq(i + 1);
+            }
+        };
+        geneq(0);
+        out << ";\n }\n";
+        out << "};\n";
+
         if (ind.size() == arity) {
             out << "using t_ind_" << i << " = btree_set<const t_tuple*," << comparator << ">;\n";
         } else {

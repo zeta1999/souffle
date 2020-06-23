@@ -252,30 +252,27 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             indexToNumMap[getMinIndexSelection().getAllOrders()[i]] = i;
         }
 
+        std::string comparator = "t_comparator_" + std::to_string(i); 
+        out << "using " << comparator << " = index_utils::comparator<" << join(ind) << ">;\n"; 
+
         // for provenance, all indices must be full so we use btree_set
         // also strong/weak comparators and updater methods
         if (isProvenance) {
+            std::string comparator_aux = "t_comparator_" + std::to_string(i) + "_aux"; 
             if (provenanceIndexNumbers.find(i) == provenanceIndexNumbers.end()) {  // index for bottom up
+                out << "using " << comparator_aux << " = index_utils::comparator<" << join(ind.begin(), ind.end() - auxiliaryArity) << ">;\n"; 
                                                                                    // phase
-                out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
-                out << ">, std::allocator<t_tuple>, 256, typename "
-                       "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
-                out << join(ind.begin(), ind.end() - auxiliaryArity) << ">, updater_" << getTypeName()
-                    << ">;\n";
             } else {  // index for top down phase
-                out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind);
-                out << ">, std::allocator<t_tuple>, 256, typename "
-                       "souffle::detail::default_strategy<t_tuple>::type, index_utils::comparator<";
-                out << join(ind.begin(), ind.end()) << ">, updater_" << getTypeName() << ">;\n";
+                out << "using " << comparator_aux << " = index_utils::comparator<" << join(ind.begin(), ind.end()) << ">;\n"; 
             }
-            // without provenance, some indices may be not full, so we use btree_multiset for those
+            out << "using t_ind_" << i << " = btree_set<t_tuple," << comparator << ",std::allocator<t_tuple>,256,typename "
+                   "souffle::detail::default_strategy<t_tuple>::type," << comparator_aux << "_aux,updater_" << getTypeName() << ">;\n";
         } else {
             if (ind.size() == arity) {
-                out << "using t_ind_" << i << " = btree_set<t_tuple, index_utils::comparator<" << join(ind)
-                    << ">>;\n";
+                out << "using t_ind_" << i << " = btree_set<t_tuple," << comparator << ">;\n";
             } else {
-                out << "using t_ind_" << i << " = btree_multiset<t_tuple, index_utils::comparator<"
-                    << join(ind) << ">>;\n";
+                // without provenance, some indices may be not full, so we use btree_multiset for those
+                out << "using t_ind_" << i << " = btree_multiset<t_tuple," << comparator << ">;\n";
             }
         }
         out << "t_ind_" << i << " ind_" << i << ";\n";
@@ -473,12 +470,7 @@ void SynthesiserIndirectRelation::computeIndices() {
     MinIndexSelection::OrderCollection inds = indices.getAllOrders();
 
     // generate a full index if no indices exist
-    if (inds.empty()) {
-        MinIndexSelection::LexOrder fullInd(getArity());
-        std::iota(fullInd.begin(), fullInd.end(), 0);
-        inds.push_back(fullInd);
-        masterIndex = 0;
-    }
+    assert(!inds.empty() && "no full index exists"); 
 
     // Expand the first index to be a full index if no full inds exist
     bool fullExists = false;
@@ -546,23 +538,18 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
     // btree types
     for (size_t i = 0; i < inds.size(); i++) {
         auto ind = inds[i];
-
         if (i < getMinIndexSelection().getAllOrders().size()) {
             indexToNumMap[getMinIndexSelection().getAllOrders()[i]] = i;
         }
-
+        std::string comparator = "t_comparator_" + std::to_string(i); 
+        out << "using " << comparator << " =index_utils::deref_compare<typename " "index_utils::comparator<" << join(ind) << ">>;\n";
         if (ind.size() == arity) {
             out << "using t_ind_" << i
-                << " = btree_set<const t_tuple*, index_utils::deref_compare<typename "
-                   "index_utils::comparator<"
-                << join(ind) << ">>>;\n";
+                << " = btree_set<const t_tuple*," << comparator << ">;\n";
         } else {
             out << "using t_ind_" << i
-                << " = btree_multiset<const t_tuple*, index_utils::deref_compare<typename "
-                   "index_utils::comparator<"
-                << join(ind) << ">>>;\n";
+                << " = btree_multiset<const t_tuple*," << comparator << ">;\n";
         }
-
         out << "t_ind_" << i << " ind_" << i << ";\n";
     }
 

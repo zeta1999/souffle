@@ -17,7 +17,6 @@
 #include "InterpreterIndex.h"
 #include "BTree.h"
 #include "Brie.h"
-#include "CompiledIndexUtils.h"
 #include "EquivalenceRelation.h"
 #include "PiggyList.h"
 #include "utility/ContainerUtil.h"

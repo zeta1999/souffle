@@ -252,20 +252,18 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
             gencmp(0);
             out << ";\n }\n";
             out << "bool less(const t_tuple& a, const t_tuple& b) const {\n";
+            out << "  return ";
             std::function<void(size_t)> genless = [&](size_t i) {
                 size_t attrib = ind[i];
-                out << "if(a[" << attrib << "] < b[" << attrib << "]) { return true; } \n else {";
+                out << " a[" << attrib << "] < b[" << attrib << "]"; 
                 if (i + 1 < bound) {
-                    out << "if(a[" << attrib << "] == b[" << attrib << "]){";
+                    out << "|| (a[" << attrib << "] == b[" << attrib << "] && (";
                     genless(i + 1);
-                    out << "} else { return false; }";
-                } else {
-                    out << "return false;\n";
+                    out << "))";
                 }
-                out << "}\n";
             };
             genless(0);
-            out << "\n }\n";
+            out << ";\n }\n";
             out << "bool equal(const t_tuple& a, const t_tuple& b) const {\n";
             out << "return ";
             std::function<void(size_t)> geneq = [&](size_t i) {
@@ -503,16 +501,39 @@ void SynthesiserIndirectRelation::computeIndices() {
     MinIndexSelection::OrderCollection inds = indices.getAllOrders();
 
     // generate a full index if no indices exist
-    assert(!inds.empty() && "no full index in relation");
+    if (inds.empty()) {
+        MinIndexSelection::LexOrder fullInd(getArity());
+        std::iota(fullInd.begin(), fullInd.end(), 0);
+        inds.push_back(fullInd);
+        masterIndex = 0;
+    }
 
-    // find master index
+    // Expand the first index to be a full index if no full inds exist
+    bool fullExists = false;
+    // check for full index
     for (size_t i = 0; i < inds.size(); i++) {
         auto& ind = inds[i];
         if (ind.size() == getArity()) {
-            masterIndex = i;
+            fullExists = true;
+            if (masterIndex == (size_t)-1) {
+                masterIndex = i;
+            }
         }
     }
-    assert(masterIndex < inds.size() && "no full index in relation");
+
+    // expand the first ind to be full, it is guaranteed that at least one index exists
+    if (!fullExists) {
+        std::set<int> curIndexElems(inds[0].begin(), inds[0].end());
+
+        // expand index to be full
+        for (size_t i = 0; i < getArity(); i++) {
+            if (curIndexElems.find(i) == curIndexElems.end()) {
+                inds[0].push_back(i);
+            }
+        }
+
+        masterIndex = 0;
+    }
 
     computedIndices = inds;
 }
@@ -575,20 +596,18 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         gencmp(0);
         out << ";\n }\n";
         out << "bool less(const t_tuple *a, const t_tuple *b) const {\n";
+        out << " return "; 
         std::function<void(size_t)> genless = [&](size_t i) {
-            size_t attrib = ind[i];
-            out << "if(a[" << attrib << "] < b[" << attrib << "]) { return true; } \n else {";
-            if (i + 1 < ind.size()) {
-                out << "if(a[" << attrib << "] == b[" << attrib << "]){";
-                genless(i + 1);
-                out << "} else { return false; }";
-            } else {
-                out << "return false;\n";
-            }
-            out << "}\n";
-        };
+                size_t attrib = ind[i];
+                out << " a[" << attrib << "] < b[" << attrib << "]"; 
+                if (i + 1 < ind.size()) {
+                    out << "|| (a[" << attrib << "] == b[" << attrib << "] && (";
+                    genless(i + 1);
+                    out << "))";
+                }
+            };
         genless(0);
-        out << "}\n";
+        out << ";\n }\n";
         out << "bool equal(const t_tuple *a, const t_tuple *b) const {\n";
         out << "return ";
         std::function<void(size_t)> geneq = [&](size_t i) {

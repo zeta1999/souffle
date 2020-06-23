@@ -495,46 +495,23 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
 
 /** Generate index set for a indirect indexed relation */
 void SynthesiserIndirectRelation::computeIndices() {
-    assert(!isProvenance);
+    assert(!isProvenance && "indirect indexes cannot used for provenance");
 
     // Generate and set indices
     MinIndexSelection::OrderCollection inds = indices.getAllOrders();
 
     // generate a full index if no indices exist
-    if (inds.empty()) {
-        MinIndexSelection::LexOrder fullInd(getArity());
-        std::iota(fullInd.begin(), fullInd.end(), 0);
-        inds.push_back(fullInd);
-        masterIndex = 0;
-    }
+    assert(!inds.empty() && "no full index in relation");
 
-    // Expand the first index to be a full index if no full inds exist
-    bool fullExists = false;
     // check for full index
     for (size_t i = 0; i < inds.size(); i++) {
         auto& ind = inds[i];
         if (ind.size() == getArity()) {
-            fullExists = true;
-            if (masterIndex == (size_t)-1) {
-                masterIndex = i;
-            }
+            masterIndex = i;
+            break;
         }
     }
-
-    // expand the first ind to be full, it is guaranteed that at least one index exists
-    if (!fullExists) {
-        std::set<int> curIndexElems(inds[0].begin(), inds[0].end());
-
-        // expand index to be full
-        for (size_t i = 0; i < getArity(); i++) {
-            if (curIndexElems.find(i) == curIndexElems.end()) {
-                inds[0].push_back(i);
-            }
-        }
-
-        masterIndex = 0;
-    }
-
+    assert(masterIndex < inds.size() && "no full index in relation");
     computedIndices = inds;
 }
 
@@ -586,8 +563,8 @@ void SynthesiserIndirectRelation::generateTypeStruct(std::ostream& out) {
         out << "  return ";
         std::function<void(size_t)> gencmp = [&](size_t i) {
             size_t attrib = ind[i];
-            out << "((*a)[" << attrib << "] < (*b)[" << attrib << "]) ? -1 : (((*a)[" << attrib << "] > (*b)[" << attrib
-                << "]) ? 1 :(";
+            out << "((*a)[" << attrib << "] < (*b)[" << attrib << "]) ? -1 : (((*a)[" << attrib << "] > (*b)["
+                << attrib << "]) ? 1 :(";
             if (i + 1 < ind.size()) {
                 gencmp(i + 1);
             } else {
@@ -841,7 +818,7 @@ void SynthesiserBrieRelation::computeIndices() {
             }
         }
 
-        assert(ind.size() == getArity());
+        assert(ind.size() == getArity() && "index is not a full");
     }
     masterIndex = 0;
 

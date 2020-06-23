@@ -15,7 +15,7 @@
 .decl add(a:number,b:number,r:number)
 .decl mul(a:number,b:number,r:number)
 
-.decl range(x:number)
+.decl candidate(x:number)
 .decl prod(x:number)
 
 

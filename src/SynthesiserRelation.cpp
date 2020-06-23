@@ -266,7 +266,7 @@ void SynthesiserDirectRelation::generateTypeStruct(std::ostream& out) {
                 out << "using " << comparator_aux << " = index_utils::comparator<" << join(ind.begin(), ind.end()) << ">;\n"; 
             }
             out << "using t_ind_" << i << " = btree_set<t_tuple," << comparator << ",std::allocator<t_tuple>,256,typename "
-                   "souffle::detail::default_strategy<t_tuple>::type," << comparator_aux << "_aux,updater_" << getTypeName() << ">;\n";
+                   "souffle::detail::default_strategy<t_tuple>::type," << comparator_aux << ",updater_" << getTypeName() << ">;\n";
         } else {
             if (ind.size() == arity) {
                 out << "using t_ind_" << i << " = btree_set<t_tuple," << comparator << ">;\n";

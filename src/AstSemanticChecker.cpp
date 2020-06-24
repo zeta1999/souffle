@@ -110,12 +110,14 @@ bool AstSemanticChecker::transform(AstTranslationUnit& translationUnit) {
 
 class TypeChecker : AstVisitor<void> {
 public:
-    TypeChecker(AstTranslationUnit& tu) : tu(tu) {
-        // Analyse types, clause by clause
+    TypeChecker(AstTranslationUnit& tu) : tu(tu){};
+
+    /** Analyse types, clause by clause */
+    void run() {
         for (auto* clause : tu.getProgram()->getClauses()) {
             visitDepthFirstPreOrder(*clause, *this);
         }
-    };
+    }
 
 private:
     AstTranslationUnit& tu;
@@ -205,7 +207,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
     GroundedTermsChecker().verify(tu);
 
     // Check types
-    TypeChecker{tu};
+    TypeChecker{tu}.run();
 
     // - stratification --
     // check for cyclic dependencies
@@ -295,9 +297,20 @@ void AstSemanticCheckerImpl::checkLiteral(const AstLiteral& literal) {
         checkArgument(*constraint->getLHS());
         checkArgument(*constraint->getRHS());
 
+        std::set<const AstUnnamedVariable*> unnamedInRecord;
+        visitDepthFirst(*constraint, [&](const AstRecordInit& record) {
+            for (auto* arg : record.getArguments()) {
+                if (auto* unnamed = as<AstUnnamedVariable>(arg)) {
+                    unnamedInRecord.insert(unnamed);
+                }
+            }
+        });
+
         // Check if constraint contains unnamed variables.
         for (auto* unnamed : getUnnamedVariables(*constraint)) {
-            report.addError("Underscore in binary relation", unnamed->getSrcLoc());
+            if (!contains(unnamedInRecord, unnamed)) {
+                report.addError("Underscore in binary relation", unnamed->getSrcLoc());
+            }
         }
     }
 }

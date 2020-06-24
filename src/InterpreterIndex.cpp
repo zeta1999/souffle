@@ -90,47 +90,6 @@ struct index {
  */
 namespace index_utils {
 
-// -------------------------------------------------------------
-//                     Static Index Utilities
-// -------------------------------------------------------------
-
-// -- check whether a given list only consists of indices --
-
-template <typename... Index>
-struct all_indices {
-    static constexpr size_t value = 0u;
-};
-
-template <>
-struct all_indices<> {
-    static constexpr size_t value = 1u;
-};
-
-template <unsigned... Columns, typename... Rest>
-struct all_indices<index<Columns...>, Rest...> {
-    static constexpr size_t value = all_indices<Rest...>::value;
-};
-
-// -- checks whether a list of typed contains a certain type --
-
-template <typename E, typename... List>
-struct contains;
-
-template <typename E>
-struct contains<E> {
-    static constexpr size_t value = 0u;
-};
-
-template <typename E, typename F, typename... Rest>
-struct contains<E, F, Rest...> {
-    static constexpr size_t value = contains<E, Rest...>::value;
-};
-
-template <typename E, typename... Rest>
-struct contains<E, E, Rest...> {
-    static constexpr size_t value = 1u;
-};
-
 // -- a utility extending a given index by another column --
 //   e.g. index<1,0>   =>    index<1,0,2>
 

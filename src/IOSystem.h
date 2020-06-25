@@ -20,6 +20,7 @@
 #include "SymbolTable.h"
 #include "WriteStream.h"
 #include "WriteStreamCSV.h"
+#include "WriteStreamJSON.h"
 
 #ifdef USE_SQLITE
 #include "ReadStreamSQLite.h"
@@ -80,6 +81,8 @@ private:
         registerWriteStreamFactory(std::make_shared<WriteFileCSVFactory>());
         registerWriteStreamFactory(std::make_shared<WriteCoutCSVFactory>());
         registerWriteStreamFactory(std::make_shared<WriteCoutPrintSizeFactory>());
+        registerWriteStreamFactory(std::make_shared<WriteFileJSONFactory>());
+        registerWriteStreamFactory(std::make_shared<WriteCoutJSONFactory>());
 #ifdef USE_SQLITE
         registerReadStreamFactory(std::make_shared<ReadSQLiteFactory>());
         registerWriteStreamFactory(std::make_shared<WriteSQLiteFactory>());

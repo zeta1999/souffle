@@ -17,6 +17,6 @@ A(cat("meow ", "meow")).
 A(to_string(10)).
 A(to_string(-10)).
 
-.output A(IO=stdout)
+.output A()
 
 

@@ -23,4 +23,4 @@ in([1, 2]).
 
 out(X) :- in(Z), Z = [X,_].
 
-.output out(IO=stdout)
+.output out()

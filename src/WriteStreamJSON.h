@@ -55,14 +55,14 @@ protected:
     }
 
     void writeNextTupleElement(std::ostream& destination, const std::string& name, const RamDomain value) {
-        using ValueTuple = std::pair<const std::string&, const RamDomain>;
-        std::queue<std::variant<ValueTuple, std::string>> worklist;
+        using ValueTuple = std::pair<const std::string, const RamDomain>;
+        std::stack<std::variant<ValueTuple, std::string>> worklist;
         worklist.push(std::make_pair(name, value));
         
         // the Json11 output is not tail recursive, theefore highly inefficient for recursive record
         // in addition the JSON object is immutable, so has memory overhead
         while(!worklist.empty()) {
-            std::variant<ValueTuple, std::string> curr = worklist.front();
+            std::variant<ValueTuple, std::string> curr = worklist.top();
             worklist.pop();
 
             if (std::holds_alternative<std::string>(curr)) {
@@ -74,7 +74,8 @@ protected:
             const RamDomain currValue = std::get<ValueTuple>(curr).second;
             assert(currType.length() > 2 && "Invalid type length");
             // the first two char is attribute char + ':', ignore them
-            destination << "\"" << currType.c_str() + 2 << "\"" << ": ";
+            const char* currName = currType.c_str();
+            destination << Json(currName + 2).dump().c_str() << ": ";
             switch (currType[0]) {
                 // since some strings may need to be escaped, we use dump here
                 case 's': destination << Json(symbolTable.unsafeResolve(currValue)).dump(); break;
@@ -84,7 +85,7 @@ protected:
                 case 'r': {
                     auto&& recordInfo = types["records"][currType];
                     assert(!recordInfo.is_null() && "Missing record type information");
-                    if (currValue == 0) {
+                    if ((int) currValue == 0) {
                         destination << "{}";
                         break;
                     }
@@ -92,17 +93,17 @@ protected:
                     auto&& recordTypes = recordInfo["types"];
                     const size_t recordArity = recordInfo["arity"].long_value();
                     const RamDomain* tuplePtr = recordTable.unpack(currValue, recordArity);
-                    worklist.push("{");              
-                    for (size_t i = 0; i < recordArity; ++i) {
-                        if (i > 0) {
-                            worklist.push(",");
+                    worklist.push("}");              
+                    for (long long i = (long long) (recordArity - 1); i >= 0; --i) { 
+                        if (i != (long long) (recordArity - 1)) {
+                            worklist.push(", ");
                         }
-
                         const std::string& recordType = recordTypes[i].string_value();
-                        const RamDomain recordValue = tuplePtr[i];  
-                        worklist.push(std::make_pair(recordType, recordValue));
+                        const RamDomain recordValue = tuplePtr[i];
+                        worklist.push(std::make_pair(recordType, recordValue));         
                     }
-                    worklist.push("}");
+
+                    worklist.push("{");
                     break;
                     }
                 default: fatal("unsupported type attribute: `%c`", currType[0]);

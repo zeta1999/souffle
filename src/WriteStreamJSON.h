@@ -51,7 +51,7 @@ protected:
         }
 
         // Output a JSON array for all tuples
-        destination << "}\n";
+        destination << "}";
     }
 
     void writeNextTupleElement(std::ostream& destination, const std::string& name, const RamDomain value) {
@@ -59,7 +59,7 @@ protected:
         std::stack<std::variant<ValueTuple, std::string>> worklist;
         worklist.push(std::make_pair(name, value));
         
-        // the Json11 output is not tail recursive, theefore highly inefficient for recursive record
+        // the Json11 output is not tail recursive, therefore highly inefficient for recursive record
         // in addition the JSON object is immutable, so has memory overhead
         while(!worklist.empty()) {
             std::variant<ValueTuple, std::string> curr = worklist.top();
@@ -117,17 +117,30 @@ class WriteFileJSON : public WriteStreamJSON {
 public:
     WriteFileJSON(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
                   const RecordTable& recordTable)
-        : WriteStreamJSON(rwOperation, symbolTable, recordTable),
-          file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {}
+        : WriteStreamJSON(rwOperation, symbolTable, recordTable), isFirst(true),
+          file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {
+              file << "[";
+          }
+
+    ~WriteFileJSON() override {
+        file << "]\n";
+        file.close();
+    }
 
 protected:
     std::ofstream file;
+    bool isFirst;
 
     void writeNullary() override {
         file << "{}\n";
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
+        if (!isFirst) {
+            file << ",\n";
+        } else {
+            isFirst = false;
+        }       
         writeNextTupleJSON(file, tuple);
     }
 };
@@ -136,16 +149,27 @@ class WriteCoutJSON : public WriteStreamJSON {
 public:
     WriteCoutJSON(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
             const RecordTable& recordTable)
-            : WriteStreamJSON(rwOperation, symbolTable, recordTable) {}
+            : WriteStreamJSON(rwOperation, symbolTable, recordTable), isFirst(true) {
+                std::cout << "[";
+            }
 
-    ~WriteCoutJSON() override = default;
+    ~WriteCoutJSON() override {
+        std::cout << "]\n";
+    };
 
 protected:
+    bool isFirst;
+
     void writeNullary() override {
         std::cout << "{}\n";
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
+        if (!isFirst) {
+            std::cout << ",\n";
+        } else {
+            isFirst = false;
+        }
         writeNextTupleJSON(std::cout, tuple);
     }
 };

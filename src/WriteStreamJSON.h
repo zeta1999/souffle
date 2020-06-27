@@ -42,7 +42,7 @@ protected:
     void writeNextTupleJSON(std::ostream& destination, const RamDomain* tuple) {
         std::vector<Json> result;
 
-        destination << "{";
+        destination << "[";
         for (size_t col = 0; col < arity; ++col) {
             if (col > 0) {
                 destination << ", ";
@@ -51,7 +51,7 @@ protected:
         }
 
         // Output a JSON array for all tuples
-        destination << "}";
+        destination << "]";
     }
 
     void writeNextTupleElement(std::ostream& destination, const std::string& name, const RamDomain value) {
@@ -74,8 +74,8 @@ protected:
             const RamDomain currValue = std::get<ValueTuple>(curr).second;
             assert(currType.length() > 2 && "Invalid type length");
             // the first two char is attribute char + ':', ignore them
-            const char* currName = currType.c_str();
-            destination << Json(currName + 2).dump().c_str() << ": ";
+            // const char* currName = currType.c_str();
+            // destination << Json(currName + 2).dump().c_str() << ": ";
             switch (currType[0]) {
                 // since some strings may need to be escaped, we use dump here
                 case 's': destination << Json(symbolTable.unsafeResolve(currValue)).dump(); break;
@@ -86,14 +86,14 @@ protected:
                     auto&& recordInfo = types["records"][currType];
                     assert(!recordInfo.is_null() && "Missing record type information");
                     if ((int) currValue == 0) {
-                        destination << "{}";
+                        destination << "null";
                         break;
                     }
 
                     auto&& recordTypes = recordInfo["types"];
                     const size_t recordArity = recordInfo["arity"].long_value();
                     const RamDomain* tuplePtr = recordTable.unpack(currValue, recordArity);
-                    worklist.push("}");              
+                    worklist.push("]");              
                     for (long long i = (long long) (recordArity - 1); i >= 0; --i) { 
                         if (i != (long long) (recordArity - 1)) {
                             worklist.push(", ");
@@ -103,7 +103,7 @@ protected:
                         worklist.push(std::make_pair(recordType, recordValue));         
                     }
 
-                    worklist.push("{");
+                    worklist.push("[");
                     break;
                     }
                 default: fatal("unsupported type attribute: `%c`", currType[0]);
@@ -127,12 +127,12 @@ public:
         file.close();
     }
 
-protected:
-    std::ofstream file;
+protected:    
     bool isFirst;
+    std::ofstream file;
 
     void writeNullary() override {
-        file << "{}\n";
+        file << "null\n";
     }
 
     void writeNextTuple(const RamDomain* tuple) override {
@@ -161,7 +161,7 @@ protected:
     bool isFirst;
 
     void writeNullary() override {
-        std::cout << "{}\n";
+        std::cout << "null\n";
     }
 
     void writeNextTuple(const RamDomain* tuple) override {

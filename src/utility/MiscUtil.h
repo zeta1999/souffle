@@ -128,7 +128,7 @@ template <typename... Args>
 #if defined(__GNUC__) && __GNUC__ < 10
 #define UNREACHABLE_BAD_CASE_ANALYSIS fatal("unhandled switch branch");
 #else
-#define UNREACHABLE_BAD_CASE_ANALYSIS (void);
+#define UNREACHABLE_BAD_CASE_ANALYSIS (void) 0;
 #endif
 
 }  // namespace souffle

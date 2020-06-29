@@ -908,7 +908,7 @@ protected:
  * @class RamIndexAggregate
  * @brief Indexed aggregation on a relation
  *
- * TODO (rachel): Fix description!!
+ * TODO (rachel): Fix description!! I'm not sure what this represents
  */
 class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate {
 public:
@@ -966,7 +966,7 @@ protected:
 };
 
 /**
- * @class RamIndexAggregate
+ * @class RamParallelIndexAggregate
  * @brief Indexed aggregation on a relation
  *
  * TODO (rachel): Fix description!!

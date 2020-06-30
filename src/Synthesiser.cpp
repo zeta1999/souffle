@@ -1066,7 +1066,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "PARALLEL_START;\n";
             out << preamble.str();
             // pragma statement
-            out << "#pragma omp parallel for reduction(+:res" << identifier << ")\n";
+            out << "#pragma omp for reduction(+:res" << identifier << ")\n";
             // check whether there is an index to use
             // out << "for(const auto& env" << identifier << " : "
             //    << "*" << relName << ") {\n";

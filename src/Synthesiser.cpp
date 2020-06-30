@@ -1046,6 +1046,36 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
             }
 
+            // Set reduction operation
+            std::string op;
+            switch (aggregate.getFunction()) {
+                case AggregateOp::MIN:
+                case AggregateOp::FMIN:
+                case AggregateOp::UMIN: {
+                    op = "min";
+                    break;
+                }
+
+                case AggregateOp::MAX:
+                case AggregateOp::FMAX:
+                case AggregateOp::UMAX: {
+                    op = "max";
+                    break;
+                }
+
+                case AggregateOp::MEAN:
+                case AggregateOp::FSUM:
+                case AggregateOp::USUM:
+
+                case AggregateOp::SUM: {
+                    op = "+";
+                    break;
+                }
+
+                case AggregateOp::COUNT: break;
+                default: fatal("Unhandled aggregate operation");
+            }
+
             char const* type;
             switch (getTypeAttributeAggregate(aggregate.getFunction())) {
                 case TypeAttribute::Signed: type = "RamSigned"; break;
@@ -1066,7 +1096,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "PARALLEL_START;\n";
             out << preamble.str();
             // pragma statement
-            out << "#pragma omp for reduction(+:res" << identifier << ")\n";
+            out << "#pragma omp for reduction(" << op << ":res" << identifier << ")\n";
             // check whether there is an index to use
             // out << "for(const auto& env" << identifier << " : "
             //    << "*" << relName << ") {\n";

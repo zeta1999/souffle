@@ -976,8 +976,8 @@ public:
     RamParallelIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
             std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
             std::unique_ptr<RamCondition> condition, RamPattern queryPattern, int ident)
-            : RamIndexAggregate(std::move(nested), fun, std::move(relRef), std::move(expression), 
-            std::move(condition), std::move(queryPattern), ident) {} 
+            : RamIndexAggregate(std::move(nested), fun, std::move(relRef), std::move(expression),
+                      std::move(condition), std::move(queryPattern), ident) {}
 
     RamIndexAggregate* clone() const override {
         RamPattern pattern;

@@ -829,8 +829,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_END_COMMENT(out);
         }
 
-        void visitParallelIndexAggregate(const RamParallelIndexAggregate& aggregate, std::ostream& out) override {
-            //TODO
+        void visitParallelIndexAggregate(
+                const RamParallelIndexAggregate& aggregate, std::ostream& out) override {
+            // TODO
             visitIndexAggregate(aggregate, out);
         }
         void visitIndexAggregate(const RamIndexAggregate& aggregate, std::ostream& out) override {
@@ -1054,12 +1055,21 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::pair<RamFloat, RamFloat> accumulateMean = {0, 0};\n";
             }
 
+            assert(aggregate.getTupleId() == 0 && "not outer-most loop");
+
+            assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
+
+            assert(!preambleIssued && "only first loop can be made parallel");
+            preambleIssued = true;
+
             // create a partitioning of the relation to iterate over simeltaneously
             out << "auto part = " << relName << "->partition();\n";
+            out << "PARALLEL_START;\n";
+            out << preamble.str();
             // pragma statement
-            out << "#pragma omp parallel for reduction(+:res" << identifier << ")\n"; 
+            out << "#pragma omp parallel for reduction(+:res" << identifier << ")\n";
             // check whether there is an index to use
-            //out << "for(const auto& env" << identifier << " : "
+            // out << "for(const auto& env" << identifier << " : "
             //    << "*" << relName << ") {\n";
             // iterate over each part
             out << "for (auto it = part.begin(); it < part.end(); ++it) {\n";

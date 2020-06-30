@@ -165,8 +165,15 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>("!" + relName));
             }
+        }
+    }
+
+    // visit all body constraints and add to info clause head
+    for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
+        auto lit = originalClause.getBodyLiterals()[i];
+
+        if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
             // for a constraint, add the constraint symbol and LHS and RHS
-        } else if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
             std::string constraintDescription = toBinaryConstraintSymbol(con->getOperator());
 
             constraintDescription.append("," + getArgInfo(con->getLHS()));

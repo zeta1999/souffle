@@ -1299,8 +1299,22 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
 /** make a subroutine to search for subproofs */
 std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstClause& clause) {
-    // make intermediate clause with constraints
-    std::unique_ptr<AstClause> intermediateClause(clause.clone());
+    auto intermediateClause =
+            std::make_unique<AstClause>(std::unique_ptr<AstAtom>(clause.getHead()->clone()));
+
+    // create a clone where all the constraints are moved to the end
+    for (auto bodyLit : clause.getBodyLiterals()) {
+        if (dynamic_cast<AstConstraint*>(bodyLit) == nullptr) {
+            intermediateClause->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
+        }
+    }
+
+    // now add all constraints
+    for (auto bodyLit : clause.getBodyLiterals()) {
+        if (dynamic_cast<AstConstraint*>(bodyLit) != nullptr) {
+            intermediateClause->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
+        }
+    }
 
     // name unnamed variables
     nameUnnamedVariables(intermediateClause.get());

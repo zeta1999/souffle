@@ -1304,16 +1304,15 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
 
     // create a clone where all the constraints are moved to the end
     for (auto bodyLit : clause.getBodyLiterals()) {
+        // first add all the things that are not constraints
         if (dynamic_cast<AstConstraint*>(bodyLit) == nullptr) {
             intermediateClause->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
         }
     }
 
     // now add all constraints
-    for (auto bodyLit : clause.getBodyLiterals()) {
-        if (dynamic_cast<AstConstraint*>(bodyLit) != nullptr) {
-            intermediateClause->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
-        }
+    for (auto bodyLit : getBodyLiterals<AstConstraint>(clause)) {
+        intermediateClause->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
     }
 
     // name unnamed variables
@@ -1400,16 +1399,15 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
 
     // create a clone where all the constraints are moved to the end
     for (auto bodyLit : clause.getBodyLiterals()) {
+        // first add all the things that are not constraints
         if (dynamic_cast<AstConstraint*>(bodyLit) == nullptr) {
             clauseReplacedAggregates->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
         }
     }
 
     // now add all constraints
-    for (auto bodyLit : clause.getBodyLiterals()) {
-        if (dynamic_cast<AstConstraint*>(bodyLit) != nullptr) {
-            clauseReplacedAggregates->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
-        }
+    for (auto bodyLit : getBodyLiterals<AstConstraint>(clause)) {
+        clauseReplacedAggregates->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
     }
 
     int aggNumber = 0;

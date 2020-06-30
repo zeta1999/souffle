@@ -22,20 +22,20 @@
 
 #include <map>
 #include <ostream>
-#include <string>
-#include <vector>
-#include <variant>
-#include <stack>
 #include <queue>
+#include <stack>
+#include <string>
+#include <variant>
+#include <vector>
 
 namespace souffle {
 
 class WriteStreamJSON : public WriteStream {
 protected:
     WriteStreamJSON(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
-                    const RecordTable& recordTable)
-        : WriteStream(rwOperation, symbolTable, recordTable),
-          beautify(getOr(rwOperation, "beautify", "false") == "true"){};
+            const RecordTable& recordTable)
+            : WriteStream(rwOperation, symbolTable, recordTable),
+              beautify(getOr(rwOperation, "beautify", "false") == "true"){};
 
     const bool beautify;
 
@@ -58,10 +58,10 @@ protected:
         using ValueTuple = std::pair<const std::string, const RamDomain>;
         std::stack<std::variant<ValueTuple, std::string>> worklist;
         worklist.push(std::make_pair(name, value));
-        
+
         // the Json11 output is not tail recursive, therefore highly inefficient for recursive record
         // in addition the JSON object is immutable, so has memory overhead
-        while(!worklist.empty()) {
+        while (!worklist.empty()) {
             std::variant<ValueTuple, std::string> curr = worklist.top();
             worklist.pop();
 
@@ -70,14 +70,14 @@ protected:
                 continue;
             }
 
-            const std::string& currType = std::get<ValueTuple>(curr).first;            
+            const std::string& currType = std::get<ValueTuple>(curr).first;
             const RamDomain currValue = std::get<ValueTuple>(curr).second;
             assert(currType.length() > 2 && "Invalid type length");
             switch (currType[0]) {
                 // since some strings may need to be escaped, we use dump here
                 case 's': destination << Json(symbolTable.unsafeResolve(currValue)).dump(); break;
                 case 'i': destination << currValue; break;
-                case 'u': destination << (int) ramBitCast<RamUnsigned>(currValue); break;
+                case 'u': destination << (int)ramBitCast<RamUnsigned>(currValue); break;
                 case 'f': destination << ramBitCast<RamFloat>(currValue); break;
                 case 'r': {
                     auto&& recordInfo = types["records"][currType];
@@ -90,41 +90,40 @@ protected:
                     auto&& recordTypes = recordInfo["types"];
                     const size_t recordArity = recordInfo["arity"].long_value();
                     const RamDomain* tuplePtr = recordTable.unpack(currValue, recordArity);
-                    worklist.push("]");              
-                    for (auto i = (long long) (recordArity - 1); i >= 0; --i) { 
-                        if (i != (long long) (recordArity - 1)) {
+                    worklist.push("]");
+                    for (auto i = (long long)(recordArity - 1); i >= 0; --i) {
+                        if (i != (long long)(recordArity - 1)) {
                             worklist.push(", ");
                         }
                         const std::string& recordType = recordTypes[i].string_value();
                         const RamDomain recordValue = tuplePtr[i];
-                        worklist.push(std::make_pair(recordType, recordValue));         
+                        worklist.push(std::make_pair(recordType, recordValue));
                     }
 
                     worklist.push("[");
                     break;
-                    }
+                }
                 default: fatal("unsupported type attribute: `%c`", currType[0]);
             }
         }
     }
-
 };
 
 class WriteFileJSON : public WriteStreamJSON {
 public:
     WriteFileJSON(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
-                  const RecordTable& recordTable)
-        : WriteStreamJSON(rwOperation, symbolTable, recordTable), isFirst(true),
-          file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {
-              file << "[";
-          }
+            const RecordTable& recordTable)
+            : WriteStreamJSON(rwOperation, symbolTable, recordTable), isFirst(true),
+              file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {
+        file << "[";
+    }
 
     ~WriteFileJSON() override {
         file << "]\n";
         file.close();
     }
 
-protected:    
+protected:
     bool isFirst;
     std::ofstream file;
 
@@ -137,7 +136,7 @@ protected:
             file << ",\n";
         } else {
             isFirst = false;
-        }       
+        }
         writeNextTupleJSON(file, tuple);
     }
 };
@@ -147,8 +146,8 @@ public:
     WriteCoutJSON(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
             const RecordTable& recordTable)
             : WriteStreamJSON(rwOperation, symbolTable, recordTable), isFirst(true) {
-                std::cout << "[";
-            }
+        std::cout << "[";
+    }
 
     ~WriteCoutJSON() override {
         std::cout << "]\n";
@@ -200,4 +199,4 @@ public:
 
     ~WriteCoutJSONFactory() override = default;
 };
-} 
+}  // namespace souffle

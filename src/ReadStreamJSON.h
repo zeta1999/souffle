@@ -21,21 +21,20 @@
 #include "utility/FileUtil.h"
 #include "utility/StringUtil.h"
 
-#include <fstream>
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <fstream>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <queue>
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <vector>
-#include <sstream>
-#include <queue>
 #include <tuple>
+#include <vector>
 
 namespace souffle {
 class RecordTable;
@@ -44,8 +43,7 @@ class ReadStreamJSON : public ReadStream {
 public:
     ReadStreamJSON(std::istream& file, const std::map<std::string, std::string>& rwOperation,
             SymbolTable& symbolTable, RecordTable& recordTable)
-            : ReadStream(rwOperation, symbolTable, recordTable),
-              file(file), pos(0), isInitialized(false){}
+            : ReadStream(rwOperation, symbolTable, recordTable), file(file), pos(0), isInitialized(false) {}
 
 protected:
     std::istream& file;
@@ -55,9 +53,9 @@ protected:
     std::unique_ptr<RamDomain[]> readNextTuple() override {
         // for some reasons we cannot initalized our json objects in constructor
         // otherwise it will segfault, so we initialize in the first call
-        if (!isInitialized) {                 
+        if (!isInitialized) {
             isInitialized = true;
-            std::string error = ""; 
+            std::string error = "";
             std::string source(std::istreambuf_iterator<char>(file), {});
 
             jsonSource = Json::parse(source, error);
@@ -116,7 +114,7 @@ protected:
 
     RamDomain readNextElement(const Json& source, const std::string& recordTypeName) {
         auto&& recordInfo = types["records"][recordTypeName];
-        
+
         if (recordInfo.is_null()) {
             throw std::invalid_argument("Missing record type information: " + recordTypeName);
         }
@@ -158,7 +156,6 @@ protected:
 
         return recordTable.pack(recordValues.data(), recordValues.size());
     }
-
 };
 
 class ReadFileJSON : public ReadStreamJSON {
@@ -212,4 +209,4 @@ public:
 
     ~ReadFileJSONFactory() override = default;
 };
-}
+}  // namespace souffle

@@ -17,10 +17,10 @@
 #include "RamTypes.h"
 #include "ReadStream.h"
 #include "ReadStreamCSV.h"
+#include "ReadStreamJSON.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
 #include "WriteStreamCSV.h"
-#include "ReadStreamJSON.h"
 #include "WriteStreamJSON.h"
 
 #ifdef USE_SQLITE

@@ -13,7 +13,7 @@ Rule(0).
 
 .decl neg(x:number)
 neg(121).
- 
+
 .decl Patient(SSN: number, ID: number)
 .input Patient
 

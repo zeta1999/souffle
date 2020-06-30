@@ -1001,6 +1001,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             auto ctxName = "READ_OP_CONTEXT(" + synthesiser.getOpContextName(rel) + ")";
             auto identifier = aggregate.getTupleId();
 
+            assert(aggregate.getTupleId() == 0 && "not outer-most loop");
+            assert(!preambleIssued && "only first loop can be made parallel");
+            preambleIssued = true;
+
             // declare environment variable
             out << "Tuple<RamDomain,1> env" << identifier << ";\n";
 
@@ -1009,6 +1013,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
+                out << "PARALLEL_START;\n";
+                out << preamble.str();
                 visitTupleOperation(aggregate, out);
                 PRINT_END_COMMENT(out);
                 return;
@@ -1054,13 +1060,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             if (aggregate.getFunction() == AggregateOp::MEAN) {
                 out << "std::pair<RamFloat, RamFloat> accumulateMean = {0, 0};\n";
             }
-
-            assert(aggregate.getTupleId() == 0 && "not outer-most loop");
-
-            assert(rel.getArity() > 0 && "AstTranslator failed/no parallel scans for nullaries");
-
-            assert(!preambleIssued && "only first loop can be made parallel");
-            preambleIssued = true;
 
             // create a partitioning of the relation to iterate over simeltaneously
             out << "auto part = " << relName << "->partition();\n";

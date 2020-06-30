@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2020, The Souffle Developers. All rights reserved
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -35,7 +35,7 @@ protected:
     WriteStreamJSON(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
                     const RecordTable& recordTable)
         : WriteStream(rwOperation, symbolTable, recordTable),
-          beautify(getOr(rwOperation, "beautify", "false") == "ture"){};
+          beautify(getOr(rwOperation, "beautify", "false") == "true"){};
 
     const bool beautify;
 
@@ -73,9 +73,6 @@ protected:
             const std::string& currType = std::get<ValueTuple>(curr).first;            
             const RamDomain currValue = std::get<ValueTuple>(curr).second;
             assert(currType.length() > 2 && "Invalid type length");
-            // the first two char is attribute char + ':', ignore them
-            // const char* currName = currType.c_str();
-            // destination << Json(currName + 2).dump().c_str() << ": ";
             switch (currType[0]) {
                 // since some strings may need to be escaped, we use dump here
                 case 's': destination << Json(symbolTable.unsafeResolve(currValue)).dump(); break;
@@ -85,7 +82,7 @@ protected:
                 case 'r': {
                     auto&& recordInfo = types["records"][currType];
                     assert(!recordInfo.is_null() && "Missing record type information");
-                    if ((int) currValue == 0) {
+                    if (currValue == 0) {
                         destination << "null";
                         break;
                     }
@@ -94,7 +91,7 @@ protected:
                     const size_t recordArity = recordInfo["arity"].long_value();
                     const RamDomain* tuplePtr = recordTable.unpack(currValue, recordArity);
                     worklist.push("]");              
-                    for (long long i = (long long) (recordArity - 1); i >= 0; --i) { 
+                    for (auto i = (long long) (recordArity - 1); i >= 0; --i) { 
                         if (i != (long long) (recordArity - 1)) {
                             worklist.push(", ");
                         }

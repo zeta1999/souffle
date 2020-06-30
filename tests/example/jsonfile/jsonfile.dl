@@ -6,11 +6,11 @@
 A(nil).
 A([1,nil]).
 A([2,[3,nil]]).
-.output A(IO=jsonfile,filename="A")
+.output A(IO=jsonfile,filename="A.json")
 
 .type list = [x:number, y:list]
 .decl B(a:number, b:list)
 
 B(1,[1,[2,[3,nil]]]).
 B(4,nil).
-.output B(IO=jsonfile,filename="B")
+.output B(IO=jsonfile,filename="B.json")

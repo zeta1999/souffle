@@ -33,6 +33,7 @@
 #include "RelationTag.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
+#include "utility/StringUtil.h"
 #include "utility/tinyformat.h"
 #include <algorithm>
 #include <cassert>
@@ -48,15 +49,9 @@ namespace souffle {
 /**
  * Helper functions
  */
-const std::string identifierToString(const AstQualifiedName& name) {
-    std::stringstream ss;
-    ss << name;
-    return ss.str();
-}
-
 inline AstQualifiedName makeRelationName(
         const AstQualifiedName& orig, const std::string& type, int num = -1) {
-    AstQualifiedName newName(identifierToString(orig));
+    AstQualifiedName newName(toString(orig));
     newName.append(type);
     if (num != -1) {
         newName.append((const std::string&)std::to_string(num));
@@ -95,13 +90,9 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     int aggregateNumber = 0;
     auto getArgInfo = [&](AstArgument* arg) -> std::string {
         if (auto* var = dynamic_cast<AstVariable*>(arg)) {
-            std::stringstream varName;
-            varName << *var;
-            return varName.str();
+            return toString(*var);
         } else if (auto* constant = dynamic_cast<AstConstant*>(arg)) {
-            std::stringstream constName;
-            constName << *constant;
-            return constName.str();
+            return toString(*constant);
         }
         if (nullptr != dynamic_cast<AstUnnamedVariable*>(arg)) {
             return "_";
@@ -128,7 +119,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
     // add an attribute to infoRelation for the head of clause
     infoRelation->addAttribute(
             std::make_unique<AstAttribute>(std::string("head_vars"), AstQualifiedName("symbol")));
-    infoClauseHead->addArgument(std::make_unique<AstStringConstant>(headVariableString.str()));
+    infoClauseHead->addArgument(std::make_unique<AstStringConstant>(toString(join(headVariables, ","))));
 
     // visit all body literals and add to info clause head
     for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
@@ -150,7 +141,7 @@ std::unique_ptr<AstRelation> makeInfoRelation(
         }
 
         if (atom != nullptr) {
-            std::string relName = identifierToString(atom->getQualifiedName());
+            std::string relName = toString(atom->getQualifiedName());
 
             // for an atom, add its name and variables (converting aggregates to variables)
             if (dynamic_cast<AstAtom*>(lit) != nullptr) {
@@ -165,8 +156,15 @@ std::unique_ptr<AstRelation> makeInfoRelation(
             } else if (dynamic_cast<AstNegation*>(lit) != nullptr) {
                 infoClauseHead->addArgument(std::make_unique<AstStringConstant>("!" + relName));
             }
+        }
+    }
+
+    // visit all body constraints and add to info clause head
+    for (size_t i = 0; i < originalClause.getBodyLiterals().size(); i++) {
+        auto lit = originalClause.getBodyLiterals()[i];
+
+        if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
             // for a constraint, add the constraint symbol and LHS and RHS
-        } else if (auto con = dynamic_cast<AstBinaryConstraint*>(lit)) {
             std::string constraintDescription = toBinaryConstraintSymbol(con->getOperator());
 
             constraintDescription.append("," + getArgInfo(con->getLHS()));
@@ -176,12 +174,8 @@ std::unique_ptr<AstRelation> makeInfoRelation(
         }
     }
 
-    // generate and add clause representation
-    std::stringstream ss;
-    ss << originalClause;
-
     infoRelation->addAttribute(std::make_unique<AstAttribute>("clause_repr", AstQualifiedName("symbol")));
-    infoClauseHead->addArgument(std::make_unique<AstStringConstant>(ss.str()));
+    infoClauseHead->addArgument(std::make_unique<AstStringConstant>(toString(originalClause)));
 
     // set clause head and add clause to info relation
     infoClause->setHead(std::unique_ptr<AstAtom>(infoClauseHead));

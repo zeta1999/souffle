@@ -1155,7 +1155,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                 }
             } else if (const RamIndexAggregate* indexAggregate =
                                dynamic_cast<RamIndexAggregate*>(node.get())) {
-                if (aggregate->getTupleId() == 0) {
+                if (indexAggregate->getTupleId() == 0) {
                     changed = true;
                     const RamRelation& rel = indexAggregate->getRelation();
                     RamPattern queryPattern = clone(indexAggregate->getRangePattern());

@@ -1299,8 +1299,21 @@ std::unique_ptr<RamStatement> AstTranslator::translateRecursiveRelation(
 
 /** make a subroutine to search for subproofs */
 std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstClause& clause) {
-    // make intermediate clause with constraints
-    std::unique_ptr<AstClause> intermediateClause(clause.clone());
+    auto intermediateClause =
+            std::make_unique<AstClause>(std::unique_ptr<AstAtom>(clause.getHead()->clone()));
+
+    // create a clone where all the constraints are moved to the end
+    for (auto bodyLit : clause.getBodyLiterals()) {
+        // first add all the things that are not constraints
+        if (dynamic_cast<AstConstraint*>(bodyLit) == nullptr) {
+            intermediateClause->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
+        }
+    }
+
+    // now add all constraints
+    for (auto bodyLit : getBodyLiterals<AstConstraint>(clause)) {
+        intermediateClause->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
+    }
 
     // name unnamed variables
     nameUnnamedVariables(intermediateClause.get());
@@ -1380,8 +1393,22 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
     //   return 0
     // ...
 
-    // clone clause for mutation
-    auto clauseReplacedAggregates = std::unique_ptr<AstClause>(clause.clone());
+    // clone clause for mutation, rearranging constraints to be at the end
+    auto clauseReplacedAggregates =
+            std::make_unique<AstClause>(std::unique_ptr<AstAtom>(clause.getHead()->clone()));
+
+    // create a clone where all the constraints are moved to the end
+    for (auto bodyLit : clause.getBodyLiterals()) {
+        // first add all the things that are not constraints
+        if (dynamic_cast<AstConstraint*>(bodyLit) == nullptr) {
+            clauseReplacedAggregates->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
+        }
+    }
+
+    // now add all constraints
+    for (auto bodyLit : getBodyLiterals<AstConstraint>(clause)) {
+        clauseReplacedAggregates->addToBody(std::unique_ptr<AstLiteral>(bodyLit->clone()));
+    }
 
     int aggNumber = 0;
     struct AggregatesToVariables : public AstNodeMapper {
@@ -1502,6 +1529,55 @@ std::unique_ptr<RamStatement> AstTranslator::makeNegationSubproofSubroutine(cons
             appendStmt(searchSequence,
                     std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(negativeExistenceCheck),
                             std::make_unique<RamSubroutineReturn>(std::move(returnFalse)))));
+        } else if (auto neg = dynamic_cast<AstNegation*>(lit)) {
+            auto atom = neg->getAtom();
+
+            size_t auxiliaryArity = auxArityAnalysis->getArity(atom);
+            // get a RamRelationReference
+            auto relRef = translateRelation(atom);
+            // construct a query
+            std::vector<std::unique_ptr<RamExpression>> query;
+
+            // translate variables to subroutine arguments
+            VariablesToArguments varsToArgs(uniqueVariables);
+            atom->apply(varsToArgs);
+
+            auto atomArgs = atom->getArguments();
+            // add each value (subroutine argument) to the search query
+            for (size_t i = 0; i < atom->getArity() - auxiliaryArity; i++) {
+                auto arg = atomArgs[i];
+                query.push_back(translateValue(arg, ValueIndex()));
+            }
+
+            // fill up query with nullptrs for the provenance columns
+            for (size_t i = 0; i < auxiliaryArity; i++) {
+                query.push_back(std::make_unique<RamUndefValue>());
+            }
+
+            // ensure the length of query tuple is correct
+            assert(query.size() == atom->getArity() && "wrong query tuple size");
+
+            // create existence checks to check if the tuple exists or not
+            auto existenceCheck = std::make_unique<RamExistenceCheck>(
+                    std::unique_ptr<RamRelationReference>(relRef->clone()), std::move(query));
+            auto negativeExistenceCheck = std::make_unique<RamNegation>(
+                    std::unique_ptr<RamExistenceCheck>(existenceCheck->clone()));
+
+            // return true if the tuple exists
+            std::vector<std::unique_ptr<RamExpression>> returnTrue;
+            returnTrue.push_back(std::make_unique<RamSignedConstant>(1));
+
+            // return false if the tuple exists
+            std::vector<std::unique_ptr<RamExpression>> returnFalse;
+            returnFalse.push_back(std::make_unique<RamSignedConstant>(0));
+
+            // create a RamQuery to return true/false
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(existenceCheck),
+                            std::make_unique<RamSubroutineReturn>(std::move(returnFalse)))));
+            appendStmt(searchSequence,
+                    std::make_unique<RamQuery>(std::make_unique<RamFilter>(std::move(negativeExistenceCheck),
+                            std::make_unique<RamSubroutineReturn>(std::move(returnTrue)))));
 
         } else if (auto con = dynamic_cast<AstConstraint*>(lit)) {
             VariablesToArguments varsToArgs(uniqueVariables);

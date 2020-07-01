@@ -831,7 +831,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
         void visitParallelIndexAggregate(
                 const RamParallelIndexAggregate& aggregate, std::ostream& out) override {
-            // TODO
+            // TODO (rdowavic): Implement parallel form
+            assert(aggregate.getTupleId() == 0 && "not outer-most loop");
+            assert(!preambleIssued && "only first loop can be made parallel");
+            preambleIssued = true;
+            out << preamble.str();
+            out << "PARALLEL_START;\n";
             visitIndexAggregate(aggregate, out);
         }
         void visitIndexAggregate(const RamIndexAggregate& aggregate, std::ostream& out) override {

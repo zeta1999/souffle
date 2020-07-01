@@ -1085,10 +1085,12 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case TypeAttribute::Symbol:
                 case TypeAttribute::Record: type = "RamDomain"; break;
             }
-            out << type << " res" << identifier << " = " << init << ";\n";
+            out << type << " res0 = " << init << ";\n";
 
+            std::string sharedVariable = "res0";
             if (aggregate.getFunction() == AggregateOp::MEAN) {
-                out << "std::pair<RamFloat, RamFloat> accumulateMean = {0, 0};\n";
+                out << type << " res1 = " << init << ";\n";
+                sharedVariable += ", res1";
             }
 
             // create a partitioning of the relation to iterate over simeltaneously
@@ -1096,7 +1098,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "PARALLEL_START;\n";
             out << preamble.str();
             // pragma statement
-            out << "#pragma omp for reduction(" << op << ":res" << identifier << ")\n";
+            out << "#pragma omp for reduction(" << op << ":" << sharedVariable << ")\n";
             // check whether there is an index to use
             // out << "for(const auto& env" << identifier << " : "
             //    << "*" << relName << ") {\n";
@@ -1116,24 +1118,22 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::FMIN:
                 case AggregateOp::UMIN:
                 case AggregateOp::MIN:
-                    out << "res" << identifier << " = std::min(res" << identifier << ",ramBitCast<" << type
-                        << ">(";
+                    out << "res" << identifier << " = std::min(res0, ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
                 case AggregateOp::FMAX:
                 case AggregateOp::UMAX:
                 case AggregateOp::MAX:
-                    out << "res" << identifier << " = std::max(res" << identifier << ",ramBitCast<" << type
-                        << ">(";
+                    out << "res" << identifier << " = std::max(res0, ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
-                case AggregateOp::COUNT: out << "++res" << identifier << "\n;"; break;
+                case AggregateOp::COUNT: out << "++res0\n;"; break;
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
                 case AggregateOp::SUM:
-                    out << "res" << identifier << " += "
+                    out << "res0 += "
                         << "ramBitCast<" << type << ">(";
                     ;
                     visit(aggregate.getExpression(), out);
@@ -1141,11 +1141,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
 
                 case AggregateOp::MEAN:
-                    out << "accumulateMean.first += "
+                    out << "res0 += "
                         << "ramBitCast<RamFloat>(";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
-                    out << "++accumulateMean.second;\n";
+                    out << "++res1;\n";
                     break;
             }
 
@@ -1157,11 +1157,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "}\n";
 
             if (aggregate.getFunction() == AggregateOp::MEAN) {
-                out << "res" << identifier << " = accumulateMean.first / accumulateMean.second;\n";
+                out << "res0 = res0 / res1;\n";
             }
 
             // write result into environment tuple
-            out << "env" << identifier << "[0] = ramBitCast(res" << identifier << ");\n";
+            out << "env" << identifier << "[0] = ramBitCast(res0);\n";
 
             // check whether there exists a min/max first before next loop
             out << "if (shouldRunNested) {\n";

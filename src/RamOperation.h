@@ -884,7 +884,7 @@ public:
             : RamAggregate(std::move(nested), fun, std::move(relRef), std::move(expression),
                       std::move(condition), ident) {}
 
-    RamAggregate* clone() const override {
+    RamParallelAggregate* clone() const override {
         return new RamParallelAggregate(souffle::clone(&getOperation()), function,
                 souffle::clone(relationRef), souffle::clone(expression), souffle::clone(condition),
                 identifier);
@@ -979,7 +979,7 @@ public:
             : RamIndexAggregate(std::move(nested), fun, std::move(relRef), std::move(expression),
                       std::move(condition), std::move(queryPattern), ident) {}
 
-    RamIndexAggregate* clone() const override {
+    RamParallelIndexAggregate* clone() const override {
         RamPattern pattern;
         for (const auto& i : queryPattern.first) {
             pattern.first.emplace_back(i->clone());
@@ -987,10 +987,9 @@ public:
         for (const auto& i : queryPattern.second) {
             pattern.second.emplace_back(i->clone());
         }
-        return new RamIndexAggregate(souffle::clone(&getOperation()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                std::unique_ptr<RamExpression>(expression->clone()),
-                std::unique_ptr<RamCondition>(condition->clone()), std::move(pattern), getTupleId());
+        return new RamParallelIndexAggregate(souffle::clone(&getOperation()), function,
+                souffle::clone(relationRef), souffle::clone(expression), souffle::clone(condition),
+                std::move(pattern), getTupleId());
     }
 
 protected:

@@ -331,7 +331,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
 
             if (isParallel) {
-                out << "PARALLEL_END;\n";  // end parallel
+                out << "PARALLEL_END\n";  // end parallel
             }
 
             out << "}\n";
@@ -532,7 +532,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
 
             out << "auto part = " << relName << "->partition();\n";
-            out << "PARALLEL_START;\n";
+            out << "PARALLEL_START\n";
             out << preamble.str();
             out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
             out << "try{\n";
@@ -606,7 +606,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             PRINT_BEGIN_COMMENT(out);
 
             out << "auto part = " << relName << "->partition();\n";
-            out << "PARALLEL_START;\n";
+            out << "PARALLEL_START\n";
             out << preamble.str();
             out << "pfor(auto it = part.begin(); it<part.end();++it){\n";
             out << "try{\n";
@@ -693,7 +693,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // TODO (b-scholz): context may be missing here?
                 << "lowerUpperRange_" << keys << "(lower,upper);\n";
             out << "auto part = range.partition();\n";
-            out << "PARALLEL_START;\n";
+            out << "PARALLEL_START\n";
             out << preamble.str();
             out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
             out << "try{\n";
@@ -780,7 +780,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // TODO (b-scholz): context may be missing here?
                 << "lowerUpperRange_" << keys << "(lower, upper);\n";
             out << "auto part = range.partition();\n";
-            out << "PARALLEL_START;\n";
+            out << "PARALLEL_START\n";
             out << preamble.str();
             out << "pfor(auto it = part.begin(); it<part.end(); ++it) { \n";
             out << "try{";

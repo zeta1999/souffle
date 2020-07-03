@@ -785,7 +785,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto pStream = rel.partitionScan(numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 auto viewInfo = preamble->getViewInfoForNested();
                 for (const auto& info : viewInfo) {
@@ -799,7 +798,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
             return true;
         ESAC(ParallelScan)
 
@@ -853,7 +852,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 auto viewInfo = preamble->getViewInfoForNested();
                 for (const auto& info : viewInfo) {
@@ -867,7 +865,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
 
             return true;
         ESAC(ParallelIndexScan)
@@ -894,7 +892,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto pStream = rel.partitionScan(numOfThreads);
             auto viewInfo = preamble->getViewInfoForNested();
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 for (const auto& info : viewInfo) {
                     newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
@@ -908,7 +905,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
             return true;
         ESAC(ParallelChoice)
 
@@ -966,7 +963,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 for (const auto& info : viewInfo) {
                     newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
@@ -980,7 +976,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
 
             return true;
         ESAC(ParallelIndexChoice)

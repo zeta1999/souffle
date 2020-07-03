@@ -182,6 +182,7 @@ souffle_sources = \
         RamVisitor.h                                       \
         ReadStream.h                                       \
         ReadStreamCSV.h                                    \
+        ReadStreamJSON.h                                   \
         RecordTable.h                                      \
         RelationTag.h                                      \
         ReorderLiteralsTransformer.cpp                     \
@@ -199,6 +200,7 @@ souffle_sources = \
         Util.cpp                                           \
         WriteStream.h                                      \
         WriteStreamCSV.h                                   \
+        WriteStreamJSON.h                                  \
         parser.cc                                          \
         scanner.cc                                         \
         parser.hh                                          \
@@ -248,6 +250,7 @@ soufflepublic_HEADERS = \
         RamTypes.h                                         \
         ReadStream.h                                       \
         ReadStreamCSV.h                                    \
+        ReadStreamJSON.h                                   \
         RecordTable.h                                      \
         SerialisationStream.h                              \
         SignalHandler.h                                    \
@@ -257,6 +260,7 @@ soufflepublic_HEADERS = \
         UnionFind.h                                        \
         WriteStream.h                                      \
         WriteStreamCSV.h                                   \
+        WriteStreamJSON.h                                  \
         json11.h                                           \
         $(souffle_utility_sources)                         \
         $(libz_sources)                                    \

@@ -576,18 +576,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
             ffi_call(&cif, fn, &rc, values);
 
-            RamDomain result;
             switch (cur.getReturnType()) {
-                case TypeAttribute::Signed: result = static_cast<RamDomain>(rc); break;
-                case TypeAttribute::Symbol:
-                    result = getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
-                    break;
-                case TypeAttribute::Unsigned: result = ramBitCast(static_cast<RamUnsigned>(rc)); break;
-                case TypeAttribute::Float: result = ramBitCast(static_cast<RamFloat>(rc)); break;
+                case TypeAttribute::Signed: return static_cast<RamDomain>(rc);
+                case TypeAttribute::Symbol: return getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
+
+                case TypeAttribute::Unsigned: return ramBitCast(static_cast<RamUnsigned>(rc));
+                case TypeAttribute::Float: return ramBitCast(static_cast<RamFloat>(rc));
                 case TypeAttribute::Record: fatal("Not implemented");
             }
+            fatal("Unsupported user defined operator");
 
-            return result;
         ESAC(UserDefinedOperator)
 
         CASE(PackRecord)

@@ -252,7 +252,42 @@ bool isValidPermutation(
 /**
  * Check whether two clauses are bijectively equivalent.
  */
-bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
+bool areBijectivelyEquivalent(const AstClause* leftClause, const AstClause* rightClause) {
+    auto* left = leftClause->clone();
+    auto* right = rightClause->clone();
+
+    struct atomise : public AstNodeMapper {
+        atomise() = default;
+
+        std::unique_ptr<AstNode> operator()(std::unique_ptr<AstNode> node) const override {
+            node->apply(*this);
+            if (auto* neg = dynamic_cast<AstNegation*>(node.get())) {
+                auto name = AstQualifiedName(neg->getAtom()->getQualifiedName());
+                name.prepend("@negated");
+                auto atom = std::unique_ptr<AstAtom>(neg->getAtom()->clone());
+                atom->setQualifiedName(name);
+                return atom;
+            } else if (auto* bc = dynamic_cast<AstBinaryConstraint*>(node.get())) {
+                AstQualifiedName name(toBinaryConstraintSymbol(bc->getOperator()));
+                name.prepend("@operator");
+                auto atom = std::make_unique<AstAtom>(name);
+                atom->setQualifiedName(name);
+                atom->addArgument(std::unique_ptr<AstArgument>(bc->getLHS()->clone()));
+                atom->addArgument(std::unique_ptr<AstArgument>(bc->getRHS()->clone()));
+                return atom;
+            } else if (auto* constant = dynamic_cast<AstConstant*>(node.get())) {
+                std::stringstream name;
+                name << "@constant_" << *constant;
+                return std::make_unique<AstVariable>(name.str());
+            }
+            return node;
+        }
+    };
+
+    atomise update;
+    left->apply(update);
+    right->apply(update);
+
     // only check bijective equivalence for a subset of the possible clauses
     auto isValidClause = [&](const AstClause* clause) {
         // check that all body literals are atoms

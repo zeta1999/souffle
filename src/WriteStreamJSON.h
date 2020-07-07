@@ -114,7 +114,7 @@ public:
     WriteFileJSON(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
             const RecordTable& recordTable)
             : WriteStreamJSON(rwOperation, symbolTable, recordTable), isFirst(true),
-              file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {
+              file(getFileName(rwOperation), std::ios::out | std::ios::binary) {
         file << "[";
     }
 
@@ -138,6 +138,10 @@ protected:
             isFirst = false;
         }
         writeNextTupleJSON(file, tuple);
+    }
+
+    static std::string getFileName(const std::map<std::string, std::string>& rwOperation) {
+        return getOr(rwOperation, "filename", rwOperation.at("name") + ".json");
     }
 };
 

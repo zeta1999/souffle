@@ -140,8 +140,19 @@ protected:
         writeNextTupleJSON(file, tuple);
     }
 
+    /**
+     * Return given filename or construct from relation name.
+     * Default name is [configured path]/[relation name].json
+     *
+     * @param rwOperation map of IO configuration options
+     * @return input filename
+     */
     static std::string getFileName(const std::map<std::string, std::string>& rwOperation) {
-        return getOr(rwOperation, "filename", rwOperation.at("name") + ".json");
+        auto name = getOr(rwOperation, "filename", rwOperation.at("name") + ".json");
+        if (name.front() != '/') {
+            name = getOr(rwOperation, "fact-dir", ".") + "/" + name;
+        }
+        return name;
     }
 };
 

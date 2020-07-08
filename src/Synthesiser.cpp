@@ -225,8 +225,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::map<std::string, std::string> directiveMap(";
                 printDirectives(directives);
                 out << ");\n";
-                out << R"_(if (!inputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
-                out << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+                out << R"_(if (!inputDirectory.empty()) {)_";
+                out << R"_(directiveMap["fact-dir"] = inputDirectory;)_";
                 out << "}\n";
                 out << "IOSystem::getInstance().getReader(";
                 out << "directiveMap, symTable, recordTable";
@@ -240,8 +240,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "std::map<std::string, std::string> directiveMap(";
                 printDirectives(directives);
                 out << ");\n";
-                out << R"_(if (!outputDirectory.empty() && directiveMap["filename"].front() != '/') {)_";
-                out << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
+                out << R"_(if (!outputDirectory.empty()) {)_";
+                out << R"_(directiveMap["output-dir"] = outputDirectory;)_";
                 out << "}\n";
                 out << "IOSystem::getInstance().getWriter(";
                 out << "directiveMap, symTable, recordTable";
@@ -2014,8 +2014,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "std::atomic<RamDomain> ctr{};\n\n";
     os << "std::atomic<size_t> iter{};\n";
 
-    os << "void runFunction(std::string inputDirectory = \".\", "
-          "std::string outputDirectory = \".\", bool performIO = false) "
+    os << "void runFunction(std::string inputDirectory = \"\", "
+          "std::string outputDirectory = \"\", bool performIO = false) "
           "{\n";
 
     os << "this->inputDirectory = inputDirectory;\n";
@@ -2078,9 +2078,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";  // end of runFunction() method
 
     // add methods to run with and without performing IO (mainly for the interface)
-    os << "public:\nvoid run() override { runFunction(\".\", \".\", "
+    os << "public:\nvoid run() override { runFunction(\"\", \"\", "
           "false); }\n";
-    os << "public:\nvoid runAll(std::string inputDirectory = \".\", std::string outputDirectory = \".\") "
+    os << "public:\nvoid runAll(std::string inputDirectory = \"\", std::string outputDirectory = \"\") "
           "override { ";
     if (Global::config().has("live-profile")) {
         os << "std::thread profiler([]() { profile::Tui().runProf(); });\n";
@@ -2092,7 +2092,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "}\n";
     // issue printAll method
     os << "public:\n";
-    os << "void printAll(std::string outputDirectory = \".\") override {\n";
+    os << "void printAll(std::string outputDirectory = \"\") override {\n";
 
     // print directives as C++ initializers
     auto printDirectives = [&](const std::map<std::string, std::string>& registry) {
@@ -2114,9 +2114,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
         os << "std::map<std::string, std::string> directiveMap(";
         printDirectives(directive);
         os << ");\n";
-        os << R"_(if (!outputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-        os << "directiveMap[\"filename\"].front() != '/') {";
-        os << R"_(directiveMap["filename"] = outputDirectory + "/" + directiveMap["filename"];)_";
+        os << R"_(if (!outputDirectory.empty()) {)_";
+        os << R"_(directiveMap["output-dir"] = outputDirectory;)_";
         os << "}\n";
         os << "IOSystem::getInstance().getWriter(";
         os << "directiveMap, symTable, recordTable";
@@ -2128,16 +2127,15 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
 
     // issue loadAll method
     os << "public:\n";
-    os << "void loadAll(std::string inputDirectory = \".\") override {\n";
+    os << "void loadAll(std::string inputDirectory = \"\") override {\n";
 
     for (auto load : loadIOs) {
         os << "try {";
         os << "std::map<std::string, std::string> directiveMap(";
         printDirectives(load->getDirectives());
         os << ");\n";
-        os << R"_(if (!inputDirectory.empty() && directiveMap["IO"] == "file" && )_";
-        os << "directiveMap[\"filename\"].front() != '/') {";
-        os << R"_(directiveMap["filename"] = inputDirectory + "/" + directiveMap["filename"];)_";
+        os << R"_(if (!inputDirectory.empty()) {)_";
+        os << R"_(directiveMap["fact-dir"] = inputDirectory;)_";
         os << "}\n";
         os << "IOSystem::getInstance().getReader(";
         os << "directiveMap, symTable, recordTable";
@@ -2299,8 +2297,8 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     // parse arguments
     os << "souffle::CmdOptions opt(";
     os << "R\"(" << Global::config().get("") << ")\",\n";
-    os << "R\"(.)\",\n";
-    os << "R\"(.)\",\n";
+    os << "R\"()\",\n";
+    os << "R\"()\",\n";
     if (Global::config().has("profile")) {
         os << "true,\n";
         os << "R\"(" << Global::config().get("profile") << ")\",\n";

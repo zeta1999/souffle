@@ -72,7 +72,7 @@ public:
     WriteFileCSV(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
             const RecordTable& recordTable)
             : WriteStreamCSV(rwOperation, symbolTable, recordTable),
-              file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {
+              file(getFileName(rwOperation), std::ios::out | std::ios::binary) {
         if (getOr(rwOperation, "headers", "false") == "true") {
             file << rwOperation.at("attributeNames") << std::endl;
         }
@@ -89,6 +89,10 @@ protected:
 
     void writeNextTuple(const RamDomain* tuple) override {
         writeNextTupleCSV(file, tuple);
+    }
+
+    static std::string getFileName(const std::map<std::string, std::string>& rwOperation) {
+        return getOr(rwOperation, "filename", rwOperation.at("name") + ".csv");
     }
 };
 

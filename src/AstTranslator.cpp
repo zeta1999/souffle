@@ -100,14 +100,6 @@ size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
 
 void AstTranslator::translateDirectives(
         std::map<std::string, std::string>& directives, const AstRelation* rel) {
-    // set relation name correctly
-    directives["name"] = getRelationName(rel->getQualifiedName());
-
-    // set a default IO type of file and a default filename if not supplied
-    if (directives.find("IO") == directives.end()) {
-        directives["IO"] = "file";
-    }
-
     // Prepare type system information.
     std::string name = getRelationName(rel->getQualifiedName());
     std::vector<std::string> attributesTypes;
@@ -144,10 +136,6 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirective
         std::map<std::string, std::string> directives;
         for (const auto& currentPair : current->getDirectives()) {
             directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
-        }
-        directives["operation"] = "input";
-        if (Global::config().has("fact-dir")) {
-            directives["fact-dir"] = Global::config().get("fact-dir");
         }
         inputDirectives.push_back(directives);
     }
@@ -196,9 +184,6 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
             std::map<std::string, std::string> directives;
             for (const auto& currentPair : current->getDirectives()) {
                 directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
-            }
-            if (Global::config().has("output-dir")) {
-                directives["output-dir"] = Global::config().get("output-dir");
             }
             if (current->getType() == AstIoType::printsize) {
                 directives["operation"] = "printsize";

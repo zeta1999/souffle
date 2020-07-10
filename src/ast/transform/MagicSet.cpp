@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "ast/transforms/MagicSet.h"
+#include "ast/transform/MagicSet.h"
 #include "BinaryConstraintOps.h"
 #include "Global.h"
 #include "RamTypes.h"
@@ -27,7 +27,7 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
 #include "ast/analysis/AstIOTypeAnalysis.h"
-#include "ast/transforms/AstTransforms.h"
+#include "ast/transform/AstTransforms.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StringUtil.h"

@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "ast/transforms/AstSemanticChecker.h"
+#include "ast/transform/AstSemanticChecker.h"
 #include "AggregateOp.h"
 #include "BinaryConstraintOps.h"
 #include "ErrorReport.h"

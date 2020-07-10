@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "ast/transforms/AstComponentChecker.h"
+#include "ast/transform/AstComponentChecker.h"
 #include "ErrorReport.h"
 #include "RelationTag.h"
 #include "SrcLocation.h"

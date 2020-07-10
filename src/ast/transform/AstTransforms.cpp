@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "ast/transforms/AstTransforms.h"
+#include "ast/transform/AstTransforms.h"
 #include "AggregateOp.h"
 #include "BinaryConstraintOps.h"
 #include "ErrorReport.h"

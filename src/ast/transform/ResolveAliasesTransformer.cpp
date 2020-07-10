@@ -25,7 +25,7 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
 #include "ast/AstVisitor.h"
-#include "ast/transforms/AstTransforms.h"
+#include "ast/transform/AstTransforms.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"

@@ -25,7 +25,7 @@
 #include "ast/AstUtils.h"
 #include "ast/AstVisitor.h"
 #include "ast/analysis/AstProfileUse.h"
-#include "ast/transforms/AstTransforms.h"
+#include "ast/transform/AstTransforms.h"
 #include <algorithm>
 #include <cmath>
 #include <functional>

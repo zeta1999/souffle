@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "ast/transforms/AstPragmaChecker.h"
+#include "ast/transform/AstPragmaChecker.h"
 #include "Global.h"
 #include "ast/AstPragma.h"
 #include "ast/AstProgram.h"

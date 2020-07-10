@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "ast/transforms/DebugReporter.h"
+#include "ast/transform/DebugReporter.h"
 #include "DebugReport.h"
 #include "ast/AstProgram.h"
 #include "ast/AstTranslationUnit.h"

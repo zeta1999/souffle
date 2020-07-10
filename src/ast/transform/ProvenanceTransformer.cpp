@@ -30,7 +30,7 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
 #include "ast/analysis/AuxArityAnalysis.h"
-#include "ast/transforms/AstTransforms.h"
+#include "ast/transform/AstTransforms.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"

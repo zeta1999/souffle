@@ -100,31 +100,8 @@ souffle_sources = \
         LogStatement.h                                     \
         ParserDriver.cpp                                   \
         ParserDriver.h                                     \
-        ast/analysis/PrecedenceGraph.cpp                   \
-        ast/analysis/PrecedenceGraph.h                     \
         ProfileEvent.h                                     \
-        RamAnalysis.h                                      \
-        RamComplexityAnalysis.cpp                          \
-        RamComplexityAnalysis.h                            \
-        RamCondition.h                                     \
-        RamExpression.h                                    \
-        RamIndexAnalysis.cpp                               \
-        RamIndexAnalysis.h                                 \
-        RamLevelAnalysis.cpp                               \
-        RamLevelAnalysis.h                                 \
-        RamNode.h                                          \
-        RamOperation.h                                     \
-        RamProgram.h                                       \
-        RamRelation.h                                      \
-        RamStatement.h                                     \
-        RamTransformer.cpp                                 \
-        RamTransformer.h                                   \
-        RamTransforms.cpp                                  \
-        RamTransforms.h                                    \
-        RamTranslationUnit.h                               \
         RamTypes.h                                         \
-        RamUtils.h                                         \
-        RamVisitor.h                                       \
         ReadStream.h                                       \
         ReadStreamCSV.h                                    \
         ReadStreamJSON.h                                   \
@@ -170,6 +147,8 @@ souffle_sources = \
         ast/analysis/AstGroundAnalysis.h                   \
         ast/analysis/AstIOTypeAnalysis.cpp                 \
         ast/analysis/AstIOTypeAnalysis.h                   \
+        ast/analysis/AstProfileUse.cpp                     \
+        ast/analysis/AstProfileUse.h                       \
         ast/analysis/AstTypeAnalysis.cpp                   \
         ast/analysis/AstTypeAnalysis.h                     \
         ast/analysis/AstTypeEnvironmentAnalysis.cpp        \
@@ -178,32 +157,53 @@ souffle_sources = \
         ast/analysis/AuxArityAnalysis.h                    \
         ast/analysis/ComponentLookupAnalysis.cpp           \
         ast/analysis/ComponentLookupAnalysis.h             \
-        ast/analysis/AstProfileUse.cpp                     \
-        ast/analysis/AstProfileUse.h                       \
-        ast/transforms/AstComponentChecker.cpp             \
-        ast/transforms/AstComponentChecker.h               \
-        ast/transforms/AstPragmaChecker.cpp                \
-        ast/transforms/AstPragmaChecker.h                  \
-        ast/transforms/AstSemanticChecker.cpp              \
-        ast/transforms/AstSemanticChecker.h                \
-        ast/transforms/AstTransformer.cpp                  \
-        ast/transforms/AstTransformer.h                    \
-        ast/transforms/AstTransforms.cpp                   \
-        ast/transforms/AstTransforms.h                     \
-        ast/transforms/ComponentInstantiationTransformer.cpp \
-        ast/transforms/ComponentInstantiationTransformer.h \
-        ast/transforms/DebugReporter.cpp                   \
-        ast/transforms/DebugReporter.h                     \
-        ast/transforms/InlineRelationsTransformer.cpp      \
-        ast/transforms/MagicSet.cpp                        \
-        ast/transforms/MagicSet.h                          \
-        ast/transforms/MinimiseProgramTransformer.cpp      \
-        ast/transforms/ReorderLiteralsTransformer.cpp      \
-        ast/transforms/ResolveAliasesTransformer.cpp       \
-        ast/transforms/ProvenanceTransformer.cpp           \
+        ast/analysis/PrecedenceGraph.cpp                   \
+        ast/analysis/PrecedenceGraph.h                     \
+        ast/transform/AstComponentChecker.cpp              \
+        ast/transform/AstComponentChecker.h                \
+        ast/transform/AstPragmaChecker.cpp                 \
+        ast/transform/AstPragmaChecker.h                   \
+        ast/transform/AstSemanticChecker.cpp               \
+        ast/transform/AstSemanticChecker.h                 \
+        ast/transform/AstTransformer.cpp                   \
+        ast/transform/AstTransformer.h                     \
+        ast/transform/AstTransforms.cpp                    \
+        ast/transform/AstTransforms.h                      \
+        ast/transform/ComponentInstantiationTransformer.cpp  \
+        ast/transform/ComponentInstantiationTransformer.h  \
+        ast/transform/DebugReporter.cpp                    \
+        ast/transform/DebugReporter.h                      \
+        ast/transform/InlineRelationsTransformer.cpp       \
+        ast/transform/MagicSet.cpp                         \
+        ast/transform/MagicSet.h                           \
+        ast/transform/MinimiseProgramTransformer.cpp       \
+        ast/transform/ProvenanceTransformer.cpp            \
+        ast/transform/ReorderLiteralsTransformer.cpp       \
+        ast/transform/ResolveAliasesTransformer.cpp        \
         parser.cc                                          \
-        scanner.cc                                         \
         parser.hh                                          \
+        ram/RamCondition.h                                 \
+        ram/RamExpression.h                                \
+        ram/RamNode.h                                      \
+        ram/RamOperation.h                                 \
+        ram/RamProgram.h                                   \
+        ram/RamRelation.h                                  \
+        ram/RamStatement.h                                 \
+        ram/RamTranslationUnit.h                           \
+        ram/RamUtils.h                                     \
+        ram/RamVisitor.h                                   \
+        ram/analysis/RamAnalysis.h                         \
+        ram/analysis/RamComplexityAnalysis.cpp             \
+        ram/analysis/RamComplexityAnalysis.h               \
+        ram/analysis/RamIndexAnalysis.cpp                  \
+        ram/analysis/RamIndexAnalysis.h                    \
+        ram/analysis/RamLevelAnalysis.cpp                  \
+        ram/analysis/RamLevelAnalysis.h                    \
+        ram/transform/RamTransformer.cpp                   \
+        ram/transform/RamTransformer.h                     \
+        ram/transform/RamTransforms.cpp                    \
+        ram/transform/RamTransforms.h                      \
+        scanner.cc                                         \
         stack.hh                                           \
         $(sqlite_sources)                                  \
         $(libz_sources)                                    \

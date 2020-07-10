@@ -17,8 +17,8 @@
 #pragma once
 
 #include "FunctorOps.h"
-#include "RamNode.h"
 #include "RamTypes.h"
+#include "ram/RamNode.h"
 #include "utility/ContainerUtil.h"
 #include "utility/StreamUtil.h"
 #include <cassert>

@@ -19,9 +19,9 @@
 
 #include "DebugReport.h"
 #include "Global.h"
-#include "RamAnalysis.h"
-#include "RamProgram.h"
 #include "SymbolTable.h"
+#include "ram/RamProgram.h"
+#include "ram/analysis/RamAnalysis.h"
 #include <cassert>
 #include <iosfwd>
 #include <map>

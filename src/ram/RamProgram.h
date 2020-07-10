@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "RamNode.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
+#include "ram/RamNode.h"
+#include "ram/RamRelation.h"
+#include "ram/RamStatement.h"
 #include "utility/ContainerUtil.h"
 #include <cassert>
 #include <map>

@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "RamCondition.h"
-#include "RamExpression.h"
+#include "ram/RamCondition.h"
+#include "ram/RamExpression.h"
 #include <algorithm>
 #include <memory>
 #include <queue>

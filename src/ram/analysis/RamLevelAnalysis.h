@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "RamAnalysis.h"
+#include "ram/analysis/RamAnalysis.h"
 
 namespace souffle {
 class RamNode;

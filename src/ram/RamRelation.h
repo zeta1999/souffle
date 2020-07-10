@@ -15,8 +15,8 @@
 
 #pragma once
 
-#include "RamNode.h"
 #include "RelationTag.h"
+#include "ram/RamNode.h"
 #include "utility/ContainerUtil.h"
 #include <cassert>
 #include <cstddef>

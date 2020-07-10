@@ -16,8 +16,6 @@
 
 #pragma once
 
-#include "RamRelation.h"
-#include "RamStatement.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
 #include "ast/AstAbstract.h"
@@ -25,6 +23,8 @@
 #include "ast/AstNode.h"
 #include "ast/AstQualifiedName.h"
 #include "json11.h"
+#include "ram/RamRelation.h"
+#include "ram/RamStatement.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

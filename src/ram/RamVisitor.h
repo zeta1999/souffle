@@ -17,13 +17,13 @@
 
 #pragma once
 
-#include "RamCondition.h"
-#include "RamExpression.h"
-#include "RamNode.h"
-#include "RamOperation.h"
-#include "RamProgram.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
+#include "ram/RamCondition.h"
+#include "ram/RamExpression.h"
+#include "ram/RamNode.h"
+#include "ram/RamOperation.h"
+#include "ram/RamProgram.h"
+#include "ram/RamRelation.h"
+#include "ram/RamStatement.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
 #include <cstddef>

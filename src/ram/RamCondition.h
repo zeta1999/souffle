@@ -18,9 +18,9 @@
 #pragma once
 
 #include "BinaryConstraintOps.h"
-#include "RamExpression.h"
-#include "RamNode.h"
-#include "RamRelation.h"
+#include "ram/RamExpression.h"
+#include "ram/RamNode.h"
+#include "ram/RamRelation.h"
 #include "utility/ContainerUtil.h"
 #include "utility/StreamUtil.h"
 #include <cassert>

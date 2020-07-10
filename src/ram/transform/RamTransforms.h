@@ -16,12 +16,12 @@
 
 #pragma once
 
-#include "RamComplexityAnalysis.h"
-#include "RamIndexAnalysis.h"
-#include "RamLevelAnalysis.h"
-#include "RamOperation.h"
-#include "RamTransformer.h"
-#include "RamTranslationUnit.h"
+#include "ram/RamOperation.h"
+#include "ram/RamTranslationUnit.h"
+#include "ram/analysis/RamComplexityAnalysis.h"
+#include "ram/analysis/RamIndexAnalysis.h"
+#include "ram/analysis/RamLevelAnalysis.h"
+#include "ram/transform/RamTransformer.h"
 #include <cstddef>
 #include <memory>
 #include <string>

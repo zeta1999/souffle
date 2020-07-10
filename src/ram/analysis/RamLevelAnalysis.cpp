@@ -14,12 +14,12 @@
  *
  ***********************************************************************/
 
-#include "RamLevelAnalysis.h"
-#include "RamCondition.h"
-#include "RamExpression.h"
-#include "RamNode.h"
-#include "RamOperation.h"
-#include "RamVisitor.h"
+#include "ram/analysis/RamLevelAnalysis.h"
+#include "ram/RamCondition.h"
+#include "ram/RamExpression.h"
+#include "ram/RamNode.h"
+#include "ram/RamOperation.h"
+#include "ram/RamVisitor.h"
 #include "utility/MiscUtil.h"
 #include <algorithm>
 #include <cassert>

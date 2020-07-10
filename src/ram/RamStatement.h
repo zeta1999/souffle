@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include "RamCondition.h"
-#include "RamNode.h"
-#include "RamOperation.h"
-#include "RamRelation.h"
+#include "ram/RamCondition.h"
+#include "ram/RamNode.h"
+#include "ram/RamOperation.h"
+#include "ram/RamRelation.h"
 #include "utility/ContainerUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"

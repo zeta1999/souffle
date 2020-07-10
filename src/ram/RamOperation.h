@@ -17,11 +17,11 @@
 #pragma once
 
 #include "AggregateOp.h"
-#include "RamCondition.h"
-#include "RamExpression.h"
-#include "RamNode.h"
-#include "RamRelation.h"
-#include "RamUtils.h"
+#include "ram/RamCondition.h"
+#include "ram/RamExpression.h"
+#include "ram/RamNode.h"
+#include "ram/RamRelation.h"
+#include "ram/RamUtils.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

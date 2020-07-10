@@ -14,17 +14,17 @@
  *
  ***********************************************************************/
 
-#include "RamIndexAnalysis.h"
-#include "RamCondition.h"
-#include "RamExpression.h"
-#include "RamNode.h"
-#include "RamOperation.h"
-#include "RamProgram.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
-#include "RamTranslationUnit.h"
-#include "RamUtils.h"
-#include "RamVisitor.h"
+#include "ram/analysis/RamIndexAnalysis.h"
+#include "ram/RamCondition.h"
+#include "ram/RamExpression.h"
+#include "ram/RamNode.h"
+#include "ram/RamOperation.h"
+#include "ram/RamProgram.h"
+#include "ram/RamRelation.h"
+#include "ram/RamStatement.h"
+#include "ram/RamTranslationUnit.h"
+#include "ram/RamUtils.h"
+#include "ram/RamVisitor.h"
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>

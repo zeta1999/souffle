@@ -108,12 +108,6 @@ void AstTranslator::translateDirectives(
         directives["IO"] = "file";
     }
 
-    // legacy support for SQLite prior to 2020-03-18
-    // convert dbname to filename
-    if (directives.at("IO") == "sqlite" && directives.find("dbname") != directives.end()) {
-        directives["filename"] = directives.at("dbname");
-    }
-
     // Prepare type system information.
     std::string name = getRelationName(rel->getQualifiedName());
     std::vector<std::string> attributesTypes;

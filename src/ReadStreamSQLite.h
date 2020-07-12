@@ -161,7 +161,11 @@ protected:
      * @return input filename
      */
     static std::string getFileName(const std::map<std::string, std::string>& rwOperation) {
-        auto name = getOr(rwOperation, "filename", rwOperation.at("name") + ".sqlite");
+        // legacy support for SQLite prior to 2020-03-18
+        // convert dbname to filename
+        auto name = getOr(rwOperation, "dbname", rwOperation.at("name") + ".sqlite");
+        name = getOr(rwOperation, "filename", name);
+
         if (name.front() != '/') {
             name = getOr(rwOperation, "fact-dir", ".") + "/" + name;
         }

@@ -98,30 +98,14 @@ size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     }
 }
 
-void AstTranslator::translateDirectives(std::map<std::string, std::string>& directives,
-        const AstRelation* rel, const std::string& filePath, const std::string& fileExt) {
+void AstTranslator::translateDirectives(
+        std::map<std::string, std::string>& directives, const AstRelation* rel) {
     // set relation name correctly
     directives["name"] = getRelationName(rel->getQualifiedName());
+
     // set a default IO type of file and a default filename if not supplied
     if (directives.find("IO") == directives.end()) {
         directives["IO"] = "file";
-    }
-
-    // load intermediate relations from correct files
-    if (directives.at("IO") == "file") {
-        // set filename by relation if not given
-        if (directives.find("filename") == directives.end()) {
-            directives["filename"] = directives.at("name") + fileExt;
-        }
-    }
-    // legacy support for SQLite prior to 2020-03-18
-    // convert dbname to filename
-    if (directives.at("IO") == "sqlite" && directives.find("dbname") != directives.end()) {
-        directives["filename"] = directives.at("dbname");
-    }
-    // if filename is not an absolute path, concat with cmd line facts directory
-    if (directives.find("filename") != directives.end() && directives.at("filename").front() != '/') {
-        directives["filename"] = filePath + "/" + directives.at("filename");
     }
 
     // Prepare type system information.
@@ -147,8 +131,7 @@ void AstTranslator::translateDirectives(std::map<std::string, std::string>& dire
     directives["types"] = types.dump();
 }
 
-std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirectives(
-        const AstRelation* rel, std::string filePath, const std::string& fileExt) {
+std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirectives(const AstRelation* rel) {
     std::vector<std::map<std::string, std::string>> inputDirectives;
 
     std::vector<const AstIO*> relLoads;
@@ -163,6 +146,9 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirective
             directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
         }
         directives["operation"] = "input";
+        if (Global::config().has("fact-dir")) {
+            directives["fact-dir"] = Global::config().get("fact-dir");
+        }
         inputDirectives.push_back(directives);
     }
 
@@ -170,18 +156,14 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirective
         inputDirectives.emplace_back();
     }
 
-    const std::string inputFilePath = (filePath.empty()) ? Global::config().get("fact-dir") : filePath;
-    const std::string inputFileExt = (fileExt.empty()) ? ".facts" : fileExt;
-
     for (auto& directives : inputDirectives) {
-        translateDirectives(directives, rel, inputFilePath, inputFileExt);
+        translateDirectives(directives, rel);
     }
 
     return inputDirectives;
 }
 
-std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectives(
-        const AstRelation* rel, std::string filePath, const std::string& fileExt) {
+std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectives(const AstRelation* rel) {
     std::vector<std::map<std::string, std::string>> outputDirectives;
 
     std::vector<const AstIO*> relStores;
@@ -215,6 +197,9 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
             for (const auto& currentPair : current->getDirectives()) {
                 directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
             }
+            if (Global::config().has("output-dir")) {
+                directives["output-dir"] = Global::config().get("output-dir");
+            }
             if (current->getType() == AstIoType::printsize) {
                 directives["operation"] = "printsize";
                 directives["IO"] = "stdoutprintsize";
@@ -229,11 +214,8 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
         outputDirectives.emplace_back();
     }
 
-    const std::string outputFilePath = (filePath.empty()) ? Global::config().get("output-dir") : filePath;
-    const std::string outputFileExt = (fileExt.empty()) ? ".csv" : fileExt;
-
     for (auto& directives : outputDirectives) {
-        translateDirectives(directives, rel, outputFilePath, outputFileExt);
+        translateDirectives(directives, rel);
 
         if (directives.find("attributeNames") == directives.end()) {
             std::string delimiter("\t");
@@ -1635,10 +1617,8 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // a function to load relations
     const auto& makeRamLoad = [&](std::vector<std::unique_ptr<RamStatement>>& current,
-                                      const AstRelation* relation, const std::string& inputDirectory,
-                                      const std::string& fileExtension) {
-        for (auto directives :
-                getInputDirectives(relation, Global::config().get(inputDirectory), fileExtension)) {
+                                      const AstRelation* relation) {
+        for (auto directives : getInputDirectives(relation)) {
             std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
                     std::unique_ptr<RamRelationReference>(translateRelation(relation)), directives);
             if (Global::config().has("profile")) {
@@ -1653,10 +1633,8 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
     // a function to store relations
     const auto& makeRamStore = [&](std::vector<std::unique_ptr<RamStatement>>& current,
-                                       const AstRelation* relation, const std::string& outputDirectory,
-                                       const std::string& fileExtension) {
-        for (auto directives :
-                getOutputDirectives(relation, Global::config().get(outputDirectory), fileExtension)) {
+                                       const AstRelation* relation) {
+        for (auto directives : getOutputDirectives(relation)) {
             std::unique_ptr<RamStatement> statement = std::make_unique<RamIO>(
                     std::unique_ptr<RamRelationReference>(translateRelation(relation)), directives);
             if (Global::config().has("profile")) {
@@ -1728,7 +1706,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
         // load all internal input relations from the facts dir with a .facts extension
         for (const auto& relation : internIns) {
-            makeRamLoad(current, relation, "fact-dir", ".facts");
+            makeRamLoad(current, relation);
         }
 
         // compute the relations themselves
@@ -1740,7 +1718,7 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
 
         // store all internal output relations to the output dir with a .csv extension
         for (const auto& relation : internOuts) {
-            makeRamStore(current, relation, "output-dir", ".csv");
+            makeRamStore(current, relation);
         }
 
         // if provenance is not enabled...

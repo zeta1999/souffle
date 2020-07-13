@@ -419,7 +419,7 @@ int main(int argc, char** argv) {
 
     // Main pipeline
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
-            std::make_unique<ComponentInstantiationTransformer>(),
+            std::make_unique<ComponentInstantiationTransformer>(), std::make_unique<IODefaultsTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(),
             std::make_unique<AstUserDefinedFunctorsTransformer>(),
             std::make_unique<FixpointTransformer>(
@@ -448,7 +448,7 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<PolymorphicObjectsTransformer>(), std::make_unique<ReorderLiteralsTransformer>(),
             std::move(magicPipeline), std::make_unique<AstExecutionPlanChecker>(),
-            std::make_unique<IODefaultsTransformer>(), std::move(provenancePipeline));
+            std::move(provenancePipeline));
 
     // Disable unwanted transformations
     if (Global::config().has("disable-transformers")) {

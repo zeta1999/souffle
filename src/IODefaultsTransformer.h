@@ -45,6 +45,8 @@ private:
                 std::string&& name = toString(join(io->getQualifiedName().getQualifiers(), "."));
                 io->addDirective("name", name);
                 changed = true;
+            } else {
+                std::cout << "I have a name! " << io->getDirective("name") << std::endl;
             }
 
             // Set the operation type (input/output/printsize)
@@ -61,16 +63,20 @@ private:
                     changed = true;
                     // Configure output directory
                     if (Global::config().has("output-dir")) {
-                        io->addDirective("output-dir", Global::config().get("output-dir"));
+                        if (Global::config().has("output-dir", "-")) {
+                            io->addDirective("IO", "stdout");
+                            io->addDirective("headers", "true");
+                        } else {
+                            io->addDirective("output-dir", Global::config().get("output-dir"));
+                        }
                     }
                 } else if (io->getType() == AstIoType::printsize) {
                     io->addDirective("operation", "printsize");
-                    io->addDirective("IO", "printsize");
+                    io->addDirective("IO", "stdoutprintsize");
                     changed = true;
                 }
             }
         }
-        // If output-dir == '-' then convert all output to stdout
         // If output-dir == '-' remove duplicate output
         // add attribute nanes (find relation, get attributes, etc
         return changed;

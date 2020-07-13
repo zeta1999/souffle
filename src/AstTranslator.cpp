@@ -162,37 +162,12 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
         }
     }
 
-    // If stdout is requested then remove all directives from the datalog file.
-    if (Global::config().get("output-dir") == "-") {
-        bool hasOutput = false;
-        for (const auto* current : relStores) {
-            std::map<std::string, std::string> directives;
-            if (current->getType() == AstIoType::printsize) {
-                directives["operation"] = "printsize";
-                directives["IO"] = "stdoutprintsize";
-                outputDirectives.push_back(directives);
-            } else if (!hasOutput) {
-                hasOutput = true;
-                directives["IO"] = "stdout";
-                directives["headers"] = "true";
-                directives["operation"] = "output";
-                outputDirectives.push_back(directives);
-            }
+    for (const auto* current : relStores) {
+        std::map<std::string, std::string> directives;
+        for (const auto& currentPair : current->getDirectives()) {
+            directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
         }
-    } else {
-        for (const auto* current : relStores) {
-            std::map<std::string, std::string> directives;
-            for (const auto& currentPair : current->getDirectives()) {
-                directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
-            }
-            if (current->getType() == AstIoType::printsize) {
-                directives["operation"] = "printsize";
-                directives["IO"] = "stdoutprintsize";
-            } else {
-                directives["operation"] = "output";
-            }
-            outputDirectives.push_back(directives);
-        }
+        outputDirectives.push_back(directives);
     }
 
     if (outputDirectives.empty()) {

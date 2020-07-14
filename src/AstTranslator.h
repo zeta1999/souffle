@@ -85,9 +85,6 @@ private:
     /** RAM relations */
     std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
-    /** Record types information - used in Ram for I/O. */
-    Json RamRecordTypes;
-
     /** Symbol Table **/
     SymbolTable symbolTable;
 

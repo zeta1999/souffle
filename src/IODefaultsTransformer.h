@@ -17,11 +17,17 @@
 #pragma once
 
 #include "AstTransformer.h"
+#include "AstTypeEnvironmentAnalysis.h"
+#include "AstUtils.h"
+#include "AuxArityAnalysis.h"
+#include <map>
+#include <string>
+#include <vector>
 
 namespace souffle {
 
 /**
- * Transformation pass to remove relations which are redundant (do not contribute to output).
+ * Transformation pass to set defaults for IO operations.
  */
 class IODefaultsTransformer : public AstTransformer {
 public:
@@ -31,6 +37,28 @@ public:
 
 private:
     bool transform(AstTranslationUnit& translationUnit) override {
+        bool changed = false;
+
+        changed |= setDefaults(translationUnit);
+
+        return changed;
+    }
+
+    /**
+     * Set IO defaults.
+     *
+     * If no IO type is specified, use 'file'
+     * If no name is set, use the relation name.
+     * Add the operation type to the directives list.
+     * If a global fact directory is specified, add to the directives list.
+     * If a global output directory is specified, add to the directives list.
+     * If stdout is requested at the command line ('-D-'), change all output to stdout.
+     * If a printsize operation is requested, set IO type and operation accordingly.
+     *
+     * @param translationUnit
+     * @return true if any changes were made
+     */
+    bool setDefaults(AstTranslationUnit& translationUnit) {
         bool changed = false;
         AstProgram* program = translationUnit.getProgram();
         for (AstIO* io : program->getIOs()) {
@@ -42,11 +70,8 @@ private:
 
             // Set the relation name
             if (!io->hasDirective("name")) {
-                std::string&& name = toString(join(io->getQualifiedName().getQualifiers(), "."));
-                io->addDirective("name", name);
+                io->addDirective("name", getRelationName(io));
                 changed = true;
-            } else {
-                std::cout << "I have a name! " << io->getDirective("name") << std::endl;
             }
 
             // Set the operation type (input/output/printsize)
@@ -77,9 +102,17 @@ private:
                 }
             }
         }
-        // If output-dir == '-' remove duplicate output
-        // add attribute nanes (find relation, get attributes, etc
+
         return changed;
+    }
+
+    /**
+     * Get the relation name from the qualified name.
+     *
+     * @return Valid relation name from the concatenated qualified name.
+     */
+    std::string getRelationName(const AstIO* node) {
+        return toString(join(node->getQualifiedName().getQualifiers(), "."));
     }
 };
 

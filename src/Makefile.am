@@ -85,6 +85,8 @@ souffle_sources = \
         Global.cpp                                         \
         Global.h                                           \
         GraphUtils.h                                       \
+        IOAttributesTransformer.h                          \
+        IODefaultsTransformer.h                            \
         IOSystem.h                                         \
         InterpreterContext.h                               \
         InterpreterEngine.cpp                              \

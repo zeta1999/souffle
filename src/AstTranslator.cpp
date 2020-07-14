@@ -98,43 +98,16 @@ size_t AstTranslator::getEvaluationArity(const AstAtom* atom) const {
     }
 }
 
-void AstTranslator::translateDirectives(
-        std::map<std::string, std::string>& directives, const AstRelation* rel) {
-    // Prepare type system information.
-    std::string name = getRelationName(rel->getQualifiedName());
-    std::vector<std::string> attributesTypes;
-
-    for (const auto* attribute : rel->getAttributes()) {
-        auto type = getTypeQualifier(typeEnv->getType(attribute->getTypeName()));
-        attributesTypes.push_back(type);
-    }
-
-    // Casting due to json11.h type requirements.
-    long long arity{static_cast<long long>(rel->getArity() - auxArityAnalysis->getArity(rel))};
-    long long auxArity{static_cast<long long>(auxArityAnalysis->getArity(rel))};
-
-    const Json rec = getRecordsTypes();
-
-    Json relJson = Json::object{{"arity", arity}, {"auxArity", auxArity},
-            {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
-
-    Json types = Json::object{{name, relJson}, {"records", getRecordsTypes()}};
-
-    directives["types"] = types.dump();
-}
-
 std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirectives(const AstRelation* rel) {
     std::vector<std::map<std::string, std::string>> inputDirectives;
 
-    std::vector<const AstIO*> relLoads;
-    for (const auto* io : program->getIOs()) {
-        if (io->getQualifiedName() == rel->getQualifiedName() && io->getType() == AstIoType::input) {
-            relLoads.push_back(io);
+    for (const auto* load : program->getIOs()) {
+        if (load->getQualifiedName() != rel->getQualifiedName() || load->getType() != AstIoType::input) {
+            continue;
         }
-    }
-    for (const auto& current : relLoads) {
+
         std::map<std::string, std::string> directives;
-        for (const auto& currentPair : current->getDirectives()) {
+        for (const auto& currentPair : load->getDirectives()) {
             directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
         }
         inputDirectives.push_back(directives);
@@ -144,27 +117,19 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getInputDirective
         inputDirectives.emplace_back();
     }
 
-    for (auto& directives : inputDirectives) {
-        translateDirectives(directives, rel);
-    }
-
     return inputDirectives;
 }
 
 std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectives(const AstRelation* rel) {
     std::vector<std::map<std::string, std::string>> outputDirectives;
 
-    std::vector<const AstIO*> relStores;
     for (const auto* store : program->getIOs()) {
-        if (store->getQualifiedName() == rel->getQualifiedName() &&
-                (store->getType() == AstIoType::output || store->getType() == AstIoType::printsize)) {
-            relStores.push_back(store);
+        if (store->getQualifiedName() != rel->getQualifiedName() || store->getType() == AstIoType::input) {
+            continue;
         }
-    }
 
-    for (const auto* current : relStores) {
         std::map<std::string, std::string> directives;
-        for (const auto& currentPair : current->getDirectives()) {
+        for (const auto& currentPair : store->getDirectives()) {
             directives.insert(std::make_pair(currentPair.first, unescape(currentPair.second)));
         }
         outputDirectives.push_back(directives);
@@ -172,29 +137,6 @@ std::vector<std::map<std::string, std::string>> AstTranslator::getOutputDirectiv
 
     if (outputDirectives.empty()) {
         outputDirectives.emplace_back();
-    }
-
-    for (auto& directives : outputDirectives) {
-        translateDirectives(directives, rel);
-
-        if (directives.find("attributeNames") == directives.end()) {
-            std::string delimiter("\t");
-            if (directives.find("delimiter") != directives.end()) {
-                delimiter = directives.at("delimiter");
-            }
-            std::vector<std::string> attributeNames;
-            for (const auto* attribute : rel->getAttributes()) {
-                attributeNames.push_back(attribute->getName());
-            }
-
-            if (Global::config().has("provenance")) {
-                std::vector<std::string> originalAttributeNames(
-                        attributeNames.begin(), attributeNames.end() - auxArityAnalysis->getArity(rel));
-                directives["attributeNames"] = toString(join(originalAttributeNames, delimiter));
-            } else {
-                directives["attributeNames"] = toString(join(attributeNames, delimiter));
-            }
-        }
     }
 
     return outputDirectives;
@@ -1732,35 +1674,6 @@ void AstTranslator::translateProgram(const AstTranslationUnit& translationUnit) 
             ramSubs[negationSubroutineLabel] = makeNegationSubproofSubroutine(clause);
         });
     }
-}
-
-const Json AstTranslator::getRecordsTypes() {
-    // Check if the types where already constructed
-    if (!RamRecordTypes.is_null()) {
-        return RamRecordTypes;
-    }
-
-    std::vector<std::string> elementTypes;
-    std::map<std::string, Json> records;
-
-    // Iterate over all record types in the program populating the records map.
-    for (auto* astType : program->getTypes()) {
-        const auto& type = typeEnv->getType(astType->getQualifiedName());
-        if (isA<RecordType>(type)) {
-            elementTypes.clear();
-
-            for (const Type* field : as<RecordType>(type)->getFields()) {
-                elementTypes.push_back(getTypeQualifier(*field));
-            }
-            const size_t recordArity = elementTypes.size();
-            Json recordInfo = Json::object{
-                    {"types", std::move(elementTypes)}, {"arity", static_cast<long long>(recordArity)}};
-            records.emplace(getTypeQualifier(type), std::move(recordInfo));
-        }
-    }
-
-    RamRecordTypes = Json(records);
-    return RamRecordTypes;
 }
 
 std::unique_ptr<RamTranslationUnit> AstTranslator::translateUnit(AstTranslationUnit& tu) {

@@ -19,6 +19,7 @@
 #include "ErrorReport.h"
 #include "Explain.h"
 #include "Global.h"
+#include "IOAttributesTransformer.h"
 #include "IODefaultsTransformer.h"
 #include "InterpreterEngine.h"
 #include "InterpreterProgInterface.h"
@@ -448,7 +449,7 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<PolymorphicObjectsTransformer>(), std::make_unique<ReorderLiteralsTransformer>(),
             std::move(magicPipeline), std::make_unique<AstExecutionPlanChecker>(),
-            std::move(provenancePipeline));
+            std::move(provenancePipeline), std::make_unique<IOAttributesTransformer>());
 
     // Disable unwanted transformations
     if (Global::config().has("disable-transformers")) {

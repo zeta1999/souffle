@@ -834,7 +834,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             assert(aggregate.getTupleId() == 0 && "not outer-most loop");
             assert(!preambleIssued && "only first loop can be made parallel");
             preambleIssued = true;
-            //visitIndexAggregate(aggregate, out);
+            // visitIndexAggregate(aggregate, out);
             PRINT_BEGIN_COMMENT(out);
             // get some properties
             const auto& rel = aggregate.getRelation();
@@ -858,7 +858,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
-                out << "{\n"; // to match PARALLEL_END closing bracket
+                out << "{\n";  // to match PARALLEL_END closing bracket
                 out << preamble.str();
                 visitTupleOperation(aggregate, out);
                 PRINT_END_COMMENT(out);
@@ -909,7 +909,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::MEAN:
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
-                case AggregateOp::COUNT: 
+                case AggregateOp::COUNT:
 
                 case AggregateOp::SUM: {
                     op = "+";
@@ -979,16 +979,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::FMIN:
                 case AggregateOp::UMIN:
                 case AggregateOp::MIN:
-                    out << "res0 = std::min(res0,ramBitCast<" << type
-                        << ">(";
+                    out << "res0 = std::min(res0,ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
                 case AggregateOp::FMAX:
                 case AggregateOp::UMAX:
                 case AggregateOp::MAX:
-                    out << "res0 = std::max(res0,ramBitCast<" << type
-                        << ">(";
+                    out << "res0 = std::max(res0,ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
@@ -1039,7 +1037,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             visitTupleOperation(aggregate, out);
             out << "}\n";
             PRINT_END_COMMENT(out);
-            out << "{ // to match parallel_end\n"; // to match unused parallel_end
+            out << "{ // to match parallel_end\n";  // to match unused parallel_end
         }
         void visitIndexAggregate(const RamIndexAggregate& aggregate, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
@@ -1144,16 +1142,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::FMIN:
                 case AggregateOp::UMIN:
                 case AggregateOp::MIN:
-                    out << "res0 = std::min(res0,ramBitCast<" << type
-                        << ">(";
+                    out << "res0 = std::min(res0,ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
                 case AggregateOp::FMAX:
                 case AggregateOp::UMAX:
                 case AggregateOp::MAX:
-                    out << "res0 = std::max(res0,ramBitCast<" << type
-                        << ">(";
+                    out << "res0 = std::max(res0,ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
@@ -1371,7 +1367,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "}\n";
 
             PRINT_END_COMMENT(out);
-            out << "{ // to match parallel_end\n"; // to match unused parallel_end
+            out << "{ // to match parallel_end\n";  // to match unused parallel_end
         }
         void visitAggregate(const RamAggregate& aggregate, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);

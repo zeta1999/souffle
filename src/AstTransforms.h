@@ -237,41 +237,13 @@ public:
     }
 
 private:
-    class NormalisedClauseRepr {
-    public:
-        NormalisedClauseRepr(const AstClause* clause);
-
-        bool isFullyNormalised() const {
-            return fullyNormalised;
-        }
-
-        size_t getHeadArity() const {
-            return headArity;
-        }
-
-        const std::set<std::string>& getVariables() const {
-            return variables;
-        }
-
-        const std::vector<std::pair<AstQualifiedName, std::vector<std::string>>>& getElements() const {
-            return clauseElements;
-        }
-
-    private:
-        bool fullyNormalised{true};
-        std::set<std::string> variables{};
-        size_t headArity{0};
-        std::vector<std::pair<AstQualifiedName, std::vector<std::string>>> clauseElements;
-        void addClauseAtom(std::string qualifier, const AstAtom* atom);
-        void addClauseBodyElement(const AstLiteral* lit);
-        std::string normaliseArgument(const AstArgument* arg);
-    };
+    struct Element;
+    class NormalisedClauseRepr;
 
     bool transform(AstTranslationUnit& translationUnit) override;
 
     static bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right);
     static bool areBijectivelyEquivalent(const NormalisedClauseRepr& left, const NormalisedClauseRepr& right);
-    static bool isValidMove(const NormalisedClauseRepr& left, size_t leftIdx, const NormalisedClauseRepr& right, size_t rightIdx);
     static bool isValidPermutation(const NormalisedClauseRepr& left, const NormalisedClauseRepr& right, const std::vector<unsigned int>& permutation);
     static bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit);
     static bool removeRedundantClauses(AstTranslationUnit& translationUnit);

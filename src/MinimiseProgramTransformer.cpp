@@ -42,6 +42,41 @@
 namespace souffle {
 class AstRelation;
 
+struct MinimiseProgramTransformer::Element {
+    AstQualifiedName name;
+    std::vector<std::string> params;
+};
+
+class MinimiseProgramTransformer::NormalisedClauseRepr {
+public:
+    NormalisedClauseRepr(const AstClause* clause);
+
+    bool isFullyNormalised() const {
+        return fullyNormalised;
+    }
+
+    size_t getHeadArity() const {
+        return headArity;
+    }
+
+    const std::set<std::string>& getVariables() const {
+        return variables;
+    }
+
+    const std::vector<Element>& getElements() const {
+        return clauseElements;
+    }
+
+private:
+    bool fullyNormalised{true};
+    std::set<std::string> variables{};
+    size_t headArity{0};
+    std::vector<Element> clauseElements;
+    void addClauseAtom(std::string qualifier, const AstAtom* atom);
+    void addClauseBodyElement(const AstLiteral* lit);
+    std::string normaliseArgument(const AstArgument* arg);
+};
+
 MinimiseProgramTransformer::NormalisedClauseRepr::NormalisedClauseRepr(const AstClause* clause) {
     addClauseAtom("@min:head", clause->getHead());
     for (const auto* lit : clause->getBodyLiterals()) {
@@ -60,7 +95,7 @@ void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseAtom(
     for (const auto* arg : atom->getArguments()) {
         vars.push_back(normaliseArgument(arg));
     }
-    clauseElements.push_back(std::pair(name, vars));
+    clauseElements.push_back({.name = name, .params = vars});
 }
 
 void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyElement(const AstLiteral* lit) {
@@ -74,12 +109,12 @@ void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyElement(cons
         std::vector<std::string> vars;
         vars.push_back(normaliseArgument(bc->getLHS()));
         vars.push_back(normaliseArgument(bc->getRHS()));
-        clauseElements.push_back(std::pair(name, vars));
+        clauseElements.push_back({.name = name, .params = vars});
     } else {
         fullyNormalised = false;
         AstQualifiedName name(toString(*lit));
         name.prepend("@unhandled");
-        clauseElements.push_back(std::pair(name, std::vector<std::string>()));
+        clauseElements.push_back({.name = name, .params = std::vector<std::string>()});
     }
 }
 
@@ -196,25 +231,6 @@ std::vector<std::vector<unsigned int>> extractPermutations(
 }
 
 /**
- * Check if the atom at leftIdx in the left clause can potentially be matched up
- * with the atom at rightIdx in the right clause.
- * NOTE: index 0 refers to the head atom, index 1 to the first body atom, and so on.
- */
-bool MinimiseProgramTransformer::isValidMove(const NormalisedClauseRepr& left, size_t leftIdx,
-        const NormalisedClauseRepr& right, size_t rightIdx) {
-    const auto& leftElements = left.getElements();
-    const auto& rightElements = right.getElements();
-
-    if (leftIdx == 0 && rightIdx == 0) {
-        return leftElements[0].first == rightElements[0].first;
-    } else if (leftIdx == 0 || rightIdx == 0) {
-        return false;
-    }
-
-    return leftElements[leftIdx].first == rightElements[rightIdx].first;
-}
-
-/**
  * Check whether a valid variable mapping exists for the given permutation.
  */
 bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& left,
@@ -231,8 +247,8 @@ bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& 
     }
 
     for (size_t i = 0; i < size; i++) {
-        const auto& leftArgs = leftElements[i].second;
-        const auto& rightArgs = rightElements[permutation[i]].second;
+        const auto& leftArgs = leftElements[i].params;
+        const auto& rightArgs = rightElements[permutation[i]].params;
         for (size_t j = 0; j < leftArgs.size(); j++) {
             auto leftArg = leftArgs[j];
             auto rightArg = rightArgs[j];
@@ -292,7 +308,7 @@ bool MinimiseProgramTransformer::areBijectivelyEquivalent(
     permutationMatrix[0][0] = 1;
     for (size_t i = 1; i < size; i++) {
         for (size_t j = 1; j < size; j++) {
-            if (isValidMove(left, i, right, j)) {
+            if (leftElements[i].name == rightElements[j].name) {
                 permutationMatrix[i][j] = 1;
             }
         }

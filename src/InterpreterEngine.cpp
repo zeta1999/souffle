@@ -576,18 +576,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
             ffi_call(&cif, fn, &rc, values);
 
-            RamDomain result;
             switch (cur.getReturnType()) {
-                case TypeAttribute::Signed: result = static_cast<RamDomain>(rc); break;
-                case TypeAttribute::Symbol:
-                    result = getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
-                    break;
-                case TypeAttribute::Unsigned: result = ramBitCast(static_cast<RamUnsigned>(rc)); break;
-                case TypeAttribute::Float: result = ramBitCast(static_cast<RamFloat>(rc)); break;
+                case TypeAttribute::Signed: return static_cast<RamDomain>(rc);
+                case TypeAttribute::Symbol: return getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
+
+                case TypeAttribute::Unsigned: return ramBitCast(static_cast<RamUnsigned>(rc));
+                case TypeAttribute::Float: return ramBitCast(static_cast<RamFloat>(rc));
                 case TypeAttribute::Record: fatal("Not implemented");
             }
+            fatal("Unsupported user defined operator");
 
-            return result;
         ESAC(UserDefinedOperator)
 
         CASE(PackRecord)
@@ -785,7 +783,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto pStream = rel.partitionScan(numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 auto viewInfo = preamble->getViewInfoForNested();
                 for (const auto& info : viewInfo) {
@@ -799,7 +796,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
             return true;
         ESAC(ParallelScan)
 
@@ -853,7 +850,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 auto viewInfo = preamble->getViewInfoForNested();
                 for (const auto& info : viewInfo) {
@@ -867,7 +863,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
 
             return true;
         ESAC(ParallelIndexScan)
@@ -894,7 +890,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto pStream = rel.partitionScan(numOfThreads);
             auto viewInfo = preamble->getViewInfoForNested();
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 for (const auto& info : viewInfo) {
                     newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
@@ -908,7 +903,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
             return true;
         ESAC(ParallelChoice)
 
@@ -966,7 +961,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 for (const auto& info : viewInfo) {
                     newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
@@ -980,7 +974,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
 
             return true;
         ESAC(ParallelIndexChoice)

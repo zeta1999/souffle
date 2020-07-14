@@ -244,6 +244,7 @@ private:
 
     static bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right);
     static bool areBijectivelyEquivalent(const NormalisedClauseRepr& left, const NormalisedClauseRepr& right);
+
     static bool isValidPermutation(const NormalisedClauseRepr& left, const NormalisedClauseRepr& right, const std::vector<unsigned int>& permutation);
     static bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit);
     static bool removeRedundantClauses(AstTranslationUnit& translationUnit);

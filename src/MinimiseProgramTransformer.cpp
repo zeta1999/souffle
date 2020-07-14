@@ -55,10 +55,6 @@ public:
         return fullyNormalised;
     }
 
-    size_t getHeadArity() const {
-        return headArity;
-    }
-
     const std::set<std::string>& getVariables() const {
         return variables;
     }
@@ -70,7 +66,6 @@ public:
 private:
     bool fullyNormalised{true};
     std::set<std::string> variables{};
-    size_t headArity{0};
     std::vector<Element> clauseElements;
     void addClauseAtom(std::string qualifier, const AstAtom* atom);
     void addClauseBodyElement(const AstLiteral* lit);
@@ -78,12 +73,21 @@ private:
 };
 
 MinimiseProgramTransformer::NormalisedClauseRepr::NormalisedClauseRepr(const AstClause* clause) {
-    addClauseAtom("@min:head", clause->getHead());
+    // head
+    AstQualifiedName name("min:head");
+    std::vector<std::string> headVars;
+    for (const auto* arg : clause->getHead()->getArguments()) {
+        headVars.push_back(normaliseArgument(arg));
+    }
+    clauseElements.push_back({.name = name, .params = headVars});
+
+    // body
     for (const auto* lit : clause->getBodyLiterals()) {
         addClauseBodyElement(lit);
     }
+
+    // variables
     visitDepthFirst(*clause, [&](const AstVariable& var) { variables.insert(var.getName()); });
-    headArity = clause->getHead()->getArity();
 }
 
 void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseAtom(
@@ -131,6 +135,8 @@ std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(
         return "@min:cst:nil";
     } else if (auto* var = dynamic_cast<const AstVariable*>(arg)) {
         return var->getName();
+    } else if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
+        return "@min:unnamed";
     } else {
         fullyNormalised = false;
         return "@min:unhandled";
@@ -264,8 +270,6 @@ bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& 
         }
     }
 
-    // TODO whats stopping overlaps
-    // a consistent mapping exists
     return true;
 }
 
@@ -288,7 +292,7 @@ bool MinimiseProgramTransformer::areBijectivelyEquivalent(
     }
 
     // head atoms must have the same arity
-    if (left.getHeadArity() != right.getHeadArity()) {
+    if (leftElements[0].params.size() != rightElements[0].params.size()) {
         return false;
     }
 
@@ -323,7 +327,6 @@ bool MinimiseProgramTransformer::areBijectivelyEquivalent(
             return true;
         }
     }
-
     return false;
 }
 

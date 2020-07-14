@@ -29,10 +29,13 @@
 namespace souffle {
 
 class AstAggregator;
+class AstArgument;
 class AstBinaryConstraint;
 class AstClause;
+class AstAtom;
 class AstLiteral;
 class AstProgram;
+class AstQualifiedName;
 class AstRecordInit;
 class AstRelation;
 class AstTranslationUnit;
@@ -232,6 +235,17 @@ public:
     std::string getName() const override {
         return "MinimiseProgramTransformer";
     }
+
+    class NormalisedClauseRepr {
+    public:
+        NormalisedClauseRepr(const AstClause* clause);
+
+    private:
+        std::vector<std::pair<AstQualifiedName, std::vector<std::string>>> clauseElements;
+        void addClauseAtom(std::string qualifier, const AstAtom* atom);
+        void addClauseBodyElement(const AstLiteral* lit);
+        static std::string normaliseArgument(const AstArgument* arg);
+    };
 
 private:
     bool transform(AstTranslationUnit& translationUnit) override;

@@ -41,6 +41,58 @@
 namespace souffle {
 class AstRelation;
 
+MinimiseProgramTransformer::NormalisedClauseRepr::NormalisedClauseRepr(const AstClause* clause) {
+    addClauseAtom("@min:head", clause->getHead());
+    for (const auto* lit : clause->getBodyLiterals()) {
+        addClauseBodyElement(lit);
+    }
+    std::cout << *clause << std::endl;
+    std::cout << clauseElements << std::endl;
+}
+
+void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseAtom(
+        std::string qualifier, const AstAtom* atom) {
+    AstQualifiedName name(atom->getQualifiedName());
+    name.prepend(qualifier);
+
+    std::vector<std::string> vars;
+    for (const auto* arg : atom->getArguments()) {
+        vars.push_back(normaliseArgument(arg));
+    }
+    clauseElements.push_back(std::pair(name, vars));
+}
+
+void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyElement(const AstLiteral* lit) {
+    if (const auto* atom = dynamic_cast<const AstAtom*>(lit)) {
+        addClauseAtom("@min:atom", atom);
+    } else if (const auto* neg = dynamic_cast<const AstNegation*>(lit)) {
+        addClauseAtom("@min:neg", neg->getAtom());
+    } else if (const auto* bc = dynamic_cast<const AstBinaryConstraint*>(lit)) {
+        AstQualifiedName name(toBinaryConstraintSymbol(bc->getOperator()));
+        name.prepend("@operator");
+        std::vector<std::string> vars;
+        vars.push_back(normaliseArgument(bc->getLHS()));
+        vars.push_back(normaliseArgument(bc->getRHS()));
+        clauseElements.push_back(std::pair(name, vars));
+    }
+}
+
+std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(
+        const AstArgument* arg) {
+    if (auto* cst = dynamic_cast<const AstConstant*>(arg)) {
+        std::stringstream name;
+        name << "@constant_" << *cst;
+        return name.str();
+    } else if (auto* var = dynamic_cast<const AstVariable*>(arg)) {
+        return var->getName();
+    } else {
+        static size_t unhandledCount = 0;
+        std::stringstream name;
+        name << "@unhandled_" << unhandledCount++;
+        return name.str();
+    }
+}
+
 /**
  * Extract valid permutations from a given permutation matrix of valid moves.
  */

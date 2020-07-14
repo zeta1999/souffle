@@ -236,6 +236,7 @@ public:
         return "MinimiseProgramTransformer";
     }
 
+private:
     class NormalisedClauseRepr {
     public:
         NormalisedClauseRepr(const AstClause* clause);
@@ -247,7 +248,6 @@ public:
         static std::string normaliseArgument(const AstArgument* arg);
     };
 
-private:
     bool transform(AstTranslationUnit& translationUnit) override;
 
     static bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right);

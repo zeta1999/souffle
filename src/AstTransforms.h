@@ -249,6 +249,12 @@ public:
 
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
+
+    static bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right);
+    static bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit);
+    static bool removeRedundantClauses(AstTranslationUnit& translationUnit);
+    static bool reduceClauseBodies(AstTranslationUnit& translationUnit);
+    static bool reduceSingletonRelations(AstTranslationUnit& translationUnit);
 };
 
 /**

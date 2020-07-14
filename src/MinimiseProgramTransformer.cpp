@@ -304,7 +304,7 @@ bool isValidPermutation(
 /**
  * Check whether two clauses are bijectively equivalent.
  */
-bool areBijectivelyEquivalent(const AstClause* leftClause, const AstClause* rightClause) {
+bool MinimiseProgramTransformer::areBijectivelyEquivalent(const AstClause* leftClause, const AstClause* rightClause) {
     auto* left = leftClause->clone();
     auto* right = rightClause->clone();
 
@@ -423,7 +423,7 @@ bool areBijectivelyEquivalent(const AstClause* leftClause, const AstClause* righ
  * that computes the same set of tuples.
  * @return true iff the program was changed
  */
-bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
+bool MinimiseProgramTransformer::reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
 
     std::vector<AstClause*> clausesToDelete;
@@ -471,7 +471,7 @@ bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
  * if there exists another singleton relation that computes the same set of tuples.
  * @return true iff the program was changed
  */
-bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
+bool MinimiseProgramTransformer::reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Note: This reduction is particularly useful in conjunction with the
     // body-partitioning transformation
     AstProgram& program = *translationUnit.getProgram();
@@ -556,7 +556,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
  * Remove clauses that are only satisfied if they are already satisfied.
  * @return true iff the program has changed
  */
-bool removeRedundantClauses(AstTranslationUnit& translationUnit) {
+bool MinimiseProgramTransformer::removeRedundantClauses(AstTranslationUnit& translationUnit) {
     auto& program = *translationUnit.getProgram();
     auto isRedundant = [&](const AstClause* clause) {
         const auto* head = clause->getHead();
@@ -585,7 +585,7 @@ bool removeRedundantClauses(AstTranslationUnit& translationUnit) {
  * Remove repeated literals within a clause.
  * @return true iff the program has changed
  */
-bool reduceClauseBodies(AstTranslationUnit& translationUnit) {
+bool MinimiseProgramTransformer::reduceClauseBodies(AstTranslationUnit& translationUnit) {
     auto& program = *translationUnit.getProgram();
     std::set<std::unique_ptr<AstClause>> clausesToAdd;
     std::set<std::unique_ptr<AstClause>> clausesToRemove;

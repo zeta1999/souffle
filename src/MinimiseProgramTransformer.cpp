@@ -59,6 +59,10 @@ public:
         return variables;
     }
 
+    const std::set<std::string>& getConstants() const {
+        return constants;
+    }
+
     const std::vector<Element>& getElements() const {
         return clauseElements;
     }
@@ -66,6 +70,7 @@ public:
 private:
     bool fullyNormalised{true};
     std::set<std::string> variables{};
+    std::set<std::string> constants{};
     std::vector<Element> clauseElements;
     void addClauseAtom(std::string qualifier, const AstAtom* atom);
     void addClauseBodyElement(const AstLiteral* lit);
@@ -126,17 +131,25 @@ std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(
     if (auto* stringCst = dynamic_cast<const AstStringConstant*>(arg)) {
         std::stringstream name;
         name << "@min:cst:str" << *stringCst;
+        constants.insert(name.str());
         return name.str();
     } else if (auto* numericCst = dynamic_cast<const AstNumericConstant*>(arg)) {
         std::stringstream name;
         name << "@min:cst:num:" << *numericCst;
+        constants.insert(name.str());
         return name.str();
     } else if (dynamic_cast<const AstNilConstant*>(arg) != nullptr) {
+        constants.insert("@min:cst:nil");
         return "@min:cst:nil";
     } else if (auto* var = dynamic_cast<const AstVariable*>(arg)) {
-        return var->getName();
+        auto name = var->getName();
+        variables.insert(name);
+        return name;
     } else if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
-        return "@min:unnamed";
+        static size_t countUnnamed = 0;
+        auto name = "@min:unnamed:" + countUnnamed++;
+        variables.insert(name);
+        return name;
     } else {
         fullyNormalised = false;
         return "@min:unhandled";
@@ -245,6 +258,11 @@ bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& 
     size_t size = leftElements.size();
 
     std::map<std::string, std::string> variableMap;
+
+    for (const auto& cst : left.getConstants()) {
+        variableMap[cst] = cst;
+    }
+
     for (const auto& var : left.getVariables()) {
         variableMap[var] = "";
     }
@@ -295,6 +313,11 @@ bool MinimiseProgramTransformer::areBijectivelyEquivalent(
 
     // rules must have the same number of distinct variables
     if (leftVars.size() != rightVars.size()) {
+        return false;
+    }
+
+    // rules must have the exact same set of constants
+    if (left.getConstants() != right.getConstants()) {
         return false;
     }
 

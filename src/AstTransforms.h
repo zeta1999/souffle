@@ -29,13 +29,10 @@
 namespace souffle {
 
 class AstAggregator;
-class AstArgument;
 class AstBinaryConstraint;
 class AstClause;
-class AstAtom;
 class AstLiteral;
 class AstProgram;
-class AstQualifiedName;
 class AstRecordInit;
 class AstRelation;
 class AstTranslationUnit;

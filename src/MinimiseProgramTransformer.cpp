@@ -27,6 +27,7 @@
 #include "AstUtils.h"
 #include "AstVisitor.h"
 #include "utility/ContainerUtil.h"
+#include "utility/StringUtil.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -74,6 +75,11 @@ void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyElement(cons
         vars.push_back(normaliseArgument(bc->getLHS()));
         vars.push_back(normaliseArgument(bc->getRHS()));
         clauseElements.push_back(std::pair(name, vars));
+    } else {
+        fullyNormalised = false;
+        AstQualifiedName name(toString(*lit));
+        name.prepend("@unhandled");
+        clauseElements.push_back(std::pair(name, std::vector<std::string>()));
     }
 }
 
@@ -86,10 +92,8 @@ std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(
     } else if (auto* var = dynamic_cast<const AstVariable*>(arg)) {
         return var->getName();
     } else {
-        static size_t unhandledCount = 0;
-        std::stringstream name;
-        name << "@unhandled_" << unhandledCount++;
-        return name.str();
+        fullyNormalised = false;
+        return "@min:unhandled";
     }
 }
 

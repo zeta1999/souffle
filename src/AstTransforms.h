@@ -242,10 +242,11 @@ private:
         NormalisedClauseRepr(const AstClause* clause);
 
     private:
+        bool fullyNormalised{true};
         std::vector<std::pair<AstQualifiedName, std::vector<std::string>>> clauseElements;
         void addClauseAtom(std::string qualifier, const AstAtom* atom);
         void addClauseBodyElement(const AstLiteral* lit);
-        static std::string normaliseArgument(const AstArgument* arg);
+        std::string normaliseArgument(const AstArgument* arg);
     };
 
     bool transform(AstTranslationUnit& translationUnit) override;

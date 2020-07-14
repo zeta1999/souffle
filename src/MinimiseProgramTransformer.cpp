@@ -49,8 +49,6 @@ MinimiseProgramTransformer::NormalisedClauseRepr::NormalisedClauseRepr(const Ast
     }
     visitDepthFirst(*clause, [&](const AstVariable& var) { variables.insert(var.getName()); });
     headArity = clause->getHead()->getArity();
-    std::cout << *clause << std::endl;
-    std::cout << clauseElements << std::endl;
 }
 
 void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseAtom(
@@ -86,10 +84,16 @@ void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyElement(cons
 }
 
 std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(const AstArgument* arg) {
-    if (auto* cst = dynamic_cast<const AstConstant*>(arg)) {
+    if (auto* stringCst = dynamic_cast<const AstStringConstant*>(arg)) {
         std::stringstream name;
-        name << "@constant_" << *cst;
+        name << "@min:cst:str" << *stringCst;
         return name.str();
+    } else if (auto* numericCst = dynamic_cast<const AstNumericConstant*>(arg)) {
+        std::stringstream name;
+        name << "@min:cst:num:" << *numericCst;
+        return name.str();
+    } else if (dynamic_cast<const AstNilConstant*>(arg) != nullptr) {
+        return "@min:cst:nil";
     } else if (auto* var = dynamic_cast<const AstVariable*>(arg)) {
         return var->getName();
     } else {
@@ -196,7 +200,8 @@ std::vector<std::vector<unsigned int>> extractPermutations(
  * with the atom at rightIdx in the right clause.
  * NOTE: index 0 refers to the head atom, index 1 to the first body atom, and so on.
  */
-bool MinimiseProgramTransformer::isValidMove(const NormalisedClauseRepr& left, size_t leftIdx, const NormalisedClauseRepr& right, size_t rightIdx) {
+bool MinimiseProgramTransformer::isValidMove(const NormalisedClauseRepr& left, size_t leftIdx,
+        const NormalisedClauseRepr& right, size_t rightIdx) {
     const auto& leftElements = left.getElements();
     const auto& rightElements = right.getElements();
 
@@ -212,7 +217,8 @@ bool MinimiseProgramTransformer::isValidMove(const NormalisedClauseRepr& left, s
 /**
  * Check whether a valid variable mapping exists for the given permutation.
  */
-bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& left, const NormalisedClauseRepr& right, const std::vector<unsigned int>& permutation) {
+bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& left,
+        const NormalisedClauseRepr& right, const std::vector<unsigned int>& permutation) {
     const auto& leftElements = left.getElements();
     const auto& rightElements = right.getElements();
 

@@ -249,7 +249,6 @@ private:
             return headArity;
         }
 
-        // TODO: btw constant strings vs numerics vs nils
         const std::set<std::string>& getVariables() const {
             return variables;
         }

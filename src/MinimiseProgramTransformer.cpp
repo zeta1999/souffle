@@ -146,7 +146,7 @@ std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(
 /**
  * Extract valid permutations from a given permutation matrix of valid moves.
  */
-std::vector<std::vector<unsigned int>> extractPermutations(
+static std::vector<std::vector<unsigned int>> extractPermutations(
         const std::vector<std::vector<unsigned int>>& permutationMatrix) {
     size_t clauseSize = permutationMatrix.size();
     // keep track of the possible end-positions of each atom in the first clause
@@ -236,9 +236,6 @@ std::vector<std::vector<unsigned int>> extractPermutations(
     return permutations;
 }
 
-/**
- * Check whether a valid variable mapping exists for the given permutation.
- */
 bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& left,
         const NormalisedClauseRepr& right, const std::vector<unsigned int>& permutation) {
     const auto& leftElements = left.getElements();
@@ -330,9 +327,6 @@ bool MinimiseProgramTransformer::areBijectivelyEquivalent(
     return false;
 }
 
-/**
- * Check whether two clauses are bijectively equivalent.
- */
 bool MinimiseProgramTransformer::areBijectivelyEquivalent(
         const AstClause* leftClause, const AstClause* rightClause) {
     auto normalisedLeft = NormalisedClauseRepr(leftClause);
@@ -340,12 +334,6 @@ bool MinimiseProgramTransformer::areBijectivelyEquivalent(
     return areBijectivelyEquivalent(normalisedLeft, normalisedRight);
 }
 
-/**
- * Reduces locally-redundant clauses.
- * A clause is locally-redundant if there is another clause within the same relation
- * that computes the same set of tuples.
- * @return true iff the program was changed
- */
 bool MinimiseProgramTransformer::reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
 
@@ -388,12 +376,6 @@ bool MinimiseProgramTransformer::reduceLocallyEquivalentClauses(AstTranslationUn
     return !clausesToDelete.empty();
 }
 
-/**
- * Removes redundant singleton relations.
- * Singleton relations are relations with a single clause. A singleton relation is redundant
- * if there exists another singleton relation that computes the same set of tuples.
- * @return true iff the program was changed
- */
 bool MinimiseProgramTransformer::reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Note: This reduction is particularly useful in conjunction with the
     // body-partitioning transformation
@@ -475,10 +457,6 @@ bool MinimiseProgramTransformer::reduceSingletonRelations(AstTranslationUnit& tr
     return !canonicalName.empty();
 }
 
-/**
- * Remove clauses that are only satisfied if they are already satisfied.
- * @return true iff the program has changed
- */
 bool MinimiseProgramTransformer::removeRedundantClauses(AstTranslationUnit& translationUnit) {
     auto& program = *translationUnit.getProgram();
     auto isRedundant = [&](const AstClause* clause) {
@@ -504,10 +482,6 @@ bool MinimiseProgramTransformer::removeRedundantClauses(AstTranslationUnit& tran
     return !clausesToRemove.empty();
 }
 
-/**
- * Remove repeated literals within a clause.
- * @return true iff the program has changed
- */
 bool MinimiseProgramTransformer::reduceClauseBodies(AstTranslationUnit& translationUnit) {
     auto& program = *translationUnit.getProgram();
     std::set<std::unique_ptr<AstClause>> clausesToAdd;

@@ -267,14 +267,18 @@ bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& 
 
     std::map<std::string, std::string> variableMap;
 
+    // Constants should be fixed to the identically-named constant
     for (const auto& cst : left.getConstants()) {
         variableMap[cst] = cst;
     }
 
+    // Variables start off mapping to nothing
     for (const auto& var : left.getVariables()) {
         variableMap[var] = "";
     }
 
+    // Pass through the all arguments in the first clause in sequence, mapping each to the corresponding
+    // argument in the second clause under the literal permutation
     for (size_t i = 0; i < size; i++) {
         const auto& leftArgs = leftElements[i].params;
         const auto& rightArgs = rightElements[permutation[i]].params;
@@ -314,7 +318,7 @@ bool MinimiseProgramTransformer::areBijectivelyEquivalent(
         return false;
     }
 
-    // head atoms must have the same arity
+    // head atoms must have the same arity (names do not matter)
     if (leftElements[0].params.size() != rightElements[0].params.size()) {
         return false;
     }

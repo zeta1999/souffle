@@ -233,15 +233,15 @@ public:
         return "MinimiseProgramTransformer";
     }
 
+    // Check whether two clauses are bijectively equivalent.
+    static bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right);
+
 private:
     class NormalisedClauseRepr;
 
     bool transform(AstTranslationUnit& translationUnit) override;
 
     /** -- Bijective Equivalence Helper Methods -- */
-
-    // Check whether two clauses are bijectively equivalent.
-    static bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right);
 
     // Check whether two normalised clause representations are equivalent.
     static bool areBijectivelyEquivalent(const NormalisedClauseRepr& left, const NormalisedClauseRepr& right);

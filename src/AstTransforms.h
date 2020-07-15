@@ -234,7 +234,6 @@ public:
     }
 
 private:
-    struct Element;
     class NormalisedClauseRepr;
 
     bool transform(AstTranslationUnit& translationUnit) override;

@@ -40,16 +40,30 @@
 #include <vector>
 
 namespace souffle {
-class AstRelation;
 
-struct MinimiseProgramTransformer::Element {
-    AstQualifiedName name;
-    std::vector<std::string> params;
-};
+class AstRelation;
 
 class MinimiseProgramTransformer::NormalisedClauseRepr {
 public:
-    NormalisedClauseRepr(const AstClause* clause);
+    struct NormalisedClauseElementRepr {
+        AstQualifiedName name;
+        std::vector<std::string> params;
+    };
+
+    NormalisedClauseRepr(const AstClause* clause) {
+        // head
+        AstQualifiedName name("min:head");
+        std::vector<std::string> headVars;
+        for (const auto* arg : clause->getHead()->getArguments()) {
+            headVars.push_back(normaliseArgument(arg));
+        }
+        clauseElements.push_back({.name = name, .params = headVars});
+
+        // body
+        for (const auto* lit : clause->getBodyLiterals()) {
+            addClauseBodyLiteral(lit);
+        }
+    }
 
     bool isFullyNormalised() const {
         return fullyNormalised;
@@ -63,7 +77,7 @@ public:
         return constants;
     }
 
-    const std::vector<Element>& getElements() const {
+    const std::vector<NormalisedClauseElementRepr>& getElements() const {
         return clauseElements;
     }
 
@@ -71,29 +85,23 @@ private:
     bool fullyNormalised{true};
     std::set<std::string> variables{};
     std::set<std::string> constants{};
-    std::vector<Element> clauseElements;
+    std::vector<NormalisedClauseElementRepr> clauseElements;
+
+    /**
+     * Parse an atom with a preset name qualifier into the element list.
+     */
     void addClauseAtom(std::string qualifier, const AstAtom* atom);
-    void addClauseBodyElement(const AstLiteral* lit);
+
+    /**
+     * Parse a body literal into the element list.
+     */
+    void addClauseBodyLiteral(const AstLiteral* lit);
+
+    /**
+     * Return a normalised string repr of an argument.
+     */
     std::string normaliseArgument(const AstArgument* arg);
 };
-
-MinimiseProgramTransformer::NormalisedClauseRepr::NormalisedClauseRepr(const AstClause* clause) {
-    // head
-    AstQualifiedName name("min:head");
-    std::vector<std::string> headVars;
-    for (const auto* arg : clause->getHead()->getArguments()) {
-        headVars.push_back(normaliseArgument(arg));
-    }
-    clauseElements.push_back({.name = name, .params = headVars});
-
-    // body
-    for (const auto* lit : clause->getBodyLiterals()) {
-        addClauseBodyElement(lit);
-    }
-
-    // variables
-    visitDepthFirst(*clause, [&](const AstVariable& var) { variables.insert(var.getName()); });
-}
 
 void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseAtom(
         std::string qualifier, const AstAtom* atom) {
@@ -107,14 +115,14 @@ void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseAtom(
     clauseElements.push_back({.name = name, .params = vars});
 }
 
-void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyElement(const AstLiteral* lit) {
+void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyLiteral(const AstLiteral* lit) {
     if (const auto* atom = dynamic_cast<const AstAtom*>(lit)) {
         addClauseAtom("@min:atom", atom);
     } else if (const auto* neg = dynamic_cast<const AstNegation*>(lit)) {
         addClauseAtom("@min:neg", neg->getAtom());
     } else if (const auto* bc = dynamic_cast<const AstBinaryConstraint*>(lit)) {
         AstQualifiedName name(toBinaryConstraintSymbol(bc->getOperator()));
-        name.prepend("@operator");
+        name.prepend("@min:operator");
         std::vector<std::string> vars;
         vars.push_back(normaliseArgument(bc->getLHS()));
         vars.push_back(normaliseArgument(bc->getRHS()));
@@ -122,7 +130,7 @@ void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyElement(cons
     } else {
         fullyNormalised = false;
         AstQualifiedName name(toString(*lit));
-        name.prepend("@unhandled");
+        name.prepend("@min:unhandled:lit");
         clauseElements.push_back({.name = name, .params = std::vector<std::string>()});
     }
 }
@@ -152,7 +160,7 @@ std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(
         return name;
     } else {
         fullyNormalised = false;
-        return "@min:unhandled";
+        return "@min:unhandled:arg";
     }
 }
 

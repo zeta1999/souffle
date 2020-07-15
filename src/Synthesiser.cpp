@@ -1330,8 +1330,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::FSUM:
                 case AggregateOp::USUM:
                 case AggregateOp::SUM:
-                    out << "res0 += "
-                        << "ramBitCast<" << type << ">(";
+                    out << "res0 += ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     break;

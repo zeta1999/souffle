@@ -262,7 +262,10 @@ bool MaterializeSingletonAggregationTransformer::transform(AstTranslationUnit& t
     // collect references to clause / aggregate pairs
     visitDepthFirst(program, [&](const AstClause& clause) {
         visitDepthFirst(clause, [&](const AstAggregator& agg) {
-            if (!isSingleValued(agg, clause)) {
+            // if the aggregate isn't single valued
+            // (ie it relies on a grounding from the outer scope)
+            // or it's the only atom in the clause, then there's no point materialising it!
+            if (!isSingleValued(agg, clause) || clause.getBodyLiterals().size() == 1) {
                 return;
             }
             auto* foundAggregate = const_cast<AstAggregator*>(&agg);

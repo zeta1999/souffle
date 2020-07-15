@@ -189,7 +189,7 @@ struct IterDerefWrapper : public std::iterator<std::forward_iterator_tag, T> {
     Iter iter;
 
 public:
-    // some constructores
+    // some constructors
     IterDerefWrapper() = default;
     IterDerefWrapper(const Iter& iter) : iter(iter) {}
 

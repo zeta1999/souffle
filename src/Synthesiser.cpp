@@ -935,16 +935,16 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 sharedVariable += ", res1";
             }
 
+            out << preamble.str();
+            out << "PARALLEL_START\n";
             // check whether there is an index to use
             if (keys.empty()) {
-                out << "#pragma omp parallel for reduction(" << op << ":" << sharedVariable << ")\n";
+                out << "#pragma omp for reduction(" << op << ":" << sharedVariable << ")\n";
                 out << "for(const auto& env" << identifier << " : "
                     << "*" << relName << ") {\n";
             } else {
                 const auto& patternsLower = aggregate.getRangePattern().first;
                 const auto& patternsUpper = aggregate.getRangePattern().second;
-
-                out << preamble.str();
 
                 out << "const " << tuple_type << " lower{{";
                 out << join(patternsLower.begin(), patternsLower.begin() + arity, ",", recWithDefault);
@@ -958,7 +958,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     << "lowerUpperRange_" << keys << "(lower,upper," << ctxName << ");\n";
 
                 out << "auto part = range.partition();\n";
-                out << "#pragma omp parallel for reduction(" << op << ":" << sharedVariable << ")\n";
+                out << "#pragma omp for reduction(" << op << ":" << sharedVariable << ")\n";
                 // iterate over each part
                 out << "for (auto it = part.begin(); it < part.end(); ++it) {\n";
                 // iterate over tuples in each part
@@ -1022,9 +1022,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 out << "}\n";
             }
 
+            // start single-threaded section
+            out << "#pragma omp single\n{\n";
+
             if (aggregate.getFunction() == AggregateOp::MEAN) {
                 out << "if (res1 != 0) {\n";
-
                 out << "res0 = res0 / res1;\n";
                 out << "}\n";
             }
@@ -1036,8 +1038,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "if (shouldRunNested) {\n";
             visitTupleOperation(aggregate, out);
             out << "}\n";
+            // end single-threaded section
+            out << "}\n";
             PRINT_END_COMMENT(out);
-            out << "{ // to match parallel_end\n";  // to match unused parallel_end
         }
         void visitIndexAggregate(const RamIndexAggregate& aggregate, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);
@@ -1214,7 +1217,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 // shortcut: use relation size
                 out << "env" << identifier << "[0] = " << relName << "->"
                     << "size();\n";
-                out << "PARALLEL_START;\n";
+                out << "PARALLEL_START\n";
                 out << preamble.str();
                 visitTupleOperation(aggregate, out);
                 PRINT_END_COMMENT(out);
@@ -1296,9 +1299,10 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // create a partitioning of the relation to iterate over simeltaneously
             out << "auto part = " << relName << "->partition();\n";
+            out << "PARALLEL_START\n";
             out << preamble.str();
             // pragma statement
-            out << "#pragma omp parallel for reduction(" << op << ":" << sharedVariable << ")\n";
+            out << "#pragma omp for reduction(" << op << ":" << sharedVariable << ")\n";
             // iterate over each part
             out << "for (auto it = part.begin(); it < part.end(); ++it) {\n";
             // iterate over tuples in each part
@@ -1350,6 +1354,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             // end partition loop
             out << "}\n";
 
+            // the rest shouldn't be run in parallel
+            out << "#pragma omp single\n{\n";
+
             if (aggregate.getFunction() == AggregateOp::MEAN) {
                 out << "if (res1 != 0) {\n";
                 out << "res0 = res0 / res1;\n";
@@ -1363,9 +1370,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "if (shouldRunNested) {\n";
             visitTupleOperation(aggregate, out);
             out << "}\n";
-
+            out << "}\n";  // to close off pragma omp single section
             PRINT_END_COMMENT(out);
-            out << "{ // to match parallel_end\n";  // to match unused parallel_end
         }
         void visitAggregate(const RamAggregate& aggregate, std::ostream& out) override {
             PRINT_BEGIN_COMMENT(out);

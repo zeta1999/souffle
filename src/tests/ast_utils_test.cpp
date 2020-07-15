@@ -376,9 +376,14 @@ TEST(AstUtils, CheckClausalEquivalence) {
     EXPECT_EQ("B(1).", toString(*bClauses[0]));
 
     EXPECT_EQ(3, cClauses.size());
-    EXPECT_EQ("C(z) :- \n   A(z,y),\n   A(z,x),\n   x != 3,\n   x < y,\n   !B(x),\n   y > 3,\n   B(y).", toString(*cClauses[0]));
-    EXPECT_EQ("C(r) :- \n   A(r,y),\n   A(r,x),\n   x != 3,\n   x < y,\n   !B(y),\n   y > 3,\n   B(y),\n   B(x).", toString(*cClauses[1]));
-    EXPECT_EQ("C(x) :- \n   A(x,a),\n   a != 3,\n   !B(a),\n   A(x,b),\n   b > 3,\n   B(b),\n   a < b.", toString(*cClauses[2]));
+    EXPECT_EQ("C(z) :- \n   A(z,y),\n   A(z,x),\n   x != 3,\n   x < y,\n   !B(x),\n   y > 3,\n   B(y).",
+            toString(*cClauses[0]));
+    EXPECT_EQ(
+            "C(r) :- \n   A(r,y),\n   A(r,x),\n   x != 3,\n   x < y,\n   !B(y),\n   y > 3,\n   B(y),\n   "
+            "B(x).",
+            toString(*cClauses[1]));
+    EXPECT_EQ("C(x) :- \n   A(x,a),\n   a != 3,\n   !B(a),\n   A(x,b),\n   b > 3,\n   B(b),\n   a < b.",
+            toString(*cClauses[2]));
 
     // Check equivalence of these clauses
     // -- A
@@ -406,8 +411,12 @@ TEST(AstUtils, CheckClausalEquivalence) {
     EXPECT_EQ("B(1).", toString(*bMinClauses[0]));
 
     EXPECT_EQ(2, cMinClauses.size());
-    EXPECT_EQ("C(z) :- \n   A(z,y),\n   A(z,x),\n   x != 3,\n   x < y,\n   !B(x),\n   y > 3,\n   B(y).", toString(*cMinClauses[0]));
-    EXPECT_EQ("C(r) :- \n   A(r,y),\n   A(r,x),\n   x != 3,\n   x < y,\n   !B(y),\n   y > 3,\n   B(y),\n   B(x).", toString(*cMinClauses[1]));
+    EXPECT_EQ("C(z) :- \n   A(z,y),\n   A(z,x),\n   x != 3,\n   x < y,\n   !B(x),\n   y > 3,\n   B(y).",
+            toString(*cMinClauses[0]));
+    EXPECT_EQ(
+            "C(r) :- \n   A(r,y),\n   A(r,x),\n   x != 3,\n   x < y,\n   !B(y),\n   y > 3,\n   B(y),\n   "
+            "B(x).",
+            toString(*cMinClauses[1]));
 }
 
 /**

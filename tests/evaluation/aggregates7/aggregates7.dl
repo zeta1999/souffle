@@ -10,7 +10,7 @@
 .decl S, IndexAggregateCount(m:number, n:number)
 .output IndexAggregateCount
 S(1, 1).
-S(1, (n+1)) :- S(1, n), n < 100. // get S(1, n), 1 <= n <= 100
+S(1, (n+1)) :- S(1, n), n < 1000. // get S(1, n), 1 <= n <= 100
 IndexAggregateCount(1, x) :- x = count : { S(1, _) }. // this will use indexAggregate
 
 // index aggregate max

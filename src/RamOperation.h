@@ -906,9 +906,12 @@ protected:
 
 /**
  * @class RamIndexAggregate
- * @brief Indexed aggregation on a relation
+ * @brief Indexed aggregation on a relation. The index allows us to iterate over a restricted range
  *
- * TODO (rachel): Fix description!! I'm not sure what this represents
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * t0.0=sum t0.1 SEARCH t0 ∈ S ON INDEX t0.0 = number(1)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate {
 public:
@@ -967,9 +970,12 @@ protected:
 
 /**
  * @class RamParallelIndexAggregate
- * @brief Indexed aggregation on a relation
+ * @brief Aggregate over values of a relation using an index in parallel
  *
- * TODO (rachel): Fix description!!
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * t0.0=sum t0.1 SEARCH t0 ∈ S ON INDEX t0.0 = number(1)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamParallelIndexAggregate : public RamIndexAggregate, public RamAbstractParallel {
 public:

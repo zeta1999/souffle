@@ -931,7 +931,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << type << " res0 = " << init << ";\n";
             if (aggregate.getFunction() == AggregateOp::MEAN) {
-                out << type << " res1 = 0;\n";
+                out << "RamUnsigned res1 = 0;\n";
                 sharedVariable += ", res1";
             }
 

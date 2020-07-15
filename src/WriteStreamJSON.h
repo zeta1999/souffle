@@ -114,7 +114,7 @@ public:
     WriteFileJSON(const std::map<std::string, std::string>& rwOperation, const SymbolTable& symbolTable,
             const RecordTable& recordTable)
             : WriteStreamJSON(rwOperation, symbolTable, recordTable), isFirst(true),
-              file(rwOperation.at("filename"), std::ios::out | std::ios::binary) {
+              file(getFileName(rwOperation), std::ios::out | std::ios::binary) {
         file << "[";
     }
 
@@ -138,6 +138,21 @@ protected:
             isFirst = false;
         }
         writeNextTupleJSON(file, tuple);
+    }
+
+    /**
+     * Return given filename or construct from relation name.
+     * Default name is [configured path]/[relation name].json
+     *
+     * @param rwOperation map of IO configuration options
+     * @return input filename
+     */
+    static std::string getFileName(const std::map<std::string, std::string>& rwOperation) {
+        auto name = getOr(rwOperation, "filename", rwOperation.at("name") + ".json");
+        if (name.front() != '/') {
+            name = getOr(rwOperation, "fact-dir", ".") + "/" + name;
+        }
+        return name;
     }
 };
 

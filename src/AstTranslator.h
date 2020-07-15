@@ -298,16 +298,13 @@ private:
 
     /** translate AST directives to RAM directives */
     // TODO (b-scholz): revisit / refactor
-    void translateDirectives(std::map<std::string, std::string>& directives, const AstRelation* rel,
-            const std::string& filePath, const std::string& fileExt);
+    void translateDirectives(std::map<std::string, std::string>& directives, const AstRelation* rel);
 
     // TODO (b-scholz): revisit / refactor so that only one directive is translated
-    std::vector<std::map<std::string, std::string>> getInputDirectives(const AstRelation* rel,
-            std::string filePath = std::string(), const std::string& fileExt = std::string());
+    std::vector<std::map<std::string, std::string>> getInputDirectives(const AstRelation* rel);
 
     // TODO (b-scholz): revisit / refactor so that only one directive is translated
-    std::vector<std::map<std::string, std::string>> getOutputDirectives(const AstRelation* rel,
-            std::string filePath = std::string(), const std::string& fileExt = std::string());
+    std::vector<std::map<std::string, std::string>> getOutputDirectives(const AstRelation* rel);
 
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name);

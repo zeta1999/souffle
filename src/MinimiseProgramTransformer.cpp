@@ -155,7 +155,7 @@ std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(
         return name;
     } else if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
         static size_t countUnnamed = 0;
-        auto name = "@min:unnamed:" + countUnnamed++;
+        std::string name = "@min:unnamed:" + countUnnamed++;
         variables.insert(name);
         return name;
     } else {

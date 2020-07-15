@@ -1336,8 +1336,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     break;
 
                 case AggregateOp::MEAN:
-                    out << "res0 += "
-                        << "ramBitCast<RamFloat>(";
+                    out << "res0 += ramBitCast<RamFloat>(";
                     visit(aggregate.getExpression(), out);
                     out << ");\n";
                     out << "++res1;\n";

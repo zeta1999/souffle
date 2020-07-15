@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "ast//transform/AstTransformer.h"
+#include "ast/transform/AstTransformer.h"
 #include "ErrorReport.h"
 #include "ast/AstTranslationUnit.h"
 #include <chrono>

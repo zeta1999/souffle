@@ -17,7 +17,7 @@ IndexAggregateCount(1, x) :- x = count : { S(1, _) }. // this will use indexAggr
 .decl A, IndexAggregateMax(m:number, n:number)
 .output IndexAggregateMax
 A(1, 1).
-A(1, (n+1)) :- A(1, n), n < 100. 
+A(1, (n+1)) :- A(1, n), n < 100.
 IndexAggregateMax(1, x) :- x = max y : { A(1, y) }. 
 
 // index aggregate mean

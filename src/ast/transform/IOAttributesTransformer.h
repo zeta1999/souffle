@@ -33,7 +33,7 @@ namespace souffle {
 class IOAttributesTransformer : public AstTransformer {
 public:
     std::string getName() const override {
-        return "IODefaultsTransformer";
+        return "IOAttributesTransformer";
     }
 
 private:

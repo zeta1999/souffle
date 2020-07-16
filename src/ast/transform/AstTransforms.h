@@ -18,6 +18,7 @@
 
 #include "DebugReporter.h"
 #include "ast/transform/AstTransformer.h"
+#include "utility/ContainerUtil.h"
 #include <functional>
 #include <map>
 #include <memory>
@@ -423,6 +424,10 @@ public:
         }
     }
 
+    std::vector<AstTransformer*> getSubtransformers() const override {
+        return toPtrVector(pipeline);
+    }
+
     void setDebugReport() override {
         for (auto& i : pipeline) {
             if (auto* mt = dynamic_cast<MetaTransformer*>(i.get())) {
@@ -472,6 +477,10 @@ public:
     ConditionalTransformer(bool cond, std::unique_ptr<AstTransformer> transformer)
             : condition([=]() { return cond; }), transformer(std::move(transformer)) {}
 
+    std::vector<AstTransformer*> getSubtransformers() const override {
+        return {transformer.get()};
+    }
+
     void setDebugReport() override {
         if (auto* mt = dynamic_cast<MetaTransformer*>(transformer.get())) {
             mt->setDebugReport();
@@ -516,6 +525,9 @@ public:
     WhileTransformer(bool cond, std::unique_ptr<AstTransformer> transformer)
             : condition([=]() { return cond; }), transformer(std::move(transformer)) {}
 
+    std::vector<AstTransformer*> getSubtransformers() const override {
+        return {transformer.get()};
+    }
     void setDebugReport() override {
         if (auto* mt = dynamic_cast<MetaTransformer*>(transformer.get())) {
             mt->setDebugReport();
@@ -562,6 +574,10 @@ public:
         } else {
             transformer = std::make_unique<DebugReporter>(std::move(transformer));
         }
+    }
+
+    std::vector<AstTransformer*> getSubtransformers() const override {
+        return {transformer.get()};
     }
 
     void setVerbosity(bool verbose) override {

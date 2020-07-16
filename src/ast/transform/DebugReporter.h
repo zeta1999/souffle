@@ -37,6 +37,10 @@ public:
     DebugReporter(std::unique_ptr<AstTransformer> wrappedTransformer)
             : wrappedTransformer(std::move(wrappedTransformer)) {}
 
+    std::vector<AstTransformer*> getSubtransformers() const override {
+        return {wrappedTransformer.get()};
+    }
+
     void setDebugReport() override {}
 
     void setVerbosity(bool verbose) override {

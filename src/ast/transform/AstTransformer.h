@@ -18,6 +18,7 @@
 
 #include <set>
 #include <string>
+#include <vector>
 
 namespace souffle {
 
@@ -43,6 +44,9 @@ protected:
     bool verbose = false;
 
 public:
+    /* Get subtransformers */
+    virtual std::vector<AstTransformer*> getSubtransformers() const = 0;
+
     /* Enable the debug-report for all sub-transformations */
     virtual void setDebugReport() = 0;
 
@@ -64,6 +68,10 @@ private:
     bool transform(AstTranslationUnit& translationUnit) override;
 
 public:
+    std::vector<AstTransformer*> getSubtransformers() const override {
+        return {};
+    }
+
     void setDebugReport() override {}
 
     void setVerbosity(bool /* verbose */) override {}

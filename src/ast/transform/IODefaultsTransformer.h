@@ -16,10 +16,8 @@
 
 #pragma once
 
-#include "AstTransformer.h"
-#include "AstTypeEnvironmentAnalysis.h"
-#include "AstUtils.h"
-#include "AuxArityAnalysis.h"
+#include "ast/AstUtils.h"
+#include "ast/transform/AstTransformer.h"
 #include <map>
 #include <string>
 #include <vector>

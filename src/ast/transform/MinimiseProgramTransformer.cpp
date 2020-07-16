@@ -27,6 +27,7 @@
 #include "ast/analysis/AstIOTypeAnalysis.h"
 #include "ast/transform/AstTransforms.h"
 #include "utility/ContainerUtil.h"
+#include "utility/StringUtil.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
@@ -39,12 +40,135 @@
 #include <vector>
 
 namespace souffle {
+
 class AstRelation;
+
+class MinimiseProgramTransformer::NormalisedClauseRepr {
+public:
+    struct NormalisedClauseElementRepr {
+        AstQualifiedName name;
+        std::vector<std::string> params;
+    };
+
+    NormalisedClauseRepr(const AstClause* clause) {
+        // head
+        AstQualifiedName name("min:head");
+        std::vector<std::string> headVars;
+        for (const auto* arg : clause->getHead()->getArguments()) {
+            headVars.push_back(normaliseArgument(arg));
+        }
+        clauseElements.push_back({.name = name, .params = headVars});
+
+        // body
+        for (const auto* lit : clause->getBodyLiterals()) {
+            addClauseBodyLiteral(lit);
+        }
+    }
+
+    bool isFullyNormalised() const {
+        return fullyNormalised;
+    }
+
+    const std::set<std::string>& getVariables() const {
+        return variables;
+    }
+
+    const std::set<std::string>& getConstants() const {
+        return constants;
+    }
+
+    const std::vector<NormalisedClauseElementRepr>& getElements() const {
+        return clauseElements;
+    }
+
+private:
+    bool fullyNormalised{true};
+    std::set<std::string> variables{};
+    std::set<std::string> constants{};
+    std::vector<NormalisedClauseElementRepr> clauseElements;
+
+    /**
+     * Parse an atom with a preset name qualifier into the element list.
+     */
+    void addClauseAtom(std::string qualifier, const AstAtom* atom);
+
+    /**
+     * Parse a body literal into the element list.
+     */
+    void addClauseBodyLiteral(const AstLiteral* lit);
+
+    /**
+     * Return a normalised string repr of an argument.
+     */
+    std::string normaliseArgument(const AstArgument* arg);
+};
+
+void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseAtom(
+        std::string qualifier, const AstAtom* atom) {
+    AstQualifiedName name(atom->getQualifiedName());
+    name.prepend(qualifier);
+
+    std::vector<std::string> vars;
+    for (const auto* arg : atom->getArguments()) {
+        vars.push_back(normaliseArgument(arg));
+    }
+    clauseElements.push_back({.name = name, .params = vars});
+}
+
+void MinimiseProgramTransformer::NormalisedClauseRepr::addClauseBodyLiteral(const AstLiteral* lit) {
+    if (const auto* atom = dynamic_cast<const AstAtom*>(lit)) {
+        addClauseAtom("@min:atom", atom);
+    } else if (const auto* neg = dynamic_cast<const AstNegation*>(lit)) {
+        addClauseAtom("@min:neg", neg->getAtom());
+    } else if (const auto* bc = dynamic_cast<const AstBinaryConstraint*>(lit)) {
+        AstQualifiedName name(toBinaryConstraintSymbol(bc->getOperator()));
+        name.prepend("@min:operator");
+        std::vector<std::string> vars;
+        vars.push_back(normaliseArgument(bc->getLHS()));
+        vars.push_back(normaliseArgument(bc->getRHS()));
+        clauseElements.push_back({.name = name, .params = vars});
+    } else {
+        fullyNormalised = false;
+        AstQualifiedName name(toString(*lit));
+        name.prepend("@min:unhandled:lit");
+        clauseElements.push_back({.name = name, .params = std::vector<std::string>()});
+    }
+}
+
+std::string MinimiseProgramTransformer::NormalisedClauseRepr::normaliseArgument(const AstArgument* arg) {
+    if (auto* stringCst = dynamic_cast<const AstStringConstant*>(arg)) {
+        std::stringstream name;
+        name << "@min:cst:str" << *stringCst;
+        constants.insert(name.str());
+        return name.str();
+    } else if (auto* numericCst = dynamic_cast<const AstNumericConstant*>(arg)) {
+        std::stringstream name;
+        name << "@min:cst:num:" << *numericCst;
+        constants.insert(name.str());
+        return name.str();
+    } else if (dynamic_cast<const AstNilConstant*>(arg) != nullptr) {
+        constants.insert("@min:cst:nil");
+        return "@min:cst:nil";
+    } else if (auto* var = dynamic_cast<const AstVariable*>(arg)) {
+        auto name = var->getName();
+        variables.insert(name);
+        return name;
+    } else if (dynamic_cast<const AstUnnamedVariable*>(arg)) {
+        static size_t countUnnamed = 0;
+        std::stringstream name;
+        name << "@min:unnamed:" << countUnnamed++;
+        variables.insert(name.str());
+        return name.str();
+    } else {
+        fullyNormalised = false;
+        return "@min:unhandled:arg";
+    }
+}
 
 /**
  * Extract valid permutations from a given permutation matrix of valid moves.
  */
-std::vector<std::vector<unsigned int>> extractPermutations(
+static std::vector<std::vector<unsigned int>> extractPermutations(
         const std::vector<std::vector<unsigned int>>& permutationMatrix) {
     size_t clauseSize = permutationMatrix.size();
     // keep track of the possible end-positions of each atom in the first clause
@@ -134,174 +258,84 @@ std::vector<std::vector<unsigned int>> extractPermutations(
     return permutations;
 }
 
-/**
- * Check if the atom at leftIdx in the left clause can potentially be matched up
- * with the atom at rightIdx in the right clause.
- * NOTE: index 0 refers to the head atom, index 1 to the first body atom, and so on.
- */
-bool isValidMove(const AstClause* left, size_t leftIdx, const AstClause* right, size_t rightIdx) {
-    // handle the case where one of the indices refers to the head
-    if (leftIdx == 0 && rightIdx == 0) {
-        const AstAtom* leftHead = left->getHead();
-        const AstAtom* rightHead = right->getHead();
-        return leftHead->getQualifiedName() == rightHead->getQualifiedName();
-    } else if (leftIdx == 0 || rightIdx == 0) {
-        return false;
-    }
+bool MinimiseProgramTransformer::isValidPermutation(const NormalisedClauseRepr& left,
+        const NormalisedClauseRepr& right, const std::vector<unsigned int>& permutation) {
+    const auto& leftElements = left.getElements();
+    const auto& rightElements = right.getElements();
 
-    // both must hence be body atoms
-    int leftBodyAtomIdx = leftIdx - 1;
-    const AstAtom* leftAtom = dynamic_cast<AstAtom*>(left->getBodyLiterals()[leftBodyAtomIdx]);
-    assert(leftAtom != nullptr && "expected atom");
-
-    int rightBodyAtomIdx = rightIdx - 1;
-    const AstAtom* rightAtom = dynamic_cast<AstAtom*>(right->getBodyLiterals()[rightBodyAtomIdx]);
-    assert(rightAtom != nullptr && "expected atom");
-
-    return leftAtom->getQualifiedName() == rightAtom->getQualifiedName();
-}
-
-/**
- * Check whether a valid variable mapping exists for the given permutation.
- */
-bool isValidPermutation(
-        const AstClause* left, const AstClause* right, const std::vector<unsigned int>& permutation) {
-    // --- perform the permutation ---
-
-    auto reorderedLeft = std::unique_ptr<AstClause>(left->clone());
-
-    // deduce the body atom permutation from the full clause permutation
-    std::vector<unsigned int> bodyPermutation(permutation.begin() + 1, permutation.end());
-    for (unsigned int& i : bodyPermutation) {
-        i -= 1;
-    }
-
-    // currently, <permutation[i] == j> indicates that atom i should map to position j
-    // internally, for the clause class' reordering function, <permutation[i] == j> indicates
-    // that position i should contain atom j
-    // rearrange the permutation to match the internals
-    // TODO (azreika): perhaps change the internal reordering strategy because this came up in MST too
-    std::vector<unsigned int> reorderedPermutation(bodyPermutation.size());
-    for (size_t i = 0; i < bodyPermutation.size(); i++) {
-        reorderedPermutation[bodyPermutation[i]] = i;
-    }
-
-    // perform the permutation
-    reorderedLeft.reset(reorderAtoms(reorderedLeft.get(), reorderedPermutation));
-
-    // --- check if a valid variable exists corresponding to this permutation ---
+    assert(leftElements.size() == rightElements.size() && "clauses should have equal size");
+    size_t size = leftElements.size();
 
     std::map<std::string, std::string> variableMap;
-    visitDepthFirst(*reorderedLeft, [&](const AstVariable& var) { variableMap[var.getName()] = ""; });
 
-    // need to match the variables in the body
-    std::vector<AstLiteral*> leftAtoms = reorderedLeft->getBodyLiterals();
-    std::vector<AstLiteral*> rightAtoms = right->getBodyLiterals();
-
-    // need to match the variables in the head
-    leftAtoms.push_back(reorderedLeft->getHead());
-    rightAtoms.push_back(right->getHead());
-
-    // check if a valid variable mapping exists
-    auto isVariable = [](const AstArgument* arg) { return dynamic_cast<const AstVariable*>(arg) != nullptr; };
-
-    bool validMapping = true;
-    for (size_t i = 0; i < leftAtoms.size() && validMapping; i++) {
-        // match arguments
-        assert(dynamic_cast<AstAtom*>(leftAtoms[i]) != nullptr && "expected atom");
-        assert(dynamic_cast<AstAtom*>(rightAtoms[i]) != nullptr && "expected atom");
-        std::vector<AstArgument*> leftArgs = dynamic_cast<AstAtom*>(leftAtoms[i])->getArguments();
-        std::vector<AstArgument*> rightArgs = dynamic_cast<AstAtom*>(rightAtoms[i])->getArguments();
-
-        for (size_t j = 0; j < leftArgs.size(); j++) {
-            AstArgument* leftArg = leftArgs[j];
-            AstArgument* rightArg = rightArgs[j];
-            if (isVariable(leftArg) && isVariable(rightArg)) {
-                // both variables, their names should match to each other through the clause
-                std::string leftVarName = dynamic_cast<AstVariable*>(leftArg)->getName();
-                std::string rightVarName = dynamic_cast<AstVariable*>(rightArg)->getName();
-
-                std::string currentMap = variableMap[leftVarName];
-                if (currentMap.empty()) {
-                    // unassigned yet, so assign it appropriately
-                    variableMap[leftVarName] = rightVarName;
-                } else if (currentMap != rightVarName) {
-                    // mapping is inconsistent!
-                    // clauses cannot be equivalent under this permutation
-                    validMapping = false;
-                    break;
-                }
-            } else if (castEq<AstStringConstant>(leftArg, rightArg)) {
-                validMapping = true;
-            } else if (castEq<AstNumericConstant>(leftArg, rightArg)) {
-                validMapping = true;
-            } else if (dynamic_cast<AstNilConstant*>(leftArg) != nullptr) {
-                validMapping = dynamic_cast<AstNilConstant*>(rightArg) != nullptr;
-            } else {
-                // not the same type, failed!
-                validMapping = false;
-                break;
-            }
-        }
+    // Constants should be fixed to the identically-named constant
+    for (const auto& cst : left.getConstants()) {
+        variableMap[cst] = cst;
     }
 
-    // return whether a valid variable mapping exists for this permutation
-    return validMapping;
-}
+    // Variables start off mapping to nothing
+    for (const auto& var : left.getVariables()) {
+        variableMap[var] = "";
+    }
 
-/**
- * Check whether two clauses are bijectively equivalent.
- */
-bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
-    // only check bijective equivalence for a subset of the possible clauses
-    auto isValidClause = [&](const AstClause* clause) {
-        // check that all body literals are atoms
-        // i.e. avoid clauses with constraints or negations
-        // TODO (azreika): extend to constraints and negations
-        for (AstLiteral* lit : clause->getBodyLiterals()) {
-            if (dynamic_cast<AstAtom*>(lit) == nullptr) {
+    // Pass through the all arguments in the first clause in sequence, mapping each to the corresponding
+    // argument in the second clause under the literal permutation
+    for (size_t i = 0; i < size; i++) {
+        const auto& leftArgs = leftElements[i].params;
+        const auto& rightArgs = rightElements[permutation[i]].params;
+        for (size_t j = 0; j < leftArgs.size(); j++) {
+            auto leftArg = leftArgs[j];
+            auto rightArg = rightArgs[j];
+            std::string currentMap = variableMap[leftArg];
+            if (currentMap.empty()) {
+                // unassigned yet, so assign it appropriately
+                variableMap[leftArg] = rightArg;
+            } else if (currentMap != rightArg) {
+                // inconsistent mapping!
+                // clauses cannot be equivalent under this permutation
                 return false;
             }
         }
+    }
 
-        // check that all arguments are either constants or variables
-        // i.e. only allow primitive arguments
-        bool valid = true;
-        visitDepthFirst(*clause, [&](const AstArgument& arg) {
-            if (dynamic_cast<const AstVariable*>(&arg) == nullptr &&
-                    dynamic_cast<const AstConstant*>(&arg) == nullptr) {
-                valid = false;
-            }
-        });
-        return valid;
-    };
+    return true;
+}
 
-    if (!isValidClause(left) || !isValidClause(right)) {
+bool MinimiseProgramTransformer::areBijectivelyEquivalent(
+        const NormalisedClauseRepr& left, const NormalisedClauseRepr& right) {
+    const auto& leftElements = left.getElements();
+    const auto& rightElements = right.getElements();
+
+    const auto& leftVars = left.getVariables();
+    const auto& rightVars = right.getVariables();
+
+    // rules must be fully normalised
+    if (!left.isFullyNormalised() || !right.isFullyNormalised()) {
         return false;
     }
 
     // rules must be the same length to be equal
-    if (left->getBodyLiterals().size() != right->getBodyLiterals().size()) {
+    if (leftElements.size() != rightElements.size()) {
         return false;
     }
 
-    // head atoms must have the same arity
-    if (left->getHead()->getArity() != right->getHead()->getArity()) {
+    // head atoms must have the same arity (names do not matter)
+    if (leftElements[0].params.size() != rightElements[0].params.size()) {
         return false;
     }
 
     // rules must have the same number of distinct variables
-    std::set<std::string> leftVariableNames;
-    std::set<std::string> rightVariableNames;
-    visitDepthFirst(*left, [&](const AstVariable& var) { leftVariableNames.insert(var.getName()); });
-    visitDepthFirst(*right, [&](const AstVariable& var) { rightVariableNames.insert(var.getName()); });
-    if (leftVariableNames.size() != rightVariableNames.size()) {
+    if (leftVars.size() != rightVars.size()) {
         return false;
     }
 
-    // set up the n x n permutation matrix, where n is the number of
-    // atoms in the clause, including the head atom
-    size_t size = left->getBodyLiterals().size() + 1;
+    // rules must have the exact same set of constants
+    if (left.getConstants() != right.getConstants()) {
+        return false;
+    }
+
+    // set up the n x n permutation matrix, where n is the number of clause elements
+    size_t size = leftElements.size();
     auto permutationMatrix = std::vector<std::vector<unsigned int>>(size);
     for (auto& i : permutationMatrix) {
         i = std::vector<unsigned int>(size);
@@ -311,32 +345,32 @@ bool areBijectivelyEquivalent(const AstClause* left, const AstClause* right) {
     permutationMatrix[0][0] = 1;
     for (size_t i = 1; i < size; i++) {
         for (size_t j = 1; j < size; j++) {
-            if (isValidMove(left, i, right, j)) {
+            if (leftElements[i].name == rightElements[j].name) {
                 permutationMatrix[i][j] = 1;
             }
         }
     }
 
-    // check if any of these permutations have valid variable mappings associated with them
+    // check if any of these permutations have valid variable mappings
     std::vector<std::vector<unsigned int>> permutations = extractPermutations(permutationMatrix);
     for (auto permutation : permutations) {
         if (isValidPermutation(left, right, permutation)) {
-            // valid permutation with valid corresponding variable mapping exists
+            // valid permutation with valid mapping
             // therefore, the two clauses are equivalent!
             return true;
         }
     }
-
     return false;
 }
 
-/**
- * Reduces locally-redundant clauses.
- * A clause is locally-redundant if there is another clause within the same relation
- * that computes the same set of tuples.
- * @return true iff the program was changed
- */
-bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
+bool MinimiseProgramTransformer::areBijectivelyEquivalent(
+        const AstClause* leftClause, const AstClause* rightClause) {
+    auto normalisedLeft = NormalisedClauseRepr(leftClause);
+    auto normalisedRight = NormalisedClauseRepr(rightClause);
+    return areBijectivelyEquivalent(normalisedLeft, normalisedRight);
+}
+
+bool MinimiseProgramTransformer::reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
     AstProgram& program = *translationUnit.getProgram();
 
     std::vector<AstClause*> clausesToDelete;
@@ -378,13 +412,7 @@ bool reduceLocallyEquivalentClauses(AstTranslationUnit& translationUnit) {
     return !clausesToDelete.empty();
 }
 
-/**
- * Removes redundant singleton relations.
- * Singleton relations are relations with a single clause. A singleton relation is redundant
- * if there exists another singleton relation that computes the same set of tuples.
- * @return true iff the program was changed
- */
-bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
+bool MinimiseProgramTransformer::reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     // Note: This reduction is particularly useful in conjunction with the
     // body-partitioning transformation
     AstProgram& program = *translationUnit.getProgram();
@@ -465,11 +493,7 @@ bool reduceSingletonRelations(AstTranslationUnit& translationUnit) {
     return !canonicalName.empty();
 }
 
-/**
- * Remove clauses that are only satisfied if they are already satisfied.
- * @return true iff the program has changed
- */
-bool removeRedundantClauses(AstTranslationUnit& translationUnit) {
+bool MinimiseProgramTransformer::removeRedundantClauses(AstTranslationUnit& translationUnit) {
     auto& program = *translationUnit.getProgram();
     auto isRedundant = [&](const AstClause* clause) {
         const auto* head = clause->getHead();
@@ -494,11 +518,7 @@ bool removeRedundantClauses(AstTranslationUnit& translationUnit) {
     return !clausesToRemove.empty();
 }
 
-/**
- * Remove repeated literals within a clause.
- * @return true iff the program has changed
- */
-bool reduceClauseBodies(AstTranslationUnit& translationUnit) {
+bool MinimiseProgramTransformer::reduceClauseBodies(AstTranslationUnit& translationUnit) {
     auto& program = *translationUnit.getProgram();
     std::set<std::unique_ptr<AstClause>> clausesToAdd;
     std::set<std::unique_ptr<AstClause>> clausesToRemove;

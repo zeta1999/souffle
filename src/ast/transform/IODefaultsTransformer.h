@@ -10,7 +10,7 @@
  *
  * @file IODefaultsTransformer.h
  *
- * Defines AST transformation passes.
+ * Defines AST transformation to set defaults for IO operations.
  *
  ***********************************************************************/
 

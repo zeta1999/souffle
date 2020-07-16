@@ -10,7 +10,8 @@
  *
  * @file IOAttributesTransformer.h
  *
- * Defines AST transformation passes.
+ * Defines AST transformation to set attribute names and types in IO
+ * operations.
  *
  ***********************************************************************/
 
@@ -27,7 +28,7 @@
 namespace souffle {
 
 /**
- * Transformation pass to remove relations which are redundant (do not contribute to output).
+ * Transformation pass to set attribute names and types in IO operations.
  */
 class IOAttributesTransformer : public AstTransformer {
 public:

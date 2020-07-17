@@ -59,7 +59,7 @@ const std::string testInterpreterStore(std::vector<std::string> attribs,
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
-    Json types = Json::object{{"test",
+    Json types = Json::object{{"relation",
             Json::object{{"arity", static_cast<long long>(arity)}, {"auxArity", static_cast<long long>(0)},
                     {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
@@ -247,7 +247,7 @@ TEST(IO_store, SignedChangedDelimiter) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     Json types =
-            Json::object{{"test", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
@@ -321,7 +321,7 @@ TEST(IO_store, MixedTypes) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     Json types =
-            Json::object{{"test", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
@@ -395,7 +395,7 @@ TEST(IO_load, Signed) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     Json types =
-            Json::object{{"test", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
@@ -461,7 +461,7 @@ TEST(IO_load, Float) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     Json types =
-            Json::object{{"test", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
@@ -527,7 +527,7 @@ TEST(IO_load, Unsigned) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     Json types =
-            Json::object{{"test", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
@@ -593,7 +593,7 @@ TEST(IO_load, MixedTypesLoad) {
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
     Json types =
-            Json::object{{"test", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
                                           {"auxArity", static_cast<long long>(0)},
                                           {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 

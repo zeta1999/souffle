@@ -102,7 +102,7 @@ private:
                     {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
 
             Json types = Json::object{
-                    {getRelationName(io), relJson}, {"records", getRecordsTypes(translationUnit)}};
+                    {"relation", relJson}, {"records", getRecordsTypes(translationUnit)}};
 
             io->addDirective("types", types.dump());
             changed = true;

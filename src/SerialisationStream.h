@@ -48,8 +48,7 @@ protected:
               typeAttributes(std::move(relTypes)), arity(typeAttributes.size() - auxArity),
               auxiliaryArity(auxArity) {}
 
-    SerialisationStream(
-            RO<SymbolTable>& symTab, RO<RecordTable>& recTab, Json types)
+    SerialisationStream(RO<SymbolTable>& symTab, RO<RecordTable>& recTab, Json types)
             : symbolTable(symTab), recordTable(recTab), types(std::move(types)) {
         setupFromJson();
     }

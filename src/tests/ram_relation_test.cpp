@@ -246,10 +246,10 @@ TEST(IO_store, SignedChangedDelimiter) {
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
-    Json types =
-            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
-                                          {"auxArity", static_cast<long long>(0)},
-                                          {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
+    Json types = Json::object{
+            {"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+                                 {"auxArity", static_cast<long long>(0)},
+                                 {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
     std::map<std::string, std::string> dirs = {{"operation", "output"}, {"IO", "stdout"},
             {"attributeNames", "x\ty"}, {"name", "test"}, {"delimiter", delimiter}, {"types", types.dump()}};
@@ -320,10 +320,10 @@ TEST(IO_store, MixedTypes) {
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
-    Json types =
-            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
-                                          {"auxArity", static_cast<long long>(0)},
-                                          {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
+    Json types = Json::object{
+            {"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+                                 {"auxArity", static_cast<long long>(0)},
+                                 {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
     std::map<std::string, std::string> dirs = {{"operation", "output"}, {"IO", "stdout"},
             {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
@@ -394,10 +394,10 @@ TEST(IO_load, Signed) {
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
-    Json types =
-            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
-                                          {"auxArity", static_cast<long long>(0)},
-                                          {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
+    Json types = Json::object{
+            {"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+                                 {"auxArity", static_cast<long long>(0)},
+                                 {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
     std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
             {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
@@ -460,10 +460,10 @@ TEST(IO_load, Float) {
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
-    Json types =
-            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
-                                          {"auxArity", static_cast<long long>(0)},
-                                          {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
+    Json types = Json::object{
+            {"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+                                 {"auxArity", static_cast<long long>(0)},
+                                 {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
     std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
             {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
@@ -526,10 +526,10 @@ TEST(IO_load, Unsigned) {
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
-    Json types =
-            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
-                                          {"auxArity", static_cast<long long>(0)},
-                                          {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
+    Json types = Json::object{
+            {"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+                                 {"auxArity", static_cast<long long>(0)},
+                                 {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
     std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
             {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};
@@ -592,10 +592,10 @@ TEST(IO_load, MixedTypesLoad) {
     std::unique_ptr<RamRelationReference> ref1 = std::make_unique<RamRelationReference>(myrel.get());
     std::unique_ptr<RamRelationReference> ref2 = std::make_unique<RamRelationReference>(myrel.get());
 
-    Json types =
-            Json::object{{"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
-                                          {"auxArity", static_cast<long long>(0)},
-                                          {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
+    Json types = Json::object{
+            {"relation", Json::object{{"arity", static_cast<long long>(attribsTypes.size())},
+                                 {"auxArity", static_cast<long long>(0)},
+                                 {"types", Json::array(attribsTypes.begin(), attribsTypes.end())}}}};
 
     std::map<std::string, std::string> readDirs = {{"operation", "input"}, {"IO", "stdin"},
             {"attributeNames", "x\ty"}, {"name", "test"}, {"types", types.dump()}};

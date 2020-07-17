@@ -70,6 +70,16 @@ std::vector<AstClause*> getClauses(const AstProgram& program, const AstRelation&
     return getClauses(program, rel.getQualifiedName());
 }
 
+std::vector<AstIO*> getIOs(const AstProgram& program, const AstQualifiedName& relationName) {
+    std::vector<AstIO*> ios;
+    for (AstIO* io : program.getIOs()) {
+        if (io->getQualifiedName() == relationName) {
+            ios.push_back(io);
+        }
+    }
+    return ios;
+}
+
 AstRelation* getRelation(const AstProgram& program, const AstQualifiedName& name) {
     return getIf(program.getRelations(), [&](const AstRelation* r) { return r->getQualifiedName() == name; });
 }
@@ -86,6 +96,12 @@ const AstFunctorDeclaration* getFunctorDeclaration(const AstProgram& program, co
 void removeRelationClauses(AstProgram& program, const AstQualifiedName& name) {
     for (const auto* clause : getClauses(program, name)) {
         program.removeClause(clause);
+    }
+}
+
+void removeRelationIOs(AstProgram& program, const AstQualifiedName& name) {
+    for (const auto* io : getIOs(program, name)) {
+        program.removeIO(io);
     }
 }
 

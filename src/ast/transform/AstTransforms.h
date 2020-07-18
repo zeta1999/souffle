@@ -282,6 +282,7 @@ public:
     ProvenanceTransformer* clone() const override {
         return new ProvenanceTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
     bool transformMaxHeight(AstTranslationUnit& translationUnit);
@@ -301,6 +302,7 @@ public:
     RemoveBooleanConstraintsTransformer* clone() const override {
         return new RemoveBooleanConstraintsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -317,6 +319,7 @@ public:
     InlineRelationsTransformer* clone() const override {
         return new InlineRelationsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -338,6 +341,7 @@ public:
     PartitionBodyLiteralsTransformer* clone() const override {
         return new PartitionBodyLiteralsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -355,6 +359,7 @@ public:
     ReduceExistentialsTransformer* clone() const override {
         return new ReduceExistentialsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -373,6 +378,7 @@ public:
     ReplaceSingletonVariablesTransformer* clone() const override {
         return new ReplaceSingletonVariablesTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -391,6 +397,7 @@ public:
     NameUnnamedVariablesTransformer* clone() const override {
         return new NameUnnamedVariablesTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -407,6 +414,7 @@ public:
     ReorderLiteralsTransformer* clone() const override {
         return new ReorderLiteralsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -424,6 +432,7 @@ public:
     NormaliseConstraintsTransformer* clone() const override {
         return new NormaliseConstraintsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -443,6 +452,7 @@ public:
     RemoveRedundantSumsTransformer* clone() const override {
         return new RemoveRedundantSumsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -459,6 +469,7 @@ public:
     MagicSetTransformer* clone() const override {
         return new MagicSetTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -493,7 +504,8 @@ public:
         }
     }
 
-    PipelineTransformer(std::vector<std::unique_ptr<AstTransformer>> pipeline) : pipeline(std::move(pipeline)) {}
+    PipelineTransformer(std::vector<std::unique_ptr<AstTransformer>> pipeline)
+            : pipeline(std::move(pipeline)) {}
 
     std::vector<AstTransformer*> getSubtransformers() const override {
         return toPtrVector(pipeline);
@@ -539,6 +551,7 @@ public:
         }
         return new PipelineTransformer(std::move(transformers));
     }
+
 private:
     std::vector<std::unique_ptr<AstTransformer>> pipeline;
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -589,6 +602,7 @@ public:
     ConditionalTransformer* clone() const override {
         return new ConditionalTransformer(condition, std::unique_ptr<AstTransformer>(transformer->clone()));
     }
+
 private:
     std::function<bool()> condition;
     std::unique_ptr<AstTransformer> transformer;
@@ -639,6 +653,7 @@ public:
     WhileTransformer* clone() const override {
         return new WhileTransformer(condition, std::unique_ptr<AstTransformer>(transformer->clone()));
     }
+
 private:
     std::function<bool()> condition;
     std::unique_ptr<AstTransformer> transformer;
@@ -686,6 +701,7 @@ public:
     FixpointTransformer* clone() const override {
         return new FixpointTransformer(std::unique_ptr<AstTransformer>(transformer->clone()));
     }
+
 private:
     std::unique_ptr<AstTransformer> transformer;
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -705,6 +721,7 @@ public:
     PolymorphicObjectsTransformer* clone() const override {
         return new PolymorphicObjectsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -722,6 +739,7 @@ public:
     AstUserDefinedFunctorsTransformer* clone() const override {
         return new AstUserDefinedFunctorsTransformer();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };
@@ -752,6 +770,7 @@ public:
     FoldAnonymousRecords* clone() const override {
         return new FoldAnonymousRecords();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 
@@ -805,6 +824,7 @@ public:
     ResolveAnonymousRecordsAliases* clone() const override {
         return new ResolveAnonymousRecordsAliases();
     }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 

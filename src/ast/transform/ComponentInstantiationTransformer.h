@@ -26,6 +26,10 @@ public:
         return "ComponentInstantiationTransformer";
     }
 
+    std::unique_ptr<ComponentInstantiationTransformer> clone() const override {
+        return std::make_unique<ComponentInstantionTransformer>();
+    }
+
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
 };

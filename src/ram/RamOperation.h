@@ -94,6 +94,8 @@ public:
         assert(nullptr != nestedOperation);
     }
 
+    RamNestedOperation* clone() const override = 0;
+
     /** @brief Get nested operation */
     RamOperation& getOperation() const {
         return *nestedOperation;
@@ -138,6 +140,8 @@ public:
     RamTupleOperation(int ident, std::unique_ptr<RamOperation> nested, std::string profileText = "")
             : RamNestedOperation(std::move(nested), std::move(profileText)), identifier(ident) {}
 
+    RamTupleOperation* clone() const override = 0;
+
     /** @brief Get identifier */
     int getTupleId() const {
         return identifier;
@@ -179,6 +183,8 @@ public:
               relationRef(std::move(relRef)) {
         assert(relationRef != nullptr && "relation reference is a null-pointer");
     }
+
+    RamRelationOperation* clone() const override = 0;
 
     /** @brief Get search relation */
     const RamRelation& getRelation() const {
@@ -226,8 +232,8 @@ public:
             : RamRelationOperation(std::move(rel), ident, std::move(nested), std::move(profileText)) {}
 
     RamScan* clone() const override {
-        return new RamScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamScan(
+                souffle::clone(relationRef), getTupleId(), souffle::clone(&getOperation()), getProfileText());
     }
 
 protected:
@@ -258,8 +264,8 @@ public:
             : RamScan(std::move(rel), ident, std::move(nested), profileText) {}
 
     RamParallelScan* clone() const override {
-        return new RamParallelScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamParallelScan(
+                souffle::clone(relationRef), getTupleId(), souffle::clone(&getOperation()), getProfileText());
     }
 
 protected:
@@ -330,9 +336,8 @@ public:
         for (const auto& i : queryPattern.second) {
             resQueryPattern.second.emplace_back(i->clone());
         }
-        return new RamIndexOperation(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getTupleId(), std::move(resQueryPattern),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamIndexOperation(souffle::clone(relationRef), getTupleId(), std::move(resQueryPattern),
+                souffle::clone(&getOperation()), getProfileText());
     }
 
     /** @brief Helper method for printing */
@@ -424,9 +429,8 @@ public:
         for (const auto& i : queryPattern.second) {
             resQueryPattern.second.emplace_back(i->clone());
         }
-        return new RamIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
-                std::move(resQueryPattern), std::unique_ptr<RamOperation>(getOperation().clone()),
-                getProfileText());
+        return new RamIndexScan(souffle::clone(relationRef), getTupleId(), std::move(resQueryPattern),
+                souffle::clone(&getOperation()), getProfileText());
     }
 
 protected:
@@ -467,9 +471,8 @@ public:
         for (const auto& i : queryPattern.second) {
             resQueryPattern.second.emplace_back(i->clone());
         }
-        return new RamParallelIndexScan(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getTupleId(), std::move(resQueryPattern),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamParallelIndexScan(souffle::clone(relationRef), getTupleId(), std::move(resQueryPattern),
+                souffle::clone(&getOperation()), getProfileText());
     }
 
 protected:
@@ -548,9 +551,8 @@ public:
     }
 
     RamChoice* clone() const override {
-        return new RamChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()), getTupleId(),
-                std::unique_ptr<RamCondition>(condition->clone()),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamChoice(souffle::clone(relationRef), getTupleId(), souffle::clone(condition),
+                souffle::clone(&getOperation()), getProfileText());
     }
 
     std::vector<const RamNode*> getChildNodes() const override {
@@ -593,9 +595,8 @@ public:
             : RamChoice(std::move(rel), ident, std::move(cond), std::move(nested), profileText) {}
 
     RamParallelChoice* clone() const override {
-        return new RamParallelChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamParallelChoice(souffle::clone(relationRef), getTupleId(), souffle::clone(condition),
+                souffle::clone(&getOperation()), getProfileText());
     }
 
 protected:
@@ -661,9 +662,8 @@ public:
         for (const auto& i : queryPattern.second) {
             resQueryPattern.second.emplace_back(i->clone());
         }
-        auto* res = new RamIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        auto* res = new RamIndexChoice(souffle::clone(relationRef), getTupleId(), souffle::clone(condition),
+                std::move(resQueryPattern), souffle::clone(&getOperation()), getProfileText());
         return res;
     }
 
@@ -713,9 +713,9 @@ public:
         for (const auto& i : queryPattern.second) {
             resQueryPattern.second.emplace_back(i->clone());
         }
-        auto* res = new RamParallelIndexChoice(std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                getTupleId(), std::unique_ptr<RamCondition>(condition->clone()), std::move(resQueryPattern),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        auto* res = new RamParallelIndexChoice(souffle::clone(relationRef), getTupleId(),
+                souffle::clone(condition), std::move(resQueryPattern), souffle::clone(&getOperation()),
+                getProfileText());
         return res;
     }
 
@@ -834,10 +834,8 @@ public:
     }
 
     RamAggregate* clone() const override {
-        return new RamAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                std::unique_ptr<RamExpression>(expression->clone()),
-                std::unique_ptr<RamCondition>(condition->clone()), getTupleId());
+        return new RamAggregate(souffle::clone(&getOperation()), function, souffle::clone(relationRef),
+                souffle::clone(expression), souffle::clone(condition), getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -892,10 +890,8 @@ public:
         for (const auto& i : queryPattern.second) {
             pattern.second.emplace_back(i->clone());
         }
-        return new RamIndexAggregate(std::unique_ptr<RamOperation>(getOperation().clone()), function,
-                std::unique_ptr<RamRelationReference>(relationRef->clone()),
-                std::unique_ptr<RamExpression>(expression->clone()),
-                std::unique_ptr<RamCondition>(condition->clone()), std::move(pattern), getTupleId());
+        return new RamIndexAggregate(souffle::clone(&getOperation()), function, souffle::clone(relationRef),
+                souffle::clone(expression), souffle::clone(condition), std::move(pattern), getTupleId());
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -1036,8 +1032,8 @@ public:
     }
 
     RamUnpackRecord* clone() const override {
-        return new RamUnpackRecord(std::unique_ptr<RamOperation>(getOperation().clone()), getTupleId(),
-                std::unique_ptr<RamExpression>(getExpression().clone()), arity);
+        return new RamUnpackRecord(
+                souffle::clone(&getOperation()), getTupleId(), souffle::clone(&getExpression()), arity);
     }
 
     void apply(const RamNodeMapper& map) override {
@@ -1076,6 +1072,8 @@ public:
             : RamNestedOperation(std::move(nested), std::move(profileText)), condition(std::move(cond)) {
         assert(condition != nullptr && "Condition is a null-pointer");
     }
+
+    RamAbstractConditional* clone() const override = 0;
 
     /** @brief Get condition that must be satisfied */
     const RamCondition& getCondition() const {
@@ -1124,8 +1122,7 @@ public:
             : RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
     RamFilter* clone() const override {
-        return new RamFilter(std::unique_ptr<RamCondition>(condition->clone()),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamFilter(souffle::clone(condition), souffle::clone(&getOperation()), getProfileText());
     }
 
 protected:
@@ -1156,8 +1153,7 @@ public:
             : RamAbstractConditional(std::move(cond), std::move(nested), std::move(profileText)) {}
 
     RamBreak* clone() const override {
-        return new RamBreak(std::unique_ptr<RamCondition>(condition->clone()),
-                std::unique_ptr<RamOperation>(getOperation().clone()), getProfileText());
+        return new RamBreak(souffle::clone(condition), souffle::clone(&getOperation()), getProfileText());
     }
 
 protected:
@@ -1214,8 +1210,7 @@ public:
         for (auto& expr : expressions) {
             newValues.emplace_back(expr->clone());
         }
-        return new RamProject(
-                std::unique_ptr<RamRelationReference>(relationRef->clone()), std::move(newValues));
+        return new RamProject(souffle::clone(relationRef), std::move(newValues));
     }
 
     void apply(const RamNodeMapper& map) override {

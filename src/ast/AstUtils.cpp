@@ -223,9 +223,9 @@ bool isRule(const AstClause& clause) {
 AstClause* cloneHead(const AstClause* clause) {
     auto* clone = new AstClause();
     clone->setSrcLoc(clause->getSrcLoc());
-    clone->setHead(std::unique_ptr<AstAtom>(clause->getHead()->clone()));
+    clone->setHead(souffle::clone(clause->getHead()));
     if (clause->getExecutionPlan() != nullptr) {
-        clone->setExecutionPlan(std::unique_ptr<AstExecutionPlan>(clause->getExecutionPlan()->clone()));
+        clone->setExecutionPlan(souffle::clone(clause->getExecutionPlan()));
     }
     return clone;
 }
@@ -257,7 +257,7 @@ AstClause* reorderAtoms(const AstClause* clause, const std::vector<unsigned int>
             // Atoms should be reordered
             literalToAdd = bodyLiterals[atomPositions[newOrder[currentAtom++]]];
         }
-        newClause->addToBody(std::unique_ptr<AstLiteral>(literalToAdd->clone()));
+        newClause->addToBody(souffle::clone(literalToAdd));
     }
 
     return newClause;

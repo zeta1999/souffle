@@ -272,9 +272,9 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     bool needContext = false;
                     visitDepthFirst(*cur, [&](const RamExistenceCheck&) { needContext = true; });
                     if (needContext) {
-                        requireCtx.push_back(std::unique_ptr<RamCondition>(cur->clone()));
+                        requireCtx.push_back(souffle::clone(cur));
                     } else {
-                        freeOfCtx.push_back(std::unique_ptr<RamCondition>(cur->clone()));
+                        freeOfCtx.push_back(souffle::clone(cur));
                     }
                 }
                 // discharge conditions that do not require a context

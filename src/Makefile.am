@@ -173,6 +173,8 @@ souffle_sources = \
         ast/transform/ComponentInstantiationTransformer.h  \
         ast/transform/DebugReporter.cpp                    \
         ast/transform/DebugReporter.h                      \
+        ast/transform/IOAttributesTransformer.h            \
+        ast/transform/IODefaultsTransformer.h              \
         ast/transform/InlineRelationsTransformer.cpp       \
         ast/transform/MagicSet.cpp                         \
         ast/transform/MagicSet.h                           \

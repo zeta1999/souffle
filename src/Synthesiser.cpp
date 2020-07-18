@@ -2156,7 +2156,7 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
                 {"auxArity", static_cast<long long>(0)},
                 {"types", Json::array(attributesTypes.begin(), attributesTypes.end())}};
 
-        Json types = Json::object{{name, relJson}};
+        Json types = Json::object{{"relation", relJson}};
 
         os << "try {";
         os << "std::map<std::string, std::string> rwOperation;\n";

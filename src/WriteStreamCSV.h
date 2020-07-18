@@ -101,7 +101,7 @@ protected:
     static std::string getFileName(const std::map<std::string, std::string>& rwOperation) {
         auto name = getOr(rwOperation, "filename", rwOperation.at("name") + ".csv");
         if (name.front() != '/') {
-            name = getOr(rwOperation, "fact-dir", ".") + "/" + name;
+            name = getOr(rwOperation, "output-dir", ".") + "/" + name;
         }
         return name;
     }
@@ -140,7 +140,7 @@ protected:
     static std::string getFileName(const std::map<std::string, std::string>& rwOperation) {
         auto name = getOr(rwOperation, "filename", rwOperation.at("name") + ".csv.gz");
         if (name.front() != '/') {
-            name = getOr(rwOperation, "fact-dir", ".") + "/" + name;
+            name = getOr(rwOperation, "output-dir", ".") + "/" + name;
         }
         return name;
     }

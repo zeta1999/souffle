@@ -1652,7 +1652,7 @@ void FoldAnonymousRecords::transformClause(
 
         for (auto it = begin(transformedLiterals); it != end(transformedLiterals); ++it) {
             auto newClause = std::unique_ptr<AstClause>(clause.clone());
-            auto copyBody = clone(newBody);
+            auto copyBody = souffle::clone(newBody);
             copyBody.push_back(std::move(*it));
 
             newClause->setBodyLiterals(std::move(copyBody));

@@ -493,6 +493,8 @@ public:
         }
     }
 
+    PipelineTransformer(std::vector<std::unique_ptr<AstTransformer>> pipeline) : pipeline(std::move(pipeline)) {}
+
     std::vector<AstTransformer*> getSubtransformers() const override {
         return toPtrVector(pipeline);
     }

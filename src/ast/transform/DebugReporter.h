@@ -65,6 +65,7 @@ public:
     DebugReporter* clone() const override {
         return new DebugReporter(std::unique_ptr<AstTransformer>(wrappedTransformer->clone()));
     }
+
 private:
     std::unique_ptr<AstTransformer> wrappedTransformer;
 

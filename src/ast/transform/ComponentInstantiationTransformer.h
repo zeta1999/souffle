@@ -26,8 +26,8 @@ public:
         return "ComponentInstantiationTransformer";
     }
 
-    std::unique_ptr<ComponentInstantiationTransformer> clone() const override {
-        return std::make_unique<ComponentInstantionTransformer>();
+    ComponentInstantiationTransformer* clone() const override {
+        return new ComponentInstantiationTransformer();
     }
 
 private:

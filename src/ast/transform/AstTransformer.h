@@ -35,7 +35,7 @@ public:
 
     virtual std::string getName() const = 0;
 
-    std::unique_ptr<AstTransformer*> clone() const = 0;
+    virtual AstTransformer* clone() const = 0;
 };
 
 /**
@@ -61,7 +61,7 @@ public:
     /* Apply a nested transformer */
     bool applySubtransformer(AstTranslationUnit& translationUnit, AstTransformer* transformer);
 
-    std::unique_ptr<AstTransformer*> clone() const override = 0;
+    MetaTransformer* clone() const override = 0;
 };
 
 /**
@@ -86,8 +86,8 @@ public:
         return "NullTransformer";
     }
 
-    std::unique_ptr<NullTransformer*> clone() const override {
-        return std::make_unique<NullTransformer>();
+    NullTransformer* clone() const override {
+        return new NullTransformer();
     }
 };
 

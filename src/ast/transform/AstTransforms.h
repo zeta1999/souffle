@@ -74,8 +74,8 @@ public:
      */
     static std::unique_ptr<AstClause> removeComplexTermsInAtoms(const AstClause& clause);
 
-    std::unique_ptr<ResolveAliasesTransformer> clone() const override {
-        return std::make_unique<ResolveAliasesTransformer>();
+    ResolveAliasesTransformer* clone() const override {
+        return new ResolveAliasesTransformer();
     }
 
 private:
@@ -104,8 +104,8 @@ public:
      */
     static bool removeRelationCopies(AstTranslationUnit& translationUnit);
 
-    std::unique_ptr<RemoveRelationCopiesTransformer> clone() const override {
-        return std::make_unique<RemoveRelationCopiesTransformer>();
+    RemoveRelationCopiesTransformer* clone() const override {
+        return new RemoveRelationCopiesTransformer();
     }
 
 private:
@@ -123,8 +123,8 @@ public:
         return "UniqueAggregationVariablesTransformer";
     }
 
-    std::unique_ptr<UniqueAggregationVariablesTransformer> clone() const override {
-        return std::make_unique<UniqueAggregationVariablesTransformer>();
+    UniqueAggregationVariablesTransformer* clone() const override {
+        return new UniqueAggregationVariablesTransformer();
     }
 
 private:
@@ -141,8 +141,8 @@ public:
         return "MaterializeSingletonAggregationTransformer";
     }
 
-    std::unique_ptr<MaterializeSingletonAggregationTransformer> clone() const override {
-        return std::make_unique<MaterializeSingletonAggregationTransformer>();
+    MaterializeSingletonAggregationTransformer* clone() const override {
+        return new MaterializeSingletonAggregationTransformer();
     }
 
 private:
@@ -184,8 +184,8 @@ public:
      */
     static bool materializeAggregationQueries(AstTranslationUnit& translationUnit);
 
-    std::unique_ptr<MaterializeAggregationQueriesTransformer> clone() const override {
-        return std::make_unique<MaterializeAggregationQueriesTransformer>();
+    MaterializeAggregationQueriesTransformer* clone() const override {
+        return new MaterializeAggregationQueriesTransformer();
     }
 
 private:
@@ -217,8 +217,8 @@ public:
      */
     static bool removeEmptyRelations(AstTranslationUnit& translationUnit);
 
-    std::unique_ptr<RemoveEmptyRelationsTransformer> clone() const override {
-        return std::make_unique<RemoveEmptyRelationsTransformer>();
+    RemoveEmptyRelationsTransformer* clone() const override {
+        return new RemoveEmptyRelationsTransformer();
     }
 
 private:
@@ -245,8 +245,8 @@ public:
         return "RemoveRedundantRelationsTransformer";
     }
 
-    std::unique_ptr<RemoveRedundantRelationsTransformer> clone() const override {
-        return std::make_unique<RemoveRedundantRelationsTransformer>();
+    RemoveRedundantRelationsTransformer* clone() const override {
+        return new RemoveRedundantRelationsTransformer();
     }
 
 private:
@@ -262,8 +262,8 @@ public:
         return "MinimiseProgramTransformer";
     }
 
-    std::unique_ptr<MinimiseProgramTransformer> clone() const override {
-        return std::make_unique<MinimiseProgramTransformer>();
+    MinimiseProgramTransformer* clone() const override {
+        return new MinimiseProgramTransformer();
     }
 
 private:
@@ -279,8 +279,8 @@ public:
         return "ProvenanceTransformer";
     }
 
-    std::unique_ptr<ProvenanceTransformer> clone() const override {
-        return std::make_unique<ProvenanceTransformer>();
+    ProvenanceTransformer* clone() const override {
+        return new ProvenanceTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -298,8 +298,8 @@ public:
         return "RemoveBooleanConstraintsTransformer";
     }
 
-    std::unique_ptr<RemoveBooleanConstraintsTransformer> clone() const override {
-        return std::make_unique<RemoveBooleanConstraintsTransformer>();
+    RemoveBooleanConstraintsTransformer* clone() const override {
+        return new RemoveBooleanConstraintsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -314,8 +314,8 @@ public:
         return "InlineRelationsTransformer";
     }
 
-    std::unique_ptr<InlineRelationsTransformer> clone() const override {
-        return std::make_unique<InlineRelationsTransformer>();
+    InlineRelationsTransformer* clone() const override {
+        return new InlineRelationsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -335,8 +335,8 @@ public:
         return "PartitionBodyLiteralsTransformer";
     }
 
-    std::unique_ptr<PartitionBodyLiteralsTransformer> clone() const override {
-        return std::make_unique<PartitionBodyLiteralsTransformer>();
+    PartitionBodyLiteralsTransformer* clone() const override {
+        return new PartitionBodyLiteralsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -352,8 +352,8 @@ public:
         return "ReduceExistentialsTransformer";
     }
 
-    std::unique_ptr<ReduceExistentialsTransformer> clone() const override {
-        return std::make_unique<ReduceExistentialsTransformer>();
+    ReduceExistentialsTransformer* clone() const override {
+        return new ReduceExistentialsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -370,8 +370,8 @@ public:
         return "ReplaceSingletonVariablesTransformer";
     }
 
-    std::unique_ptr<ReplaceSingletonVariablesTransformer> clone() const override {
-        return std::make_unique<ReplaceSingletonVariablesTransformer>();
+    ReplaceSingletonVariablesTransformer* clone() const override {
+        return new ReplaceSingletonVariablesTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -388,8 +388,8 @@ public:
         return "NameUnnamedVariablesTransformer";
     }
 
-    std::unique_ptr<NameUnnamedVariablesTransformer> clone() const override {
-        return std::make_unique<NameUnnamedVariablesTransformer>();
+    NameUnnamedVariablesTransformer* clone() const override {
+        return new NameUnnamedVariablesTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -404,8 +404,8 @@ public:
         return "ReorderLiteralsTransformer";
     }
 
-    std::unique_ptr<ReorderLiteralsTransformer> clone() const override {
-        return std::make_unique<ReorderLiteralsTransformer>();
+    ReorderLiteralsTransformer* clone() const override {
+        return new ReorderLiteralsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -421,8 +421,8 @@ public:
         return "NormaliseConstraintsTransformer";
     }
 
-    std::unique_ptr<NormaliseConstraintsTransformer> clone() const override {
-        return std::make_unique<NormaliseConstraintsTransformer>();
+    NormaliseConstraintsTransformer* clone() const override {
+        return new NormaliseConstraintsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -440,8 +440,8 @@ public:
         return "RemoveRedundantSumsTransformer";
     }
 
-    std::unique_ptr<RemoveRedundantSumsTransformer> clone() const override {
-        return std::make_unique<RemoveRedundantSumsTransformer>();
+    RemoveRedundantSumsTransformer* clone() const override {
+        return new RemoveRedundantSumsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -456,8 +456,8 @@ public:
         return "MagicSetTransformer";
     }
 
-    std::unique_ptr<MagicSetTransformer> clone() const override {
-        return std::make_unique<MagicSetTransformer>();
+    MagicSetTransformer* clone() const override {
+        return new MagicSetTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -475,8 +475,8 @@ public:
         return "RemoveTypecastsTransformer";
     }
 
-    std::unique_ptr<RemoveTypecastsTransformer> clone() const override {
-        return std::make_unique<RemoveTypecastsTransformer>();
+    RemoveTypecastsTransformer* clone() const override {
+        return new RemoveTypecastsTransformer();
     }
 };
 
@@ -530,12 +530,12 @@ public:
         return "PipelineTransformer";
     }
 
-    std::unique_ptr<PipelineTransformer> clone() const override {
+    PipelineTransformer* clone() const override {
         std::vector<std::unique_ptr<AstTransformer>> transformers;
         for (const auto& transformer : pipeline) {
-            transformers.push_back(transformer->clone());
+            transformers.push_back(std::unique_ptr<AstTransformer>(transformer->clone()));
         }
-        return std::make_unique<PipelineTransformer>(std::move(transformers));
+        return new PipelineTransformer(std::move(transformers));
     }
 private:
     std::vector<std::unique_ptr<AstTransformer>> pipeline;
@@ -584,8 +584,8 @@ public:
         return "ConditionalTransformer";
     }
 
-    std::unique_ptr<ConditionalTransformer> clone() const override {
-        return std::make_unique<ConditionalTransformer>(condition, transformer->clone());
+    ConditionalTransformer* clone() const override {
+        return new ConditionalTransformer(condition, std::unique_ptr<AstTransformer>(transformer->clone()));
     }
 private:
     std::function<bool()> condition;
@@ -634,8 +634,8 @@ public:
         return "WhileTransformer";
     }
 
-    std::unique_ptr<WhileTransformer> clone() const override {
-        return std::make_unique<WhileTransformer>(condition, transformer->clone());
+    WhileTransformer* clone() const override {
+        return new WhileTransformer(condition, std::unique_ptr<AstTransformer>(transformer->clone()));
     }
 private:
     std::function<bool()> condition;
@@ -681,8 +681,8 @@ public:
         return "FixpointTransformer";
     }
 
-    std::unique_ptr<FixpointTransformer> clone() const override {
-        return std::make_unique<FixpointTransformer>(transformer->clone());
+    FixpointTransformer* clone() const override {
+        return new FixpointTransformer(std::unique_ptr<AstTransformer>(transformer->clone()));
     }
 private:
     std::unique_ptr<AstTransformer> transformer;
@@ -700,8 +700,8 @@ public:
         return "PolymorphicObjectsTransformer";
     }
 
-    std::unique_ptr<PolymorphicObjectsTransformer> clone() const override {
-        return std::make_unique<PolymorphicObjectsTransformer>();
+    PolymorphicObjectsTransformer* clone() const override {
+        return new PolymorphicObjectsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -717,8 +717,8 @@ public:
         return "AstUserDefinedFunctorsTransformer";
     }
 
-    std::unique_ptr<AstUserDefinedFunctorsTransformer> clone() const override {
-        return std::make_unique<AstUserDefinedFunctorsTransformer>();
+    AstUserDefinedFunctorsTransformer* clone() const override {
+        return new AstUserDefinedFunctorsTransformer();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -747,8 +747,8 @@ public:
         return "FoldAnonymousRecords";
     }
 
-    std::unique_ptr<FoldAnonymousRecords> clone() const override {
-        return std::make_unique<FoldAnonymousRecords>();
+    FoldAnonymousRecords* clone() const override {
+        return new FoldAnonymousRecords();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
@@ -800,8 +800,8 @@ public:
         return "FoldAnonymousRecords";
     }
 
-    std::unique_ptr<ResolveAnonymousRecordsAliases> clone() const override {
-        return std::make_unique<ResolveAnonymousRecordsAliases>();
+    ResolveAnonymousRecordsAliases* clone() const override {
+        return new ResolveAnonymousRecordsAliases();
     }
 private:
     bool transform(AstTranslationUnit& translationUnit) override;

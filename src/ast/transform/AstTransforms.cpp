@@ -1560,7 +1560,6 @@ bool FoldAnonymousRecords::isValidRecordConstraint(const AstLiteral* literal) {
     auto op = constraint->getOperator();
 
     return isEqConstraint(op) || isEqConstraint(negatedConstraintOp(op));
-    ;
 }
 
 bool FoldAnonymousRecords::containsValidRecordConstraint(const AstClause& clause) {

@@ -54,14 +54,12 @@ bool ExpandFilterTransformer::expandFilters(RamProgram& program) {
                     changed = true;
                     std::vector<std::unique_ptr<RamFilter>> filters;
                     for (auto& cond : conditionList) {
-                        auto tempCond = cond->clone();
                         if (filters.empty()) {
-                            filters.emplace_back(
-                                    std::make_unique<RamFilter>(std::unique_ptr<RamCondition>(tempCond),
-                                            std::unique_ptr<RamOperation>(filter->getOperation().clone())));
+                            filters.emplace_back(std::make_unique<RamFilter>(
+                                    souffle::clone(cond), souffle::clone(&filter->getOperation())));
                         } else {
                             filters.emplace_back(std::make_unique<RamFilter>(
-                                    std::unique_ptr<RamCondition>(tempCond), std::move(filters.back())));
+                                    souffle::clone(cond), std::move(filters.back())));
                         }
                     }
                     node = std::move(filters.back());
@@ -99,7 +97,7 @@ bool ReorderConditionsTransformer::reorderConditions(RamProgram& program) {
                     changed = true;
                     node = std::make_unique<RamFilter>(
                             std::unique_ptr<RamCondition>(toCondition(sortedConds)),
-                            std::unique_ptr<RamOperation>(filter->getOperation().clone()));
+                            souffle::clone(&filter->getOperation()));
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));
@@ -133,9 +131,7 @@ bool CollapseFiltersTransformer::collapseFilters(RamProgram& program) {
                 if (canCollapse) {
                     changed = true;
                     node = std::make_unique<RamFilter>(toCondition(conditions),
-                            std::unique_ptr<RamOperation>(
-                                    dynamic_cast<RamOperation*>(prevFilter->getOperation().clone())),
-                            prevFilter->getProfileText());
+                            souffle::clone(&prevFilter->getOperation()), prevFilter->getProfileText());
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));
@@ -168,7 +164,7 @@ bool EliminateDuplicatesTransformer::eliminateDuplicates(RamProgram& program) {
                 if (eliminatedDuplicate) {
                     changed = true;
                     node = std::make_unique<RamFilter>(std::unique_ptr<RamCondition>(toCondition(conds)),
-                            std::unique_ptr<RamOperation>(filter->getOperation().clone()));
+                            souffle::clone(&filter->getOperation()));
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));
@@ -205,7 +201,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
                     changed = true;
                     newCondition = addCondition(std::move(newCondition), condition.clone());
                     node->apply(makeLambdaRamMapper(filterRewriter));
-                    return std::unique_ptr<RamOperation>(filter->getOperation().clone());
+                    return souffle::clone(&filter->getOperation());
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));
@@ -217,8 +213,8 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
             // insert new filter operation at outer-most level of the query
             changed = true;
             auto* nestedOp = const_cast<RamOperation*>(&mQuery->getOperation());
-            mQuery->rewrite(nestedOp, std::make_unique<RamFilter>(std::move(newCondition),
-                                              std::unique_ptr<RamOperation>(nestedOp->clone())));
+            mQuery->rewrite(
+                    nestedOp, std::make_unique<RamFilter>(std::move(newCondition), souffle::clone(nestedOp)));
         }
     });
 
@@ -235,7 +231,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
                     changed = true;
                     newCondition = addCondition(std::move(newCondition), condition.clone());
                     node->apply(makeLambdaRamMapper(filterRewriter));
-                    return std::unique_ptr<RamOperation>(filter->getOperation().clone());
+                    return souffle::clone(&filter->getOperation());
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));
@@ -246,9 +242,8 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
         if (newCondition != nullptr) {
             // insert new filter operation after the search operation
             changed = true;
-            tupleOp->rewrite(&tupleOp->getOperation(),
-                    std::make_unique<RamFilter>(std::move(newCondition),
-                            std::unique_ptr<RamOperation>(tupleOp->getOperation().clone())));
+            tupleOp->rewrite(&tupleOp->getOperation(), std::make_unique<RamFilter>(std::move(newCondition),
+                                                               souffle::clone(&tupleOp->getOperation())));
         }
     });
     return changed;
@@ -325,7 +320,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
                 if (lhs->getTupleId() == identifier && rla->getLevel(rhs) < identifier) {
                     element = lhs->getElement();
                     std::vector<std::unique_ptr<RamExpression>> expressions;
-                    expressions.push_back(std::unique_ptr<RamExpression>(rhs->clone()));
+                    expressions.push_back(souffle::clone(rhs));
                     expressions.push_back(std::make_unique<RamSignedConstant>(RamDomain(1)));
 
                     return {std::make_unique<RamUndefValue>(),
@@ -340,7 +335,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
                 if (rhs->getTupleId() == identifier && rla->getLevel(lhs) < identifier) {
                     element = rhs->getElement();
                     std::vector<std::unique_ptr<RamExpression>> expressions;
-                    expressions.push_back(std::unique_ptr<RamExpression>(lhs->clone()));
+                    expressions.push_back(souffle::clone(lhs));
                     expressions.push_back(std::make_unique<RamSignedConstant>(RamDomain(1)));
 
                     return {std::make_unique<RamIntrinsicOperator>(FunctorOp::ADD, std::move(expressions)),
@@ -358,7 +353,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
                 if (lhs->getTupleId() == identifier && rla->getLevel(rhs) < identifier) {
                     element = lhs->getElement();
                     std::vector<std::unique_ptr<RamExpression>> expressions;
-                    expressions.push_back(std::unique_ptr<RamExpression>(rhs->clone()));
+                    expressions.push_back(souffle::clone(rhs));
                     expressions.push_back(std::make_unique<RamSignedConstant>(RamDomain(1)));
 
                     return {std::make_unique<RamIntrinsicOperator>(FunctorOp::ADD, std::move(expressions)),
@@ -373,7 +368,7 @@ ExpressionPair MakeIndexTransformer::getLowerUpperExpression(
                 if (rhs->getTupleId() == identifier && rla->getLevel(lhs) < identifier) {
                     element = rhs->getElement();
                     std::vector<std::unique_ptr<RamExpression>> expressions;
-                    expressions.push_back(std::unique_ptr<RamExpression>(lhs->clone()));
+                    expressions.push_back(souffle::clone(lhs));
                     expressions.push_back(std::make_unique<RamSignedConstant>(RamDomain(1)));
 
                     return {std::make_unique<RamUndefValue>(),
@@ -431,22 +426,19 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(RamPattern&
                 if (!isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
                     // FIXME: `FEQ` handling; need to know if the expr is a float exp or not
                     addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::EQ,
-                            std::unique_ptr<RamExpression>(queryPattern.first[element]->clone()),
-                            std::move(lowerExpression)));
+                            souffle::clone(queryPattern.first[element]), std::move(lowerExpression)));
                 }
                 // new lower bound i.e. Tuple[level, element] >= <expr2>
                 // we need to hoist <expr1> >= <expr2> to the outer loop
                 else if (!isRamUndefValue(lowerExpression.get()) && isRamUndefValue(upperExpression.get())) {
                     addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::GE,
-                            std::unique_ptr<RamExpression>(queryPattern.first[element]->clone()),
-                            std::move(lowerExpression)));
+                            souffle::clone(queryPattern.first[element]), std::move(lowerExpression)));
                 }
                 // new upper bound i.e. Tuple[level, element] <= <expr2>
                 // we need to hoist <expr1> <= <expr2> to the outer loop
                 else if (isRamUndefValue(lowerExpression.get()) && !isRamUndefValue(upperExpression.get())) {
                     addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::LE,
-                            std::unique_ptr<RamExpression>(queryPattern.first[element]->clone()),
-                            std::move(upperExpression)));
+                            souffle::clone(queryPattern.first[element]), std::move(upperExpression)));
                 }
                 // if either bound is defined but they aren't equal we must consider the cases for updating
                 // them note that at this point we know that if we have a lower/upper bound it can't be the
@@ -460,15 +452,13 @@ std::unique_ptr<RamCondition> MakeIndexTransformer::constructPattern(RamPattern&
                     // need to hoist <expr2> >= <expr1> to the outer loop
                     if (!isRamUndefValue(queryPattern.first[element].get())) {
                         addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::GE,
-                                std::unique_ptr<RamExpression>(lowerExpression->clone()),
-                                std::move(queryPattern.first[element])));
+                                souffle::clone(lowerExpression), std::move(queryPattern.first[element])));
                     }
                     // if Tuple[level, element] <= <expr1> and we see Tuple[level, element] = <expr2>
                     // need to hoist <expr2> <= <expr1> to the outer loop
                     if (!isRamUndefValue(queryPattern.second[element].get())) {
                         addCondition(std::make_unique<RamConstraint>(BinaryConstraintOp::LE,
-                                std::unique_ptr<RamExpression>(upperExpression->clone()),
-                                std::move(queryPattern.second[element])));
+                                souffle::clone(upperExpression), std::move(queryPattern.second[element])));
                     }
                     // finally replace bounds with equality constraint
                     queryPattern.first[element] = std::move(lowerExpression);
@@ -519,11 +509,10 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteAggregate(const RamAg
         std::unique_ptr<RamCondition> condition = constructPattern(
                 queryPattern, indexable, toConjunctionList(&agg->getCondition()), identifier);
         if (indexable) {
-            return std::make_unique<RamIndexAggregate>(
-                    std::unique_ptr<RamOperation>(agg->getOperation().clone()), agg->getFunction(),
-                    std::make_unique<RamRelationReference>(&rel),
-                    std::unique_ptr<RamExpression>(agg->getExpression().clone()), std::move(condition),
-                    std::move(queryPattern), agg->getTupleId());
+            return std::make_unique<RamIndexAggregate>(souffle::clone(&agg->getOperation()),
+                    agg->getFunction(), std::make_unique<RamRelationReference>(&rel),
+                    souffle::clone(&agg->getExpression()), std::move(condition), std::move(queryPattern),
+                    agg->getTupleId());
         }
     }
     return nullptr;
@@ -543,7 +532,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteScan(const RamScan* s
         std::unique_ptr<RamCondition> condition = constructPattern(
                 queryPattern, indexable, toConjunctionList(&filter->getCondition()), identifier);
         if (indexable) {
-            std::unique_ptr<RamOperation> op = std::unique_ptr<RamOperation>(filter->getOperation().clone());
+            std::unique_ptr<RamOperation> op = souffle::clone(&filter->getOperation());
             if (!isRamTrue(condition.get())) {
                 op = std::make_unique<RamFilter>(std::move(condition), std::move(op));
             }
@@ -571,7 +560,7 @@ std::unique_ptr<RamOperation> MakeIndexTransformer::rewriteIndexScan(const RamIn
         if (indexable) {
             // Merge Index Pattern here
 
-            std::unique_ptr<RamOperation> op = std::unique_ptr<RamOperation>(filter->getOperation().clone());
+            std::unique_ptr<RamOperation> op = souffle::clone(&filter->getOperation());
             if (!isRamTrue(condition.get())) {
                 op = std::make_unique<RamFilter>(std::move(condition), std::move(op));
             }
@@ -654,14 +643,14 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                     if (!isRamUndefValue(pattern.first[i])) {
                         lowerBound = std::make_unique<RamConstraint>(BinaryConstraintOp::GE,
                                 std::make_unique<RamTupleElement>(indexOperation->getTupleId(), i),
-                                std::unique_ptr<RamExpression>(pattern.first[i]->clone()));
+                                souffle::clone(pattern.first[i]));
                         condition = addCondition(std::move(condition), lowerBound->clone());
                     }
 
                     if (!isRamUndefValue(pattern.second[i])) {
                         upperBound = std::make_unique<RamConstraint>(BinaryConstraintOp::LE,
                                 std::make_unique<RamTupleElement>(indexOperation->getTupleId(), i),
-                                std::unique_ptr<RamExpression>(pattern.second[i]->clone()));
+                                souffle::clone(pattern.second[i]));
                         condition = addCondition(std::move(condition), upperBound->clone());
                     }
 
@@ -671,7 +660,7 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                 }
 
                 if (condition) {
-                    auto nestedOp = std::unique_ptr<RamOperation>(indexOperation->getOperation().clone());
+                    auto nestedOp = souffle::clone(&indexOperation->getOperation());
                     auto filter = std::make_unique<RamFilter>(std::move(condition), std::move(nestedOp));
 
                     // need to rewrite the node with the same index operation
@@ -689,14 +678,12 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                     } else if (const RamIndexChoice* ichoice = dynamic_cast<RamIndexChoice*>(node.get())) {
                         node = std::make_unique<RamIndexChoice>(
                                 std::make_unique<RamRelationReference>(&ichoice->getRelation()),
-                                ichoice->getTupleId(),
-                                std::unique_ptr<RamCondition>(ichoice->getCondition().clone()),
+                                ichoice->getTupleId(), souffle::clone(&ichoice->getCondition()),
                                 std::move(updatedPattern), std::move(filter), ichoice->getProfileText());
                     } else if (const RamIndexAggregate* iagg = dynamic_cast<RamIndexAggregate*>(node.get())) {
                         node = std::make_unique<RamIndexAggregate>(std::move(filter), iagg->getFunction(),
                                 std::make_unique<RamRelationReference>(&iagg->getRelation()),
-                                std::unique_ptr<RamExpression>(iagg->getExpression().clone()),
-                                std::unique_ptr<RamCondition>(iagg->getCondition().clone()),
+                                souffle::clone(&iagg->getExpression()), souffle::clone(&iagg->getCondition()),
                                 std::move(updatedPattern), iagg->getTupleId());
                     } else {
                         fatal("New RamIndexOperation subclass found but not supported while making index.");
@@ -735,30 +722,24 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                     if (const RamIndexScan* iscan = dynamic_cast<RamIndexScan*>(node.get())) {
                         node = std::make_unique<RamScan>(
                                 std::make_unique<RamRelationReference>(&iscan->getRelation()),
-                                iscan->getTupleId(),
-                                std::unique_ptr<RamOperation>(iscan->getOperation().clone()),
+                                iscan->getTupleId(), souffle::clone(&iscan->getOperation()),
                                 iscan->getProfileText());
                     } else if (const RamParallelIndexScan* pscan =
                                        dynamic_cast<RamParallelIndexScan*>(node.get())) {
                         node = std::make_unique<RamParallelScan>(
                                 std::make_unique<RamRelationReference>(&pscan->getRelation()),
-                                pscan->getTupleId(),
-                                std::unique_ptr<RamOperation>(pscan->getOperation().clone()),
+                                pscan->getTupleId(), souffle::clone(&pscan->getOperation()),
                                 pscan->getProfileText());
                     } else if (const RamIndexChoice* ichoice = dynamic_cast<RamIndexChoice*>(node.get())) {
                         node = std::make_unique<RamChoice>(
                                 std::make_unique<RamRelationReference>(&ichoice->getRelation()),
-                                ichoice->getTupleId(),
-                                std::unique_ptr<RamCondition>(ichoice->getCondition().clone()),
-                                std::unique_ptr<RamOperation>(ichoice->getOperation().clone()),
-                                ichoice->getProfileText());
+                                ichoice->getTupleId(), souffle::clone(&ichoice->getCondition()),
+                                souffle::clone(&ichoice->getOperation()), ichoice->getProfileText());
                     } else if (const RamIndexAggregate* iagg = dynamic_cast<RamIndexAggregate*>(node.get())) {
-                        node = std::make_unique<RamAggregate>(
-                                std::unique_ptr<RamOperation>(iagg->getOperation().clone()),
+                        node = std::make_unique<RamAggregate>(souffle::clone(&iagg->getOperation()),
                                 iagg->getFunction(),
                                 std::make_unique<RamRelationReference>(&iagg->getRelation()),
-                                std::unique_ptr<RamExpression>(iagg->getExpression().clone()),
-                                std::unique_ptr<RamCondition>(iagg->getCondition().clone()),
+                                souffle::clone(&iagg->getExpression()), souffle::clone(&iagg->getCondition()),
                                 iagg->getTupleId());
                     } else {
                         fatal("New RamIndexOperation subclass found but not supported while transforming "
@@ -784,11 +765,9 @@ bool ReorderFilterBreak::reorderFilterBreak(RamProgram& program) {
                 if (const RamBreak* br = dynamic_cast<RamBreak*>(&filter->getOperation())) {
                     changed = true;
                     // convert to break-filter nesting
-                    node = std::make_unique<RamBreak>(
-                            std::unique_ptr<RamCondition>(br->getCondition().clone()),
-                            std::make_unique<RamFilter>(
-                                    std::unique_ptr<RamCondition>(filter->getCondition().clone()),
-                                    std::unique_ptr<RamOperation>(br->getOperation().clone())));
+                    node = std::make_unique<RamBreak>(souffle::clone(&br->getCondition()),
+                            std::make_unique<RamFilter>(souffle::clone(&filter->getCondition()),
+                                    souffle::clone(&br->getOperation())));
                 }
             }
             node->apply(makeLambdaRamMapper(filterRewriter));
@@ -892,8 +871,8 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteScan(const Ram
         const int identifier = scan->getTupleId();
 
         return std::make_unique<RamChoice>(std::make_unique<RamRelationReference>(&scan->getRelation()),
-                identifier, std::unique_ptr<RamCondition>(filter->getCondition().clone()),
-                std::unique_ptr<RamOperation>(scan->getOperation().clone()), scan->getProfileText());
+                identifier, souffle::clone(&filter->getCondition()), souffle::clone(&scan->getOperation()),
+                scan->getProfileText());
     }
     return nullptr;
 }
@@ -941,8 +920,8 @@ std::unique_ptr<RamOperation> ChoiceConversionTransformer::rewriteIndexScan(cons
         }
 
         return std::make_unique<RamIndexChoice>(std::make_unique<RamRelationReference>(&rel), identifier,
-                std::unique_ptr<RamCondition>(filter->getCondition().clone()), std::move(newValues),
-                std::unique_ptr<RamOperation>(filter->getOperation().clone()), indexScan->getProfileText());
+                souffle::clone(&filter->getCondition()), std::move(newValues),
+                souffle::clone(&filter->getOperation()), indexScan->getProfileText());
     }
     return nullptr;
 }
@@ -1027,10 +1006,9 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                 assert(tupleOp != nullptr && "aggregate conversion to tuple operation failed");
                 if (rla->getLevel(tupleOp) == -1 && !priorTupleOp) {
                     changed = true;
-                    newAgg = std::unique_ptr<RamNestedOperation>(
-                            dynamic_cast<RamNestedOperation*>(tupleOp->clone()));
+                    newAgg = souffle::clone(tupleOp);
                     assert(newAgg != nullptr && "failed to make a clone");
-                    return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
+                    return souffle::clone(&tupleOp->getOperation());
                 }
             } else if (nullptr != dynamic_cast<RamTupleOperation*>(node.get())) {
                 // tuple operation that is a non-aggregate
@@ -1041,8 +1019,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
         };
         const_cast<RamQuery*>(&query)->apply(makeLambdaRamMapper(aggRewriter));
         if (newAgg != nullptr) {
-            newAgg->rewrite(
-                    &newAgg->getOperation(), std::unique_ptr<RamOperation>(query.getOperation().clone()));
+            newAgg->rewrite(&newAgg->getOperation(), souffle::clone(&query.getOperation()));
             const_cast<RamQuery*>(&query)->rewrite(&query.getOperation(), std::move(newAgg));
         }
     });
@@ -1066,10 +1043,9 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
                     if (dataDepLevel != priorOpLevel) {
                         changed = true;
                         newLevel = dataDepLevel;
-                        newAgg = std::unique_ptr<RamNestedOperation>(
-                                dynamic_cast<RamNestedOperation*>(tupleOp->clone()));
+                        newAgg = souffle::clone(tupleOp);
                         assert(newAgg != nullptr && "failed to make a clone");
-                        return std::unique_ptr<RamOperation>(tupleOp->getOperation().clone());
+                        return souffle::clone(&tupleOp->getOperation());
                     }
                 }
             } else if (const RamTupleOperation* tupleOp = dynamic_cast<RamTupleOperation*>(node.get())) {
@@ -1078,8 +1054,7 @@ bool HoistAggregateTransformer::hoistAggregate(RamProgram& program) {
             node->apply(makeLambdaRamMapper(aggRewriter));
             if (auto* search = dynamic_cast<RamTupleOperation*>(node.get())) {
                 if (newAgg != nullptr && search->getTupleId() == newLevel) {
-                    newAgg->rewrite(&newAgg->getOperation(),
-                            std::unique_ptr<RamOperation>(search->getOperation().clone()));
+                    newAgg->rewrite(&newAgg->getOperation(), souffle::clone(&search->getOperation()));
                     search->rewrite(&search->getOperation(), std::move(newAgg));
                 }
             }
@@ -1104,8 +1079,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                         changed = true;
                         return std::make_unique<RamParallelScan>(
                                 std::make_unique<RamRelationReference>(&scan->getRelation()),
-                                scan->getTupleId(),
-                                std::unique_ptr<RamOperation>(scan->getOperation().clone()),
+                                scan->getTupleId(), souffle::clone(&scan->getOperation()),
                                 scan->getProfileText());
                     }
                 }
@@ -1114,10 +1088,8 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                     changed = true;
                     return std::make_unique<RamParallelChoice>(
                             std::make_unique<RamRelationReference>(&choice->getRelation()),
-                            choice->getTupleId(),
-                            std::unique_ptr<RamCondition>(choice->getCondition().clone()),
-                            std::unique_ptr<RamOperation>(choice->getOperation().clone()),
-                            choice->getProfileText());
+                            choice->getTupleId(), souffle::clone(&choice->getCondition()),
+                            souffle::clone(&choice->getOperation()), choice->getProfileText());
                 }
             } else if (const RamIndexScan* indexScan = dynamic_cast<RamIndexScan*>(node.get())) {
                 if (indexScan->getTupleId() == 0) {
@@ -1126,8 +1098,7 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                     RamPattern queryPattern = clone(indexScan->getRangePattern());
                     return std::make_unique<RamParallelIndexScan>(
                             std::make_unique<RamRelationReference>(&rel), indexScan->getTupleId(),
-                            std::move(queryPattern),
-                            std::unique_ptr<RamOperation>(indexScan->getOperation().clone()),
+                            std::move(queryPattern), souffle::clone(&indexScan->getOperation()),
                             indexScan->getProfileText());
                 }
             } else if (const RamIndexChoice* indexChoice = dynamic_cast<RamIndexChoice*>(node.get())) {
@@ -1137,10 +1108,8 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                     RamPattern queryPattern = clone(indexChoice->getRangePattern());
                     return std::make_unique<RamParallelIndexChoice>(
                             std::make_unique<RamRelationReference>(&rel), indexChoice->getTupleId(),
-                            std::unique_ptr<RamCondition>(indexChoice->getCondition().clone()),
-                            std::move(queryPattern),
-                            std::unique_ptr<RamOperation>(indexChoice->getOperation().clone()),
-                            indexChoice->getProfileText());
+                            souffle::clone(&indexChoice->getCondition()), std::move(queryPattern),
+                            souffle::clone(&indexChoice->getOperation()), indexChoice->getProfileText());
                 }
             }
             node->apply(makeLambdaRamMapper(parallelRewriter));

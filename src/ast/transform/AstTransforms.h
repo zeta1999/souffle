@@ -19,6 +19,7 @@
 #include "DebugReporter.h"
 #include "ast/transform/AstTransformer.h"
 #include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
 #include <functional>
 #include <map>
 #include <memory>
@@ -588,7 +589,7 @@ public:
     PipelineTransformer* clone() const override {
         std::vector<std::unique_ptr<AstTransformer>> transformers;
         for (const auto& transformer : pipeline) {
-            transformers.push_back(std::unique_ptr<AstTransformer>(transformer->clone()));
+            transformers.push_back(souffle::clone(transformer));
         }
         return new PipelineTransformer(std::move(transformers));
     }
@@ -641,7 +642,7 @@ public:
     }
 
     ConditionalTransformer* clone() const override {
-        return new ConditionalTransformer(condition, std::unique_ptr<AstTransformer>(transformer->clone()));
+        return new ConditionalTransformer(condition, souffle::clone(transformer));
     }
 
 private:
@@ -692,7 +693,7 @@ public:
     }
 
     WhileTransformer* clone() const override {
-        return new WhileTransformer(condition, std::unique_ptr<AstTransformer>(transformer->clone()));
+        return new WhileTransformer(condition, souffle::clone(transformer));
     }
 
 private:
@@ -740,7 +741,7 @@ public:
     }
 
     FixpointTransformer* clone() const override {
-        return new FixpointTransformer(std::unique_ptr<AstTransformer>(transformer->clone()));
+        return new FixpointTransformer(souffle::clone(transformer));
     }
 
 private:

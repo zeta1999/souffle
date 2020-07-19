@@ -179,11 +179,11 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
 
     // helper for collecting conditions from filter operations
     auto addCondition = [](std::unique_ptr<RamCondition> condition,
-                                RamCondition* c) -> std::unique_ptr<RamCondition> {
+                                std::unique_ptr<RamCondition> c) -> std::unique_ptr<RamCondition> {
         if (condition == nullptr) {
-            return std::unique_ptr<RamCondition>(c);
+            return c;
         } else {
-            return std::make_unique<RamConjunction>(std::move(condition), std::unique_ptr<RamCondition>(c));
+            return std::make_unique<RamConjunction>(std::move(condition), std::move(c));
         }
     };
 
@@ -199,7 +199,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
                 // delete the filter operation and collect condition
                 if (rla->getLevel(&condition) == -1) {
                     changed = true;
-                    newCondition = addCondition(std::move(newCondition), condition.clone());
+                    newCondition = addCondition(std::move(newCondition), souffle::clone(&condition));
                     node->apply(makeLambdaRamMapper(filterRewriter));
                     return souffle::clone(&filter->getOperation());
                 }
@@ -229,7 +229,7 @@ bool HoistConditionsTransformer::hoistConditions(RamProgram& program) {
                 // delete the filter operation and collect condition
                 if (rla->getLevel(&condition) == search.getTupleId()) {
                     changed = true;
-                    newCondition = addCondition(std::move(newCondition), condition.clone());
+                    newCondition = addCondition(std::move(newCondition), souffle::clone(&condition));
                     node->apply(makeLambdaRamMapper(filterRewriter));
                     return souffle::clone(&filter->getOperation());
                 }
@@ -607,11 +607,11 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
 
     // helper for collecting conditions from filter operations
     auto addCondition = [](std::unique_ptr<RamCondition> condition,
-                                RamCondition* c) -> std::unique_ptr<RamCondition> {
+                                std::unique_ptr<RamCondition> c) -> std::unique_ptr<RamCondition> {
         if (condition == nullptr) {
-            return std::unique_ptr<RamCondition>(c);
+            return c;
         } else {
-            return std::make_unique<RamConjunction>(std::move(condition), std::unique_ptr<RamCondition>(c));
+            return std::make_unique<RamConjunction>(std::move(condition), std::move(c));
         }
     };
 
@@ -644,14 +644,14 @@ bool IndexedInequalityTransformer::transformIndexToFilter(RamProgram& program) {
                         lowerBound = std::make_unique<RamConstraint>(BinaryConstraintOp::GE,
                                 std::make_unique<RamTupleElement>(indexOperation->getTupleId(), i),
                                 souffle::clone(pattern.first[i]));
-                        condition = addCondition(std::move(condition), lowerBound->clone());
+                        condition = addCondition(std::move(condition), souffle::clone(lowerBound));
                     }
 
                     if (!isRamUndefValue(pattern.second[i])) {
                         upperBound = std::make_unique<RamConstraint>(BinaryConstraintOp::LE,
                                 std::make_unique<RamTupleElement>(indexOperation->getTupleId(), i),
                                 souffle::clone(pattern.second[i]));
-                        condition = addCondition(std::move(condition), upperBound->clone());
+                        condition = addCondition(std::move(condition), souffle::clone(upperBound));
                     }
 
                     // reset the bounds

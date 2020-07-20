@@ -1560,7 +1560,6 @@ bool FoldAnonymousRecords::isValidRecordConstraint(const AstLiteral* literal) {
     auto op = constraint->getOperator();
 
     return isEqConstraint(op) || isEqConstraint(negatedConstraintOp(op));
-    ;
 }
 
 bool FoldAnonymousRecords::containsValidRecordConstraint(const AstClause& clause) {
@@ -1575,21 +1574,20 @@ std::vector<std::unique_ptr<AstLiteral>> FoldAnonymousRecords::expandRecordBinar
         const AstBinaryConstraint& constraint) {
     std::vector<std::unique_ptr<AstLiteral>> replacedContraint;
 
-    const auto& left = dynamic_cast<AstRecordInit&>(*constraint.getLHS());
-    const auto& right = dynamic_cast<AstRecordInit&>(*constraint.getRHS());
+    const auto* left = dynamic_cast<AstRecordInit*>(constraint.getLHS());
+    const auto* right = dynamic_cast<AstRecordInit*>(constraint.getRHS());
+    assert(left != nullptr && "Non-record passed to record method");
+    assert(right != nullptr && "Non-record passed to record method");
 
-    auto leftChildren = left.getChildNodes();
-    auto rightChildren = right.getChildNodes();
+    auto leftChildren = left->getArguments();
+    auto rightChildren = right->getArguments();
 
     assert(leftChildren.size() == rightChildren.size());
 
     // [a, b..] = [c, d...] → a = c, b = d ...
     for (size_t i = 0; i < leftChildren.size(); ++i) {
-        auto leftOperand = static_cast<AstArgument*>(leftChildren[i]->clone());
-        auto rightOperand = static_cast<AstArgument*>(rightChildren[i]->clone());
-
-        auto newConstraint = std::make_unique<AstBinaryConstraint>(constraint.getOperator(),
-                std::unique_ptr<AstArgument>(leftOperand), std::unique_ptr<AstArgument>(rightOperand));
+        auto newConstraint = std::make_unique<AstBinaryConstraint>(
+                constraint.getOperator(), souffle::clone(leftChildren[i]), souffle::clone(rightChildren[i]));
         replacedContraint.push_back(std::move(newConstraint));
     }
 

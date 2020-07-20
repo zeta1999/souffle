@@ -17,6 +17,7 @@
 
 #include "ast/transform/AstTransformer.h"
 #include "utility/FileUtil.h"
+#include "utility/MiscUtil.h"
 #include <memory>
 #include <ostream>
 #include <set>
@@ -54,7 +55,7 @@ public:
         if (auto* mt = dynamic_cast<MetaTransformer*>(wrappedTransformer.get())) {
             mt->disableTransformers(transforms);
         } else if (transforms.find(wrappedTransformer->getName()) != transforms.end()) {
-            wrappedTransformer = std::unique_ptr<AstTransformer>(new NullTransformer());
+            wrappedTransformer = std::make_unique<NullTransformer>();
         }
     }
 
@@ -63,7 +64,7 @@ public:
     }
 
     DebugReporter* clone() const override {
-        return new DebugReporter(std::unique_ptr<AstTransformer>(wrappedTransformer->clone()));
+        return new DebugReporter(souffle::clone(wrappedTransformer));
     }
 
 private:

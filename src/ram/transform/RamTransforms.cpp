@@ -1111,6 +1111,30 @@ bool ParallelTransformer::parallelizeOperations(RamProgram& program) {
                             souffle::clone(&indexChoice->getCondition()), std::move(queryPattern),
                             souffle::clone(&indexChoice->getOperation()), indexChoice->getProfileText());
                 }
+            } else if (const RamAggregate* aggregate = dynamic_cast<RamAggregate*>(node.get())) {
+                if (aggregate->getTupleId() == 0) {
+                    changed = true;
+                    const RamRelation& rel = aggregate->getRelation();
+                    return std::make_unique<RamParallelAggregate>(
+                            std::unique_ptr<RamOperation>(aggregate->getOperation().clone()),
+                            aggregate->getFunction(), std::make_unique<RamRelationReference>(&rel),
+                            std::unique_ptr<RamExpression>(aggregate->getExpression().clone()),
+                            std::unique_ptr<RamCondition>(aggregate->getCondition().clone()),
+                            aggregate->getTupleId());
+                }
+            } else if (const RamIndexAggregate* indexAggregate =
+                               dynamic_cast<RamIndexAggregate*>(node.get())) {
+                if (indexAggregate->getTupleId() == 0) {
+                    changed = true;
+                    const RamRelation& rel = indexAggregate->getRelation();
+                    RamPattern queryPattern = clone(indexAggregate->getRangePattern());
+                    return std::make_unique<RamParallelIndexAggregate>(
+                            std::unique_ptr<RamOperation>(indexAggregate->getOperation().clone()),
+                            indexAggregate->getFunction(), std::make_unique<RamRelationReference>(&rel),
+                            std::unique_ptr<RamExpression>(indexAggregate->getExpression().clone()),
+                            std::unique_ptr<RamCondition>(indexAggregate->getCondition().clone()),
+                            std::move(queryPattern), indexAggregate->getTupleId());
+                }
             }
             node->apply(makeLambdaRamMapper(parallelRewriter));
             return node;

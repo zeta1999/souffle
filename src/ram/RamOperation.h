@@ -864,8 +864,52 @@ protected:
 };
 
 /**
+ * @class RamParallelAggregate
+ * @brief Parallel Aggregation function applied on some relation
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * PARALLEL t0.0 = COUNT FOR ALL t0 IN A
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * Applies the function PARALLEL COUNT to determine the number
+ * of elements in A.
+ */
+class RamParallelAggregate : public RamAggregate, public RamAbstractParallel {
+public:
+    RamParallelAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
+            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
+            std::unique_ptr<RamCondition> condition, int ident)
+            : RamAggregate(std::move(nested), fun, std::move(relRef), std::move(expression),
+                      std::move(condition), ident) {}
+
+    RamParallelAggregate* clone() const override {
+        return new RamParallelAggregate(souffle::clone(&getOperation()), function,
+                souffle::clone(relationRef), souffle::clone(expression), souffle::clone(condition),
+                identifier);
+    }
+
+protected:
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "PARALLEL t" << getTupleId() << ".0=";
+        RamAbstractAggregate::print(os, tabpos);
+        os << "FOR ALL t" << getTupleId() << " ∈ " << getRelation().getName();
+        if (!isRamTrue(condition.get())) {
+            os << " WHERE " << getCondition();
+        }
+        os << std::endl;
+        RamRelationOperation::print(os, tabpos + 1);
+    }
+};
+
+/**
  * @class RamIndexAggregate
- * @brief Indexed aggregation on a relation
+ * @brief Indexed aggregation on a relation. The index allows us to iterate over a restricted range
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * t0.0=sum t0.1 SEARCH t0 ∈ S ON INDEX t0.0 = number(1)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  */
 class RamIndexAggregate : public RamIndexOperation, public RamAbstractAggregate {
 public:
@@ -917,6 +961,51 @@ protected:
     bool equal(const RamNode& node) const override {
         const auto& other = static_cast<const RamIndexAggregate&>(node);
         return RamIndexOperation::equal(other) && RamAbstractAggregate::equal(other);
+    }
+};
+
+/**
+ * @class RamParallelIndexAggregate
+ * @brief Aggregate over values of a relation using an index in parallel
+ *
+ * For example:
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ * t0.0=sum t0.1 SEARCH t0 ∈ S ON INDEX t0.0 = number(1)
+ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ */
+class RamParallelIndexAggregate : public RamIndexAggregate, public RamAbstractParallel {
+public:
+    RamParallelIndexAggregate(std::unique_ptr<RamOperation> nested, AggregateOp fun,
+            std::unique_ptr<RamRelationReference> relRef, std::unique_ptr<RamExpression> expression,
+            std::unique_ptr<RamCondition> condition, RamPattern queryPattern, int ident)
+            : RamIndexAggregate(std::move(nested), fun, std::move(relRef), std::move(expression),
+                      std::move(condition), std::move(queryPattern), ident) {}
+
+    RamParallelIndexAggregate* clone() const override {
+        RamPattern pattern;
+        for (const auto& i : queryPattern.first) {
+            pattern.first.emplace_back(i->clone());
+        }
+        for (const auto& i : queryPattern.second) {
+            pattern.second.emplace_back(i->clone());
+        }
+        return new RamParallelIndexAggregate(souffle::clone(&getOperation()), function,
+                souffle::clone(relationRef), souffle::clone(expression), souffle::clone(condition),
+                std::move(pattern), getTupleId());
+    }
+
+protected:
+    void print(std::ostream& os, int tabpos) const override {
+        os << times(" ", tabpos);
+        os << "PARALLEL t" << getTupleId() << ".0=";
+        RamAbstractAggregate::print(os, tabpos);
+        os << "SEARCH t" << getTupleId() << " ∈ " << getRelation().getName();
+        printIndex(os);
+        if (!isRamTrue(condition.get())) {
+            os << " WHERE " << getCondition();
+        }
+        os << std::endl;
+        RamIndexOperation::print(os, tabpos + 1);
     }
 };
 

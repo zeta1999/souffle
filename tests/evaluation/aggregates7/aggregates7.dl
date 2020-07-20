@@ -40,3 +40,17 @@ IndexAggregateMin(1, x) :- x = min y : { D(1, y) }.
 F(1, 1).
 F(1, (n+1)) :- F(1, n), n < 100. 
 IndexAggregateSum(1, x) :- x = sum y : F(1, y).
+
+.decl G, AggregateOverflow(x:float)
+.decl H, IndexAggregateOverflow(x:float, y:float)
+.output AggregateOverflow, IndexAggregateOverflow
+
+G(2^(31)-1).
+G(1).
+
+AggregateOverflow(x) :- x = mean y : G(y). // should be 2^30
+
+H(1, 2^(31)-1).
+H(1, 1).
+
+IndexAggregateOverflow(1, x) :- x = mean y : H(1, y). // should be 2^30

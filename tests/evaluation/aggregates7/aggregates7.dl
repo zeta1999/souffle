@@ -10,35 +10,35 @@
 .decl S, IndexAggregateCount(m:number, n:number)
 .output IndexAggregateCount
 S(1, 1).
-S(1, (n+1)) :- S(1, n), n < 1000. // get S(1, n), 1 <= n <= 100
-IndexAggregateCount(1, x) :- x = count : { S(1, _) }. // this will use indexAggregate
+S(1, (n+1)) :- S(1, n), n < 1000.
+IndexAggregateCount(1, x) :- x = count : { S(1, _) }.
 
 // index aggregate max
 .decl A, IndexAggregateMax(m:number, n:number)
 .output IndexAggregateMax
 A(1, 1).
 A(1, (n+1)) :- A(1, n), n < 100.
-IndexAggregateMax(1, x) :- x = max y : { A(1, y) }. 
+IndexAggregateMax(1, x) :- x = max y : { A(1, y) }.
 
 // index aggregate mean
 .decl C, IndexAggregateMean(m:float, n:float)
 .output IndexAggregateMean
 C(1, 1).
-C(1, (n+1)) :- C(1, n), n < 100. 
-IndexAggregateMean(1, x) :- x = mean y : { C(1, y) }. 
+C(1, (n+1)) :- C(1, n), n < 100.
+IndexAggregateMean(1, x) :- x = mean y : { C(1, y) }.
 
 // index aggregate min
 .decl D, IndexAggregateMin(m:number, n:number)
 .output IndexAggregateMin
 D(1, 1).
-D(1, (n+1)) :- D(1, n), n < 100. 
-IndexAggregateMin(1, x) :- x = min y : { D(1, y) }. 
+D(1, (n+1)) :- D(1, n), n < 100.
+IndexAggregateMin(1, x) :- x = min y : { D(1, y) }.
 
 // index aggregate sum
 .decl F, IndexAggregateSum(m:number, n:number)
 .output IndexAggregateSum
 F(1, 1).
-F(1, (n+1)) :- F(1, n), n < 100. 
+F(1, (n+1)) :- F(1, n), n < 100.
 IndexAggregateSum(1, x) :- x = sum y : F(1, y).
 
 .decl G, AggregateOverflow(x:float)
@@ -48,9 +48,9 @@ IndexAggregateSum(1, x) :- x = sum y : F(1, y).
 G(2^(31)-1).
 G(1).
 
-AggregateOverflow(x) :- x = mean y : G(y). // should be 2^30
+AggregateOverflow(x) :- x = mean y : G(y).
 
 H(1, 2^(31)-1).
 H(1, 1).
 
-IndexAggregateOverflow(1, x) :- x = mean y : H(1, y). // should be 2^30
+IndexAggregateOverflow(1, x) :- x = mean y : H(1, y).

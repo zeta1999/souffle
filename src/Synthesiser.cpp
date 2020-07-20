@@ -1445,16 +1445,14 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 case AggregateOp::FMIN:
                 case AggregateOp::UMIN:
                 case AggregateOp::MIN:
-                    out << "res0 = std::min(res0, ramBitCast<" << type
-                        << ">(";
+                    out << "res0 = std::min(res0, ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;
                 case AggregateOp::FMAX:
                 case AggregateOp::UMAX:
                 case AggregateOp::MAX:
-                    out << "res0 = std::max(res0,ramBitCast<" << type
-                        << ">(";
+                    out << "res0 = std::max(res0,ramBitCast<" << type << ">(";
                     visit(aggregate.getExpression(), out);
                     out << "));\n";
                     break;

@@ -152,21 +152,64 @@ souffle_sources = \
         ast/transform/AstSemanticChecker.h                 \
         ast/transform/AstTransformer.cpp                   \
         ast/transform/AstTransformer.h                     \
-        ast/transform/AstTransforms.cpp                    \
-        ast/transform/AstTransforms.h                      \
-        ast/transform/ComponentInstantiationTransformer.cpp  \
-        ast/transform/ComponentInstantiationTransformer.h  \
+        ast/transform/AstUserDefinedFunctors.cpp           \
+        ast/transform/AstUserDefinedFunctors.h             \
+        ast/transform/ComponentInstantiation.cpp           \
+        ast/transform/ComponentInstantiation.h             \
+        ast/transform/Conditional.h                        \
         ast/transform/DebugReporter.cpp                    \
         ast/transform/DebugReporter.h                      \
-        ast/transform/IOAttributesTransformer.h            \
-        ast/transform/IODefaultsTransformer.h              \
-        ast/transform/InlineRelationsTransformer.cpp       \
+        ast/transform/Fixpoint.h                           \
+        ast/transform/FoldAnonymousRecords.cpp             \
+        ast/transform/FoldAnonymousRecords.h               \
+        ast/transform/IOAttributes.h                       \
+        ast/transform/IODefaults.h                         \
+        ast/transform/InlineRelations.cpp                  \
+        ast/transform/InlineRelations.h                    \
         ast/transform/MagicSet.cpp                         \
         ast/transform/MagicSet.h                           \
-        ast/transform/MinimiseProgramTransformer.cpp       \
-        ast/transform/ProvenanceTransformer.cpp            \
-        ast/transform/ReorderLiteralsTransformer.cpp       \
-        ast/transform/ResolveAliasesTransformer.cpp        \
+        ast/transform/MaterializeAggregationQueries.cpp    \
+        ast/transform/MaterializeAggregationQueries.h      \
+        ast/transform/MaterializeSingletonAggregation.cpp  \
+        ast/transform/MaterializeSingletonAggregation.h    \
+        ast/transform/MinimiseProgram.cpp                  \
+        ast/transform/MinimiseProgram.h                    \
+        ast/transform/NameUnnamedVariables.cpp             \
+        ast/transform/NameUnnamedVariables.h               \
+        ast/transform/NormaliseConstraints.cpp             \
+        ast/transform/NormaliseConstraints.h               \
+        ast/transform/PartitionBodyLiterals.cpp            \
+        ast/transform/PartitionBodyLiterals.h              \
+        ast/transform/Pipeline.h                           \
+        ast/transform/PolymorphicObjects.cpp               \
+        ast/transform/PolymorphicObjects.h                 \
+        ast/transform/Provenance.cpp                       \
+        ast/transform/Provenance.h                         \
+        ast/transform/ReduceExistentials.cpp               \
+        ast/transform/ReduceExistentials.h                 \
+        ast/transform/RemoveBooleanConstraints.cpp         \
+        ast/transform/RemoveBooleanConstraints.h           \
+        ast/transform/RemoveEmptyRelations.cpp             \
+        ast/transform/RemoveEmptyRelations.h               \
+        ast/transform/RemoveRedundantRelations.cpp         \
+        ast/transform/RemoveRedundantRelations.h           \
+        ast/transform/RemoveRedundantSums.cpp              \
+        ast/transform/RemoveRedundantSums.h                \
+        ast/transform/RemoveRelationCopies.cpp             \
+        ast/transform/RemoveRelationCopies.h               \
+        ast/transform/RemoveTypecasts.cpp                  \
+        ast/transform/RemoveTypecasts.h                    \
+        ast/transform/ReorderLiterals.cpp                  \
+        ast/transform/ReorderLiterals.h                    \
+        ast/transform/ReplaceSingletonVariables.cpp        \
+        ast/transform/ReplaceSingletonVariables.h          \
+        ast/transform/ResolveAliases.cpp                   \
+        ast/transform/ResolveAliases.h                     \
+        ast/transform/ResolveAnonymousRecordsAliases.cpp   \
+        ast/transform/ResolveAnonymousRecordsAliases.h     \
+        ast/transform/UniqueAggregationVariables.cpp       \
+        ast/transform/UniqueAggregationVariables.h         \
+        ast/transform/While.h                              \
         interpreter/InterpreterContext.h                   \
         interpreter/InterpreterEngine.cpp                  \
         interpreter/InterpreterEngine.h                    \

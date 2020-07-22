@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file MagicSet.cpp
+ * @file MagicSetTransformer.cpp
  *
  * Define classes and functionality related to the magic set transformation.
  *
@@ -27,10 +27,11 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
 #include "ast/analysis/AstIOTypeAnalysis.h"
-#include "ast/transform/AstTransforms.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StringUtil.h"
+#include <algorithm>
+#include <optional>
 #include <utility>
 
 namespace souffle {

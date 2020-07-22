@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "InterpreterIndex.h"
+#include "interpreter/InterpreterIndex.h"
 #include "BTree.h"
 #include "Brie.h"
 #include "EquivalenceRelation.h"

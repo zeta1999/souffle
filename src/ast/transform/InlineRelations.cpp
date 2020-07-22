@@ -14,6 +14,7 @@
  *
  ***********************************************************************/
 
+#include "ast/transform/InlineRelations.h"
 #include "AggregateOp.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
@@ -35,6 +36,7 @@
 #include <cassert>
 #include <cstddef>
 #include <memory>
+#include <optional>
 #include <ostream>
 #include <set>
 #include <string>

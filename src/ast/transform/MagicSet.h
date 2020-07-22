@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file MagicSet.h
+ * @file MagicSetTransformer.h
  *
  * Define classes and functionality related to the magic set transformation.
  *
@@ -36,6 +36,23 @@
 namespace souffle {
 
 class AstTranslationUnit;
+
+/**
+ * Magic Set Transformation
+ */
+class MagicSetTransformer : public AstTransformer {
+public:
+    std::string getName() const override {
+        return "MagicSetTransformer";
+    }
+
+    MagicSetTransformer* clone() const override {
+        return new MagicSetTransformer();
+    }
+
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
+};
 
 class AdornedPredicate {
 private:

@@ -15,6 +15,7 @@
  *
  ***********************************************************************/
 
+#include "ast/transform/ResolveAliases.h"
 #include "BinaryConstraintOps.h"
 #include "ast/AstAbstract.h"
 #include "ast/AstArgument.h"
@@ -25,8 +26,8 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
 #include "ast/AstVisitor.h"
-#include "ast/transform/AstTransforms.h"
 #include "utility/FunctionalUtil.h"
+#include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
 #include <algorithm>

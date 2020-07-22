@@ -18,12 +18,12 @@
 #pragma once
 
 #include "Global.h"
-#include "InterpreterIndex.h"
-#include "InterpreterNode.h"
-#include "InterpreterPreamble.h"
-#include "InterpreterRelation.h"
 #include "RamTypes.h"
 #include "RelationTag.h"
+#include "interpreter/InterpreterIndex.h"
+#include "interpreter/InterpreterNode.h"
+#include "interpreter/InterpreterPreamble.h"
+#include "interpreter/InterpreterRelation.h"
 #include "ram/RamCondition.h"
 #include "ram/RamExpression.h"
 #include "ram/RamNode.h"

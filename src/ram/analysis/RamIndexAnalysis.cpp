@@ -426,13 +426,6 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
     }
 
     return keys;
-
-    /*
-    // values.size() - auxiliaryArity because we discard the height annotations
-    auto const numSig = values.size(); // - auxiliaryArity;
-    // return searchSignature(auxiliaryArity, values.begin(), values.begin() + numSig);
-    return searchSignature(provExistCheck->getRelation().getArity(), provExistCheck->getValues());
-    */
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {

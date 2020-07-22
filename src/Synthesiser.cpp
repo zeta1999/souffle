@@ -1707,25 +1707,15 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                 << "lowerUpperRange";
             out << "_" << isa->getSearchSignature(&provExists);
             out << "(Tuple<RamDomain," << arity << ">{{";
-            // std::cout << "provExists: " << provExists << std::endl;
-            auto parts = provExists.getValues().size() - auxiliaryArity + 1;
-            // std::cout << "parts: " << parts << std::endl;
-            // std::cout << "begin: " << &(*provExists.getValues().begin()) << std::endl;;
-            // std::cout << "end: " << &(*(provExists.getValues().begin() + parts)) << std::endl;;
 
-            /*
-            out << join(provExists.getValues().begin(), provExists.getValues().begin() + parts, ",",
-                    recWithDefault);
-                    */
+            // parts refers to payload + rule number
+            size_t parts = provExists.getValues().size() - auxiliaryArity + 1;
 
-            for (size_t i = 0; i < parts; i++) {
-                if (isRamUndefValue((provExists.getValues()[i]))) {
-                    out << "0";
-                } else {
-                    visit(*(provExists.getValues()[i]), out);
-                }
-                out << ",";
-            }
+            // make a copy of provExists.getValues() so we can be sure that vals is always the same vector
+            // since provExists.getValues() creates a new vector on the stack each time
+            auto vals = provExists.getValues();
+
+            out << join(vals.begin(), vals.begin() + parts, ",", recWithDefault);
 
             // extra 0 for provenance height annotations
             for (size_t i = 0; i < auxiliaryArity - 2; i++) {
@@ -1735,18 +1725,8 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             // repeat original pattern
             out << "}},Tuple<RamDomain," << arity << ">{{";
-            /*
-            out << join(provExists.getValues().begin(), provExists.getValues().begin() + parts, ",",
-                    recWithDefault);
-                    */
-            for (size_t i = 0; i < parts; i++) {
-                if (isRamUndefValue((provExists.getValues()[i]))) {
-                    out << "0";
-                } else {
-                    visit(*(provExists.getValues()[i]), out);
-                }
-                out << ",";
-            }
+            out << join(vals.begin(), vals.begin() + parts, ",", recWithDefault);
+
             // extra 0 for provenance height annotations
             for (size_t i = 0; i < auxiliaryArity - 2; i++) {
                 out << "0,";
@@ -1764,12 +1744,11 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
                     << "(*existenceCheck.begin())[" << arity - auxiliaryArity + 1 << "] == ";
                 visit(*(provExists.getValues()[arity - auxiliaryArity + 1]), out);
 
-                // out << ")";}
                 out << " && (";
 
                 out << "(*existenceCheck.begin())[" << arity - auxiliaryArity + 2 << "] > ";
                 visit(*(provExists.getValues()[arity - auxiliaryArity + 2]), out);
-                // out << "))";}
+
                 for (int i = arity - auxiliaryArity + 3; i < (int)arity; i++) {
                     out << " || (";
                     for (int j = arity - auxiliaryArity + 2; j < i; j++) {

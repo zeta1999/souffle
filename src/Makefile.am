@@ -72,8 +72,8 @@ endif
 
 souffle_sources = \
         AggregateOp.h                                      \
-        AstTranslator.cpp                                  \
-        AstTranslator.h                                    \
+        AstToRamTranslator.cpp                             \
+        AstToRamTranslator.h                               \
         BinaryConstraintOps.h                              \
         Constraints.h                                      \
         DebugReport.cpp                                    \

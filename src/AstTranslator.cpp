@@ -308,8 +308,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                 // undefined value for rule number
                 values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
-                for (size_t h = 0; h + 1 < auxiliaryArity; h++) {
-                    values.push_back(translator.translateValue(args[arity + h + 1], index));
+                for (size_t h = 1; h < auxiliaryArity; h++) {
+                    values.push_back(translator.translateValue(args[arity + h], index));
                 }
             }
             return std::make_unique<RamNegation>(std::make_unique<RamProvenanceExistenceCheck>(

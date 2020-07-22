@@ -14,6 +14,7 @@
  *
  ***********************************************************************/
 
+#include "ast/transform/Provenance.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
 #include "Global.h"
@@ -30,7 +31,7 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
 #include "ast/analysis/AuxArityAnalysis.h"
-#include "ast/transform/AstTransforms.h"
+#include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
@@ -42,6 +43,7 @@
 #include <iosfwd>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace souffle {

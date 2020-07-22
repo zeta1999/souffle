@@ -14,6 +14,8 @@
  *
  ***********************************************************************/
 
+#include "ast/transform/MinimiseProgram.h"
+#include "BinaryConstraintOps.h"
 #include "ast/AstAbstract.h"
 #include "ast/AstArgument.h"
 #include "ast/AstClause.h"
@@ -23,16 +25,16 @@
 #include "ast/AstQualifiedName.h"
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
-#include "ast/AstVisitor.h"
 #include "ast/analysis/AstIOTypeAnalysis.h"
-#include "ast/transform/AstTransforms.h"
 #include "utility/ContainerUtil.h"
+#include "utility/MiscUtil.h"
 #include "utility/StringUtil.h"
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <set>
 #include <stack>
 #include <string>

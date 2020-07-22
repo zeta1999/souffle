@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "InterpreterIndex.h"
-#include "InterpreterRelation.h"
 #include "RamTypes.h"
+#include "interpreter/InterpreterIndex.h"
+#include "interpreter/InterpreterRelation.h"
 #include <cassert>
 #include <cstddef>
 #include <memory>

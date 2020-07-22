@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "InterpreterIndex.h"
 #include "RamTypes.h"
+#include "interpreter/InterpreterIndex.h"
 #include <cstdint>
 #include <deque>
 #include <iterator>

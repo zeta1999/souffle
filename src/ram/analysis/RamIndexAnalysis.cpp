@@ -411,10 +411,28 @@ SearchSignature RamIndexAnalysis::getSearchSignature(
     const auto values = provExistCheck->getValues();
     auto auxiliaryArity = provExistCheck->getRelation().getAuxiliaryArity();
 
+    SearchSignature keys(values.size());
+
+    // all payload attributes should be equalities
+    for (size_t i = 0; i < values.size() - auxiliaryArity; i++) {
+        if (!isRamUndefValue(values[i])) {
+            keys.set(i, AttributeConstraint::Equal);
+        }
+    }
+
+    // all auxiliary attributes should be free
+    for (size_t i = values.size() - auxiliaryArity; i < values.size(); i++) {
+        keys.set(i, AttributeConstraint::None);
+    }
+
+    return keys;
+
+    /*
     // values.size() - auxiliaryArity because we discard the height annotations
     auto const numSig = values.size(); // - auxiliaryArity;
     // return searchSignature(auxiliaryArity, values.begin(), values.begin() + numSig);
     return searchSignature(provExistCheck->getRelation().getArity(), provExistCheck->getValues());
+    */
 }
 
 SearchSignature RamIndexAnalysis::getSearchSignature(const RamExistenceCheck* existCheck) const {

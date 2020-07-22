@@ -100,10 +100,6 @@ souffle_sources = \
         SignalHandler.h                                    \
         SrcLocation.cpp                                    \
         SrcLocation.h                                      \
-        Synthesiser.cpp                                    \
-        Synthesiser.h                                      \
-        SynthesiserRelation.cpp                            \
-        SynthesiserRelation.h                              \
         Util.cpp                                           \
         WriteStream.h                                      \
         WriteStreamCSV.h                                   \
@@ -207,6 +203,10 @@ souffle_sources = \
         ram/transform/RamTransforms.h                      \
         scanner.cc                                         \
         stack.hh                                           \
+        synthesiser/Synthesiser.cpp                        \
+        synthesiser/Synthesiser.h                          \
+        synthesiser/SynthesiserRelation.cpp                \
+        synthesiser/SynthesiserRelation.h                  \
         $(sqlite_sources)                                  \
         $(libz_sources)                                    \
         $(souffle_utility_sources)                         \

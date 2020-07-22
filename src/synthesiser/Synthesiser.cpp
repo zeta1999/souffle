@@ -14,7 +14,7 @@
  *
  ***********************************************************************/
 
-#include "Synthesiser.h"
+#include "synthesiser/Synthesiser.h"
 #include "AggregateOp.h"
 #include "BinaryConstraintOps.h"
 #include "FunctorOps.h"
@@ -22,7 +22,6 @@
 #include "RamTypes.h"
 #include "RelationTag.h"
 #include "SymbolTable.h"
-#include "SynthesiserRelation.h"
 #include "json11.h"
 #include "ram/RamCondition.h"
 #include "ram/RamExpression.h"
@@ -35,6 +34,7 @@
 #include "ram/RamUtils.h"
 #include "ram/RamVisitor.h"
 #include "ram/analysis/RamIndexAnalysis.h"
+#include "synthesiser/SynthesiserRelation.h"
 #include "utility/FileUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

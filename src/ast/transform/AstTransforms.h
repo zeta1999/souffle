@@ -328,7 +328,7 @@ public:
 private:
     bool transform(AstTranslationUnit& translationUnit) override;
     bool transformMaxHeight(AstTranslationUnit& translationUnit);
-    bool transformSubtreeHeights(AstTranslationUnit& translationUnit);
+    // bool transformSubtreeHeights(AstTranslationUnit& translationUnit);
 };
 
 /**

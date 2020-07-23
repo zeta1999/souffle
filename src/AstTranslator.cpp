@@ -1214,42 +1214,19 @@ std::unique_ptr<RamStatement> AstTranslator::makeSubproofSubroutine(const AstCla
         }
     }
 
-    if (Global::config().get("provenance") == "subtreeHeights") {
-        // starting index of subtree level arguments in argument list
-        // starts immediately after original arguments as height and rulenumber of tuple are not passed to
-        // subroutine
-        size_t levelIndex = head->getArguments().size() - auxiliaryArity;
+    // index of level argument in argument list
+    size_t levelIndex = head->getArguments().size() - auxiliaryArity;
 
-        // add level constraints
-        const auto& bodyLiterals = intermediateClause->getBodyLiterals();
-        for (auto lit : bodyLiterals) {
-            if (auto atom = dynamic_cast<AstAtom*>(lit)) {
-                auto arity = atom->getArity();
-                auto auxiliaryArity = auxArityAnalysis->getArity(atom);
-                auto literalLevelIndex = arity - auxiliaryArity + 1;
-                auto atomArgs = atom->getArguments();
-                // FIXME: float equiv (`FEQ`)
-                intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::EQ,
-                        souffle::clone(atomArgs[literalLevelIndex]),
-                        std::make_unique<AstSubroutineArgument>(levelIndex)));
-            }
-            levelIndex++;
-        }
-    } else {
-        // index of level argument in argument list
-        size_t levelIndex = head->getArguments().size() - auxiliaryArity;
-
-        // add level constraints
-        const auto& bodyLiterals = intermediateClause->getBodyLiterals();
-        for (auto lit : bodyLiterals) {
-            if (auto atom = dynamic_cast<AstAtom*>(lit)) {
-                auto arity = atom->getArity();
-                auto atomArgs = atom->getArguments();
-                // arity - 1 is the level number in body atoms
-                intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::LT,
-                        souffle::clone(atomArgs[arity - 1]),
-                        std::make_unique<AstSubroutineArgument>(levelIndex)));
-            }
+    // add level constraints, i.e., that each body literal has height less than that of the head atom
+    const auto& bodyLiterals = intermediateClause->getBodyLiterals();
+    for (auto lit : bodyLiterals) {
+        if (auto atom = dynamic_cast<AstAtom*>(lit)) {
+            auto arity = atom->getArity();
+            auto atomArgs = atom->getArguments();
+            // arity - 1 is the level number in body atoms
+            intermediateClause->addToBody(std::make_unique<AstBinaryConstraint>(BinaryConstraintOp::LT,
+                    souffle::clone(atomArgs[arity - 1]),
+                    std::make_unique<AstSubroutineArgument>(levelIndex)));
         }
     }
     return ProvenanceClauseTranslator(*this).translateClause(*intermediateClause, clause);

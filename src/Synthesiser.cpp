@@ -1723,7 +1723,7 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             }
             out << "0";
 
-            // repeat original pattern
+            // repeat original pattern for the upper bound
             out << "}},Tuple<RamDomain," << arity << ">{{";
             out << join(vals.begin(), vals.begin() + parts, ",", recWithDefault);
 
@@ -1739,30 +1739,6 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
 
             visit(*(provExists.getValues()[arity - auxiliaryArity + 1]), out);
             out << ")";
-            if (auxiliaryArity > 2) {
-                out << " &&  !("
-                    << "(*existenceCheck.begin())[" << arity - auxiliaryArity + 1 << "] == ";
-                visit(*(provExists.getValues()[arity - auxiliaryArity + 1]), out);
-
-                out << " && (";
-
-                out << "(*existenceCheck.begin())[" << arity - auxiliaryArity + 2 << "] > ";
-                visit(*(provExists.getValues()[arity - auxiliaryArity + 2]), out);
-
-                for (int i = arity - auxiliaryArity + 3; i < (int)arity; i++) {
-                    out << " || (";
-                    for (int j = arity - auxiliaryArity + 2; j < i; j++) {
-                        out << "(*existenceCheck.begin())[" << j << "] == ";
-                        visit(*(provExists.getValues()[j]), out);
-                        out << " && ";
-                    }
-                    out << "(*existenceCheck.begin())[" << i << "] > ";
-                    visit(*(provExists.getValues()[i]), out);
-                    out << ")";
-                }
-
-                out << "))";
-            }
             out << ";}()\n";
             PRINT_END_COMMENT(out);
         }
@@ -2577,27 +2553,6 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "return symTable;\n";
     os << "}\n";  // end of getSymbolTable() method
 
-    // TODO: generate code for subroutines
-    if (Global::config().has("provenance")) {
-        if (Global::config().get("provenance") == "subtreeHeights") {
-            // method that populates provenance indices
-            os << "void copyIndex() {\n";
-            for (auto rel : prog.getRelations()) {
-                // get some table details
-                const std::string& cppName = getRelationName(*rel);
-
-                bool isProvInfo = rel->getRepresentation() == RelationRepresentation::INFO;
-                auto relationType = SynthesiserRelation::getSynthesiserRelation(*rel,
-                        idxAnalysis->getIndexes(*rel), Global::config().has("provenance") && !isProvInfo);
-
-                if (!relationType->getProvenenceIndexNumbers().empty()) {
-                    os << cppName << "->copyIndex();\n";
-                }
-            }
-            os << "}\n";
-        }
-    }
-
     if (!prog.getSubroutines().empty()) {
         // generate subroutine adapter
         os << "void executeSubroutine(std::string name, const std::vector<RamDomain>& args, "
@@ -2722,12 +2677,9 @@ void Synthesiser::generateCode(std::ostream& os, const std::string& id, bool& wi
     os << "obj.runAll(opt.getInputFileDir(), opt.getOutputFileDir());\n";
 
     if (Global::config().get("provenance") == "explain") {
-        os << "explain(obj, false, false);\n";
-    } else if (Global::config().get("provenance") == "subtreeHeights") {
-        os << "obj.copyIndex();\n";
-        os << "explain(obj, false, true);\n";
+        os << "explain(obj, false);\n";
     } else if (Global::config().get("provenance") == "explore") {
-        os << "explain(obj, true, false);\n";
+        os << "explain(obj, true);\n";
     }
     os << "return 0;\n";
     os << "} catch(std::exception &e) { souffle::SignalHandler::instance()->error(e.what());}\n";

@@ -158,8 +158,7 @@ inline std::vector<std::string> split(const std::string& s, char delim, int time
 
 class ExplainProvenance {
 public:
-    ExplainProvenance(SouffleProgram& prog)
-            : prog(prog), symTable(prog.getSymbolTable()) {}
+    ExplainProvenance(SouffleProgram& prog) : prog(prog), symTable(prog.getSymbolTable()) {}
     virtual ~ExplainProvenance() = default;
 
     virtual void setup() = 0;

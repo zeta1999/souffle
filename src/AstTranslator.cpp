@@ -491,35 +491,6 @@ std::unique_ptr<RamOperation> AstTranslator::ClauseTranslator::createOperation(c
                 std::make_unique<RamEmptinessCheck>(translator.translateRelation(head)), std::move(project));
     }
 
-    // check existence for original tuple if we have provenance
-    // only if we don't compile
-    if (Global::config().has("provenance") &&
-            ((!Global::config().has("compile") && !Global::config().has("dl-program") &&
-                    !Global::config().has("generate")))) {
-        size_t auxiliaryArity = translator.getEvaluationArity(head);
-        auto arity = head->getArity() - auxiliaryArity;
-        std::vector<std::unique_ptr<RamExpression>> values;
-        bool isVolatile = true;
-        auto args = head->getArguments();
-
-        // add args for original tuple
-        for (size_t i = 0; i < arity; i++) {
-            auto arg = args[i];
-            // don't add counters
-            visitDepthFirst(*arg, [&](const AstCounter&) { isVolatile = false; });
-            values.push_back(translator.translateValue(arg, valueIndex));
-        }
-        for (size_t i = 0; i < auxiliaryArity; i++) {
-            values.push_back(std::make_unique<RamUndefValue>());
-        }
-        if (isVolatile) {
-            return std::make_unique<RamFilter>(
-                    std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
-                            translator.translateRelation(head), std::move(values))),
-                    std::move(project));
-        }
-    }
-
     // build up insertion call
     return project;  // start with innermost
 }

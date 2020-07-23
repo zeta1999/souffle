@@ -581,10 +581,12 @@ int main(int argc, char** argv) {
                 profiler.join();
             }
             if (Global::config().has("provenance")) {
+                /*
                 // Test for bugged combination of provenance, interpreted souffle, and concurrency
                 if (Global::config().get("jobs") != "1") {
                     throw std::runtime_error("Provenance is not supported with parallel interpreted mode");
                 }
+                */
 
                 // only run explain interface if interpreted
                 InterpreterProgInterface interface(*interpreter);

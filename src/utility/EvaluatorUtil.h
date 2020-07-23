@@ -51,7 +51,7 @@ A symbol2numeric(const std::string& s);
 
 #define SYM_2_NUMERIC_OVERLOAD(ty)                \
     template <>                                   \
-    ty symbol2numeric<ty>(const std::string& s) { \
+    inline ty symbol2numeric<ty>(const std::string& s) { \
         return ty##FromString(s);                 \
     }
 

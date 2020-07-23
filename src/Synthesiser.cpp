@@ -1709,11 +1709,17 @@ void Synthesiser::emitCode(std::ostream& out, const RamStatement& stmt) {
             out << "(Tuple<RamDomain," << arity << ">{{";
 
             // parts refers to payload + rule number
-            size_t parts = provExists.getValues().size() - auxiliaryArity + 1;
+            size_t parts = arity - auxiliaryArity + 1;
 
             // make a copy of provExists.getValues() so we can be sure that vals is always the same vector
             // since provExists.getValues() creates a new vector on the stack each time
             auto vals = provExists.getValues();
+
+            // sanity check to ensure that all payload values are specified
+            for (size_t i = 0; i < arity - auxiliaryArity; i++) {
+                assert(!isRamUndefValue(vals[i]) &&
+                        "ProvenanceExistenceCheck should always be specified for payload");
+            }
 
             out << join(vals.begin(), vals.begin() + parts, ",", recWithDefault);
 

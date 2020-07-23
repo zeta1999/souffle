@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include "AstAbstract.h"
-#include "AstArgument.h"
-#include "AstNode.h"
-#include "AstQualifiedName.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
 #include "RamTypes.h"
 #include "SymbolTable.h"
+#include "ast/AstAbstract.h"
+#include "ast/AstArgument.h"
+#include "ast/AstNode.h"
+#include "ast/AstQualifiedName.h"
 #include "json11.h"
+#include "ram/RamRelation.h"
+#include "ram/RamStatement.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
@@ -85,9 +85,6 @@ private:
     /** RAM relations */
     std::map<std::string, std::unique_ptr<RamRelation>> ramRels;
 
-    /** Record types information - used in Ram for I/O. */
-    Json RamRecordTypes;
-
     /** Symbol Table **/
     SymbolTable symbolTable;
 
@@ -109,7 +106,7 @@ private:
 
         Location(const Location& l) : identifier(l.identifier), element(l.element) {
             if (l.relation != nullptr) {
-                relation = std::unique_ptr<RamRelationReference>(l.relation->clone());
+                relation = souffle::clone(l.relation);
             }
         }
 
@@ -298,16 +295,13 @@ private:
 
     /** translate AST directives to RAM directives */
     // TODO (b-scholz): revisit / refactor
-    void translateDirectives(std::map<std::string, std::string>& directives, const AstRelation* rel,
-            const std::string& filePath, const std::string& fileExt);
+    void translateDirectives(std::map<std::string, std::string>& directives, const AstRelation* rel);
 
     // TODO (b-scholz): revisit / refactor so that only one directive is translated
-    std::vector<std::map<std::string, std::string>> getInputDirectives(const AstRelation* rel,
-            std::string filePath = std::string(), const std::string& fileExt = std::string());
+    std::vector<std::map<std::string, std::string>> getInputDirectives(const AstRelation* rel);
 
     // TODO (b-scholz): revisit / refactor so that only one directive is translated
-    std::vector<std::map<std::string, std::string>> getOutputDirectives(const AstRelation* rel,
-            std::string filePath = std::string(), const std::string& fileExt = std::string());
+    std::vector<std::map<std::string, std::string>> getOutputDirectives(const AstRelation* rel);
 
     /** create a reference to a RAM relation */
     std::unique_ptr<RamRelationReference> createRelationReference(const std::string name);

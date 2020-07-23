@@ -14,16 +14,7 @@
  *
  ***********************************************************************/
 
-#include "AstComponentChecker.h"
-#include "AstNode.h"
-#include "AstPragmaChecker.h"
-#include "AstProgram.h"
-#include "AstSemanticChecker.h"
-#include "AstTransforms.h"
-#include "AstTranslationUnit.h"
 #include "AstTranslator.h"
-#include "AstTypeAnalysis.h"
-#include "ComponentInstantiationTransformer.h"
 #include "DebugReport.h"
 #include "ErrorReport.h"
 #include "Explain.h"
@@ -31,16 +22,27 @@
 #include "InterpreterEngine.h"
 #include "InterpreterProgInterface.h"
 #include "ParserDriver.h"
-#include "PrecedenceGraph.h"
-#include "RamNode.h"
-#include "RamProgram.h"
-#include "RamTransformer.h"
-#include "RamTransforms.h"
-#include "RamTranslationUnit.h"
 #include "RamTypes.h"
 #include "Synthesiser.h"
+#include "ast/AstNode.h"
+#include "ast/AstProgram.h"
+#include "ast/AstTranslationUnit.h"
+#include "ast/analysis/AstTypeAnalysis.h"
+#include "ast/analysis/PrecedenceGraph.h"
+#include "ast/transform/AstComponentChecker.h"
+#include "ast/transform/AstPragmaChecker.h"
+#include "ast/transform/AstSemanticChecker.h"
+#include "ast/transform/AstTransforms.h"
+#include "ast/transform/ComponentInstantiationTransformer.h"
+#include "ast/transform/IOAttributesTransformer.h"
+#include "ast/transform/IODefaultsTransformer.h"
 #include "config.h"
 #include "profile/Tui.h"
+#include "ram/RamNode.h"
+#include "ram/RamProgram.h"
+#include "ram/RamTranslationUnit.h"
+#include "ram/transform/RamTransformer.h"
+#include "ram/transform/RamTransforms.h"
 #include "utility/FileUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
@@ -185,7 +187,7 @@ int main(int argc, char** argv) {
                         "Use profile log-file <FILE> for profile-guided optimization."},
                 {"debug-report", 'r', "FILE", "", false, "Write HTML debug report to <FILE>."},
                 {"pragma", 'P', "OPTIONS", "", false, "Set pragma options."},
-                {"provenance", 't', "[ none | explain | explore | subtreeHeights ]", "", false,
+                {"provenance", 't', "[ none | explain | explore ]", "", false,
                         "Enable provenance instrumentation and interaction."},
                 {"verbose", 'v', "", "", false, "Verbose output."},
                 {"version", '\3', "", "", false, "Version."},
@@ -418,7 +420,7 @@ int main(int argc, char** argv) {
 
     // Main pipeline
     auto pipeline = std::make_unique<PipelineTransformer>(std::make_unique<AstComponentChecker>(),
-            std::make_unique<ComponentInstantiationTransformer>(),
+            std::make_unique<ComponentInstantiationTransformer>(), std::make_unique<IODefaultsTransformer>(),
             std::make_unique<UniqueAggregationVariablesTransformer>(),
             std::make_unique<AstUserDefinedFunctorsTransformer>(),
             std::make_unique<FixpointTransformer>(
@@ -447,7 +449,7 @@ int main(int argc, char** argv) {
             std::make_unique<RemoveEmptyRelationsTransformer>(),
             std::make_unique<PolymorphicObjectsTransformer>(), std::make_unique<ReorderLiteralsTransformer>(),
             std::move(magicPipeline), std::make_unique<AstExecutionPlanChecker>(),
-            std::move(provenancePipeline));
+            std::move(provenancePipeline), std::make_unique<IOAttributesTransformer>());
 
     // Disable unwanted transformations
     if (Global::config().has("disable-transformers")) {
@@ -579,18 +581,12 @@ int main(int argc, char** argv) {
                 profiler.join();
             }
             if (Global::config().has("provenance")) {
-                // Test for bugged combination of provenance, interpreted souffle, and concurrency
-                if (Global::config().get("jobs") != "1") {
-                    throw std::runtime_error("Provenance is not supported with parallel interpreted mode");
-                }
-
                 // only run explain interface if interpreted
                 InterpreterProgInterface interface(*interpreter);
-                if (Global::config().get("provenance") == "explain" ||
-                        Global::config().get("provenance") == "subtreeHeights") {
-                    explain(interface, false, Global::config().get("provenance") == "subtreeHeights");
+                if (Global::config().get("provenance") == "explain") {
+                    explain(interface, false);
                 } else if (Global::config().get("provenance") == "explore") {
-                    explain(interface, true, false);
+                    explain(interface, true);
                 }
             }
         } else {

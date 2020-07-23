@@ -26,19 +26,19 @@
 #include "InterpreterRelation.h"
 #include "Logger.h"
 #include "ProfileEvent.h"
-#include "RamCondition.h"
-#include "RamExpression.h"
-#include "RamOperation.h"
-#include "RamProgram.h"
-#include "RamRelation.h"
-#include "RamStatement.h"
 #include "RamTypes.h"
-#include "RamVisitor.h"
 #include "ReadStream.h"
 #include "RecordTable.h"
 #include "SignalHandler.h"
 #include "SymbolTable.h"
 #include "WriteStream.h"
+#include "ram/RamCondition.h"
+#include "ram/RamExpression.h"
+#include "ram/RamOperation.h"
+#include "ram/RamProgram.h"
+#include "ram/RamRelation.h"
+#include "ram/RamStatement.h"
+#include "ram/RamVisitor.h"
 #include "utility/EvaluatorUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/ParallelUtil.h"
@@ -576,18 +576,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
             ffi_call(&cif, fn, &rc, values);
 
-            RamDomain result;
             switch (cur.getReturnType()) {
-                case TypeAttribute::Signed: result = static_cast<RamDomain>(rc); break;
-                case TypeAttribute::Symbol:
-                    result = getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
-                    break;
-                case TypeAttribute::Unsigned: result = ramBitCast(static_cast<RamUnsigned>(rc)); break;
-                case TypeAttribute::Float: result = ramBitCast(static_cast<RamFloat>(rc)); break;
+                case TypeAttribute::Signed: return static_cast<RamDomain>(rc);
+                case TypeAttribute::Symbol: return getSymbolTable().lookup(reinterpret_cast<const char*>(rc));
+
+                case TypeAttribute::Unsigned: return ramBitCast(static_cast<RamUnsigned>(rc));
+                case TypeAttribute::Float: return ramBitCast(static_cast<RamFloat>(rc));
                 case TypeAttribute::Record: fatal("Not implemented");
             }
+            fatal("Unsupported user defined operator");
 
-            return result;
         ESAC(UserDefinedOperator)
 
         CASE(PackRecord)
@@ -660,8 +658,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             RamDomain low[arity];
             RamDomain high[arity];
             for (size_t i = 0; i < arity - 2; i++) {
-                low[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MIN_RAM_SIGNED;
-                high[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MAX_RAM_SIGNED;
+                assert(node->getChild(i) != nullptr &&
+                        "ProvenanceExistenceCheck should always be specified for payload");
+                low[i] = execute(node->getChild(i), ctxt);
+                high[i] = execute(node->getChild(i), ctxt);
             }
 
             low[arity - 2] = MIN_RAM_SIGNED;
@@ -671,7 +671,17 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // obtain view
             size_t viewPos = node->getData(0);
-            return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(high, arity));
+
+            // get an equalRange
+            auto equalRange = ctxt.getView(viewPos)->range(TupleRef(low, arity), TupleRef(high, arity));
+
+            // if range is empty
+            if (equalRange.begin() == equalRange.end()) {
+                return false;
+            }
+
+            // check whether the height is less than the current height
+            return (*equalRange.begin())[arity - 1] <= execute(node->getChild(arity - 1), ctxt);
         ESAC(ProvenanceExistenceCheck)
 
         CASE(Constraint)
@@ -785,7 +795,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto pStream = rel.partitionScan(numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 auto viewInfo = preamble->getViewInfoForNested();
                 for (const auto& info : viewInfo) {
@@ -799,7 +808,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
             return true;
         ESAC(ParallelScan)
 
@@ -853,7 +862,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 auto viewInfo = preamble->getViewInfoForNested();
                 for (const auto& info : viewInfo) {
@@ -867,7 +875,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
 
             return true;
         ESAC(ParallelIndexScan)
@@ -894,7 +902,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto pStream = rel.partitionScan(numOfThreads);
             auto viewInfo = preamble->getViewInfoForNested();
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 for (const auto& info : viewInfo) {
                     newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
@@ -908,7 +915,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
             return true;
         ESAC(ParallelChoice)
 
@@ -966,7 +973,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
             PARALLEL_START
-                ;
                 InterpreterContext newCtxt(ctxt);
                 for (const auto& info : viewInfo) {
                     newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
@@ -980,7 +986,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                         }
                     }
                 }
-            PARALLEL_END;
+            PARALLEL_END
 
             return true;
         ESAC(ParallelIndexChoice)
@@ -1004,10 +1010,56 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return execute(node->getChild(1), ctxt);
         ESAC(UnpackRecord)
 
+        CASE(ParallelAggregate)
+            // TODO (rdowavic): make parallel
+            auto preamble = node->getPreamble();
+
+            InterpreterContext newCtxt(ctxt);
+            auto viewInfo = preamble->getViewInfoForNested();
+            for (const auto& info : viewInfo) {
+                newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
+            }
+            return executeAggregate(newCtxt, cur, *node->getChild(0), node->getChild(1), *node->getChild(2),
+                    node->getRelation()->scan());
+        ESAC(ParallelAggregate)
+
         CASE(Aggregate)
             return executeAggregate(ctxt, cur, *node->getChild(0), node->getChild(1), *node->getChild(2),
                     node->getRelation()->scan());
         ESAC(Aggregate)
+
+        CASE(ParallelIndexAggregate)
+            // TODO (rdowavic): make parallel
+            auto preamble = node->getPreamble();
+
+            InterpreterContext newCtxt(ctxt);
+            auto viewInfo = preamble->getViewInfoForNested();
+            for (const auto& info : viewInfo) {
+                newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
+            }
+            // init temporary tuple for this level
+            size_t arity = cur.getRelation().getArity();
+
+            // get lower and upper boundaries for iteration
+            RamDomain low[arity];
+            RamDomain hig[arity];
+
+            for (size_t i = 0; i < arity; i++) {
+                if (node->getChild(i) != nullptr) {
+                    low[i] = execute(node->getChild(i), newCtxt);
+                    hig[i] = execute(node->getChild(i + arity), newCtxt);
+                } else {
+                    low[i] = MIN_RAM_SIGNED;
+                    hig[i] = MAX_RAM_SIGNED;
+                }
+            }
+
+            size_t viewId = node->getData(0);
+            auto& view = newCtxt.getView(viewId);
+
+            return executeAggregate(newCtxt, cur, *node->getChild(2 * arity), node->getChild(2 * arity + 1),
+                    *node->getChild(2 * arity + 2), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
+        ESAC(ParallelIndexAggregate)
 
         CASE(IndexAggregate)
             // init temporary tuple for this level

@@ -308,8 +308,8 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
                 // undefined value for rule number
                 values.push_back(std::make_unique<RamUndefValue>());
                 // add the height annotation for provenanceNotExists
-                for (size_t h = 1; h < auxiliaryArity; h++) {
-                    values.push_back(translator.translateValue(args[arity + h], index));
+                for (size_t height = 1; height < auxiliaryArity; height++) {
+                    values.push_back(translator.translateValue(args[arity + height], index));
                 }
             }
             return std::make_unique<RamNegation>(std::make_unique<RamProvenanceExistenceCheck>(
@@ -324,18 +324,20 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             size_t arity = atom->getArity() - auxiliaryArity;
             std::vector<std::unique_ptr<RamExpression>> values;
 
-            auto args = atom->getArguments();
-            for (size_t i = 0; i < arity; i++) {
-                values.push_back(translator.translateValue(args[i], index));
-            }
-            for (size_t i = 0; i < auxiliaryArity; i++) {
-                values.push_back(std::make_unique<RamUndefValue>());
-            }
-            if (arity > 0) {
+            if (arity == 0) {
+                // for a nullary, negation is a simple emptiness check
+                return std::make_unique<RamEmptinessCheck>(translator.translateRelation(atom));
+            } else {
+                // else, we construct the atom and create a negation
+                auto args = atom->getArguments();
+                for (size_t i = 0; i < arity; i++) {
+                    values.push_back(translator.translateValue(args[i], index));
+                }
+                for (size_t i = 0; i < auxiliaryArity; i++) {
+                    values.push_back(std::make_unique<RamUndefValue>());
+                }
                 return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
                         translator.translateRelation(atom), std::move(values)));
-            } else {
-                return std::make_unique<RamEmptinessCheck>(translator.translateRelation(atom));
             }
         }
     };

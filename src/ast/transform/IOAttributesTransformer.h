@@ -208,7 +208,6 @@ private:
         ramRecordParams = Json(records);
         return ramRecordParams;
     }
-
 };
 
 }  // namespace souffle

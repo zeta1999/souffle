@@ -256,6 +256,7 @@ std::unique_ptr<AstArgument> getNextLevelNumber(const std::vector<AstArgument*>&
 }
 }  // namespace
 
+/*
 bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translationUnit) {
     static auto program = translationUnit.getProgram();
     const auto& auxArityAnalysis = *translationUnit.getAnalysis<AuxiliaryArity>();
@@ -370,6 +371,7 @@ bool ProvenanceTransformer::transformSubtreeHeights(AstTranslationUnit& translat
     }
     return true;
 }
+*/
 
 bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUnit) {
     auto program = translationUnit.getProgram();
@@ -456,11 +458,13 @@ bool ProvenanceTransformer::transformMaxHeight(AstTranslationUnit& translationUn
 }
 
 bool ProvenanceTransformer::transform(AstTranslationUnit& translationUnit) {
+    /*
     if (Global::config().get("provenance") == "subtreeHeights") {
         return ProvenanceTransformer::transformSubtreeHeights(translationUnit);
     } else {
+    */
         return ProvenanceTransformer::transformMaxHeight(translationUnit);
-    }
+    // }
 }
 
 }  // end of namespace souffle

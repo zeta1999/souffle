@@ -62,7 +62,7 @@ SYM_2_NUMERIC_OVERLOAD(RamUnsigned)
 }  // namespace details
 
 template <typename A>
-A symbol2numeric(const std::string& src) {
+inline A symbol2numeric(const std::string& src) {
     try {
         return details::symbol2numeric<A>(src);
     } catch (...) {

@@ -81,8 +81,8 @@ public:
         }
     }
 
-    std::unique_ptr<TreeNode> explain(std::string relName, std::vector<RamDomain> tuple, int ruleNum,
-            int levelNum, size_t depthLimit) {
+    std::unique_ptr<TreeNode> explain(
+            std::string relName, std::vector<RamDomain> tuple, int ruleNum, int levelNum, size_t depthLimit) {
         std::stringstream joinedArgs;
         joinedArgs << join(decodeArguments(relName, tuple), ", ");
         auto joinedArgsStr = joinedArgs.str();
@@ -193,8 +193,8 @@ public:
                 internalNode->setSize(internalNode->getSize() + 1);
                 // otherwise, for a normal tuple, recurse
             } else {
-                auto child = explain(bodyRel, subproofTuple, subproofRuleNum, subproofLevelNum,
-                        depthLimit - 1);
+                auto child =
+                        explain(bodyRel, subproofTuple, subproofRuleNum, subproofLevelNum, depthLimit - 1);
                 internalNode->setSize(internalNode->getSize() + child->getSize());
                 internalNode->add_child(std::move(child));
             }
@@ -250,8 +250,7 @@ public:
         std::vector<std::string> variables;
 
         // check that the tuple actually doesn't exist
-        std::tuple<int, int> foundTuple =
-                findTuple(relName, argsToNums(relName, args));
+        std::tuple<int, int> foundTuple = findTuple(relName, argsToNums(relName, args));
         if (std::get<0>(foundTuple) != -1 || std::get<1>(foundTuple) != -1) {
             // return a sentinel value
             return std::vector<std::string>({"@"});
@@ -733,8 +732,7 @@ private:
     std::vector<std::string> constraintList = {
             "=", "!=", "<", "<=", ">=", ">", "match", "contains", "not_match", "not_contains"};
 
-    std::tuple<int, int> findTuple(
-            const std::string& relName, std::vector<RamDomain> tup) {
+    std::tuple<int, int> findTuple(const std::string& relName, std::vector<RamDomain> tup) {
         auto rel = prog.getRelation(relName);
 
         if (rel == nullptr) {

@@ -322,23 +322,23 @@ std::unique_ptr<RamCondition> AstTranslator::translateConstraint(
             size_t auxiliaryArity = translator.getEvaluationArity(atom);
             assert(auxiliaryArity <= atom->getArity() && "auxiliary arity out of bounds");
             size_t arity = atom->getArity() - auxiliaryArity;
-            std::vector<std::unique_ptr<RamExpression>> values;
 
             if (arity == 0) {
                 // for a nullary, negation is a simple emptiness check
                 return std::make_unique<RamEmptinessCheck>(translator.translateRelation(atom));
-            } else {
-                // else, we construct the atom and create a negation
-                auto args = atom->getArguments();
-                for (size_t i = 0; i < arity; i++) {
-                    values.push_back(translator.translateValue(args[i], index));
-                }
-                for (size_t i = 0; i < auxiliaryArity; i++) {
-                    values.push_back(std::make_unique<RamUndefValue>());
-                }
-                return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
-                        translator.translateRelation(atom), std::move(values)));
             }
+
+            // else, we construct the atom and create a negation
+            std::vector<std::unique_ptr<RamExpression>> values;
+            auto args = atom->getArguments();
+            for (size_t i = 0; i < arity; i++) {
+                values.push_back(translator.translateValue(args[i], index));
+            }
+            for (size_t i = 0; i < auxiliaryArity; i++) {
+                values.push_back(std::make_unique<RamUndefValue>());
+            }
+            return std::make_unique<RamNegation>(std::make_unique<RamExistenceCheck>(
+                    translator.translateRelation(atom), std::move(values)));
         }
     };
     return ConstraintTranslator(*this, index)(*lit);

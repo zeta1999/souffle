@@ -48,13 +48,13 @@ void runRange(A from, A to, F&& go) {
 template <typename A>
 A symbol2numeric(const std::string& src) {
     try {
-       if constexpr (std::is_same_v<RamFloat, A>) {
-         return RamFloatFromString(src);
-       } else if constexpr (std::is_same_v<RamSigned, A>) {
-         return RamSignedFromString(src);
-       } else if constexpr (std::is_same_v<RamUnsigned, A>) {
-         return RamUnsignedFromString(src);
-       }
+        if constexpr (std::is_same_v<RamFloat, A>) {
+            return RamFloatFromString(src);
+        } else if constexpr (std::is_same_v<RamSigned, A>) {
+            return RamSignedFromString(src);
+        } else if constexpr (std::is_same_v<RamUnsigned, A>) {
+            return RamUnsignedFromString(src);
+        }
     } catch (...) {
         tfm::format(std::cerr, "error: wrong string provided by `to_number(\"%s\")` functor.\n", src);
         raise(SIGFPE);

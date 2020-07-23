@@ -705,6 +705,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
             /* Generic */
             for (const auto& expr : superInfo.exprFirst) {
+                assert(expr.second.get() != nullptr &&
+                        "ProvenanceExistenceCheck should always be specified for payload");
                 low[expr.first] = execute(expr.second.get(), ctxt);
                 hig[expr.first] = low[expr.first];
             }
@@ -716,7 +718,17 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // obtain view
             size_t viewPos = shadow.getViewId();
-            return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(hig, arity));
+
+            // get an equalRange
+            auto equalRange = ctxt.getView(viewPos)->range(TupleRef(low, arity), TupleRef(high, arity));
+
+            // if range is empty
+            if (equalRange.begin() == equalRange.end()) {
+                return false;
+            }
+
+            // check whether the height is less than the current height
+            return (*equalRange.begin())[arity - 1] <= execute(shadow.getChild(), ctxt);
         ESAC(ProvenanceExistenceCheck)
 
         CASE(Constraint)

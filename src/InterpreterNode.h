@@ -101,6 +101,7 @@ public:
             std::vector<size_t> data = {})
             : type(ty), shadow(sdw), children(std::move(chlds)), relHandle(relHandle), data(std::move(data)) {
     }
+    virtual ~InterpreterNode() = default; 
 
     /** @brief get node type */
     inline enum InterpreterNodeType getType() const {
@@ -151,4 +152,53 @@ protected:
     std::vector<size_t> data;
     std::shared_ptr<InterpreterPreamble> preamble = nullptr;
 };
+
+class InterpreterConstant : public InterpreterNode { };
+class InterpreterTupleElement : public InterpreterNode { };
+class InterpreterAutoIncrement : public InterpreterNode { };
+class InterpreterIntrinsicOperator : public InterpreterNode { };
+class InterpreterUserDefinedOperator : public InterpreterNode { };
+class InterpreterNestedIntrinsicOperator : public InterpreterNode { };
+class InterpreterPackRecord : public InterpreterNode { };
+class InterpreterSubroutineArgument : public InterpreterNode { };
+class InterpreterTrue : public InterpreterNode { };
+class InterpreterFalse : public InterpreterNode { };
+class InterpreterConjunction : public InterpreterNode { };
+class InterpreterNegation : public InterpreterNode { };
+class InterpreterEmptinessCheck : public InterpreterNode { };
+class InterpreterExistenceCheck : public InterpreterNode { };
+class InterpreterProvenanceExistenceCheck : public InterpreterNode { };
+class InterpreterConstraint : public InterpreterNode { };
+class InterpreterTupleOperation : public InterpreterNode { };
+class InterpreterScan : public InterpreterNode { };
+class InterpreterParallelScan : public InterpreterNode { };
+class InterpreterIndexScan : public InterpreterNode { };
+class InterpreterParallelIndexScan : public InterpreterNode { };
+class InterpreterChoice : public InterpreterNode { };
+class InterpreterParallelChoice : public InterpreterNode { };
+class InterpreterIndexChoice : public InterpreterNode { };
+class InterpreterParallelIndexChoice : public InterpreterNode { };
+class InterpreterUnpackRecord : public InterpreterNode { };
+class InterpreterAggregate : public InterpreterNode { };
+class InterpreterParallelAggregate : public InterpreterNode { };
+class InterpreterIndexAggregate : public InterpreterNode { };
+class InterpreterParallelIndexAggregate : public InterpreterNode { };
+class InterpreterBreak : public InterpreterNode { };
+class InterpreterFilter : public InterpreterNode { };
+class InterpreterProject : public InterpreterNode { };
+class InterpreterSubroutineReturn : public InterpreterNode { };
+class InterpreterSequence : public InterpreterNode { };
+class InterpreterParallel : public InterpreterNode { };
+class InterpreterLoop : public InterpreterNode { };
+class InterpreterExit : public InterpreterNode { };
+class InterpreterLogRelationTimer : public InterpreterNode { };
+class InterpreterLogTimer : public InterpreterNode { };
+class InterpreterDebugInfo : public InterpreterNode { };
+class InterpreterClear : public InterpreterNode { };
+class InterpreterLogSize : public InterpreterNode { };
+class InterpreterIO : public InterpreterNode { };
+class InterpreterQuery : public InterpreterNode { };
+class InterpreterExtend : public InterpreterNode { };
+class InterpreterSwap : public InterpreterNode { };
+class InterpreterCall : public InterpreterNode { };
 }  // namespace souffle

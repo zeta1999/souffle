@@ -28,9 +28,9 @@
 #include "ast/AstUtils.h"
 #include "ast/AstVisitor.h"
 #include "ast/TypeSystem.h"
-#include "ast/analysis/AstGroundAnalysis.h"
-#include "ast/analysis/AstTypeAnalysis.h"
-#include "ast/analysis/AstTypeEnvironmentAnalysis.h"
+#include "ast/analysis/AstGround.h"
+#include "ast/analysis/AstType.h"
+#include "ast/analysis/AstTypeEnvironment.h"
 #include "utility/MiscUtil.h"
 #include "utility/StringUtil.h"
 #include <algorithm>

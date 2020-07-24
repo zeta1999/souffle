@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstTypeEnvironmentAnalysis.h
+ * @file AstTypeEnvironment.h
  *
  * A wrapper for TypeEnvironment to be used for AST Analysis
  *
@@ -26,7 +26,6 @@
 #include <ostream>
 #include <set>
 #include <string>
-#include <vector>
 
 namespace souffle {
 

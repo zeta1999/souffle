@@ -28,7 +28,6 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstType.h"
 #include "ast/AstVisitor.h"
-#include "ast/analysis/ComponentLookupAnalysis.h"
 #include "utility/StringUtil.h"
 #include <algorithm>
 #include <cstddef>

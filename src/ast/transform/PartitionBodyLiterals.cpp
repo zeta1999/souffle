@@ -24,7 +24,6 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstVisitor.h"
 #include "utility/MiscUtil.h"
-#include <algorithm>
 #include <functional>
 #include <memory>
 #include <ostream>

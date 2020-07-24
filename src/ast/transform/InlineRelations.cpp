@@ -30,7 +30,6 @@
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
 #include "ast/AstVisitor.h"
-#include "ast/transform/AstTransforms.h"
 #include "utility/MiscUtil.h"
 #include <algorithm>
 #include <cassert>

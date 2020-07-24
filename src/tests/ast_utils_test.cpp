@@ -29,7 +29,7 @@
 #include "ast/AstQualifiedName.h"
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
-#include "ast/analysis/AstGroundAnalysis.h"
+#include "ast/analysis/AstGround.h"
 #include "utility/StringUtil.h"
 #include <algorithm>
 #include <map>

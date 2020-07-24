@@ -30,7 +30,6 @@
 #include "ast/AstRelation.h"
 #include "ast/AstTranslationUnit.h"
 #include "ast/AstUtils.h"
-#include "ast/analysis/AuxArityAnalysis.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
@@ -39,7 +38,6 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <functional>
 #include <iosfwd>
 #include <memory>
 #include <string>

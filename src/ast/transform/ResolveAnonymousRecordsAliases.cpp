@@ -22,8 +22,8 @@
 #include "ast/AstProgram.h"
 #include "ast/AstTranslationUnit.h"
 #include "ast/TypeSystem.h"
-#include "ast/analysis/AstGroundAnalysis.h"
-#include "ast/analysis/AstTypeAnalysis.h"
+#include "ast/analysis/AstGround.h"
+#include "ast/analysis/AstType.h"
 #include "utility/MiscUtil.h"
 #include <map>
 #include <memory>

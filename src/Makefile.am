@@ -144,6 +144,18 @@ souffle_sources = \
         ast/analysis/ComponentLookup.h                     \
         ast/analysis/PrecedenceGraph.cpp                   \
         ast/analysis/PrecedenceGraph.h                     \
+        ast/analysis/RecursiveClauses.cpp                  \
+        ast/analysis/RecursiveClauses.h                    \
+        ast/analysis/RedundantRelations.cpp                \
+        ast/analysis/RedundantRelations.h                  \
+        ast/analysis/RelationDetailCache.cpp               \
+        ast/analysis/RelationDetailCache.h                 \
+        ast/analysis/RelationSchedule.cpp                  \
+        ast/analysis/RelationSchedule.h                    \
+        ast/analysis/SCCGraph.cpp                          \
+        ast/analysis/SCCGraph.h                            \
+        ast/analysis/TopologicallySortedSCCGraph.cpp       \
+        ast/analysis/TopologicallySortedSCCGraph.h         \
         ast/transform/AstComponentChecker.cpp              \
         ast/transform/AstComponentChecker.h                \
         ast/transform/AstPragmaChecker.cpp                 \

@@ -51,7 +51,11 @@ protected:
     void writeNextTupleJSON(std::ostream& destination, const RamDomain* tuple) {
         std::vector<Json> result;
 
-        destination << "{";
+        if (useObjects)
+            destination << "{";
+        else
+            destination << "[";
+
         for (size_t col = 0; col < arity; ++col) {
             if (col > 0) {
                 destination << ", ";
@@ -65,8 +69,10 @@ protected:
             }
         }
 
-        // Output a JSON array for all tuples
-        destination << "}";
+        if (useObjects)
+            destination << "}";
+        else
+            destination << "]";
     }
 
     void writeNextTupleList(std::ostream& destination, const std::string& name, const RamDomain value) {

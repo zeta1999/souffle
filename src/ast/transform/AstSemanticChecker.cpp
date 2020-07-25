@@ -231,7 +231,7 @@ AstSemanticCheckerImpl::AstSemanticCheckerImpl(AstTranslationUnit& tu) : tu(tu) 
                     std::string negOrAgg = hasNegation ? "negation" : "aggregation";
                     messages.push_back(
                             DiagnosticMessage("has cyclic " + negOrAgg, foundLiteral->getSrcLoc()));
-                    report.addDiagnostic(Diagnostic(Diagnostic::ERROR,
+                    report.addDiagnostic(Diagnostic(Diagnostic::Type::ERROR,
                             DiagnosticMessage("Unable to stratify relation(s) {" + relationsListStr + "}"),
                             messages));
                     break;
@@ -1212,7 +1212,7 @@ bool AstExecutionPlanChecker::transform(AstTranslationUnit& translationUnit) {
                 if (version <= maxVersion) {
                     for (const auto& cur : clause->getExecutionPlan()->getOrders()) {
                         if (cur.first >= version) {
-                            translationUnit.getErrorReport().addDiagnostic(Diagnostic(Diagnostic::ERROR,
+                            translationUnit.getErrorReport().addDiagnostic(Diagnostic(Diagnostic::Type::ERROR,
                                     DiagnosticMessage(
                                             "execution plan for version " + std::to_string(cur.first),
                                             cur.second->getSrcLoc()),

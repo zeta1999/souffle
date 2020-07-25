@@ -30,6 +30,6 @@ B(4,nil).
 .output C(IO=json, format=object)
 
 .decl D(a:number, b:list)
-.input D(IO=jsonfile,filename="readB.json",format=object)
+.input D(IO=jsonfile,filename="readB.json")
 .output D(IO=json)
 .output D(IO=json, format=object)

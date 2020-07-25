@@ -43,14 +43,11 @@ class ReadStreamJSON : public ReadStream {
 public:
     ReadStreamJSON(std::istream& file, const std::map<std::string, std::string>& rwOperation,
             SymbolTable& symbolTable, RecordTable& recordTable)
-            : ReadStream(rwOperation, symbolTable, recordTable), file(file), pos(0), isInitialized(false),
-              useObjects(getOr(rwOperation, "format", "list") == "object") {
-        if (useObjects) {
-            std::string err;
-            params = Json::parse(rwOperation.at("params"), err);
-            if (err.length() > 0) {
-                fatal("cannot get internal params: %s", err);
-            }
+            : ReadStream(rwOperation, symbolTable, recordTable), file(file), pos(0), isInitialized(false) {
+        std::string err;
+        params = Json::parse(rwOperation.at("params"), err);
+        if (err.length() > 0) {
+            fatal("cannot get internal params: %s", err);
         }
     }
 
@@ -64,14 +61,6 @@ protected:
     std::map<const std::string, const size_t> paramIndex;
 
     std::unique_ptr<RamDomain[]> readNextTuple() override {
-        if (useObjects) {
-            return readNextTupleObject();
-        } else {
-            return readNextTupleList();
-        }
-    }
-
-    std::unique_ptr<RamDomain[]> readNextTupleList() {
         // for some reasons we cannot initalized our json objects in constructor
         // otherwise it will segfault, so we initialize in the first call
         if (!isInitialized) {
@@ -84,8 +73,31 @@ protected:
             if (error.length() > 0 || !jsonSource.is_array()) {
                 fatal("cannot deserialize json because %s:\n%s", error, source);
             }
+
+            // we only check the first one, since there are extra checks
+            // in readNextTupleObject/readNextTupleList
+            if (jsonSource[0].is_array()) {
+                useObjects = false;
+            } else if (jsonSource[0].is_object()) {
+                useObjects = true;
+                size_t index_pos = 0;
+                for (auto param : params["relation"]["params"].array_items()) {
+                    paramIndex.insert(std::make_pair(param.string_value(), index_pos));
+                    index_pos++;
+                }
+            } else {
+                fatal("the input is neither list nor object format");
+            }
         }
 
+        if (useObjects) {
+            return readNextTupleObject();
+        } else {
+            return readNextTupleList();
+        }
+    }
+
+    std::unique_ptr<RamDomain[]> readNextTupleList() {
         if (pos >= jsonSource.array_items().size()) {
             return nullptr;
         }
@@ -181,26 +193,6 @@ protected:
     }
 
     std::unique_ptr<RamDomain[]> readNextTupleObject() {
-        // for some reasons we cannot initalized our json objects in constructor
-        // otherwise it will segfault, so we initialize in the first call
-        if (!isInitialized) {
-            isInitialized = true;
-            std::string error = "";
-            std::string source(std::istreambuf_iterator<char>(file), {});
-
-            jsonSource = Json::parse(source, error);
-            // it should be wrapped by an extra arrays
-            if (error.length() > 0 || !jsonSource.is_array()) {
-                fatal("cannot deserialize json because %s:\n%s", error, source);
-            }
-
-            size_t index_pos = 0;
-            for (auto param : params["relation"]["params"].array_items()) {
-                paramIndex.insert(std::make_pair(param.string_value(), index_pos));
-                index_pos++;
-            }
-        }
-
         if (pos >= jsonSource.array_items().size()) {
             return nullptr;
         }
@@ -275,35 +267,35 @@ protected:
         const size_t recordArity = recordInfo["arity"].long_value();
         std::vector<RamDomain> recordValues(recordArity);
         recordValues.reserve(recordIndex.size());
-        for (auto p : source.object_items()) {
+        for (auto readParam : source.object_items()) {
             // get the corresponding position by parameter name
-            if (recordIndex.find(p.first) == recordIndex.end()) {
-                fatal("invalid parameter: %s", p.first);
+            if (recordIndex.find(readParam.first) == recordIndex.end()) {
+                fatal("invalid parameter: %s", readParam.first);
             }
-            size_t i = recordIndex.at(p.first);
-            auto&& ty = recordTypes[i].string_value();
-            switch (ty[0]) {
+            size_t i = recordIndex.at(readParam.first);
+            auto&& type = recordTypes[i].string_value();
+            switch (type[0]) {
                 case 's': {
-                    recordValues[i] = symbolTable.unsafeLookup(p.second.string_value());
+                    recordValues[i] = symbolTable.unsafeLookup(readParam.second.string_value());
                     break;
                 }
                 case 'r': {
-                    recordValues[i] = readNextElementObject(p.second, ty);
+                    recordValues[i] = readNextElementObject(readParam.second, type);
                     break;
                 }
                 case 'i': {
-                    recordValues[i] = p.second.int_value();
+                    recordValues[i] = readParam.second.int_value();
                     break;
                 }
                 case 'u': {
-                    recordValues[i] = p.second.int_value();
+                    recordValues[i] = readParam.second.int_value();
                     break;
                 }
                 case 'f': {
-                    recordValues[i] = p.second.number_value();
+                    recordValues[i] = readParam.second.number_value();
                     break;
                 }
-                default: fatal("invalid type attribute: `%c`", ty[0]);
+                default: fatal("invalid type attribute: `%c`", type[0]);
             }
         }
 

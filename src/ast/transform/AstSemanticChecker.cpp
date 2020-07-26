@@ -1259,15 +1259,15 @@ void TypeChecker::visitAtom(const AstAtom& atom) {
                 return isA<RecordType>(type) && !isA<SubsetType>(type);
             });
             if (!validAttribute && !Global::config().has("legacy")) {
-                auto primeryDiagnostic =
-                        DiagnosticMessage("Atoms argument type is not a subtype of its declared type",
+                auto primaryDiagnostic =
+                        DiagnosticMessage("Atom's argument type is not a subtype of its declared type",
                                 arguments[i]->getSrcLoc());
 
                 auto declaredTypeInfo =
-                        DiagnosticMessage(tfm::format("The argument declared type is %s", typeName),
+                        DiagnosticMessage(tfm::format("The argument's declared type is %s", typeName),
                                 attributes[i]->getSrcLoc());
 
-                report.addDiagnostic(Diagnostic(Diagnostic::Type::ERROR, std::move(primeryDiagnostic),
+                report.addDiagnostic(Diagnostic(Diagnostic::Type::ERROR, std::move(primaryDiagnostic),
                         {std::move(declaredTypeInfo)}));
             }
         }

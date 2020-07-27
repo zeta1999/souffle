@@ -365,11 +365,7 @@ private:
  */
 class TypeEnvironment {
 public:
-    TypeEnvironment()
-            : constantTypes(initializeConstantTypes()),
-              constantNumericTypes(TypeSet(getType("__numberConstant"), getType("__unsignedConstant"),
-                      getType("__floatConstant"))),
-              primitiveTypes(initializePrimitiveTypes()){};
+    TypeEnvironment() = default;
 
     TypeEnvironment(const TypeEnvironment&) = delete;
 
@@ -446,10 +442,11 @@ private:
     /** The list of covered types. */
     std::map<AstQualifiedName, std::unique_ptr<Type>> types;
 
-    const TypeSet constantTypes;
-    const TypeSet constantNumericTypes;
+    const TypeSet constantTypes = initializeConstantTypes();
+    const TypeSet constantNumericTypes =
+            TypeSet(getType("__numberConstant"), getType("__unsignedConstant"), getType("__floatConstant"));
 
-    const TypeSet primitiveTypes;
+    const TypeSet primitiveTypes = initializePrimitiveTypes();
 };
 
 // ---------------------------------------------------------------

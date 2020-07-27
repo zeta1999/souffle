@@ -196,7 +196,8 @@ bool MaterializeAggregationQueriesTransformer::materializeAggregationQueries(
     return changed;
 }
 
-bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(AstAggregator& agg, AstProgram& program) {
+bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(
+        AstAggregator& agg, AstProgram& program) {
     // everything with more than 1 body literal => materialize
     int countAtoms = 0;
     const AstAtom* atom = nullptr;

@@ -511,4 +511,10 @@ TypeSet getGreatestCommonSubtypes(const Types&... types) {
  */
 bool haveCommonSupertype(const Type& a, const Type& b);
 
+/**
+ * Determine if two types are equivalent.
+ * That is, check if a <: b and b <: a
+ */
+bool areEquivalentTypes(const Type& a, const Type& b);
+
 }  // end namespace souffle

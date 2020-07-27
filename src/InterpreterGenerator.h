@@ -57,7 +57,9 @@ class NodeGenerator : public RamVisitor<std::unique_ptr<InterpreterNode>> {
     using RelationHandle = std::unique_ptr<InterpreterRelation>;
 
 public:
-    NodeGenerator(RamIndexAnalysis* isa) : isa(isa), isProvenance(Global::config().has("provenance")) {}
+    NodeGenerator(RamIndexAnalysis* isa)
+            : isa(isa), isProvenance(Global::config().has("provenance")),
+              profileEnabled(Global::config().has("profile")) {}
 
     /**
      * @brief Generate the tree based on given entry.
@@ -205,9 +207,12 @@ public:
     }
 
     NodePtr visitTupleOperation(const RamTupleOperation& search) override {
-        NodePtrVec children;
-        children.push_back(visit(search.getOperation()));
-        return std::make_unique<InterpreterNode>(I_TupleOperation, &search, std::move(children));
+        if (profileEnabled) {
+            NodePtrVec children;
+            children.push_back(visit(search.getOperation()));
+            return std::make_unique<InterpreterNode>(I_TupleOperation, &search, std::move(children));
+        }
+        return visit(search.getOperation());
     }
 
     NodePtr visitScan(const RamScan& scan) override {
@@ -584,6 +589,8 @@ public:
     }
 
 private:
+    /** If profile is enable in this program */
+    const bool profileEnabled;
     /** Environment encoding, store a mapping from RamNode to its operation index id. */
     std::unordered_map<const RamNode*, size_t> indexTable;
     /** Used by index encoding */

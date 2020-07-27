@@ -280,6 +280,25 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
     ();            \
     }
 
+#define CAL_SEARCH_BOUND(superInfo, low, hig)                          \
+    /** Unbounded and Constant */                                      \
+    memcpy(low, superInfo.first.data(), sizeof(low));                  \
+    memcpy(hig, superInfo.second.data(), sizeof(hig));                 \
+    /* TupleElement */                                                 \
+    for (const auto& tupleElement : superInfo.tupleFirst) {            \
+        low[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]]; \
+    }                                                                  \
+    for (const auto& tupleElement : superInfo.tupleSecond) {           \
+        hig[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]]; \
+    }                                                                  \
+    /* Generic */                                                      \
+    for (const auto& expr : superInfo.exprFirst) {                     \
+        low[expr.first] = execute(expr.second.get(), ctxt);            \
+    }                                                                  \
+    for (const auto& expr : superInfo.exprSecond) {                    \
+        hig[expr.first] = execute(expr.second.get(), ctxt);            \
+    }
+
     switch (node->getType()) {
         CASE(Constant)
             return cur.getConstant();
@@ -624,50 +643,78 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // construct the pattern tuple
             size_t arity = cur.getRelation().getArity();
 
-            size_t viewPos = node->getData(0);
+            size_t viewPos = shadow.getViewId();
 
             if (profileEnabled && !cur.getRelation().isTemp()) {
                 reads[cur.getRelation().getName()]++;
             }
+
+            const auto& superInfo = shadow.getSuperInst();
             // for total we use the exists test
-            if (node->getData(1) == 1) {
+            if (shadow.isTotal()) {
                 RamDomain tuple[arity];
-                for (size_t i = 0; i < arity; i++) {
-                    tuple[i] = execute(node->getChild(i), ctxt);
+                memcpy(tuple, superInfo.first.data(), sizeof(tuple));
+                /* TupleElement */
+                for (const auto& tupleElement : superInfo.tupleFirst) {
+                    tuple[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]];
+                }
+                /* Generic */
+                for (const auto& expr : superInfo.exprFirst) {
+                    tuple[expr.first] = execute(expr.second.get(), ctxt);
                 }
                 return ctxt.getView(viewPos)->contains(TupleRef(tuple, arity));
             }
 
             // for partial we search for lower and upper boundaries
             RamDomain low[arity];
-            RamDomain high[arity];
-            for (size_t i = 0; i < node->getChildren().size(); ++i) {
-                low[i] = node->getChild(i) != nullptr ? execute(node->getChild(i), ctxt) : MIN_RAM_SIGNED;
-                high[i] = node->getChild(i) != nullptr ? execute(node->getChild(i), ctxt) : MAX_RAM_SIGNED;
+            RamDomain hig[arity];
+            memcpy(low, superInfo.first.data(), sizeof(low));
+            memcpy(hig, superInfo.second.data(), sizeof(hig));
+
+            /* TupleElement */
+            for (const auto& tupleElement : superInfo.tupleFirst) {
+                low[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]];
+                hig[tupleElement[0]] = low[tupleElement[0]];
             }
-            return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(high, arity));
+            /* Generic */
+            for (const auto& expr : superInfo.exprFirst) {
+                low[expr.first] = execute(expr.second.get(), ctxt);
+                hig[expr.first] = low[expr.first];
+            }
+
+            return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(hig, arity));
         ESAC(ExistenceCheck)
 
         CASE(ProvenanceExistenceCheck)
             // construct the pattern tuple
+            const auto& superInfo = shadow.getSuperInst();
             size_t arity = cur.getRelation().getArity();
 
             // for partial we search for lower and upper boundaries
             RamDomain low[arity];
-            RamDomain high[arity];
-            for (size_t i = 0; i < arity - 2; i++) {
-                low[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MIN_RAM_SIGNED;
-                high[i] = node->getChild(i) ? execute(node->getChild(i), ctxt) : MAX_RAM_SIGNED;
+            RamDomain hig[arity];
+            memcpy(low, superInfo.first.data(), sizeof(low));
+            memcpy(hig, superInfo.second.data(), sizeof(hig));
+
+            /* TupleElement */
+            for (const auto& tupleElement : superInfo.tupleFirst) {
+                low[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]];
+                hig[tupleElement[0]] = low[tupleElement[0]];
+            }
+            /* Generic */
+            for (const auto& expr : superInfo.exprFirst) {
+                low[expr.first] = execute(expr.second.get(), ctxt);
+                hig[expr.first] = low[expr.first];
             }
 
             low[arity - 2] = MIN_RAM_SIGNED;
             low[arity - 1] = MIN_RAM_SIGNED;
-            high[arity - 2] = MAX_RAM_SIGNED;
-            high[arity - 1] = MAX_RAM_SIGNED;
+            hig[arity - 2] = MAX_RAM_SIGNED;
+            hig[arity - 1] = MAX_RAM_SIGNED;
 
             // obtain view
-            size_t viewPos = node->getData(0);
-            return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(high, arity));
+            size_t viewPos = shadow.getViewId();
+            return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(hig, arity));
         ESAC(ProvenanceExistenceCheck)
 
         CASE(Constraint)
@@ -798,27 +845,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(ParallelScan)
 
+        // TODO: 1. out of order execution, will ctxt be effected?
+        //       2. If lower is tuple, will it guarantee higher is tuple?
+        //       3. Reorder calculation, corrsponding to field.
         CASE(IndexScan)
             // create pattern tuple for range query
             size_t arity = cur.getRelation().getArity();
+            const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
             RamDomain hig[arity];
-            for (size_t i = 0; i < arity; i++) {
-                if (node->getChild(i) != nullptr) {
-                    low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = execute(node->getChild(i + arity), ctxt);
-                } else {
-                    low[i] = MIN_RAM_SIGNED;
-                    hig[i] = MAX_RAM_SIGNED;
-                }
-            }
+            CAL_SEARCH_BOUND(superInfo, low, hig);
 
-            size_t viewId = node->getData(0);
+            size_t viewId = shadow.getViewId();
             auto& view = ctxt.getView(viewId);
             // conduct range query
             for (auto data : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 ctxt[cur.getTupleId()] = &data[0];
-                if (!execute(node->getChild(2 * arity), ctxt)) {
+                if (!execute(node->getChild(0), ctxt)) {
                     break;
                 }
             }
@@ -831,19 +874,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // create pattern tuple for range query
             size_t arity = rel.getArity();
+            const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
             RamDomain hig[arity];
-            for (size_t i = 0; i < arity; i++) {
-                if (node->getChild(i)) {
-                    low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = execute(node->getChild(i + arity), ctxt);
-                } else {
-                    low[i] = MIN_RAM_SIGNED;
-                    hig[i] = MAX_RAM_SIGNED;
-                }
-            }
+            CAL_SEARCH_BOUND(superInfo, low, hig);
 
-            size_t indexPos = node->getData(0);
+            size_t indexPos = shadow.getViewId();
             auto pStream =
                     rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
@@ -856,7 +892,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (!execute(node->getChild(2 * arity), newCtxt)) {
+                        if (!execute(node->getChild(0), newCtxt)) {
                             break;
                         }
                     }
@@ -908,26 +944,19 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         CASE(IndexChoice)
             // create pattern tuple for range query
             size_t arity = cur.getRelation().getArity();
+            const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
             RamDomain hig[arity];
-            for (size_t i = 0; i < arity; i++) {
-                if (node->getChild(i) != nullptr) {
-                    low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = execute(node->getChild(i + arity), ctxt);
-                } else {
-                    low[i] = MIN_RAM_SIGNED;
-                    hig[i] = MAX_RAM_SIGNED;
-                }
-            }
+            CAL_SEARCH_BOUND(superInfo, low, hig);
 
-            size_t viewId = node->getData(0);
+            size_t viewId = shadow.getViewId();
             auto& view = ctxt.getView(viewId);
 
             for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 const RamDomain* data = &ip[0];
                 ctxt[cur.getTupleId()] = data;
-                if (execute(node->getChild(2 * arity), ctxt)) {
-                    execute(node->getChild(2 * arity + 1), ctxt);
+                if (execute(node->getChild(0), ctxt)) {
+                    execute(node->getChild(1), ctxt);
                     break;
                 }
             }
@@ -942,19 +971,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // create pattern tuple for range query
             size_t arity = rel.getArity();
+            const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
             RamDomain hig[arity];
-            for (size_t i = 0; i < arity; i++) {
-                if (node->getChild(i) != nullptr) {
-                    low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = execute(node->getChild(i + arity), ctxt);
-                } else {
-                    low[i] = MIN_RAM_SIGNED;
-                    hig[i] = MAX_RAM_SIGNED;
-                }
-            }
+            CAL_SEARCH_BOUND(superInfo, low, hig);
 
-            size_t indexPos = node->getData(0);
+            size_t indexPos = shadow.getViewId();
             auto pStream =
                     rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
 
@@ -966,8 +988,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (execute(node->getChild(2 * arity), newCtxt)) {
-                            execute(node->getChild(2 * arity + 1), newCtxt);
+                        if (execute(node->getChild(0), newCtxt)) {
+                            execute(node->getChild(1), newCtxt);
                             break;
                         }
                     }
@@ -1025,51 +1047,32 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
             // init temporary tuple for this level
             size_t arity = cur.getRelation().getArity();
-
+            const auto& superInfo = shadow.getSuperInst();
             // get lower and upper boundaries for iteration
             RamDomain low[arity];
             RamDomain hig[arity];
+            CAL_SEARCH_BOUND(superInfo, low, hig);
 
-            for (size_t i = 0; i < arity; i++) {
-                if (node->getChild(i) != nullptr) {
-                    low[i] = execute(node->getChild(i), newCtxt);
-                    hig[i] = execute(node->getChild(i + arity), newCtxt);
-                } else {
-                    low[i] = MIN_RAM_SIGNED;
-                    hig[i] = MAX_RAM_SIGNED;
-                }
-            }
-
-            size_t viewId = node->getData(0);
+            size_t viewId = shadow.getViewId();
             auto& view = newCtxt.getView(viewId);
 
-            return executeAggregate(newCtxt, cur, *node->getChild(2 * arity), node->getChild(2 * arity + 1),
-                    *node->getChild(2 * arity + 2), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
+            return executeAggregate(newCtxt, cur, *node->getChild(0), node->getChild(1), *node->getChild(2),
+                    view->range(TupleRef(low, arity), TupleRef(hig, arity)));
         ESAC(ParallelIndexAggregate)
 
         CASE(IndexAggregate)
             // init temporary tuple for this level
             size_t arity = cur.getRelation().getArity();
-
-            // get lower and upper boundaries for iteration
+            const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
             RamDomain hig[arity];
+            CAL_SEARCH_BOUND(superInfo, low, hig)
 
-            for (size_t i = 0; i < arity; i++) {
-                if (node->getChild(i) != nullptr) {
-                    low[i] = execute(node->getChild(i), ctxt);
-                    hig[i] = execute(node->getChild(i + arity), ctxt);
-                } else {
-                    low[i] = MIN_RAM_SIGNED;
-                    hig[i] = MAX_RAM_SIGNED;
-                }
-            }
-
-            size_t viewId = node->getData(0);
+            size_t viewId = shadow.getViewId();
             auto& view = ctxt.getView(viewId);
 
-            return executeAggregate(ctxt, cur, *node->getChild(2 * arity), node->getChild(2 * arity + 1),
-                    *node->getChild(2 * arity + 2), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
+            return executeAggregate(ctxt, cur, *node->getChild(0), node->getChild(1), *node->getChild(2),
+                    view->range(TupleRef(low, arity), TupleRef(hig, arity)));
         ESAC(IndexAggregate)
 
         CASE(Break)
@@ -1099,10 +1102,17 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Filter)
 
         CASE(Project)
+            const auto& superInfo = shadow.getSuperInst();
             size_t arity = cur.getRelation().getArity();
             RamDomain tuple[arity];
-            for (size_t i = 0; i < arity; i++) {
-                tuple[i] = execute(node->getChild(i), ctxt);
+            memcpy(tuple, superInfo.first.data(), sizeof(tuple));
+            /* TupleElement */
+            for (const auto& tupleElement : superInfo.tupleFirst) {
+                tuple[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]];
+            }
+            /* Generic */
+            for (const auto& expr : superInfo.exprFirst) {
+                tuple[expr.first] = execute(expr.second.get(), ctxt);
             }
 
             // insert in target relation
@@ -1175,7 +1185,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Clear)
 
         CASE(Call)
-            execute(subroutine[node->getData(0)].get(), ctxt);
+            execute(subroutine[shadow.getSubroutineId()].get(), ctxt);
             return true;
         ESAC(Call)
 
@@ -1256,15 +1266,15 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Query)
 
         CASE(Extend)
-            InterpreterRelation& src = *getRelationHandle(node->getData(0));
-            InterpreterRelation& trg = *getRelationHandle(node->getData(1));
+            InterpreterRelation& src = *getRelationHandle(shadow.getSourceId());
+            InterpreterRelation& trg = *getRelationHandle(shadow.getTargetId());
             src.extend(trg);
             trg.insert(src);
             return true;
         ESAC(Extend)
 
         CASE(Swap)
-            swapRelation(node->getData(0), node->getData(1));
+            swapRelation(shadow.getSourceId(), shadow.getTargetId());
             return true;
         ESAC(Swap)
     }

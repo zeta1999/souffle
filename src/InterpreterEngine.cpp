@@ -275,9 +275,6 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         return [&]() -> RamDomain { \
             const auto& shadow = *static_cast<const Interpreter##Kind*>(node); \
             const auto& cur = *static_cast<const Ram##Kind*>(node->getShadow());
-#define CASE_NO_CAST(Kind) \
-    case (I_##Kind): {     \
-        return [&]() -> RamDomain {
 #define ESAC(Kind) \
     }              \
     ();            \
@@ -292,7 +289,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return ctxt[cur.getTupleId()][cur.getElement()];
         ESAC(TupleElement)
 
-        CASE_NO_CAST(AutoIncrement)
+        CASE(AutoIncrement)
             return incCounter();
         ESAC(AutoIncrement)
 
@@ -603,23 +600,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return ctxt.getArgument(cur.getArgument());
         ESAC(SubroutineArgument)
 
-        CASE_NO_CAST(True)
+        CASE(True)
             return true;
         ESAC(True)
 
-        CASE_NO_CAST(False)
+        CASE(False)
             return false;
         ESAC(False)
 
-        CASE_NO_CAST(Conjunction)
+        CASE(Conjunction)
             return execute(node->getChild(0), ctxt) && execute(node->getChild(1), ctxt);
         ESAC(Conjunction)
 
-        CASE_NO_CAST(Negation)
+        CASE(Negation)
             return !execute(node->getChild(0), ctxt);
         ESAC(Negation)
 
-        CASE_NO_CAST(EmptinessCheck)
+        CASE(EmptinessCheck)
             return node->getRelation()->empty();
         ESAC(EmptinessCheck)
 
@@ -1075,7 +1072,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     *node->getChild(2 * arity + 2), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
         ESAC(IndexAggregate)
 
-        CASE_NO_CAST(Break)
+        CASE(Break)
             // check condition
             if (execute(node->getChild(0), ctxt)) {
                 return false;
@@ -1125,7 +1122,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(SubroutineReturn)
 
-        CASE_NO_CAST(Sequence)
+        CASE(Sequence)
             for (const auto& child : node->getChildren()) {
                 if (!execute(child.get(), ctxt)) {
                     return false;
@@ -1134,7 +1131,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(Sequence)
 
-        CASE_NO_CAST(Parallel)
+        CASE(Parallel)
             for (const auto& child : node->getChildren()) {
                 if (!execute(child.get(), ctxt)) {
                     return false;
@@ -1143,7 +1140,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(Parallel)
 
-        CASE_NO_CAST(Loop)
+        CASE(Loop)
             resetIterationNumber();
             while (execute(node->getChild(0), ctxt)) {
                 incIterationNumber();
@@ -1152,7 +1149,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(Loop)
 
-        CASE_NO_CAST(Exit)
+        CASE(Exit)
             return !execute(node->getChild(0), ctxt);
         ESAC(Exit)
 
@@ -1172,12 +1169,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return execute(node->getChild(0), ctxt);
         ESAC(DebugInfo)
 
-        CASE_NO_CAST(Clear)
+        CASE(Clear)
             node->getRelation()->purge();
             return true;
         ESAC(Clear)
 
-        CASE_NO_CAST(Call)
+        CASE(Call)
             execute(subroutine[node->getData(0)].get(), ctxt);
             return true;
         ESAC(Call)
@@ -1220,7 +1217,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             }
         ESAC(IO)
 
-        CASE_NO_CAST(Query)
+        CASE(Query)
             InterpreterPreamble* preamble = node->getPreamble();
 
             // Execute view-free operations in outer filter if any.
@@ -1258,7 +1255,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(Query)
 
-        CASE_NO_CAST(Extend)
+        CASE(Extend)
             InterpreterRelation& src = *getRelationHandle(node->getData(0));
             InterpreterRelation& trg = *getRelationHandle(node->getData(1));
             src.extend(trg);
@@ -1266,7 +1263,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(Extend)
 
-        CASE_NO_CAST(Swap)
+        CASE(Swap)
             swapRelation(node->getData(0), node->getData(1));
             return true;
         ESAC(Swap)

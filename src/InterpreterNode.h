@@ -101,7 +101,7 @@ public:
             std::vector<size_t> data = {})
             : type(ty), shadow(sdw), children(std::move(chlds)), relHandle(relHandle), data(std::move(data)) {
     }
-    virtual ~InterpreterNode() = default; 
+    virtual ~InterpreterNode() = default;
 
     /** @brief get node type */
     inline enum InterpreterNodeType getType() const {
@@ -153,52 +153,148 @@ protected:
     std::shared_ptr<InterpreterPreamble> preamble = nullptr;
 };
 
-class InterpreterConstant : public InterpreterNode { };
-class InterpreterTupleElement : public InterpreterNode { };
-class InterpreterAutoIncrement : public InterpreterNode { };
-class InterpreterIntrinsicOperator : public InterpreterNode { };
-class InterpreterUserDefinedOperator : public InterpreterNode { };
-class InterpreterNestedIntrinsicOperator : public InterpreterNode { };
-class InterpreterPackRecord : public InterpreterNode { };
-class InterpreterSubroutineArgument : public InterpreterNode { };
-class InterpreterTrue : public InterpreterNode { };
-class InterpreterFalse : public InterpreterNode { };
-class InterpreterConjunction : public InterpreterNode { };
-class InterpreterNegation : public InterpreterNode { };
-class InterpreterEmptinessCheck : public InterpreterNode { };
-class InterpreterExistenceCheck : public InterpreterNode { };
-class InterpreterProvenanceExistenceCheck : public InterpreterNode { };
-class InterpreterConstraint : public InterpreterNode { };
-class InterpreterTupleOperation : public InterpreterNode { };
-class InterpreterScan : public InterpreterNode { };
-class InterpreterParallelScan : public InterpreterNode { };
-class InterpreterIndexScan : public InterpreterNode { };
-class InterpreterParallelIndexScan : public InterpreterNode { };
-class InterpreterChoice : public InterpreterNode { };
-class InterpreterParallelChoice : public InterpreterNode { };
-class InterpreterIndexChoice : public InterpreterNode { };
-class InterpreterParallelIndexChoice : public InterpreterNode { };
-class InterpreterUnpackRecord : public InterpreterNode { };
-class InterpreterAggregate : public InterpreterNode { };
-class InterpreterParallelAggregate : public InterpreterNode { };
-class InterpreterIndexAggregate : public InterpreterNode { };
-class InterpreterParallelIndexAggregate : public InterpreterNode { };
-class InterpreterBreak : public InterpreterNode { };
-class InterpreterFilter : public InterpreterNode { };
-class InterpreterProject : public InterpreterNode { };
-class InterpreterSubroutineReturn : public InterpreterNode { };
-class InterpreterSequence : public InterpreterNode { };
-class InterpreterParallel : public InterpreterNode { };
-class InterpreterLoop : public InterpreterNode { };
-class InterpreterExit : public InterpreterNode { };
-class InterpreterLogRelationTimer : public InterpreterNode { };
-class InterpreterLogTimer : public InterpreterNode { };
-class InterpreterDebugInfo : public InterpreterNode { };
-class InterpreterClear : public InterpreterNode { };
-class InterpreterLogSize : public InterpreterNode { };
-class InterpreterIO : public InterpreterNode { };
-class InterpreterQuery : public InterpreterNode { };
-class InterpreterExtend : public InterpreterNode { };
-class InterpreterSwap : public InterpreterNode { };
-class InterpreterCall : public InterpreterNode { };
+class InterpreterConstant : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterTupleElement : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterAutoIncrement : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterIntrinsicOperator : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterUserDefinedOperator : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterNestedIntrinsicOperator : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterPackRecord : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterSubroutineArgument : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterTrue : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterFalse : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterConjunction : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterNegation : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterEmptinessCheck : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterExistenceCheck : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterProvenanceExistenceCheck : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterConstraint : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterTupleOperation : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterScan : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterParallelScan : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterIndexScan : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterParallelIndexScan : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterChoice : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterParallelChoice : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterIndexChoice : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterParallelIndexChoice : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterUnpackRecord : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterAggregate : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterParallelAggregate : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterIndexAggregate : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterParallelIndexAggregate : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterBreak : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterFilter : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterProject : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterSubroutineReturn : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterSequence : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterParallel : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterLoop : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterExit : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterLogRelationTimer : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterLogTimer : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterDebugInfo : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterClear : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterLogSize : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterIO : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterQuery : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterExtend : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterSwap : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
+class InterpreterCall : public InterpreterNode {
+    using InterpreterNode::InterpreterNode;
+};
 }  // namespace souffle

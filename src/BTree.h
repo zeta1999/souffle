@@ -250,7 +250,7 @@ template <typename Key, typename Comparator,
         typename Updater = detail::updater<Key>>
 class btree {
 public:
-    class iterator;
+    struct iterator;
     using const_iterator = iterator;
 
     using key_type = Key;
@@ -374,6 +374,8 @@ protected:
          * The actual number of keys/node corrected by functional requirements.
          */
         static constexpr size_t maxKeys = (desiredNumKeys > 3) ? desiredNumKeys : 3;
+        static constexpr size_t split_point = std::min(3 * maxKeys / 4, maxKeys - 2);
+        static constexpr size_t minKeys = std::min(maxKeys - (split_point + 1), split_point + 1);
 
         // the keys stored in this node
         Key keys[maxKeys];
@@ -532,7 +534,7 @@ protected:
          * and a better node-filling rate.
          */
         int getSplitPoint(int /*unused*/) {
-            return std::min(3 * maxKeys / 4, maxKeys - 2);
+            return split_point;
         }
 
         /**
@@ -909,7 +911,7 @@ protected:
          * @return the handed in list of chunks extended by generated chunks
          */
         std::vector<chunk>& collectChunks(
-                std::vector<chunk>& res, size_type num, const iterator& begin, const iterator& end) const {
+                std::vector<chunk>& res, size_type num, const iterator& begin, const iterator& end) {
             assert(num > 0);
 
             // special case: this node is empty
@@ -977,7 +979,7 @@ protected:
             bool valid = true;
 
             // check fill-state
-            if (this->numElements > maxKeys) {
+            if (this->numElements > maxKeys || (this->parent != nullptr && this->numElements < minKeys)) {
                 std::cout << "Node with " << this->numElements << "/" << maxKeys << " encountered!\n";
                 valid = false;
             }
@@ -1093,19 +1095,18 @@ public:
     /**
      * The iterator type to be utilized for scanning through btree instances.
      */
-    class iterator : public std::iterator<std::forward_iterator_tag, Key> {
+    struct iterator : public std::iterator<std::bidirectional_iterator_tag, Key> {
         // a pointer to the node currently referred to
-        node const* cur;
+        node* cur;
 
         // the index of the element currently addressed within the referenced node
         field_index_type pos = 0;
 
-    public:
         // default constructor -- creating an end-iterator
         iterator() : cur(nullptr) {}
 
         // creates an iterator referencing a specific element within a given node
-        iterator(node const* cur, field_index_type pos) : cur(cur), pos(pos) {}
+        iterator(node* cur, field_index_type pos) : cur(cur), pos(pos) {}
 
         // a copy constructor
         iterator(const iterator& other) : cur(other.cur), pos(other.pos) {}
@@ -1132,36 +1133,79 @@ public:
             return cur->keys[pos];
         }
 
-        // the increment operator as required by the iterator concept
-        iterator& operator++() {
-            // the quick mode -- if in a leaf and there are elements left
-            if (cur->isLeaf() && ++pos < cur->getNumElements()) {
-                return *this;
-            }
+        // Resolve an ambiguous position at the end of a leaf by moving forward.
+        // Must be called from the end of a leaf or behaviour is undefined.
+        void resolvePosition() {
+            // Save current node in case we are at the end of the tree
+            auto temp = cur;
 
-            // otherwise it is a bit more tricky
-
-            // A) currently in an inner node => go to the left-most child
-            if (cur->isInner()) {
-                cur = cur->getChildren()[pos + 1];
-                while (!cur->isLeaf()) {
-                    cur = cur->getChildren()[0];
-                }
-                pos = 0;
-
-                // nodes may be empty due to biased insertion
-                if (!cur->isEmpty()) {
-                    return *this;
-                }
-            }
-
-            // B) we are at the right-most element of a leaf => go to next inner node
-            assert(cur->isLeaf());
-            assert(pos == cur->getNumElements());
-
-            while (cur != nullptr && pos == cur->getNumElements()) {
+            // While we are at the end of node, move up to parent
+            do {
                 pos = cur->getPositionInParent();
                 cur = cur->getParent();
+            } while (cur && pos == cur->getNumElements());
+
+            // Check if we were at the end of the tree.
+            // If so, reset iterator
+            if (!cur) {
+                cur = temp;
+                pos = cur->getNumElements();
+            }
+        }
+
+        // the increment operator as required by the iterator concept
+        iterator& operator++() {
+            if (cur) {
+                if (cur->isInner()) {
+                    // Currently in an inner node so move forward one place
+                    cur = cur->getChild(pos + 1);
+                    while (cur->isInner()) {
+                        cur = cur->getChild(0);
+                    }
+                    pos = 0;
+                } else {
+                    // In a leaf so just increment the position
+                    ++pos;
+                    // If we have reached the end of the leaf walk up to an inner node
+                    if (pos == cur->getNumElements()) {
+                        resolvePosition();
+                    }
+                }
+            }
+            return *this;
+        }
+
+        // the decrement operator as required by the iterator concept
+        iterator& operator--() {
+            if (cur) {
+                if (cur->isInner()) {
+                    // Currently in an inner node so move back one place
+                    cur = cur->getChild(pos);
+                    while (cur->isInner()) {
+                        cur = cur->getChild(cur->getNumElements());
+                    }
+                    pos = cur->getNumElements() - 1;
+                } else {
+                    // In a leaf so decrement the position
+                    // Check if pos > 0 to avoid unsigned wrap-around issues
+                    if (pos > 0) {
+                        --pos;
+                    } else {
+                        // Save the current node in case we are at the beginning
+                        auto temp = cur;
+
+                        // Walk back up the tree.
+                        do {
+                            pos = cur->getPositionInParent();
+                            cur = cur->getParent();
+                        } while (cur && pos == 0);
+
+                        // If we were at the beginning of the tree, reset the iterator
+                        if (!cur) {
+                            cur = temp;
+                        }
+                    }
+                }
             }
             return *this;
         }
@@ -1696,6 +1740,495 @@ public:
         }
     }
 
+    /**
+     * Compute the number of instances of a key in the tree
+     */
+    size_type get_count(const Key& k) const {
+        if (empty()) {
+            return 0;
+        }
+        if (isSet) {
+            auto iter = internal_find(k);
+            if (iter != end()) {
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            auto lower_iter = internal_lower_bound(k);
+            if (lower_iter != end() && equal(*lower_iter, k)) {
+                return distance(lower_iter, internal_upper_bound(k));
+            } else {
+                return 0;
+            }
+        }
+    }
+
+    /**
+     * Erase the given key from the tree.
+     * Return the number of erased keys.
+     */
+    size_type erase(const Key& k) {
+        if (empty()) {
+            return 0;
+        }
+        if (isSet) {
+            iterator iter = internal_find(k);
+            if (iter == end()) {
+                // Key not found
+                return 0;
+            } else {
+                erase(iter);
+                return 1;
+            }
+        } else {
+            iterator lower_iter = internal_lower_bound(k);
+            if (lower_iter != end() && equal(*lower_iter, k)) {
+                size_type count = distance(lower_iter, internal_upper_bound(k));
+                for (size_type i = 0; i < count; i++) {
+                    erase(lower_iter);
+                }
+                return count;
+            } else {
+                return 0;
+            }
+        }
+    }
+
+    /**
+     * Erase the key pointed to by the iterator.
+     * Advance the iterator to the next position.
+     */
+    void erase(iterator& iter) {
+        bool internal_delete = false;
+
+        if (iter.cur->isInner()) {
+            // In an inner node so swap key with previous key
+            iterator temp_iter(iter);
+            --iter;
+            Key temp_key = temp_iter.cur->keys[temp_iter.pos];
+            temp_iter.cur->keys[temp_iter.pos] = iter.cur->keys[iter.pos];
+            iter.cur->keys[iter.pos] = temp_key;
+            internal_delete = true;
+        }
+        // Now on a leaf node
+        assert(iter.cur->isLeaf());
+
+        // Delete the key, move other keys backwards and update size
+        iter.cur->keys[iter.pos].~Key();
+        for (size_type i = iter.pos + 1; i < iter.cur->getNumElements(); ++i) {
+            iter.cur->keys[i - 1] = iter.cur->keys[i];
+        }
+        iter.cur->numElements--;
+
+        // Next, ensure nodes have not become too small
+        iterator res(iter);
+        while (true) {
+            auto parent = iter.cur->parent;
+            if (!parent) {
+                // cur is root
+                if (iter.cur->getNumElements() == 0) {
+                    // Root has become empty
+                    if (iter.cur->isLeaf()) {
+                        // Whole tree has become empty
+                        root = nullptr;
+                        leftmost = nullptr;
+                        res.cur = nullptr;
+                        res.pos = 0;
+                    } else {
+                        // Whole tree now contained in child at position 0
+                        root = iter.cur->getChild(0);
+                        root->parent = nullptr;
+                    }
+                    delete iter.cur;
+                }
+                break;
+            }
+            if (iter.cur->getNumElements() >= node::minKeys) {
+                break;
+            }
+            bool merged = merge_or_rebalance(iter);
+            if (iter.cur->isLeaf()) {
+                res = iter;
+            }
+            if (!merged) {
+                break;
+            }
+            iter.cur = iter.cur->getParent();
+        }
+        iter = res;
+
+        // Finally, check the iterator points to the right position
+        if (iter.cur) {
+            // Tree hasn't become empty
+            // If iterator is at end of node, resolve the position
+            if (iter.pos == iter.cur->getNumElements()) {
+                iter.resolvePosition();
+            }
+
+            // If we deleted internally, increment the iterator
+            if (internal_delete) {
+                ++iter;
+            }
+        }
+    }
+
+private:
+    /**
+     * Find the given key in a non-empty tree.
+     * If found, return an iterator pointing to the key.
+     * Otherwise, return end()
+     */
+    iterator internal_find(const Key& k) const {
+        auto iter = iterator(root, 0);
+        while (true) {
+            auto a = &(iter.cur->keys[0]);
+            auto b = &(iter.cur->keys[iter.cur->numElements]);
+
+            auto pos = search(k, a, b, comp);
+            iter.pos = pos - a;
+
+            if (pos < b && equal(*pos, k)) {
+                return iter;
+            }
+
+            if (!iter.cur->inner) {
+                return end();
+            }
+
+            // continue search in child node
+            iter.cur = iter.cur->getChild(iter.pos);
+        }
+    }
+
+    /**
+     * Find the first key in the tree greater or equal to the given key.
+     * If found, return an iterator pointing to the key.
+     * Otherwise, return end().
+     */
+    iterator internal_lower_bound(const Key& k) const {
+        iterator iter = iterator(root, 0);
+        iterator res;
+        while (true) {
+            auto a = &(iter.cur->keys[0]);
+            auto b = &(iter.cur->keys[iter.cur->numElements]);
+
+            auto pos = search.lower_bound(k, a, b, comp);
+            iter.pos = pos - a;
+
+            if (pos < b) {
+                res = iter;
+                if (isSet && equal(*pos, k)) {
+                    // Early exit for sets
+                    break;
+                }
+            }
+
+            if (!iter.cur->inner) {
+                break;
+            }
+
+            iter.cur = iter.cur->getChild(iter.pos);
+        }
+        if (!res.cur) {
+            res = iter;
+        }
+        return res;
+    }
+
+    /**
+     * Find the first key in the tree strictly greater than the given key.
+     * If found, return an iterator pointing to the key.
+     * Otherwise, return end().
+     */
+    iterator internal_upper_bound(const Key& k) const {
+        iterator iter = iterator(root, 0);
+        iterator res;
+        while (true) {
+            auto a = &(iter.cur->keys[0]);
+            auto b = &(iter.cur->keys[iter.cur->numElements]);
+
+            auto pos = search.upper_bound(k, a, b, comp);
+            iter.pos = pos - a;
+
+            if (pos < b) {
+                res = iter;
+            }
+
+            if (!iter.cur->inner) {
+                break;
+            }
+
+            iter.cur = iter.cur->getChild(iter.pos);
+        }
+        if (!res.cur) {
+            res = iter;
+        }
+        return res;
+    }
+
+    /**
+     * Merge or rebalance the current node of the iterator.
+     * Update the iterator to point to its new position.
+     * Return true if a merge occured, else false.
+     */
+    bool merge_or_rebalance(iterator& iter) {
+        // Only called when the current node is too small
+        assert(iter.cur->getNumElements() < node::minKeys);
+
+        auto parent = iter.cur->getParent();
+        auto siblings = parent->getChildren();
+        auto pos = iter.cur->getPositionInParent();
+        if (pos < parent->getNumElements()) {
+            // Has right sibling
+            auto right = siblings[pos + 1];
+            if (iter.cur->getNumElements() + right->getNumElements() + 1 <= node::maxKeys) {
+                // Merge with right sibling
+                merge_with_right_sibling(iter, right);
+                return true;
+            } else if (pos > 0) {
+                // Has a left sibling
+                auto left = siblings[pos - 1];
+                if (left->getNumElements() + iter.cur->getNumElements() + 1 <= node::maxKeys) {
+                    // Merge into left sibling
+                    merge_into_left_sibling(left, iter);
+                    return true;
+                } else {
+                    // Rebalance from left sibling
+                    rebalance_from_left_sibling(left, iter);
+                    return false;
+                }
+            } else {
+                // Can't merge with right and no left sibling so must rebalance from right
+                rebalance_from_right_sibling(iter, right);
+                return false;
+            }
+        } else {
+            // No right sibling, so must have a left sibling
+            assert(pos > 0);
+            auto left = siblings[pos - 1];
+            if (left->getNumElements() + iter.cur->getNumElements() + 1 <= node::maxKeys) {
+                // Merge into left sibling
+                merge_into_left_sibling(left, iter);
+                return true;
+            } else {
+                // Rebalance from left sibling
+                rebalance_from_left_sibling(left, iter);
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Merge an iterator with its right sibling, updating the position of the iterator
+     */
+    void merge_with_right_sibling(iterator& iter, node* right) {
+        merge(iter.cur, right);
+    }
+
+    /**
+     * Merge an iterator into its left sibling, updating the position of the iterator
+     */
+    void merge_into_left_sibling(node* left, iterator& iter) {
+        auto left_size = left->getNumElements();
+        merge(left, iter.cur);
+        iter.cur = left;
+        iter.pos += left_size + 1;
+    }
+
+    /**
+     * Merge nodes, destroying the sibling on the right.
+     */
+    void merge(node* left, node* right) {
+        auto parent = left->getParent();
+        // Left must have a parent
+        assert(parent);
+        auto siblings = parent->getChildren();
+
+        auto pos = left->getPositionInParent();
+        // Node isn't the right-most node in its parent
+        assert(pos < parent->getNumElements());
+
+        // Update the parent node by:
+        // 1. Moving dividing key to left node
+        left->keys[left->getNumElements()] = parent->keys[pos];
+        // 2. Moving keys and siblings found to the right of the
+        // dividing key back one place
+        for (size_type i = pos + 1; i < parent->getNumElements(); ++i) {
+            parent->keys[i - 1] = parent->keys[i];
+            auto sibling = siblings[i + 1];
+            sibling->position--;
+            siblings[i] = sibling;
+        }
+        // 3. Decrementing its size
+        parent->numElements--;
+
+        // Move keys from right node to left
+        for (size_type i = left->getNumElements() + 1, j = 0; j < right->getNumElements(); ++i, ++j) {
+            left->keys[i] = right->keys[j];
+        }
+
+        // If left is an inner node, move children from right to left
+        if (left->isInner()) {
+            // Right must also be an inner node
+            assert(right->isInner());
+            auto left_children = left->getChildren();
+            auto right_children = right->getChildren();
+            for (size_type i = left->getNumElements() + 1, j = 0; j <= right->getNumElements(); ++i, ++j) {
+                auto child = right_children[j];
+                child->parent = left;
+                child->position = i;
+                left_children[i] = child;
+            }
+        }
+
+        // Update the number of elements in the left
+        left->numElements += right->getNumElements() + 1;
+
+        // Delete the right node
+        delete right;
+    }
+
+    /**
+     * Rebalance the given iterator node by moving keys from the right.
+     * Update the iterator position.
+     */
+    void rebalance_from_right_sibling(iterator& iter, node* right) {
+        auto left = iter.cur;
+        auto parent = left->getParent();
+        // Left must have a parent
+        assert(parent);
+
+        auto pos = left->getPositionInParent();
+        // Node isn't the right-most node in its parent
+        assert(pos < parent->getNumElements());
+
+        // Number of keys to move
+        size_type to_move = (right->getNumElements() - node::minKeys) / 2 + 1;
+
+        // Move down dividing key from parent
+        left->keys[left->getNumElements()] = parent->keys[pos];
+
+        // Move keys from right sibling
+        for (size_type i = left->getNumElements() + 1, j = 0; j < to_move - 1; ++i, ++j) {
+            left->keys[i] = right->keys[j];
+        }
+
+        // Move key up to dividing position
+        parent->keys[pos] = right->keys[to_move - 1];
+
+        // Move remaining keys in right node back
+        for (size_type i = to_move; i < right->getNumElements(); ++i) {
+            right->keys[i - to_move] = right->keys[i];
+        }
+
+        // If left is an inner node, move children
+        if (left->isInner()) {
+            // Right must also be an inner node
+            assert(right->isInner());
+            auto left_children = left->getChildren();
+            auto right_children = right->getChildren();
+
+            // Move children from right node to left
+            for (size_type i = left->getNumElements() + 1, j = 0; j < to_move; ++i, ++j) {
+                auto child = right_children[j];
+                child->parent = left;
+                child->position = i;
+                left_children[i] = child;
+            }
+
+            // Move right children back
+            for (size_type i = to_move; i <= right->getNumElements(); ++i) {
+                auto child = right_children[i];
+                child->position = i - to_move;
+                right_children[i - to_move] = child;
+            }
+        }
+
+        // Update sizes
+        left->numElements += to_move;
+        right->numElements -= to_move;
+    }
+
+    /**
+     * Rebalance the given iterator node by moving keys from the left sibling.
+     * Update the iterator to its new position.
+     */
+    void rebalance_from_left_sibling(node* left, iterator& iter) {
+        auto right = iter.cur;
+        auto parent = right->getParent();
+        // Left must have a parent
+        assert(parent);
+
+        auto pos = right->getPositionInParent();
+        // Node isn't the left-most node in its parent
+        assert(pos > 0);
+
+        // Number of keys to move
+        size_type to_move = (left->getNumElements() - node::minKeys) / 2 + 1;
+
+        // Move keys in right node along
+        for (size_type i = right->getNumElements() + to_move - 1; i >= to_move; --i) {
+            right->keys[i] = right->keys[i - to_move];
+        }
+
+        // Move down dividing key from parent
+        right->keys[to_move - 1] = parent->keys[pos - 1];
+
+        // Move keys from left sibling
+        for (size_type i = left->getNumElements() - to_move + 1, j = 0; j < to_move - 1; ++i, ++j) {
+            right->keys[j] = left->keys[i];
+        }
+
+        // Move key up to dividing position
+        parent->keys[pos - 1] = left->keys[left->getNumElements() - to_move];
+
+        // If right is an inner node, move children
+        if (right->isInner()) {
+            // Left must also be an inner node
+            assert(left->isInner());
+            auto left_children = left->getChildren();
+            auto right_children = right->getChildren();
+
+            // Move right children along
+            for (size_type i = right->getNumElements() + to_move; i >= to_move; --i) {
+                auto child = right_children[i - to_move];
+                child->position = i;
+                right_children[i] = child;
+            }
+
+            // Move children from left node to right
+            for (size_type i = left->getNumElements() - to_move + 1, j = 0; j < to_move; ++i, ++j) {
+                auto child = left_children[i];
+                child->parent = right;
+                child->position = j;
+                right_children[j] = child;
+            }
+        }
+
+        // Update iterator position
+        iter.pos += to_move;
+
+        // Update sizes
+        left->numElements -= to_move;
+        right->numElements += to_move;
+    }
+
+public:
+    /**
+     * Return the rightmost node in the tree.
+     * Currently inefficient as tree contains no reference to rightmost.
+     */
+    node* rightmost() const {
+        auto rightmost = root;
+        if (rightmost) {
+            while (rightmost->isInner()) {
+                rightmost = rightmost->getChild(rightmost->getNumElements());
+            }
+        }
+        return rightmost;
+    }
+
     // Obtains an iterator referencing the first element of the tree.
     iterator begin() const {
         return iterator(leftmost, 0);
@@ -1703,7 +2236,12 @@ public:
 
     // Obtains an iterator referencing the position after the last element of the tree.
     iterator end() const {
-        return iterator();
+        node* rightmost = this->rightmost();
+        if (rightmost) {
+            return iterator(rightmost, rightmost->getNumElements());
+        } else {
+            return iterator();
+        }
     }
 
     /**

@@ -201,10 +201,10 @@ bool MaterializeAggregationQueriesTransformer::needsMaterializedRelation(AstAggr
     int countAtoms = 0;
     const AstAtom* atom = nullptr;
     for (const auto& literal : agg.getBodyLiterals()) {
-        const AstAtom* a = dynamic_cast<const AstAtom*>(literal);
-        if (a != nullptr) {
+        const AstAtom* currentAtom = dynamic_cast<const AstAtom*>(literal);
+        if (currentAtom != nullptr) {
             ++countAtoms;
-            atom = a;
+            atom = currentAtom;
         }
     }
 

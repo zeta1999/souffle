@@ -8,33 +8,33 @@
 
 /************************************************************************
  *
- * @file AstTypeAnalysis.cpp
+ * @file TypeAnalysis.cpp
  *
  * Implements a collection of type analyses operating on AST constructs.
  *
  ***********************************************************************/
 
-#include "ast/analysis/AstType.h"
+#include "ast/analysis/Type.h"
 #include "AggregateOp.h"
 #include "Constraints.h"
 #include "FunctorOps.h"
 #include "Global.h"
 #include "RamTypes.h"
-#include "ast/AstAbstract.h"
-#include "ast/AstArgument.h"
-#include "ast/AstAttribute.h"
-#include "ast/AstClause.h"
-#include "ast/AstLiteral.h"
-#include "ast/AstNode.h"
-#include "ast/AstProgram.h"
-#include "ast/AstQualifiedName.h"
-#include "ast/AstRelation.h"
-#include "ast/AstTranslationUnit.h"
-#include "ast/AstUtils.h"
-#include "ast/AstVisitor.h"
+#include "ast/Abstract.h"
+#include "ast/Argument.h"
+#include "ast/Attribute.h"
+#include "ast/Clause.h"
+#include "ast/Literal.h"
+#include "ast/Node.h"
+#include "ast/Program.h"
+#include "ast/QualifiedName.h"
+#include "ast/Relation.h"
+#include "ast/TranslationUnit.h"
+#include "ast/Utils.h"
+#include "ast/Visitor.h"
 #include "ast/TypeSystem.h"
-#include "ast/analysis/AstConstraint.h"
-#include "ast/analysis/AstTypeEnvironment.h"
+#include "ast/analysis/Constraint.h"
+#include "ast/analysis/TypeEnvironment.h"
 #include "utility/ContainerUtil.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"

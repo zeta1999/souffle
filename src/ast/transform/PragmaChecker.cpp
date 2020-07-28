@@ -8,18 +8,18 @@
 
 /************************************************************************
  *
- * @file AstPragmaChecker.cpp
+ * @file PragmaChecker.cpp
  *
  * Defines a transformer that applies pragmas found in parsed input.
  *
  ***********************************************************************/
 
-#include "ast/transform/AstPragmaChecker.h"
+#include "ast/transform/PragmaChecker.h"
 #include "Global.h"
-#include "ast/AstPragma.h"
-#include "ast/AstProgram.h"
-#include "ast/AstTranslationUnit.h"
-#include "ast/AstVisitor.h"
+#include "ast/Pragma.h"
+#include "ast/Program.h"
+#include "ast/TranslationUnit.h"
+#include "ast/Visitor.h"
 #include <utility>
 #include <vector>
 

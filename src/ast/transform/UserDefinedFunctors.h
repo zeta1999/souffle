@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstUserDefinedFunctors.h
+ * @file UserDefinedFunctors.h
  *
  * Transformation that passes the type information from user functors
  * declaration to functors instances
@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "ast/transform/AstTransformer.h"
+#include "ast/transform/Transformer.h"
 #include <string>
 
 namespace souffle {

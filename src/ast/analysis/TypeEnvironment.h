@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstTypeEnvironment.h
+ * @file TypeEnvironment.h
  *
  * A wrapper for TypeEnvironment to be used for AST Analysis
  *
@@ -18,9 +18,9 @@
 
 #include "GraphUtils.h"
 #include "RamTypes.h"
-#include "ast/AstQualifiedName.h"
+#include "ast/QualifiedName.h"
 #include "ast/TypeSystem.h"
-#include "ast/analysis/AstAnalysis.h"
+#include "ast/analysis/Analysis.h"
 #include "utility/ContainerUtil.h"
 #include <map>
 #include <ostream>

@@ -21,7 +21,7 @@
 #include "DebugReport.h"
 #include "Global.h"
 #include "ast/Program.h"
-#include "ast/analysis/AstAnalysis.h"
+#include "ast/analysis/Analysis.h"
 #include "ast/analysis/RecursiveClauses.h"
 #include "ast/analysis/SCCGraph.h"
 #include <iosfwd>

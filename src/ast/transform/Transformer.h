@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstTransformer.h
+ * @file Transformer.h
  *
  * Defines the interface for AST transformation passes.
  *

@@ -8,22 +8,22 @@
 
 /************************************************************************
  *
- * @file AstComponentChecker.cpp
+ * @file ComponentChecker.cpp
  *
  * Implementation of the component semantic checker pass.
  *
  ***********************************************************************/
 
-#include "ast/transform/AstComponentChecker.h"
+#include "ast/transform/ComponentChecker.h"
 #include "ErrorReport.h"
 #include "RelationTag.h"
 #include "SrcLocation.h"
-#include "ast/AstComponent.h"
-#include "ast/AstProgram.h"
-#include "ast/AstQualifiedName.h"
-#include "ast/AstRelation.h"
-#include "ast/AstTranslationUnit.h"
-#include "ast/AstType.h"
+#include "ast/Component.h"
+#include "ast/Program.h"
+#include "ast/QualifiedName.h"
+#include "ast/Relation.h"
+#include "ast/TranslationUnit.h"
+#include "ast/Type.h"
 #include "ast/analysis/ComponentLookup.h"
 #include "utility/StringUtil.h"
 #include <functional>

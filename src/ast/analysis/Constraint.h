@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstConstraint.h
+ * @file Constraint.h
  *
  * Contains AST Constraint Analysis Infrastructure for doing constraint analysis on AST objects
  *
@@ -17,11 +17,11 @@
 #pragma once
 
 #include "Constraints.h"
-#include "ast/AstAbstract.h"
-#include "ast/AstArgument.h"
-#include "ast/AstClause.h"
-#include "ast/AstNode.h"
-#include "ast/AstVisitor.h"
+#include "ast/Abstract.h"
+#include "ast/Argument.h"
+#include "ast/Clause.h"
+#include "ast/Node.h"
+#include "ast/Visitor.h"
 #include <map>
 #include <memory>
 #include <ostream>

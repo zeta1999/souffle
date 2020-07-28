@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstType.h
+ * @file Type.h
  *
  * A collection of type analyses operating on AST constructs.
  *
@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "ast/AstClause.h"
+#include "ast/Clause.h"
 #include "ast/TypeSystem.h"
-#include "ast/analysis/AstAnalysis.h"
+#include "ast/analysis/Analysis.h"
 #include <map>
 #include <memory>
 #include <sstream>

@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstPragmaChecker.h
+ * @file PragmaChecker.h
  *
  * Defines a transformer that applies pragmas found in parsed input.
  *
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "ast/transform/AstTransformer.h"
+#include "ast/transform/Transformer.h"
 #include <string>
 
 namespace souffle {

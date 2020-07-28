@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamVisitor.h
+ * @file Visitor.h
  *
  * Provides some infrastructure for the implementation of operations
  * on top of RAM structures.
@@ -17,13 +17,13 @@
 
 #pragma once
 
-#include "ram/RamCondition.h"
-#include "ram/RamExpression.h"
-#include "ram/RamNode.h"
-#include "ram/RamOperation.h"
-#include "ram/RamProgram.h"
-#include "ram/RamRelation.h"
-#include "ram/RamStatement.h"
+#include "ram/Condition.h"
+#include "ram/Expression.h"
+#include "ram/Node.h"
+#include "ram/Operation.h"
+#include "ram/Program.h"
+#include "ram/Relation.h"
+#include "ram/Statement.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
 #include <cstddef>

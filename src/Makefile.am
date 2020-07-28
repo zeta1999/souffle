@@ -235,23 +235,23 @@ souffle_sources = \
         interpreter/InterpreterRelation.h                  \
         parser.cc                                          \
         parser.hh                                          \
-        ram/RamCondition.h                                 \
-        ram/RamExpression.h                                \
-        ram/RamNode.h                                      \
-        ram/RamOperation.h                                 \
-        ram/RamProgram.h                                   \
-        ram/RamRelation.h                                  \
-        ram/RamStatement.h                                 \
-        ram/RamTranslationUnit.h                           \
-        ram/RamUtils.h                                     \
-        ram/RamVisitor.h                                   \
-        ram/analysis/RamAnalysis.h                         \
-        ram/analysis/RamComplexityAnalysis.cpp             \
-        ram/analysis/RamComplexityAnalysis.h               \
-        ram/analysis/RamIndexAnalysis.cpp                  \
-        ram/analysis/RamIndexAnalysis.h                    \
-        ram/analysis/RamLevelAnalysis.cpp                  \
-        ram/analysis/RamLevelAnalysis.h                    \
+        ram/Condition.h                                 \
+        ram/Expression.h                                \
+        ram/Node.h                                      \
+        ram/Operation.h                                 \
+        ram/Program.h                                   \
+        ram/Relation.h                                  \
+        ram/Statement.h                                 \
+        ram/TranslationUnit.h                           \
+        ram/Utils.h                                     \
+        ram/Visitor.h                                   \
+        ram/analysis/Analysis.h                         \
+        ram/analysis/ComplexityAnalysis.cpp             \
+        ram/analysis/ComplexityAnalysis.h               \
+        ram/analysis/IndexAnalysis.cpp                  \
+        ram/analysis/IndexAnalysis.h                    \
+        ram/analysis/LevelAnalysis.cpp                  \
+        ram/analysis/LevelAnalysis.h                    \
         ram/transform/ChoiceConversion.cpp                 \
         ram/transform/ChoiceConversion.h                   \
         ram/transform/CollapseFilters.cpp                  \
@@ -272,8 +272,8 @@ souffle_sources = \
         ram/transform/MakeIndex.h                          \
         ram/transform/Parallel.cpp                         \
         ram/transform/Parallel.h                           \
-        ram/transform/RamTransformer.cpp                   \
-        ram/transform/RamTransformer.h                     \
+        ram/transform/Transformer.cpp                   \
+        ram/transform/Transformer.h                     \
         ram/transform/ReorderConditions.cpp                \
         ram/transform/ReorderConditions.h                  \
         ram/transform/ReorderFilterBreak.cpp               \

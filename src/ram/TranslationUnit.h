@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamTranslationUnit.h
+ * @file TranslationUnit.h
  *
  * Define a class that represents a Datalog translation unit, consisting
  * of a datalog program, error reports and cached analysis results.
@@ -20,8 +20,8 @@
 #include "DebugReport.h"
 #include "Global.h"
 #include "SymbolTable.h"
-#include "ram/RamProgram.h"
-#include "ram/analysis/RamAnalysis.h"
+#include "ram/Program.h"
+#include "ram/analysis/Analysis.h"
 #include <cassert>
 #include <iosfwd>
 #include <map>

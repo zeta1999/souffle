@@ -8,19 +8,19 @@
 
 /************************************************************************
  *
- * @file RamTransformer.cpp
+ * @file Transformer.cpp
  *
  * Defines the interface for RAM transformation passes.
  *
  ***********************************************************************/
 
-#include "ram/transform/RamTransformer.h"
+#include "ram/transform/Transformer.h"
 #include "DebugReport.h"
 #include "ErrorReport.h"
 #include "Global.h"
-#include "ram/RamNode.h"
-#include "ram/RamProgram.h"
-#include "ram/RamTranslationUnit.h"
+#include "ram/Node.h"
+#include "ram/Program.h"
+#include "ram/TranslationUnit.h"
 #include "utility/StringUtil.h"
 #include <chrono>
 #include <cstdlib>

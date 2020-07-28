@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamOperation.h
+ * @file Operation.h
  *
  * Defines the Operation of a relational algebra query.
  *
@@ -17,11 +17,11 @@
 #pragma once
 
 #include "AggregateOp.h"
-#include "ram/RamCondition.h"
-#include "ram/RamExpression.h"
-#include "ram/RamNode.h"
-#include "ram/RamRelation.h"
-#include "ram/RamUtils.h"
+#include "ram/Condition.h"
+#include "ram/Expression.h"
+#include "ram/Node.h"
+#include "ram/Relation.h"
+#include "ram/Utils.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

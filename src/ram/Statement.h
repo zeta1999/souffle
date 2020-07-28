@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamStatement.h
+ * @file Statement.h
  *
  * Defines abstract class Statement and sub-classes for implementing the
  * Relational Algebra Machine (RAM), which is an abstract machine.
@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include "ram/RamCondition.h"
-#include "ram/RamNode.h"
-#include "ram/RamOperation.h"
-#include "ram/RamRelation.h"
+#include "ram/Condition.h"
+#include "ram/Node.h"
+#include "ram/Operation.h"
+#include "ram/Relation.h"
 #include "utility/ContainerUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"

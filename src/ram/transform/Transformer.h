@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamTransformer.h
+ * @file Transformer.h
  *
  * Defines the interface for RAM transformation passes.
  *

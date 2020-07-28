@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamExpression.h
+ * @file Expression.h
  *
  * Defines a class for evaluating values in the Relational Algebra Machine
  *
@@ -18,7 +18,7 @@
 
 #include "FunctorOps.h"
 #include "RamTypes.h"
-#include "ram/RamNode.h"
+#include "ram/Node.h"
 #include "utility/ContainerUtil.h"
 #include "utility/StreamUtil.h"
 #include <cassert>

@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamComplexityAnalysis.h
+ * @file ComplexityAnalysis.h
  *
  * Get the complexity of an expression/condition in terms of
  * database operations. The complexity of an expression/condition is a
@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "ram/analysis/RamAnalysis.h"
+#include "ram/analysis/Analysis.h"
 
 namespace souffle {
 

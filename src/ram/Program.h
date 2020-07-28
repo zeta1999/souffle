@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamProgram.h
+ * @file Program.h
  *
  * Defines a Program of a relational algebra query
  *
@@ -16,9 +16,9 @@
 
 #pragma once
 
-#include "ram/RamNode.h"
-#include "ram/RamRelation.h"
-#include "ram/RamStatement.h"
+#include "ram/Node.h"
+#include "ram/Relation.h"
+#include "ram/Statement.h"
 #include "utility/ContainerUtil.h"
 #include <cassert>
 #include <map>

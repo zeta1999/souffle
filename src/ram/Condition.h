@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamCondition.h
+ * @file Condition.h
  *
  * Defines a class for evaluating conditions in the Relational Algebra
  * Machine.
@@ -18,9 +18,9 @@
 #pragma once
 
 #include "BinaryConstraintOps.h"
-#include "ram/RamExpression.h"
-#include "ram/RamNode.h"
-#include "ram/RamRelation.h"
+#include "ram/Expression.h"
+#include "ram/Node.h"
+#include "ram/Relation.h"
 #include "utility/ContainerUtil.h"
 #include "utility/StreamUtil.h"
 #include <cassert>

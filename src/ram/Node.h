@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamNode.h
+ * @file Node.h
  *
  * Declaration of RAM node and mappers for RAM nodes
  *

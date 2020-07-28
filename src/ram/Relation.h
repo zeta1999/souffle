@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamRelation.h
+ * @file Relation.h
  *
  * Defines the class for ram relations
  ***********************************************************************/
@@ -16,7 +16,7 @@
 #pragma once
 
 #include "RelationTag.h"
-#include "ram/RamNode.h"
+#include "ram/Node.h"
 #include "utility/ContainerUtil.h"
 #include <cassert>
 #include <cstddef>

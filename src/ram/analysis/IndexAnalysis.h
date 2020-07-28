@@ -8,7 +8,7 @@
 
 /***************************************************************************
  *
- * @file RamIndexAnalysis.h
+ * @file IndexAnalysis.h
  *
  * Computes indexes for relations in a translation unit
  *
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "ram/analysis/RamAnalysis.h"
+#include "ram/analysis/Analysis.h"
 #include "utility/MiscUtil.h"
 #include <cassert>
 #include <cstdint>

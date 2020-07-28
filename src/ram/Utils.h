@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamUtils.h
+ * @file Utils.h
  *
  * A collection of utilities operating on RAM constructs.
  *
@@ -16,8 +16,8 @@
 
 #pragma once
 
-#include "ram/RamCondition.h"
-#include "ram/RamExpression.h"
+#include "ram/Condition.h"
+#include "ram/Expression.h"
 #include <algorithm>
 #include <memory>
 #include <queue>

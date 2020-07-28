@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamLevelAnalysis.h
+ * @file LevelAnalysis.h
  *
  * Get level of an expression/condition. The level of a condition/expression
  * determines the outer-most scope in a loop-next of a query,  for which the
@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include "ram/analysis/RamAnalysis.h"
+#include "ram/analysis/Analysis.h"
 
 namespace souffle {
 class RamNode;

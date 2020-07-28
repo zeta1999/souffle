@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file RamAnalysis.h
+ * @file Analysis.h
  *
  * Defines an interface for RAM analysis
  *

@@ -8,18 +8,18 @@
 
 /************************************************************************
  *
- * @file RamComplexityAnalysis.cpp
+ * @file ComplexityAnalysis.cpp
  *
  * Implementation of RAM Complexity Analysis
  *
  ***********************************************************************/
 
-#include "ram/analysis/RamComplexityAnalysis.h"
-#include "ram/RamCondition.h"
-#include "ram/RamExpression.h"
-#include "ram/RamNode.h"
-#include "ram/RamRelation.h"
-#include "ram/RamVisitor.h"
+#include "ram/analysis/ComplexityAnalysis.h"
+#include "ram/Condition.h"
+#include "ram/Expression.h"
+#include "ram/Node.h"
+#include "ram/Relation.h"
+#include "ram/Visitor.h"
 #include <cassert>
 
 namespace souffle {

@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstProgram.h
+ * @file Program.h
  *
  * Define a class that represents a Datalog program consisting of types,
  * relations, and clauses.
@@ -17,16 +17,16 @@
 
 #pragma once
 
-#include "ast/AstClause.h"
-#include "ast/AstComponent.h"
-#include "ast/AstFunctorDeclaration.h"
-#include "ast/AstIO.h"
-#include "ast/AstNode.h"
-#include "ast/AstPragma.h"
-#include "ast/AstQualifiedName.h"
-#include "ast/AstRelation.h"
-#include "ast/AstType.h"
-#include "ast/AstUtils.h"
+#include "ast/Clause.h"
+#include "ast/Component.h"
+#include "ast/FunctorDeclaration.h"
+#include "ast/IO.h"
+#include "ast/Node.h"
+#include "ast/Pragma.h"
+#include "ast/QualifiedName.h"
+#include "ast/Relation.h"
+#include "ast/Type.h"
+#include "ast/Utils.h"
 #include "utility/ContainerUtil.h"
 #include "utility/StreamUtil.h"
 #include <algorithm>

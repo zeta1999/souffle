@@ -8,17 +8,17 @@
 
 /************************************************************************
  *
- * @file AstParserUtils.cpp
+ * @file ParserUtils.cpp
  *
  * Defines class RuleBody to represents rule bodies.
  *
  ***********************************************************************/
 
-#include "ast/AstParserUtils.h"
-#include "ast/AstClause.h"
-#include "ast/AstLiteral.h"
-#include "ast/AstNode.h"
-#include "ast/AstUtils.h"
+#include "ast/ParserUtils.h"
+#include "ast/Clause.h"
+#include "ast/Literal.h"
+#include "ast/Node.h"
+#include "ast/Utils.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

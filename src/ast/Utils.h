@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstUtils.h
+ * @file Utils.h
  *
  * A collection of utilities operating on AST constructs.
  *

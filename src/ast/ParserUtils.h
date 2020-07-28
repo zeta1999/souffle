@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstParserUtils.h
+ * @file ParserUtils.h
  *
  * Defines class RuleBody to represents rule bodies.
  *
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "ast/AstAbstract.h"
+#include "ast/Abstract.h"
 #include "utility/MiscUtil.h"
 #include <iosfwd>
 #include <memory>

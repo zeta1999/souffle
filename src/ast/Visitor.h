@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstVisitor.h
+ * @file Visitor.h
  *
  * Provides some infrastructure for the implementation of operations
  * on top of AST structures.
@@ -17,16 +17,16 @@
 
 #pragma once
 
-#include "ast/AstArgument.h"
-#include "ast/AstAttribute.h"
-#include "ast/AstClause.h"
-#include "ast/AstComponent.h"
-#include "ast/AstLiteral.h"
-#include "ast/AstNode.h"
-#include "ast/AstPragma.h"
-#include "ast/AstProgram.h"
-#include "ast/AstRelation.h"
-#include "ast/AstType.h"
+#include "ast/Argument.h"
+#include "ast/Attribute.h"
+#include "ast/Clause.h"
+#include "ast/Component.h"
+#include "ast/Literal.h"
+#include "ast/Node.h"
+#include "ast/Pragma.h"
+#include "ast/Program.h"
+#include "ast/Relation.h"
+#include "ast/Type.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/MiscUtil.h"
 #include <cstddef>

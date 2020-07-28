@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstPragma.h
+ * @file Pragma.h
  *
  * Define the class AstPragma to update global options based on parameter.
  *
@@ -17,7 +17,7 @@
 #pragma once
 
 #include "SrcLocation.h"
-#include "ast/AstNode.h"
+#include "ast/Node.h"
 #include <ostream>
 #include <string>
 #include <utility>

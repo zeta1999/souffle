@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstType.h
+ * @file Type.h
  *
  * Defines a type, i.e., disjoint supersets of the universe
  *
@@ -18,9 +18,9 @@
 
 #include "RamTypes.h"
 #include "SrcLocation.h"
-#include "ast/AstAttribute.h"
-#include "ast/AstNode.h"
-#include "ast/AstQualifiedName.h"
+#include "ast/Attribute.h"
+#include "ast/Node.h"
+#include "ast/QualifiedName.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

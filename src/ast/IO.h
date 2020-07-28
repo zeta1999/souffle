@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstIO.h
+ * @file IO.h
  *
  * Define the classes representing IO operations.
  *
@@ -17,8 +17,8 @@
 #pragma once
 
 #include "SrcLocation.h"
-#include "ast/AstNode.h"
-#include "ast/AstQualifiedName.h"
+#include "ast/Node.h"
+#include "ast/QualifiedName.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
 #include <map>

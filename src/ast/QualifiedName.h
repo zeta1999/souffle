@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstQualifiedName.h
+ * @file QualifiedName.h
  *
  * Defines qualified names so that objects in components (types,
  * relations, etc.) can be accessed via either a fully/partially

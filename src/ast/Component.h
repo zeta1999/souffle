@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstComponent.h
+ * @file Component.h
  *
  * Defines the class utilized to model a component within the input program.
  *
@@ -17,12 +17,12 @@
 #pragma once
 
 #include "SrcLocation.h"
-#include "ast/AstClause.h"
-#include "ast/AstIO.h"
-#include "ast/AstNode.h"
-#include "ast/AstQualifiedName.h"
-#include "ast/AstRelation.h"
-#include "ast/AstType.h"
+#include "ast/Clause.h"
+#include "ast/IO.h"
+#include "ast/Node.h"
+#include "ast/QualifiedName.h"
+#include "ast/Relation.h"
+#include "ast/Type.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

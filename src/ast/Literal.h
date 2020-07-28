@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstLiteral.h
+ * @file Literal.h
  *
  * Define classes for Literals and its subclasses atoms, negated atoms,
  * and binary relations.
@@ -19,9 +19,9 @@
 
 #include "BinaryConstraintOps.h"
 #include "SrcLocation.h"
-#include "ast/AstAbstract.h"
-#include "ast/AstNode.h"
-#include "ast/AstQualifiedName.h"
+#include "ast/Abstract.h"
+#include "ast/Node.h"
+#include "ast/QualifiedName.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstFunctorDeclaration.h
+ * @file FunctorDeclaration.h
  *
  * Defines external functors.
  *
@@ -18,7 +18,7 @@
 
 #include "RamTypes.h"
 #include "SrcLocation.h"
-#include "ast/AstNode.h"
+#include "ast/Node.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/tinyformat.h"

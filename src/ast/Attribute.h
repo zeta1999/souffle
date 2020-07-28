@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstAttribute.h
+ * @file Attribute.h
  *
  * Defines an attribute for a relation
  *
@@ -17,8 +17,8 @@
 #pragma once
 
 #include "SrcLocation.h"
-#include "ast/AstNode.h"
-#include "ast/AstQualifiedName.h"
+#include "ast/Node.h"
+#include "ast/QualifiedName.h"
 #include <ostream>
 #include <string>
 #include <utility>

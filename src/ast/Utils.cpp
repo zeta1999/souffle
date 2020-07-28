@@ -8,26 +8,26 @@
 
 /************************************************************************
  *
- * @file AstUtils.cpp
+ * @file Utils.cpp
  *
  * A collection of utilities operating on AST constructs.
  *
  ***********************************************************************/
 
-#include "ast/AstUtils.h"
+#include "ast/Utils.h"
 #include "BinaryConstraintOps.h"
 #include "TypeSystem.h"
-#include "ast/AstAbstract.h"
-#include "ast/AstArgument.h"
-#include "ast/AstClause.h"
-#include "ast/AstFunctorDeclaration.h"
-#include "ast/AstLiteral.h"
-#include "ast/AstNode.h"
-#include "ast/AstProgram.h"
-#include "ast/AstQualifiedName.h"
-#include "ast/AstRelation.h"
-#include "ast/AstType.h"
-#include "ast/AstVisitor.h"
+#include "ast/Abstract.h"
+#include "ast/Argument.h"
+#include "ast/Clause.h"
+#include "ast/FunctorDeclaration.h"
+#include "ast/Literal.h"
+#include "ast/Node.h"
+#include "ast/Program.h"
+#include "ast/QualifiedName.h"
+#include "ast/Relation.h"
+#include "ast/Type.h"
+#include "ast/Visitor.h"
 #include "ast/analysis/AstType.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"

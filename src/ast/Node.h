@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstNode.h
+ * @file Node.h
  *
  * Abstract class definitions for AST nodes
  *

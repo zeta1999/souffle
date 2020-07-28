@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstRelation.h
+ * @file Relation.h
  *
  * Defines class Relation that represents relations in a Datalog program.
  * A relation can either be an IDB or EDB relation.
@@ -19,9 +19,9 @@
 
 #include "RelationTag.h"
 #include "SrcLocation.h"
-#include "ast/AstAttribute.h"
-#include "ast/AstNode.h"
-#include "ast/AstQualifiedName.h"
+#include "ast/Attribute.h"
+#include "ast/Node.h"
+#include "ast/QualifiedName.h"
 #include "utility/ContainerUtil.h"
 #include "utility/StreamUtil.h"
 #include <algorithm>

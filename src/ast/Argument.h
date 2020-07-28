@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstArgument.h
+ * @file Argument.h
  *
  * Define the classes Argument, Variable, and Constant to represent
  * variables and constants in literals. Variable and Constant are
@@ -22,9 +22,9 @@
 #include "FunctorOps.h"
 #include "RamTypes.h"
 #include "SrcLocation.h"
-#include "ast/AstAbstract.h"
-#include "ast/AstNode.h"
-#include "ast/AstQualifiedName.h"
+#include "ast/Abstract.h"
+#include "ast/Node.h"
+#include "ast/QualifiedName.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstClause.h
+ * @file Clause.h
  *
  * Defines AST Clauses
  *
@@ -17,9 +17,9 @@
 #pragma once
 
 #include "SrcLocation.h"
-#include "ast/AstAbstract.h"
-#include "ast/AstLiteral.h"
-#include "ast/AstNode.h"
+#include "ast/Abstract.h"
+#include "ast/Literal.h"
+#include "ast/Node.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StreamUtil.h"

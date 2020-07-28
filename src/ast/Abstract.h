@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstAbstract.h
+ * @file Abstract.h
  *
  * Abstract class definitions for AST nodes
  *
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "ast/AstNode.h"
+#include "ast/Node.h"
 
 namespace souffle {
 

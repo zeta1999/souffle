@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstTranslationUnit.h
+ * @file TranslationUnit.h
  *
  * Define AST translation unit class consisting of
  * an symbol table, AST program, error reports, and
@@ -20,7 +20,7 @@
 
 #include "DebugReport.h"
 #include "Global.h"
-#include "ast/AstProgram.h"
+#include "ast/Program.h"
 #include "ast/analysis/AstAnalysis.h"
 #include "ast/analysis/RecursiveClauses.h"
 #include "ast/analysis/SCCGraph.h"

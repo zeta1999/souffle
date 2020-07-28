@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstIOType.h
+ * @file IOType.h
  *
  * Declares methods to identify a relation as input, output, or printsize.
  *
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "ast/analysis/AstAnalysis.h"
+#include "ast/analysis/Analysis.h"
 #include <iosfwd>
 #include <set>
 #include <string>

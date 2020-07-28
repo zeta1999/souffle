@@ -8,19 +8,19 @@
 
 /************************************************************************
  *
- * @file AstUserDefinedFunctors.cpp
+ * @file UserDefinedFunctors.cpp
  *
  ***********************************************************************/
 
-#include "ast/transform/AstUserDefinedFunctors.h"
+#include "ast/transform/UserDefinedFunctors.h"
 #include "ErrorReport.h"
 #include "RamTypes.h"
-#include "ast/AstArgument.h"
-#include "ast/AstFunctorDeclaration.h"
-#include "ast/AstNode.h"
-#include "ast/AstProgram.h"
-#include "ast/AstTranslationUnit.h"
-#include "ast/AstUtils.h"
+#include "ast/Argument.h"
+#include "ast/FunctorDeclaration.h"
+#include "ast/Node.h"
+#include "ast/Program.h"
+#include "ast/TranslationUnit.h"
+#include "ast/Utils.h"
 #include <memory>
 #include <vector>
 

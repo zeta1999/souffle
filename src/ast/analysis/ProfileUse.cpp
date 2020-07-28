@@ -8,16 +8,16 @@
 
 /************************************************************************
  *
- * @file AstProfileUse.cpp
+ * @file ProfileUse.cpp
  *
  * Implements an AstAnalysis that provides profile information
  * from a profile log file for profile-guided optimisations.
  *
  ***********************************************************************/
 
-#include "ast/analysis/AstProfileUse.h"
+#include "ast/analysis/ProfileUse.h"
 #include "Global.h"
-#include "ast/AstQualifiedName.h"
+#include "ast/QualifiedName.h"
 #include "profile/ProgramRun.h"
 #include "profile/Reader.h"
 #include "profile/Relation.h"

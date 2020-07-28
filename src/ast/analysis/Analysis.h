@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstAnalysis.h
+ * @file Analysis.h
  *
  * Defines an interface for AST analysis
  *

@@ -8,15 +8,15 @@
 
 /************************************************************************
  *
- * @file AstTransformer.cpp
+ * @file Transformer.cpp
  *
  * Defines the interface for AST transformation passes.
  *
  ***********************************************************************/
 
-#include "ast/transform/AstTransformer.h"
+#include "ast/transform/Transformer.h"
 #include "ErrorReport.h"
-#include "ast/AstTranslationUnit.h"
+#include "ast/TranslationUnit.h"
 #include <chrono>
 #include <iostream>
 

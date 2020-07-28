@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file AstProfileUse.h
+ * @file ProfileUse.h
  *
  * Defines a simple class to query profile data from a profile
  * for profile-guided optimisation.
@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "ast/AstQualifiedName.h"
-#include "ast/analysis/AstAnalysis.h"
+#include "ast/QualifiedName.h"
+#include "ast/analysis/Analysis.h"
 #include "profile/ProgramRun.h"
 #include <cstddef>
 #include <iostream>

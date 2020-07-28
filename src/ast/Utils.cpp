@@ -28,7 +28,7 @@
 #include "ast/Relation.h"
 #include "ast/Type.h"
 #include "ast/Visitor.h"
-#include "ast/analysis/AstType.h"
+#include "ast/analysis/Type.h"
 #include "utility/ContainerUtil.h"
 #include "utility/MiscUtil.h"
 #include "utility/StringUtil.h"

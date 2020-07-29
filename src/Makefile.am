@@ -158,22 +158,18 @@ souffle_sources = \
         ast/analysis/TopologicallySortedSCCGraph.h         \
         ast/transform/ComponentChecker.cpp                 \
         ast/transform/ComponentChecker.h                   \
-        ast/transform/PragmaChecker.cpp                    \
-        ast/transform/PragmaChecker.h                      \
-        ast/transform/SemanticChecker.cpp                  \
-        ast/transform/SemanticChecker.h                    \
-        ast/transform/Transformer.cpp                      \
-        ast/transform/Transformer.h                        \
-        ast/transform/UserDefinedFunctors.cpp              \
-        ast/transform/UserDefinedFunctors.h                \
         ast/transform/ComponentInstantiation.cpp           \
         ast/transform/ComponentInstantiation.h             \
         ast/transform/Conditional.h                        \
         ast/transform/DebugReporter.cpp                    \
         ast/transform/DebugReporter.h                      \
+        ast/transform/ExecutionPlanChecker.cpp             \
+        ast/transform/ExecutionPlanChecker.h               \
         ast/transform/Fixpoint.h                           \
         ast/transform/FoldAnonymousRecords.cpp             \
         ast/transform/FoldAnonymousRecords.h               \
+        ast/transform/GroundedTermsChecker.cpp             \
+        ast/transform/GroundedTermsChecker.h               \
         ast/transform/IOAttributes.h                       \
         ast/transform/IODefaults.h                         \
         ast/transform/InlineRelations.cpp                  \
@@ -184,17 +180,22 @@ souffle_sources = \
         ast/transform/MaterializeAggregationQueries.h      \
         ast/transform/MaterializeSingletonAggregation.cpp  \
         ast/transform/MaterializeSingletonAggregation.h    \
+        ast/transform/Meta.cpp                             \
+        ast/transform/Meta.h                               \
         ast/transform/MinimiseProgram.cpp                  \
         ast/transform/MinimiseProgram.h                    \
         ast/transform/NameUnnamedVariables.cpp             \
         ast/transform/NameUnnamedVariables.h               \
         ast/transform/NormaliseConstraints.cpp             \
         ast/transform/NormaliseConstraints.h               \
+        ast/transform/Null.h                               \
         ast/transform/PartitionBodyLiterals.cpp            \
         ast/transform/PartitionBodyLiterals.h              \
         ast/transform/Pipeline.h                           \
         ast/transform/PolymorphicObjects.cpp               \
         ast/transform/PolymorphicObjects.h                 \
+        ast/transform/PragmaChecker.cpp                    \
+        ast/transform/PragmaChecker.h                      \
         ast/transform/Provenance.cpp                       \
         ast/transform/Provenance.h                         \
         ast/transform/ReduceExistentials.cpp               \
@@ -219,8 +220,14 @@ souffle_sources = \
         ast/transform/ResolveAliases.h                     \
         ast/transform/ResolveAnonymousRecordsAliases.cpp   \
         ast/transform/ResolveAnonymousRecordsAliases.h     \
+        ast/transform/SemanticChecker.cpp                  \
+        ast/transform/SemanticChecker.h                    \
+        ast/transform/Transformer.cpp                      \
+        ast/transform/Transformer.h                        \
         ast/transform/UniqueAggregationVariables.cpp       \
         ast/transform/UniqueAggregationVariables.h         \
+        ast/transform/UserDefinedFunctors.cpp              \
+        ast/transform/UserDefinedFunctors.h                \
         ast/transform/While.h                              \
         interpreter/InterpreterContext.h                   \
         interpreter/InterpreterEngine.cpp                  \

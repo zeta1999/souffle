@@ -15,7 +15,8 @@
  ***********************************************************************/
 #pragma once
 
-#include "ast/transform/Transformer.h"
+#include "ast/transform/Meta.h"
+#include "ast/transform/Null.h"
 #include "utility/MiscUtil.h"
 #include <memory>
 #include <set>

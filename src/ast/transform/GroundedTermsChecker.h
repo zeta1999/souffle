@@ -10,7 +10,7 @@
  *
  * @file SemanticChecker.h
  *
- * Defines the semantic checker pass.
+ * Defines the grounded terms checker pass.
  *
  ***********************************************************************/
 
@@ -23,20 +23,24 @@ namespace souffle {
 
 class AstTranslationUnit;
 
-class AstSemanticChecker : public AstTransformer {
+class GroundedTermsChecker : public AstTransformer {
 public:
-    ~AstSemanticChecker() override = default;
-
     std::string getName() const override {
-        return "AstSemanticChecker";
+        return "GroundedTermsChecker";
     }
 
-    AstSemanticChecker* clone() const override {
-        return new AstSemanticChecker();
+    // `apply` but doesn't immediately bail if any errors are found.
+    void verify(AstTranslationUnit& translationUnit);
+
+    GroundedTermsChecker* clone() const override {
+        return new GroundedTermsChecker();
     }
 
 private:
-    bool transform(AstTranslationUnit& translationUnit) override;
+    bool transform(AstTranslationUnit& translationUnit) override {
+        verify(translationUnit);
+        return false;
+    }
 };
 
 }  // end of namespace souffle

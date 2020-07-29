@@ -8,34 +8,33 @@
 
 /************************************************************************
  *
- * @file Transformer.h
+ * @file SemanticChecker.h
  *
- * Defines the interface for AST transformation passes.
+ * Defines the execution plan checker pass.
  *
  ***********************************************************************/
 
 #pragma once
 
-#include <set>
+#include "ast/transform/Transformer.h"
 #include <string>
-#include <vector>
 
 namespace souffle {
 
 class AstTranslationUnit;
 
-class AstTransformer {
-private:
-    virtual bool transform(AstTranslationUnit& translationUnit) = 0;
-
+class AstExecutionPlanChecker : public AstTransformer {
 public:
-    virtual ~AstTransformer() = default;
+    std::string getName() const override {
+        return "AstExecutionPlanChecker";
+    }
 
-    bool apply(AstTranslationUnit& translationUnit);
+    AstExecutionPlanChecker* clone() const override {
+        return new AstExecutionPlanChecker();
+    }
 
-    virtual std::string getName() const = 0;
-
-    virtual AstTransformer* clone() const = 0;
+private:
+    bool transform(AstTranslationUnit& translationUnit) override;
 };
 
 }  // end of namespace souffle

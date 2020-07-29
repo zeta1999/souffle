@@ -1440,10 +1440,16 @@ void TypeChecker::visitBinaryConstraint(const AstBinaryConstraint& constraint) {
     auto opRamTypes = getBinaryConstraintTypes(op);
     // Skip checks if either side is `Bottom` b/c it just adds noise.
     // The unable-to-deduce-type checker will point out the issue.
-    if (typeAnalysis.getTypes(left).empty() || typeAnalysis.getTypes(right).empty()) return;
+    auto leftTypes = typeAnalysis.getTypes(left);
+    auto rightTypes = typeAnalysis.getTypes(right);
+    if (leftTypes.isAll() || rightTypes.isAll() || (leftTypes.size() != 1) || (rightTypes.size() != 1))
+        return;
+
+    auto& leftType = *typeAnalysis.getTypes(left).begin();
+    auto& rightType = *typeAnalysis.getTypes(right).begin();
 
     // give them a slightly nicer error
-    if (isOrderedBinaryConstraintOp(op) && typeAnalysis.getTypes(left) != typeAnalysis.getTypes(right)) {
+    if (isOrderedBinaryConstraintOp(op) && !areEquivalentTypes(leftType, rightType)) {
         report.addError("Cannot compare different types", constraint.getSrcLoc());
     } else {
         auto checkTyAttr = [&](AstArgument const& side) {

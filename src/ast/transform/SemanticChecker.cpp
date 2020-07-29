@@ -1437,14 +1437,18 @@ void TypeChecker::visitBinaryConstraint(const AstBinaryConstraint& constraint) {
     auto op = constraint.getOperator();
     auto left = constraint.getLHS();
     auto right = constraint.getRHS();
-    auto opRamTypes = getBinaryConstraintTypes(op);
-    // Skip checks if either side is `Bottom` b/c it just adds noise.
-    // The unable-to-deduce-type checker will point out the issue.
+    auto opTypesAttrs = getBinaryConstraintTypes(op);
+
     auto leftTypes = typeAnalysis.getTypes(left);
     auto rightTypes = typeAnalysis.getTypes(right);
-    if (leftTypes.isAll() || rightTypes.isAll() || (leftTypes.size() != 1) || (rightTypes.size() != 1))
-        return;
 
+    // Skip checks if either side is `Bottom` b/c it just adds noise.
+    // The unable-to-deduce-type checker will point out the issue.
+    if (leftTypes.empty() || rightTypes.empty() || leftTypes.isAll() || rightTypes.isAll()) return;
+
+    assert((leftTypes.size() == 1) && (rightTypes.size() == 1));
+
+    // Extract types from singleton sets.
     auto& leftType = *typeAnalysis.getTypes(left).begin();
     auto& rightType = *typeAnalysis.getTypes(right).begin();
 
@@ -1453,14 +1457,14 @@ void TypeChecker::visitBinaryConstraint(const AstBinaryConstraint& constraint) {
         report.addError("Cannot compare different types", constraint.getSrcLoc());
     } else {
         auto checkTyAttr = [&](AstArgument const& side) {
-            auto opMatchesType = any_of(opRamTypes,
-                    [&](auto& ramType) { return isOfKind(typeAnalysis.getTypes(&side), ramType); });
+            auto opMatchesType = any_of(opTypesAttrs,
+                    [&](auto& typeAttr) { return isOfKind(typeAnalysis.getTypes(&side), typeAttr); });
 
             if (!opMatchesType) {
                 std::stringstream ss;
                 ss << "Constraint requires an operand of type "
-                   << join(opRamTypes, " or ", [&](auto& out, auto& ramTy) {
-                          switch (ramTy) {
+                   << join(opTypesAttrs, " or ", [&](auto& out, auto& typeAttr) {
+                          switch (typeAttr) {
                               case TypeAttribute::Signed: out << "`number`"; break;
                               case TypeAttribute::Symbol: out << "`symbol`"; break;
                               case TypeAttribute::Unsigned: out << "`unsigned`"; break;

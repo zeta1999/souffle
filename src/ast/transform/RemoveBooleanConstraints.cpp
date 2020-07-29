@@ -1,6 +1,6 @@
 /*
  * Souffle - A Datalog Compiler
- * Copyright (c) 2015, Oracle and/or its affiliates. All rights reserved
+ * Copyright (c) 2018, The Souffle Developers. All rights reserved
  * Licensed under the Universal Permissive License v 1.0 as shown at:
  * - https://opensource.org/licenses/UPL
  * - <souffle root>/licenses/SOUFFLE-UPL.txt
@@ -14,15 +14,15 @@
 
 #include "ast/transform/RemoveBooleanConstraints.h"
 #include "BinaryConstraintOps.h"
-#include "ast/AstAbstract.h"
-#include "ast/AstArgument.h"
-#include "ast/AstClause.h"
-#include "ast/AstLiteral.h"
-#include "ast/AstNode.h"
-#include "ast/AstProgram.h"
-#include "ast/AstTranslationUnit.h"
-#include "ast/AstUtils.h"
-#include "ast/AstVisitor.h"
+#include "ast/Abstract.h"
+#include "ast/Argument.h"
+#include "ast/Clause.h"
+#include "ast/Literal.h"
+#include "ast/Node.h"
+#include "ast/Program.h"
+#include "ast/TranslationUnit.h"
+#include "ast/Utils.h"
+#include "ast/Visitor.h"
 #include "utility/MiscUtil.h"
 #include <algorithm>
 #include <memory>

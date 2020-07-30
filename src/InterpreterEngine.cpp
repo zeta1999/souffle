@@ -268,7 +268,9 @@ void InterpreterEngine::executeSubroutine(
 
 RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterContext& ctxt) {
 #define DEBUG(Kind) std::cout << "Running Node: " << #Kind << "\n";
-#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(node->getChild(idx), ctxt))
+#define EVAL_CHILD(ty, idx) ramBitCast<ty>(execute(shadow.getChild(idx), ctxt))
+#define EVAL_LEFT(ty) ramBitCast<ty>(execute(shadow.getLhs(), ctxt))
+#define EVAL_RIGHT(ty) ramBitCast<ty>(execute(shadow.getRhs(), ctxt))
 
 #define CASE(Kind)     \
     case (I_##Kind): { \
@@ -374,23 +376,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             const auto& args = cur.getArguments();
             switch (cur.getOperator()) {
                 /** Unary Functor Operators */
-                case FunctorOp::ORD: return execute(node->getChild(0), ctxt);
+                case FunctorOp::ORD: return execute(shadow.getChild(0), ctxt);
                 case FunctorOp::STRLEN:
-                    return getSymbolTable().resolve(execute(node->getChild(0), ctxt)).size();
-                case FunctorOp::NEG: return -execute(node->getChild(0), ctxt);
+                    return getSymbolTable().resolve(execute(shadow.getChild(0), ctxt)).size();
+                case FunctorOp::NEG: return -execute(shadow.getChild(0), ctxt);
                 case FunctorOp::FNEG: {
-                    RamDomain result = execute(node->getChild(0), ctxt);
+                    RamDomain result = execute(shadow.getChild(0), ctxt);
                     return ramBitCast(-ramBitCast<RamFloat>(result));
                 }
-                case FunctorOp::BNOT: return ~execute(node->getChild(0), ctxt);
+                case FunctorOp::BNOT: return ~execute(shadow.getChild(0), ctxt);
                 case FunctorOp::UBNOT: {
-                    RamDomain result = execute(node->getChild(0), ctxt);
+                    RamDomain result = execute(shadow.getChild(0), ctxt);
                     return ramBitCast(~ramBitCast<RamUnsigned>(result));
                 }
-                case FunctorOp::LNOT: return !execute(node->getChild(0), ctxt);
+                case FunctorOp::LNOT: return !execute(shadow.getChild(0), ctxt);
 
                 case FunctorOp::ULNOT: {
-                    RamDomain result = execute(node->getChild(0), ctxt);
+                    RamDomain result = execute(shadow.getChild(0), ctxt);
                     // Casting is a bit tricky here, since ! returns a boolean.
                     return ramBitCast(static_cast<RamUnsigned>(!ramBitCast<RamUnsigned>(result)));
                 }
@@ -420,19 +422,19 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     // clang-format on
 
                 case FunctorOp::EXP: {
-                    return std::pow(execute(node->getChild(0), ctxt), execute(node->getChild(1), ctxt));
+                    return std::pow(execute(shadow.getChild(0), ctxt), execute(shadow.getChild(1), ctxt));
                 }
 
                 case FunctorOp::UEXP: {
-                    auto first = ramBitCast<RamUnsigned>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamUnsigned>(execute(node->getChild(1), ctxt));
+                    auto first = ramBitCast<RamUnsigned>(execute(shadow.getChild(0), ctxt));
+                    auto second = ramBitCast<RamUnsigned>(execute(shadow.getChild(1), ctxt));
                     // Extra casting required: pow returns a floating point.
                     return ramBitCast(static_cast<RamUnsigned>(std::pow(first, second)));
                 }
 
                 case FunctorOp::FEXP: {
-                    auto first = ramBitCast<RamFloat>(execute(node->getChild(0), ctxt));
-                    auto second = ramBitCast<RamFloat>(execute(node->getChild(1), ctxt));
+                    auto first = ramBitCast<RamFloat>(execute(shadow.getChild(0), ctxt));
+                    auto second = ramBitCast<RamFloat>(execute(shadow.getChild(1), ctxt));
                     return ramBitCast(static_cast<RamFloat>(std::pow(first, second)));
                 }
 
@@ -463,16 +465,16 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 case FunctorOp::CAT: {
                     std::stringstream ss;
                     for (size_t i = 0; i < args.size(); i++) {
-                        ss << getSymbolTable().resolve(execute(node->getChild(i), ctxt));
+                        ss << getSymbolTable().resolve(execute(shadow.getChild(i), ctxt));
                     }
                     return getSymbolTable().lookup(ss.str());
                 }
                 /** Ternary Functor Operators */
                 case FunctorOp::SUBSTR: {
-                    auto symbol = execute(node->getChild(0), ctxt);
+                    auto symbol = execute(shadow.getChild(0), ctxt);
                     const std::string& str = getSymbolTable().resolve(symbol);
-                    auto idx = execute(node->getChild(1), ctxt);
-                    auto len = execute(node->getChild(2), ctxt);
+                    auto idx = execute(shadow.getChild(1), ctxt);
+                    auto len = execute(shadow.getChild(2), ctxt);
                     std::string sub_str;
                     try {
                         sub_str = str.substr(idx, len);
@@ -508,7 +510,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             auto numArgs = cur.getArguments().size();
             auto runNested = [&](auto&& tuple) {
                 ctxt[cur.getTupleId()] = tuple.data;
-                execute(node->getChild(numArgs), ctxt);
+                execute(shadow.getChild(numArgs), ctxt);
             };
 
 #define RUN_RANGE(ty)                                                                                     \
@@ -548,7 +550,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             /* Initialize arguments for ffi-call */
             for (size_t i = 0; i < arity; i++) {
-                RamDomain arg = execute(node->getChild(i), ctxt);
+                RamDomain arg = execute(shadow.getChild(i), ctxt);
                 switch (type[i]) {
                     case TypeAttribute::Symbol:
                         args[i] = &FFI_Symbol;
@@ -610,7 +612,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t arity = values.size();
             RamDomain data[arity];
             for (size_t i = 0; i < arity; ++i) {
-                data[i] = execute(node->getChild(i), ctxt);
+                data[i] = execute(shadow.getChild(i), ctxt);
             }
             return getRecordTable().pack(data, arity);
         ESAC(PackRecord)
@@ -628,11 +630,11 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(False)
 
         CASE(Conjunction)
-            return execute(node->getChild(0), ctxt) && execute(node->getChild(1), ctxt);
+            return execute(shadow.getLhs(), ctxt) && execute(shadow.getRhs(), ctxt);
         ESAC(Conjunction)
 
         CASE(Negation)
-            return !execute(node->getChild(0), ctxt);
+            return !execute(shadow.getChild(), ctxt);
         ESAC(Negation)
 
         CASE(EmptinessCheck)
@@ -651,7 +653,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             const auto& superInfo = shadow.getSuperInst();
             // for total we use the exists test
-            if (shadow.isTotal()) {
+            if (shadow.isTotalSearch()) {
                 RamDomain tuple[arity];
                 memcpy(tuple, superInfo.first.data(), sizeof(tuple));
                 /* TupleElement */
@@ -719,10 +721,10 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Constraint)
         // clang-format off
-#define COMPARE_NUMERIC(ty, op) return EVAL_CHILD(ty, 0) op EVAL_CHILD(ty, 1)
+#define COMPARE_NUMERIC(ty, op) return EVAL_LEFT(ty) op EVAL_RIGHT(ty)
 #define COMPARE_STRING(op)                                        \
-    return (getSymbolTable().resolve(EVAL_CHILD(RamDomain, 0)) op \
-            getSymbolTable().resolve(EVAL_CHILD(RamDomain, 1)))
+    return (getSymbolTable().resolve(EVAL_LEFT(RamDomain)) op \
+            getSymbolTable().resolve(EVAL_RIGHT(RamDomain)))
 #define COMPARE_EQ_NE(opCode, op)                                         \
     case BinaryConstraintOp::   opCode: COMPARE_NUMERIC(RamDomain  , op); \
     case BinaryConstraintOp::F##opCode: COMPARE_NUMERIC(RamFloat   , op);
@@ -743,8 +745,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 COMPARE(GE, >=)
 
                 case BinaryConstraintOp::MATCH: {
-                    RamDomain left = execute(node->getChild(0), ctxt);
-                    RamDomain right = execute(node->getChild(1), ctxt);
+                    RamDomain left = execute(shadow.getLhs(), ctxt);
+                    RamDomain right = execute(shadow.getRhs(), ctxt);
                     const std::string& pattern = getSymbolTable().resolve(left);
                     const std::string& text = getSymbolTable().resolve(right);
                     bool result = false;
@@ -757,8 +759,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     return result;
                 }
                 case BinaryConstraintOp::NOT_MATCH: {
-                    RamDomain left = execute(node->getChild(0), ctxt);
-                    RamDomain right = execute(node->getChild(1), ctxt);
+                    RamDomain left = execute(shadow.getLhs(), ctxt);
+                    RamDomain right = execute(shadow.getRhs(), ctxt);
                     const std::string& pattern = getSymbolTable().resolve(left);
                     const std::string& text = getSymbolTable().resolve(right);
                     bool result = false;
@@ -771,15 +773,15 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     return result;
                 }
                 case BinaryConstraintOp::CONTAINS: {
-                    RamDomain left = execute(node->getChild(0), ctxt);
-                    RamDomain right = execute(node->getChild(1), ctxt);
+                    RamDomain left = execute(shadow.getLhs(), ctxt);
+                    RamDomain right = execute(shadow.getRhs(), ctxt);
                     const std::string& pattern = getSymbolTable().resolve(left);
                     const std::string& text = getSymbolTable().resolve(right);
                     return text.find(pattern) != std::string::npos;
                 }
                 case BinaryConstraintOp::NOT_CONTAINS: {
-                    RamDomain left = execute(node->getChild(0), ctxt);
-                    RamDomain right = execute(node->getChild(1), ctxt);
+                    RamDomain left = execute(shadow.getLhs(), ctxt);
+                    RamDomain right = execute(shadow.getRhs(), ctxt);
                     const std::string& pattern = getSymbolTable().resolve(left);
                     const std::string& text = getSymbolTable().resolve(right);
                     return text.find(pattern) == std::string::npos;
@@ -795,7 +797,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Constraint)
 
         CASE(TupleOperation)
-            bool result = execute(node->getChild(0), ctxt);
+            bool result = execute(shadow.getChild(), ctxt);
 
             if (profileEnabled && !cur.getProfileText().empty()) {
                 auto& currentFrequencies = frequencies[cur.getProfileText()];
@@ -814,7 +816,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // use simple iterator
             for (const RamDomain* tuple : rel) {
                 ctxt[cur.getTupleId()] = tuple;
-                if (!execute(node->getChild(0), ctxt)) {
+                if (!execute(shadow.getNestesOperation(), ctxt)) {
                     break;
                 }
             }
@@ -822,7 +824,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Scan)
 
         CASE(ParallelScan)
-            auto preamble = node->getPreamble();
+            auto preamble = shadow.getPreamble();
             auto& rel = *node->getRelation();
 
             auto pStream = rel.partitionScan(numOfThreads);
@@ -836,7 +838,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (!execute(node->getChild(0), newCtxt)) {
+                        if (!execute(shadow.getNestesOperation(), newCtxt)) {
                             break;
                         }
                     }
@@ -861,7 +863,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // conduct range query
             for (auto data : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 ctxt[cur.getTupleId()] = &data[0];
-                if (!execute(node->getChild(0), ctxt)) {
+                if (!execute(shadow.getNestesOperation(), ctxt)) {
                     break;
                 }
             }
@@ -869,7 +871,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(IndexScan)
 
         CASE(ParallelIndexScan)
-            auto preamble = node->getPreamble();
+            auto preamble = shadow.getPreamble();
             auto& rel = *node->getRelation();
 
             // create pattern tuple for range query
@@ -892,7 +894,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (!execute(node->getChild(0), newCtxt)) {
+                        if (!execute(shadow.getNestesOperation(), newCtxt)) {
                             break;
                         }
                     }
@@ -909,8 +911,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // use simple iterator
             for (const RamDomain* tuple : rel) {
                 ctxt[cur.getTupleId()] = tuple;
-                if (execute(node->getChild(0), ctxt)) {
-                    execute(node->getChild(1), ctxt);
+                if (execute(shadow.getCondtion(), ctxt)) {
+                    execute(shadow.getNestesOperation(), ctxt);
                     break;
                 }
             }
@@ -918,7 +920,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Choice)
 
         CASE(ParallelChoice)
-            auto preamble = node->getPreamble();
+            auto preamble = shadow.getPreamble();
             auto& rel = *node->getRelation();
 
             auto pStream = rel.partitionScan(numOfThreads);
@@ -931,8 +933,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (execute(node->getChild(0), newCtxt)) {
-                            execute(node->getChild(1), newCtxt);
+                        if (execute(shadow.getCondtion(), newCtxt)) {
+                            execute(shadow.getNestesOperation(), newCtxt);
                             break;
                         }
                     }
@@ -955,8 +957,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
                 const RamDomain* data = &ip[0];
                 ctxt[cur.getTupleId()] = data;
-                if (execute(node->getChild(0), ctxt)) {
-                    execute(node->getChild(1), ctxt);
+                if (execute(shadow.getCondtion(), ctxt)) {
+                    execute(shadow.getNestesOperation(), ctxt);
                     break;
                 }
             }
@@ -964,7 +966,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(IndexChoice)
 
         CASE(ParallelIndexChoice)
-            auto preamble = node->getPreamble();
+            auto preamble = shadow.getPreamble();
             auto& rel = *node->getRelation();
 
             auto viewInfo = preamble->getViewInfoForNested();
@@ -988,8 +990,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (execute(node->getChild(0), newCtxt)) {
-                            execute(node->getChild(1), newCtxt);
+                        if (execute(shadow.getCondtion(), newCtxt)) {
+                            execute(shadow.getNestesOperation(), newCtxt);
                             break;
                         }
                     }
@@ -1000,7 +1002,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(ParallelIndexChoice)
 
         CASE(UnpackRecord)
-            RamDomain ref = execute(node->getChild(0), ctxt);
+            RamDomain ref = execute(shadow.getExpr(), ctxt);
 
             // check for nil
             if (ref == 0) {
@@ -1015,30 +1017,30 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             ctxt[cur.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
-            return execute(node->getChild(1), ctxt);
+            return execute(shadow.getNestesOperation(), ctxt);
         ESAC(UnpackRecord)
 
         CASE(ParallelAggregate)
             // TODO (rdowavic): make parallel
-            auto preamble = node->getPreamble();
+            auto preamble = shadow.getPreamble();
 
             InterpreterContext newCtxt(ctxt);
             auto viewInfo = preamble->getViewInfoForNested();
             for (const auto& info : viewInfo) {
                 newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
             }
-            return executeAggregate(newCtxt, cur, *node->getChild(0), node->getChild(1), *node->getChild(2),
-                    node->getRelation()->scan());
+            return executeAggregate(newCtxt, cur, *shadow.getCondtion(), shadow.getExpr(),
+                    *shadow.getNestesOperation(), node->getRelation()->scan());
         ESAC(ParallelAggregate)
 
         CASE(Aggregate)
-            return executeAggregate(ctxt, cur, *node->getChild(0), node->getChild(1), *node->getChild(2),
-                    node->getRelation()->scan());
+            return executeAggregate(ctxt, cur, *shadow.getCondtion(), shadow.getExpr(),
+                    *shadow.getNestesOperation(), node->getRelation()->scan());
         ESAC(Aggregate)
 
         CASE(ParallelIndexAggregate)
             // TODO (rdowavic): make parallel
-            auto preamble = node->getPreamble();
+            auto preamble = shadow.getPreamble();
 
             InterpreterContext newCtxt(ctxt);
             auto viewInfo = preamble->getViewInfoForNested();
@@ -1056,8 +1058,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t viewId = shadow.getViewId();
             auto& view = newCtxt.getView(viewId);
 
-            return executeAggregate(newCtxt, cur, *node->getChild(0), node->getChild(1), *node->getChild(2),
-                    view->range(TupleRef(low, arity), TupleRef(hig, arity)));
+            return executeAggregate(newCtxt, cur, *shadow.getCondtion(), shadow.getExpr(),
+                    *shadow.getNestesOperation(), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
         ESAC(ParallelIndexAggregate)
 
         CASE(IndexAggregate)
@@ -1071,24 +1073,24 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t viewId = shadow.getViewId();
             auto& view = ctxt.getView(viewId);
 
-            return executeAggregate(ctxt, cur, *node->getChild(0), node->getChild(1), *node->getChild(2),
-                    view->range(TupleRef(low, arity), TupleRef(hig, arity)));
+            return executeAggregate(ctxt, cur, *shadow.getCondtion(), shadow.getExpr(),
+                    *shadow.getNestesOperation(), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
         ESAC(IndexAggregate)
 
         CASE(Break)
             // check condition
-            if (execute(node->getChild(0), ctxt)) {
+            if (execute(shadow.getCondtion(), ctxt)) {
                 return false;
             }
-            return execute(node->getChild(1), ctxt);
+            return execute(shadow.getNestesOperation(), ctxt);
         ESAC(Break)
 
         CASE(Filter)
             bool result = true;
             // check condition
-            if (execute(node->getChild(0), ctxt)) {
+            if (execute(shadow.getCondtion(), ctxt)) {
                 // process nested
-                result = execute(node->getChild(1), ctxt);
+                result = execute(shadow.getNestesOperation(), ctxt);
             }
 
             if (profileEnabled && !cur.getProfileText().empty()) {
@@ -1123,17 +1125,17 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(SubroutineReturn)
             for (size_t i = 0; i < cur.getValues().size(); ++i) {
-                if (node->getChild(i) == nullptr) {
+                if (shadow.getChild(i) == nullptr) {
                     ctxt.addReturnValue(0);
                 } else {
-                    ctxt.addReturnValue(execute(node->getChild(i), ctxt));
+                    ctxt.addReturnValue(execute(shadow.getChild(i), ctxt));
                 }
             }
             return true;
         ESAC(SubroutineReturn)
 
         CASE(Sequence)
-            for (const auto& child : node->getChildren()) {
+            for (const auto& child : shadow.getChildren()) {
                 if (!execute(child.get(), ctxt)) {
                     return false;
                 }
@@ -1142,7 +1144,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Sequence)
 
         CASE(Parallel)
-            for (const auto& child : node->getChildren()) {
+            for (const auto& child : shadow.getChildren()) {
                 if (!execute(child.get(), ctxt)) {
                     return false;
                 }
@@ -1152,7 +1154,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
         CASE(Loop)
             resetIterationNumber();
-            while (execute(node->getChild(0), ctxt)) {
+            while (execute(shadow.getChild(), ctxt)) {
                 incIterationNumber();
             }
             resetIterationNumber();
@@ -1160,23 +1162,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(Loop)
 
         CASE(Exit)
-            return !execute(node->getChild(0), ctxt);
+            return !execute(shadow.getChild(), ctxt);
         ESAC(Exit)
 
         CASE(LogRelationTimer)
             Logger logger(cur.getMessage(), getIterationNumber(),
                     std::bind(&InterpreterRelation::size, node->getRelation()));
-            return execute(node->getChild(0), ctxt);
+            return execute(shadow.getChild(), ctxt);
         ESAC(LogRelationTimer)
 
         CASE(LogTimer)
             Logger logger(cur.getMessage(), getIterationNumber());
-            return execute(node->getChild(0), ctxt);
+            return execute(shadow.getChild(), ctxt);
         ESAC(LogTimer)
 
         CASE(DebugInfo)
             SignalHandler::instance()->setMsg(cur.getMessage().c_str());
-            return execute(node->getChild(0), ctxt);
+            return execute(shadow.getChild(), ctxt);
         ESAC(DebugInfo)
 
         CASE(Clear)
@@ -1228,7 +1230,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
         ESAC(IO)
 
         CASE(Query)
-            InterpreterPreamble* preamble = node->getPreamble();
+            InterpreterPreamble* preamble = shadow.getPreamble();
 
             // Execute view-free operations in outer filter if any.
             auto& viewFreeOps = preamble->getOuterFilterViewFreeOps();
@@ -1261,7 +1263,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                     ctxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
                 }
             }
-            execute(node->getChild(0), ctxt);
+            execute(shadow.getChild(), ctxt);
             return true;
         ESAC(Query)
 

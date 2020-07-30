@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file SemanticChecker.h
+ * @file ExecutionPlanChecker.h
  *
  * Defines the execution plan checker pass.
  *

@@ -8,15 +8,13 @@
 
 /************************************************************************
  *
- * @file Transformer.cpp
+ * @file Meta.cpp
  *
  * Defines the interface for AST meta-transformation passes.
  *
  ***********************************************************************/
 
 #include "ast/transform/Meta.h"
-#include "ErrorReport.h"
-#include "ast/TranslationUnit.h"
 #include <chrono>
 #include <iostream>
 

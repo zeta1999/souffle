@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file Transformer.h
+ * @file Meta.h
  *
  * Defines the interface for AST meta-transformation passes.
  *

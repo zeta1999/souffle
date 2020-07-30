@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file Transformer.h
+ * @file Null.h
  *
  * Defines the interface for Null transformation passes.
  *
@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "ast/transform/Transformer.h"
+#include "ast/transform/Meta.h"
 #include <set>
 #include <string>
 #include <vector>
@@ -24,6 +24,7 @@
 namespace souffle {
 
 class AstTranslationUnit;
+class AstTransformer;
 
 /**
  * Transformer that does absolutely nothing

@@ -17,8 +17,6 @@
 #include "ast/transform/Transformer.h"
 #include "ErrorReport.h"
 #include "ast/TranslationUnit.h"
-#include <chrono>
-#include <iostream>
 
 namespace souffle {
 

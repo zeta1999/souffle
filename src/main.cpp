@@ -25,6 +25,7 @@
 #include "ast/Program.h"
 #include "ast/TranslationUnit.h"
 #include "ast/analysis/PrecedenceGraph.h"
+#include "ast/analysis/SCCGraph.h"
 #include "ast/analysis/Type.h"
 #include "ast/transform/ComponentChecker.h"
 #include "ast/transform/ComponentInstantiation.h"
@@ -84,6 +85,7 @@
 #include "ram/transform/Transformer.h"
 #include "ram/transform/TupleId.h"
 #include "synthesiser/Synthesiser.h"
+#include "utility/ContainerUtil.h"
 #include "utility/FileUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
@@ -93,6 +95,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+#include <map>
 #include <memory>
 #include <set>
 #include <sstream>

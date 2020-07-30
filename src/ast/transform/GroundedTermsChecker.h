@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file SemanticChecker.h
+ * @file GroundedTermsChecker.h
  *
  * Defines the grounded terms checker pass.
  *

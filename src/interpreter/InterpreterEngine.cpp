@@ -720,7 +720,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t viewPos = shadow.getViewId();
 
             // get an equalRange
-            auto equalRange = ctxt.getView(viewPos)->range(TupleRef(low, arity), TupleRef(high, arity));
+            auto equalRange = ctxt.getView(viewPos)->range(TupleRef(low, arity), TupleRef(hig, arity));
 
             // if range is empty
             if (equalRange.begin() == equalRange.end()) {

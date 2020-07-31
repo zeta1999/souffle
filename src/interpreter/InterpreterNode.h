@@ -124,31 +124,9 @@ protected:
 };
 
 /**
- * @class InterpreterSuperInstruction
- * @brief This class contains information for super-instruction.
- *        Used to eliminate Number and TupleElement in index operation
- *        TODO a more general comment
- *        TODO intergrate with superinstparent.
+ * @class InterpreterCompundNode
+ * @brief Compound node represents interpreter node with a list of children.
  */
-class InterpreterSuperInstruction {
-public:
-    InterpreterSuperInstruction(size_t i) {
-        first.resize(i);
-        second.resize(i);
-    }
-
-    InterpreterSuperInstruction(const InterpreterSuperInstruction&) = delete;
-    InterpreterSuperInstruction& operator=(const InterpreterSuperInstruction&) = delete;
-    InterpreterSuperInstruction(InterpreterSuperInstruction&&) = default;
-
-    std::vector<RamDomain> first;
-    std::vector<RamDomain> second;
-    std::vector<std::array<size_t, 3>> tupleFirst;
-    std::vector<std::array<size_t, 3>> tupleSecond;
-    std::vector<std::pair<size_t, std::unique_ptr<InterpreterNode>>> exprFirst;
-    std::vector<std::pair<size_t, std::unique_ptr<InterpreterNode>>> exprSecond;
-};
-
 class InterpreterCompundNode : public InterpreterNode {
     using NodePtrVec = std::vector<std::unique_ptr<InterpreterNode>>;
 
@@ -171,26 +149,10 @@ protected:
     NodePtrVec children;
 };
 
-class InterpreterBinaryNode : public InterpreterNode {
-public:
-    InterpreterBinaryNode(enum InterpreterNodeType ty, const RamNode* sdw,
-            std::unique_ptr<InterpreterNode> lhs, std::unique_ptr<InterpreterNode> rhs,
-            RelationHandle* relHandle = nullptr)
-            : InterpreterNode(ty, sdw, relHandle), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
-
-    inline const InterpreterNode* getLhs() const {
-        return lhs.get();
-    }
-
-    inline const InterpreterNode* getRhs() const {
-        return rhs.get();
-    }
-
-protected:
-    std::unique_ptr<InterpreterNode> lhs;
-    std::unique_ptr<InterpreterNode> rhs;
-};
-
+/**
+ * @class InterpreterUnaryNode
+ * @brief Unary node represents interpreter node with a single child
+ */
 class InterpreterUnaryNode : public InterpreterNode {
 public:
     InterpreterUnaryNode(enum InterpreterNodeType ty, const RamNode* sdw,
@@ -205,6 +167,84 @@ protected:
     std::unique_ptr<InterpreterNode> child;
 };
 
+/**
+ * @class InterpreterBinaryNode
+ * @brief Binary node represents interpreter node with two children.
+ */
+class InterpreterBinaryNode : public InterpreterNode {
+public:
+    InterpreterBinaryNode(enum InterpreterNodeType ty, const RamNode* sdw,
+            std::unique_ptr<InterpreterNode> lhs, std::unique_ptr<InterpreterNode> rhs,
+            RelationHandle* relHandle = nullptr)
+            : InterpreterNode(ty, sdw, relHandle), lhs(std::move(lhs)), rhs(std::move(rhs)) {}
+
+    /** @brief get left child of node */
+    inline const InterpreterNode* getLhs() const {
+        return lhs.get();
+    }
+
+    /** @brief get right child of node */
+    inline const InterpreterNode* getRhs() const {
+        return rhs.get();
+    }
+
+protected:
+    std::unique_ptr<InterpreterNode> lhs;
+    std::unique_ptr<InterpreterNode> rhs;
+};
+
+/**
+ * @class InterpreterSuperInst
+ * @brief This class encodes information for a super-instruction, which is
+ *        used to eliminate Number and TupleElement in index/project/existence operation.
+ */
+class InterpreterSuperInst {
+public:
+    InterpreterSuperInst(size_t i) {
+        first.resize(i);
+        second.resize(i);
+    }
+
+    InterpreterSuperInst(const InterpreterSuperInst&) = delete;
+    InterpreterSuperInst& operator=(const InterpreterSuperInst&) = delete;
+    InterpreterSuperInst(InterpreterSuperInst&&) = default;
+
+    /** @brief constant value in the lower bound/pattern */
+    std::vector<RamDomain> first;
+    /** @brief constant value in the upper bound */
+    std::vector<RamDomain> second;
+    /** @brief Encoded tupleElement expressions in the lower bound/pattern */
+    std::vector<std::array<size_t, 3>> tupleFirst;
+    /** @brief Encoded tupleElement expressions in the upper bound */
+    std::vector<std::array<size_t, 3>> tupleSecond;
+    /** @brief Generic expressions in the lower bound/pattern */
+    std::vector<std::pair<size_t, std::unique_ptr<InterpreterNode>>> exprFirst;
+    /** @brief Generic expressions in the upper bound */
+    std::vector<std::pair<size_t, std::unique_ptr<InterpreterNode>>> exprSecond;
+};
+
+/**
+ * @class InterpreterSuperOperation
+ * @brief Interpreter node that utilizes the super instruction optimization should
+ *        inherit from this class. E.g. ExistenceCheck, Project
+ */
+class InterpreterSuperOperation {
+public:
+    InterpreterSuperOperation(InterpreterSuperInst superInst) : superInst(std::move(superInst)) {}
+
+    const InterpreterSuperInst& getSuperInst() const {
+        return superInst;
+    }
+
+protected:
+    const InterpreterSuperInst superInst;
+};
+
+/**
+ * @class InterpreterAbstractParallel
+ * @brief Interpreter node that utilizes parallel execution should inherit from this class.
+ *        Enable node with parallelization preamble.
+ */
 class InterpreterAbstractParallel {
 public:
     /** @brief get preamble */
@@ -221,21 +261,14 @@ protected:
     std::shared_ptr<InterpreterPreamble> preamble = nullptr;
 };
 
-class InterpreterSuperInstParent {
+/**
+ * @class InterpreterViewOperation
+ * @brief Interpreter operation that utilizes the index view from underlying relation should inherit from this
+ *        class.
+ */
+class InterpreterViewOperation {
 public:
-    InterpreterSuperInstParent(InterpreterSuperInstruction superInst) : superInst(std::move(superInst)) {}
-
-    const InterpreterSuperInstruction& getSuperInst() const {
-        return superInst;
-    }
-
-protected:
-    const InterpreterSuperInstruction superInst;
-};
-
-class InterpreterViewNode {
-public:
-    InterpreterViewNode(size_t id) : viewId(id) {}
+    InterpreterViewOperation(size_t id) : viewId(id) {}
 
     inline size_t getViewId() const {
         return viewId;
@@ -245,9 +278,14 @@ protected:
     size_t viewId;
 };
 
-class InterpreterBinRelNode {
+/**
+ * @class InterpreterBinRelOperation
+ * @brief Interpreter operation that involves with two relations should inherit from this class.
+ *        E.g. Swap, Extend
+ */
+class InterpreterBinRelOperation {
 public:
-    InterpreterBinRelNode(size_t src, size_t target) : src(src), target(target) {}
+    InterpreterBinRelOperation(size_t src, size_t target) : src(src), target(target) {}
 
     inline size_t getSourceId() const {
         return src;
@@ -262,9 +300,13 @@ protected:
     const size_t target;
 };
 
-class InterpreterNestedNode {
+/**
+ * @class InterpreterNestedOperation
+ * @brief Encode a nested operation for the interpreter node. E.g. Loop, IndexScan
+ */
+class InterpreterNestedOperation {
 public:
-    InterpreterNestedNode(std::unique_ptr<InterpreterNode> nested) : nested(std::move(nested)) {}
+    InterpreterNestedOperation(std::unique_ptr<InterpreterNode> nested) : nested(std::move(nested)) {}
 
     inline const InterpreterNode* getNestesOperation() const {
         return nested.get();
@@ -274,9 +316,13 @@ protected:
     std::unique_ptr<InterpreterNode> nested;
 };
 
-class InterpreterCondNode {
+/**
+ * @class InterpreterCondOperation
+ * @brief Encode a conditional operation for the interpreter node. E.g. Exit, Filter
+ */
+class InterpreterCondOperation {
 public:
-    InterpreterCondNode(std::unique_ptr<InterpreterNode> cond) : cond(std::move(cond)) {}
+    InterpreterCondOperation(std::unique_ptr<InterpreterNode> cond) : cond(std::move(cond)) {}
 
     inline const InterpreterNode* getCondtion() const {
         return cond.get();
@@ -286,66 +332,108 @@ protected:
     std::unique_ptr<InterpreterNode> cond;
 };
 
+/**
+ * @class InterpreterConstant
+ */
 class InterpreterConstant : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterTupleElement
+ */
 class InterpreterTupleElement : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterAutoIncrement
+ */
 class InterpreterAutoIncrement : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterIntrinsicOperator
+ */
 class InterpreterIntrinsicOperator : public InterpreterCompundNode {
     using InterpreterCompundNode::InterpreterCompundNode;
 };
 
+/**
+ * @class InterpreterUserDefinedOperator
+ */
 class InterpreterUserDefinedOperator : public InterpreterCompundNode {
     using InterpreterCompundNode::InterpreterCompundNode;
 };
 
+/**
+ * @class InterpreterNestedIntrinsicOperator
+ */
 class InterpreterNestedIntrinsicOperator : public InterpreterCompundNode {
     using InterpreterCompundNode::InterpreterCompundNode;
 };
 
+/**
+ * @class InterpreterPackRecord
+ */
 class InterpreterPackRecord : public InterpreterCompundNode {
     using InterpreterCompundNode::InterpreterCompundNode;
 };
 
+/**
+ * @class InterpreterSubroutineArgument
+ */
 class InterpreterSubroutineArgument : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterTrue
+ */
 class InterpreterTrue : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterFalse
+ */
 class InterpreterFalse : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterConjunction
+ */
 class InterpreterConjunction : public InterpreterBinaryNode {
     using InterpreterBinaryNode::InterpreterBinaryNode;
 };
 
+/**
+ * @class InterpreterNegation
+ */
 class InterpreterNegation : public InterpreterUnaryNode {
     using InterpreterUnaryNode::InterpreterUnaryNode;
 };
 
+/**
+ * @class InterpreterEmptinessCheck
+ */
 class InterpreterEmptinessCheck : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterExistenceCheck
+ */
 class InterpreterExistenceCheck : public InterpreterNode,
-                                  public InterpreterSuperInstParent,
-                                  public InterpreterViewNode {
+                                  public InterpreterSuperOperation,
+                                  public InterpreterViewOperation {
 public:
     InterpreterExistenceCheck(enum InterpreterNodeType ty, const RamNode* sdw, bool totalSearch,
-            size_t viewId, InterpreterSuperInstruction superInst)
-            : InterpreterNode(ty, sdw), InterpreterSuperInstParent(std::move(superInst)),
-              InterpreterViewNode(viewId), totalSearch(totalSearch) {}
+            size_t viewId, InterpreterSuperInst superInst)
+            : InterpreterNode(ty, sdw), InterpreterSuperOperation(std::move(superInst)),
+              InterpreterViewOperation(viewId), totalSearch(totalSearch) {}
 
     bool isTotalSearch() const {
         return totalSearch;
@@ -355,82 +443,121 @@ private:
     const bool totalSearch;
 };
 
-class InterpreterProvenanceExistenceCheck : public InterpreterNode,
-                                            public InterpreterSuperInstParent,
-                                            public InterpreterViewNode {
+/**
+ * @class InterpreterProvenanceExistenceCheck
+ */
+class InterpreterProvenanceExistenceCheck : public InterpreterUnaryNode,
+                                            public InterpreterSuperOperation,
+                                            public InterpreterViewOperation {
 public:
     InterpreterProvenanceExistenceCheck(enum InterpreterNodeType ty, const RamNode* sdw,
-            size_t viewId, InterpreterSuperInstruction superInst)
-            : InterpreterNode(ty, sdw), InterpreterSuperInstParent(std::move(superInst)),
-              InterpreterViewNode(viewId) {}
+            std::unique_ptr<InterpreterNode> child, size_t viewId, InterpreterSuperInst superInst)
+            : InterpreterUnaryNode(ty, sdw, std::move(child)),
+              InterpreterSuperOperation(std::move(superInst)), InterpreterViewOperation(viewId) {}
 };
 
+/**
+ * @class InterpreterConstraint
+ */
 class InterpreterConstraint : public InterpreterBinaryNode {
     using InterpreterBinaryNode::InterpreterBinaryNode;
 };
 
+/**
+ * @class InterpreterTupleOperation
+ */
 class InterpreterTupleOperation : public InterpreterUnaryNode {
     using InterpreterUnaryNode::InterpreterUnaryNode;
 };
 
-class InterpreterScan : public InterpreterNode, public InterpreterNestedNode {
+/**
+ * @class InterpreterScan
+ */
+class InterpreterScan : public InterpreterNode, public InterpreterNestedOperation {
 public:
     InterpreterScan(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
             std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, relHandle), InterpreterNestedNode(std::move(nested)) {}
+            : InterpreterNode(ty, sdw, relHandle), InterpreterNestedOperation(std::move(nested)) {}
 };
 
+/**
+ * @class InterpreterParallelScan
+ */
 class InterpreterParallelScan : public InterpreterScan, public InterpreterAbstractParallel {
     using InterpreterScan::InterpreterScan;
 };
 
+/**
+ * @class InterpreterIndexScan
+ */
 class InterpreterIndexScan : public InterpreterScan,
-                             public InterpreterSuperInstParent,
-                             public InterpreterViewNode {
+                             public InterpreterSuperOperation,
+                             public InterpreterViewOperation {
 public:
     InterpreterIndexScan(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
-            std::unique_ptr<InterpreterNode> nested, size_t viewId, InterpreterSuperInstruction superInst)
+            std::unique_ptr<InterpreterNode> nested, size_t viewId, InterpreterSuperInst superInst)
             : InterpreterScan(ty, sdw, relHandle, std::move(nested)),
-              InterpreterSuperInstParent(std::move(superInst)), InterpreterViewNode(viewId) {}
+              InterpreterSuperOperation(std::move(superInst)), InterpreterViewOperation(viewId) {}
 };
 
+/**
+ * @class InterpreterParallelIndexScan
+ */
 class InterpreterParallelIndexScan : public InterpreterIndexScan, public InterpreterAbstractParallel {
 public:
     using InterpreterIndexScan::InterpreterIndexScan;
 };
 
-class InterpreterChoice : public InterpreterNode, public InterpreterCondNode, public InterpreterNestedNode {
+/**
+ * @class InterpreterChoice
+ */
+class InterpreterChoice : public InterpreterNode,
+                          public InterpreterCondOperation,
+                          public InterpreterNestedOperation {
 public:
     InterpreterChoice(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
             std::unique_ptr<InterpreterNode> cond, std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, relHandle), InterpreterCondNode(std::move(cond)),
-              InterpreterNestedNode(std::move(nested)) {}
+            : InterpreterNode(ty, sdw, relHandle), InterpreterCondOperation(std::move(cond)),
+              InterpreterNestedOperation(std::move(nested)) {}
 };
 
+/**
+ * @class InterpreterParallelChoice
+ */
 class InterpreterParallelChoice : public InterpreterChoice, public InterpreterAbstractParallel {
     using InterpreterChoice::InterpreterChoice;
 };
 
+/**
+ * @class InterpreterIndexChoice
+ */
 class InterpreterIndexChoice : public InterpreterChoice,
-                               public InterpreterSuperInstParent,
-                               public InterpreterViewNode {
+                               public InterpreterSuperOperation,
+                               public InterpreterViewOperation {
 public:
     InterpreterIndexChoice(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
             std::unique_ptr<InterpreterNode> cond, std::unique_ptr<InterpreterNode> nested, size_t viewId,
-            InterpreterSuperInstruction superInst)
+            InterpreterSuperInst superInst)
             : InterpreterChoice(ty, sdw, relHandle, std::move(cond), std::move(nested)),
-              InterpreterSuperInstParent(std::move(superInst)), InterpreterViewNode(viewId) {}
+              InterpreterSuperOperation(std::move(superInst)), InterpreterViewOperation(viewId) {}
 };
 
+/**
+ * @class InterpreterParallelIndexChoice
+ */
 class InterpreterParallelIndexChoice : public InterpreterIndexChoice, public InterpreterAbstractParallel {
     using InterpreterIndexChoice::InterpreterIndexChoice;
 };
 
-class InterpreterUnpackRecord : public InterpreterNode, public InterpreterNestedNode {
+/**
+ * @class InterpreterUnpackRecord
+ */
+class InterpreterUnpackRecord : public InterpreterNode, public InterpreterNestedOperation {
 public:
     InterpreterUnpackRecord(enum InterpreterNodeType ty, const RamNode* sdw,
             std::unique_ptr<InterpreterNode> expr, std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw), InterpreterNestedNode(std::move(nested)), expr(std::move(expr)) {}
+            : InterpreterNode(ty, sdw), InterpreterNestedOperation(std::move(nested)), expr(std::move(expr)) {
+    }
 
     inline const InterpreterNode* getExpr() const {
         return expr.get();
@@ -440,15 +567,18 @@ protected:
     std::unique_ptr<InterpreterNode> expr;
 };
 
+/**
+ * @class InterpreterAggregate
+ */
 class InterpreterAggregate : public InterpreterNode,
-                             public InterpreterCondNode,
-                             public InterpreterNestedNode {
+                             public InterpreterCondOperation,
+                             public InterpreterNestedOperation {
 public:
     InterpreterAggregate(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
             std::unique_ptr<InterpreterNode> expr, std::unique_ptr<InterpreterNode> filter,
             std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, relHandle), 
-              InterpreterCondNode(std::move(filter)), InterpreterNestedNode(std::move(nested)), expr(std::move(expr)) {}
+            : InterpreterNode(ty, sdw, relHandle), InterpreterCondOperation(std::move(filter)),
+              InterpreterNestedOperation(std::move(nested)), expr(std::move(expr)) {}
 
     inline const InterpreterNode* getExpr() const {
         return expr.get();
@@ -458,85 +588,137 @@ protected:
     std::unique_ptr<InterpreterNode> expr;
 };
 
+/**
+ * @class InterpreterParallelAggregate
+ */
 class InterpreterParallelAggregate : public InterpreterAggregate, public InterpreterAbstractParallel {
     using InterpreterAggregate::InterpreterAggregate;
 };
 
+/**
+ * @class InterpreterIndexAggregate
+ */
 class InterpreterIndexAggregate : public InterpreterAggregate,
-                                  public InterpreterSuperInstParent,
-                                  public InterpreterViewNode {
+                                  public InterpreterSuperOperation,
+                                  public InterpreterViewOperation {
 public:
     InterpreterIndexAggregate(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
             std::unique_ptr<InterpreterNode> expr, std::unique_ptr<InterpreterNode> filter,
-            std::unique_ptr<InterpreterNode> nested, size_t viewId, InterpreterSuperInstruction superInst)
+            std::unique_ptr<InterpreterNode> nested, size_t viewId, InterpreterSuperInst superInst)
             : InterpreterAggregate(ty, sdw, relHandle, std::move(expr), std::move(filter), std::move(nested)),
-              InterpreterSuperInstParent(std::move(superInst)), InterpreterViewNode(viewId) {}
+              InterpreterSuperOperation(std::move(superInst)), InterpreterViewOperation(viewId) {}
 };
 
+/**
+ * @class InterpreterParallelIndexAggregate
+ */
 class InterpreterParallelIndexAggregate : public InterpreterIndexAggregate,
                                           public InterpreterAbstractParallel {
     using InterpreterIndexAggregate::InterpreterIndexAggregate;
 };
 
-class InterpreterBreak : public InterpreterNode, public InterpreterCondNode, public InterpreterNestedNode {
+/**
+ * @class InterpreterBreak
+ */
+class InterpreterBreak : public InterpreterNode,
+                         public InterpreterCondOperation,
+                         public InterpreterNestedOperation {
 public:
     InterpreterBreak(enum InterpreterNodeType ty, const RamNode* sdw, std::unique_ptr<InterpreterNode> cond,
             std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, nullptr), InterpreterCondNode(std::move(cond)),
-              InterpreterNestedNode(std::move(nested)) {}
+            : InterpreterNode(ty, sdw, nullptr), InterpreterCondOperation(std::move(cond)),
+              InterpreterNestedOperation(std::move(nested)) {}
 };
 
-class InterpreterFilter : public InterpreterNode, public InterpreterCondNode, public InterpreterNestedNode {
+/**
+ * @class InterpreterFilter
+ */
+class InterpreterFilter : public InterpreterNode,
+                          public InterpreterCondOperation,
+                          public InterpreterNestedOperation {
 public:
     InterpreterFilter(enum InterpreterNodeType ty, const RamNode* sdw, std::unique_ptr<InterpreterNode> cond,
             std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, nullptr), InterpreterCondNode(std::move(cond)),
-              InterpreterNestedNode(std::move(nested)) {}
+            : InterpreterNode(ty, sdw, nullptr), InterpreterCondOperation(std::move(cond)),
+              InterpreterNestedOperation(std::move(nested)) {}
 };
 
-class InterpreterProject : public InterpreterNode, public InterpreterSuperInstParent {
+/**
+ * @class InterpreterProject
+ */
+class InterpreterProject : public InterpreterNode, public InterpreterSuperOperation {
 public:
     InterpreterProject(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
-            InterpreterSuperInstruction superInst)
-            : InterpreterNode(ty, sdw, relHandle), InterpreterSuperInstParent(std::move(superInst)) {}
+            InterpreterSuperInst superInst)
+            : InterpreterNode(ty, sdw, relHandle), InterpreterSuperOperation(std::move(superInst)) {}
 };
 
+/**
+ * @class InterpreterSubroutineReturn
+ */
 class InterpreterSubroutineReturn : public InterpreterCompundNode {
     using InterpreterCompundNode::InterpreterCompundNode;
 };
 
+/**
+ * @class InterpreterSequence
+ */
 class InterpreterSequence : public InterpreterCompundNode {
     using InterpreterCompundNode::InterpreterCompundNode;
 };
 
+/**
+ * @class InterpreterParallel
+ */
 class InterpreterParallel : public InterpreterCompundNode {
     using InterpreterCompundNode::InterpreterCompundNode;
 };
 
+/**
+ * @class InterpreterLoop
+ */
 class InterpreterLoop : public InterpreterUnaryNode {
     using InterpreterUnaryNode::InterpreterUnaryNode;
 };
 
+/**
+ * @class InterpreterExit
+ */
 class InterpreterExit : public InterpreterUnaryNode {
     using InterpreterUnaryNode::InterpreterUnaryNode;
 };
 
+/**
+ * @class InterpreterLogRelationTimer
+ */
 class InterpreterLogRelationTimer : public InterpreterUnaryNode {
     using InterpreterUnaryNode::InterpreterUnaryNode;
 };
 
+/**
+ * @class InterpreterLogTimer
+ */
 class InterpreterLogTimer : public InterpreterUnaryNode {
     using InterpreterUnaryNode::InterpreterUnaryNode;
 };
 
+/**
+ * @class InterpreterDebugInfo
+ */
 class InterpreterDebugInfo : public InterpreterUnaryNode {
     using InterpreterUnaryNode::InterpreterUnaryNode;
 };
 
+/**
+ * @class InterpreterClear
+ */
 class InterpreterClear : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterCall
+ */
 class InterpreterCall : public InterpreterNode {
 public:
     InterpreterCall(enum InterpreterNodeType ty, const RamNode* sdw, size_t subroutineId)
@@ -550,28 +732,43 @@ private:
     const size_t subroutineId;
 };
 
+/**
+ * @class InterpreterLogSize
+ */
 class InterpreterLogSize : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterIO
+ */
 class InterpreterIO : public InterpreterNode {
     using InterpreterNode::InterpreterNode;
 };
 
+/**
+ * @class InterpreterQuery
+ */
 class InterpreterQuery : public InterpreterUnaryNode, public InterpreterAbstractParallel {
     using InterpreterUnaryNode::InterpreterUnaryNode;
 };
 
-class InterpreterExtend : public InterpreterNode, public InterpreterBinRelNode {
+/**
+ * @class InterpreterExtend
+ */
+class InterpreterExtend : public InterpreterNode, public InterpreterBinRelOperation {
 public:
     InterpreterExtend(enum InterpreterNodeType ty, const RamNode* sdw, size_t src, size_t target)
-            : InterpreterNode(ty, sdw), InterpreterBinRelNode(src, target) {}
+            : InterpreterNode(ty, sdw), InterpreterBinRelOperation(src, target) {}
 };
 
-class InterpreterSwap : public InterpreterNode, public InterpreterBinRelNode {
+/**
+ * @class InterpreterSwap
+ */
+class InterpreterSwap : public InterpreterNode, public InterpreterBinRelOperation {
 public:
     InterpreterSwap(enum InterpreterNodeType ty, const RamNode* sdw, size_t src, size_t target)
-            : InterpreterNode(ty, sdw), InterpreterBinRelNode(src, target) {}
+            : InterpreterNode(ty, sdw), InterpreterBinRelOperation(src, target) {}
 };
 
 }  // namespace souffle

@@ -282,23 +282,23 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
     ();            \
     }
 
-#define CAL_SEARCH_BOUND(superInfo, low, hig)                          \
+#define CAL_SEARCH_BOUND(superInfo, low, high)                          \
     /** Unbounded and Constant */                                      \
     memcpy(low, superInfo.first.data(), sizeof(low));                  \
-    memcpy(hig, superInfo.second.data(), sizeof(hig));                 \
+    memcpy(high, superInfo.second.data(), sizeof(high));                 \
     /* TupleElement */                                                 \
     for (const auto& tupleElement : superInfo.tupleFirst) {            \
         low[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]]; \
     }                                                                  \
     for (const auto& tupleElement : superInfo.tupleSecond) {           \
-        hig[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]]; \
+        high[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]]; \
     }                                                                  \
     /* Generic */                                                      \
     for (const auto& expr : superInfo.exprFirst) {                     \
         low[expr.first] = execute(expr.second.get(), ctxt);            \
     }                                                                  \
     for (const auto& expr : superInfo.exprSecond) {                    \
-        hig[expr.first] = execute(expr.second.get(), ctxt);            \
+        high[expr.first] = execute(expr.second.get(), ctxt);            \
     }
 
     switch (node->getType()) {
@@ -669,22 +669,22 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // for partial we search for lower and upper boundaries
             RamDomain low[arity];
-            RamDomain hig[arity];
+            RamDomain high[arity];
             memcpy(low, superInfo.first.data(), sizeof(low));
-            memcpy(hig, superInfo.second.data(), sizeof(hig));
+            memcpy(high, superInfo.second.data(), sizeof(high));
 
             /* TupleElement */
             for (const auto& tupleElement : superInfo.tupleFirst) {
                 low[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]];
-                hig[tupleElement[0]] = low[tupleElement[0]];
+                high[tupleElement[0]] = low[tupleElement[0]];
             }
             /* Generic */
             for (const auto& expr : superInfo.exprFirst) {
                 low[expr.first] = execute(expr.second.get(), ctxt);
-                hig[expr.first] = low[expr.first];
+                high[expr.first] = low[expr.first];
             }
 
-            return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(hig, arity));
+            return ctxt.getView(viewPos)->contains(TupleRef(low, arity), TupleRef(high, arity));
         ESAC(ExistenceCheck)
 
         CASE(ProvenanceExistenceCheck)
@@ -694,33 +694,33 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
 
             // for partial we search for lower and upper boundaries
             RamDomain low[arity];
-            RamDomain hig[arity];
+            RamDomain high[arity];
             memcpy(low, superInfo.first.data(), sizeof(low));
-            memcpy(hig, superInfo.second.data(), sizeof(hig));
+            memcpy(high, superInfo.second.data(), sizeof(high));
 
             /* TupleElement */
             for (const auto& tupleElement : superInfo.tupleFirst) {
                 low[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]];
-                hig[tupleElement[0]] = low[tupleElement[0]];
+                high[tupleElement[0]] = low[tupleElement[0]];
             }
             /* Generic */
             for (const auto& expr : superInfo.exprFirst) {
                 assert(expr.second.get() != nullptr &&
                         "ProvenanceExistenceCheck should always be specified for payload");
                 low[expr.first] = execute(expr.second.get(), ctxt);
-                hig[expr.first] = low[expr.first];
+                high[expr.first] = low[expr.first];
             }
 
             low[arity - 2] = MIN_RAM_SIGNED;
             low[arity - 1] = MIN_RAM_SIGNED;
-            hig[arity - 2] = MAX_RAM_SIGNED;
-            hig[arity - 1] = MAX_RAM_SIGNED;
+            high[arity - 2] = MAX_RAM_SIGNED;
+            high[arity - 1] = MAX_RAM_SIGNED;
 
             // obtain view
             size_t viewPos = shadow.getViewId();
 
             // get an equalRange
-            auto equalRange = ctxt.getView(viewPos)->range(TupleRef(low, arity), TupleRef(hig, arity));
+            auto equalRange = ctxt.getView(viewPos)->range(TupleRef(low, arity), TupleRef(high, arity));
 
             // if range is empty
             if (equalRange.begin() == equalRange.end()) {
@@ -859,21 +859,18 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             return true;
         ESAC(ParallelScan)
 
-        // TODO: 1. out of order execution, will ctxt be effected?
-        //       2. If lower is tuple, will it guarantee higher is tuple?
-        //       3. Reorder calculation, corrsponding to field.
         CASE(IndexScan)
             // create pattern tuple for range query
             size_t arity = cur.getRelation().getArity();
             const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
-            RamDomain hig[arity];
-            CAL_SEARCH_BOUND(superInfo, low, hig);
+            RamDomain high[arity];
+            CAL_SEARCH_BOUND(superInfo, low, high);
 
             size_t viewId = shadow.getViewId();
             auto& view = ctxt.getView(viewId);
             // conduct range query
-            for (auto data : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
+            for (auto data : view->range(TupleRef(low, arity), TupleRef(high, arity))) {
                 ctxt[cur.getTupleId()] = &data[0];
                 if (!execute(shadow.getNestesOperation(), ctxt)) {
                     break;
@@ -890,12 +887,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t arity = rel.getArity();
             const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
-            RamDomain hig[arity];
-            CAL_SEARCH_BOUND(superInfo, low, hig);
+            RamDomain high[arity];
+            CAL_SEARCH_BOUND(superInfo, low, high);
 
             size_t indexPos = shadow.getViewId();
             auto pStream =
-                    rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
+                    rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
 
             PARALLEL_START
                 InterpreterContext newCtxt(ctxt);
@@ -960,13 +957,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t arity = cur.getRelation().getArity();
             const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
-            RamDomain hig[arity];
-            CAL_SEARCH_BOUND(superInfo, low, hig);
+            RamDomain high[arity];
+            CAL_SEARCH_BOUND(superInfo, low, high);
 
             size_t viewId = shadow.getViewId();
             auto& view = ctxt.getView(viewId);
 
-            for (auto ip : view->range(TupleRef(low, arity), TupleRef(hig, arity))) {
+            for (auto ip : view->range(TupleRef(low, arity), TupleRef(high, arity))) {
                 const RamDomain* data = &ip[0];
                 ctxt[cur.getTupleId()] = data;
                 if (execute(shadow.getCondtion(), ctxt)) {
@@ -987,12 +984,12 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t arity = rel.getArity();
             const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
-            RamDomain hig[arity];
-            CAL_SEARCH_BOUND(superInfo, low, hig);
+            RamDomain high[arity];
+            CAL_SEARCH_BOUND(superInfo, low, high);
 
             size_t indexPos = shadow.getViewId();
             auto pStream =
-                    rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(hig, arity), numOfThreads);
+                    rel.partitionRange(indexPos, TupleRef(low, arity), TupleRef(high, arity), numOfThreads);
 
             PARALLEL_START
                 InterpreterContext newCtxt(ctxt);
@@ -1064,14 +1061,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             const auto& superInfo = shadow.getSuperInst();
             // get lower and upper boundaries for iteration
             RamDomain low[arity];
-            RamDomain hig[arity];
-            CAL_SEARCH_BOUND(superInfo, low, hig);
+            RamDomain high[arity];
+            CAL_SEARCH_BOUND(superInfo, low, high);
 
             size_t viewId = shadow.getViewId();
             auto& view = newCtxt.getView(viewId);
 
             return executeAggregate(newCtxt, cur, *shadow.getCondtion(), shadow.getExpr(),
-                    *shadow.getNestesOperation(), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
+                    *shadow.getNestesOperation(), view->range(TupleRef(low, arity), TupleRef(high, arity)));
         ESAC(ParallelIndexAggregate)
 
         CASE(IndexAggregate)
@@ -1079,14 +1076,14 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t arity = cur.getRelation().getArity();
             const auto& superInfo = shadow.getSuperInst();
             RamDomain low[arity];
-            RamDomain hig[arity];
-            CAL_SEARCH_BOUND(superInfo, low, hig)
+            RamDomain high[arity];
+            CAL_SEARCH_BOUND(superInfo, low, high)
 
             size_t viewId = shadow.getViewId();
             auto& view = ctxt.getView(viewId);
 
             return executeAggregate(ctxt, cur, *shadow.getCondtion(), shadow.getExpr(),
-                    *shadow.getNestesOperation(), view->range(TupleRef(low, arity), TupleRef(hig, arity)));
+                    *shadow.getNestesOperation(), view->range(TupleRef(low, arity), TupleRef(high, arity)));
         ESAC(IndexAggregate)
 
         CASE(Break)

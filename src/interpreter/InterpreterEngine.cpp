@@ -828,7 +828,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // use simple iterator
             for (const RamDomain* tuple : rel) {
                 ctxt[cur.getTupleId()] = tuple;
-                if (!execute(shadow.getNestesOperation(), ctxt)) {
+                if (!execute(shadow.getNestedOperation(), ctxt)) {
                     break;
                 }
             }
@@ -850,7 +850,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (!execute(shadow.getNestesOperation(), newCtxt)) {
+                        if (!execute(shadow.getNestedOperation(), newCtxt)) {
                             break;
                         }
                     }
@@ -872,7 +872,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // conduct range query
             for (auto data : view->range(TupleRef(low, arity), TupleRef(high, arity))) {
                 ctxt[cur.getTupleId()] = &data[0];
-                if (!execute(shadow.getNestesOperation(), ctxt)) {
+                if (!execute(shadow.getNestedOperation(), ctxt)) {
                     break;
                 }
             }
@@ -903,7 +903,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (!execute(shadow.getNestesOperation(), newCtxt)) {
+                        if (!execute(shadow.getNestedOperation(), newCtxt)) {
                             break;
                         }
                     }
@@ -920,8 +920,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             // use simple iterator
             for (const RamDomain* tuple : rel) {
                 ctxt[cur.getTupleId()] = tuple;
-                if (execute(shadow.getCondtion(), ctxt)) {
-                    execute(shadow.getNestesOperation(), ctxt);
+                if (execute(shadow.getCondition(), ctxt)) {
+                    execute(shadow.getNestedOperation(), ctxt);
                     break;
                 }
             }
@@ -942,8 +942,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (execute(shadow.getCondtion(), newCtxt)) {
-                            execute(shadow.getNestesOperation(), newCtxt);
+                        if (execute(shadow.getCondition(), newCtxt)) {
+                            execute(shadow.getNestedOperation(), newCtxt);
                             break;
                         }
                     }
@@ -966,8 +966,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (auto ip : view->range(TupleRef(low, arity), TupleRef(high, arity))) {
                 const RamDomain* data = &ip[0];
                 ctxt[cur.getTupleId()] = data;
-                if (execute(shadow.getCondtion(), ctxt)) {
-                    execute(shadow.getNestesOperation(), ctxt);
+                if (execute(shadow.getCondition(), ctxt)) {
+                    execute(shadow.getNestedOperation(), ctxt);
                     break;
                 }
             }
@@ -999,8 +999,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
                 pfor(auto it = pStream.begin(); it < pStream.end(); it++) {
                     for (const TupleRef& val : *it) {
                         newCtxt[cur.getTupleId()] = val.getBase();
-                        if (execute(shadow.getCondtion(), newCtxt)) {
-                            execute(shadow.getNestesOperation(), newCtxt);
+                        if (execute(shadow.getCondition(), newCtxt)) {
+                            execute(shadow.getNestedOperation(), newCtxt);
                             break;
                         }
                     }
@@ -1026,7 +1026,7 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             ctxt[cur.getTupleId()] = tuple;
 
             // run nested part - using base class visitor
-            return execute(shadow.getNestesOperation(), ctxt);
+            return execute(shadow.getNestedOperation(), ctxt);
         ESAC(UnpackRecord)
 
         CASE(ParallelAggregate)
@@ -1038,13 +1038,13 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             for (const auto& info : viewInfo) {
                 newCtxt.createView(*getRelationHandle(info[0]), info[1], info[2]);
             }
-            return executeAggregate(newCtxt, cur, *shadow.getCondtion(), shadow.getExpr(),
-                    *shadow.getNestesOperation(), node->getRelation()->scan());
+            return executeAggregate(newCtxt, cur, *shadow.getCondition(), shadow.getExpr(),
+                    *shadow.getNestedOperation(), node->getRelation()->scan());
         ESAC(ParallelAggregate)
 
         CASE(Aggregate)
-            return executeAggregate(ctxt, cur, *shadow.getCondtion(), shadow.getExpr(),
-                    *shadow.getNestesOperation(), node->getRelation()->scan());
+            return executeAggregate(ctxt, cur, *shadow.getCondition(), shadow.getExpr(),
+                    *shadow.getNestedOperation(), node->getRelation()->scan());
         ESAC(Aggregate)
 
         CASE(ParallelIndexAggregate)
@@ -1067,8 +1067,8 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t viewId = shadow.getViewId();
             auto& view = newCtxt.getView(viewId);
 
-            return executeAggregate(newCtxt, cur, *shadow.getCondtion(), shadow.getExpr(),
-                    *shadow.getNestesOperation(), view->range(TupleRef(low, arity), TupleRef(high, arity)));
+            return executeAggregate(newCtxt, cur, *shadow.getCondition(), shadow.getExpr(),
+                    *shadow.getNestedOperation(), view->range(TupleRef(low, arity), TupleRef(high, arity)));
         ESAC(ParallelIndexAggregate)
 
         CASE(IndexAggregate)
@@ -1082,24 +1082,24 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
             size_t viewId = shadow.getViewId();
             auto& view = ctxt.getView(viewId);
 
-            return executeAggregate(ctxt, cur, *shadow.getCondtion(), shadow.getExpr(),
-                    *shadow.getNestesOperation(), view->range(TupleRef(low, arity), TupleRef(high, arity)));
+            return executeAggregate(ctxt, cur, *shadow.getCondition(), shadow.getExpr(),
+                    *shadow.getNestedOperation(), view->range(TupleRef(low, arity), TupleRef(high, arity)));
         ESAC(IndexAggregate)
 
         CASE(Break)
             // check condition
-            if (execute(shadow.getCondtion(), ctxt)) {
+            if (execute(shadow.getCondition(), ctxt)) {
                 return false;
             }
-            return execute(shadow.getNestesOperation(), ctxt);
+            return execute(shadow.getNestedOperation(), ctxt);
         ESAC(Break)
 
         CASE(Filter)
             bool result = true;
             // check condition
-            if (execute(shadow.getCondtion(), ctxt)) {
+            if (execute(shadow.getCondition(), ctxt)) {
                 // process nested
-                result = execute(shadow.getNestesOperation(), ctxt);
+                result = execute(shadow.getNestedOperation(), ctxt);
             }
 
             if (profileEnabled && !cur.getProfileText().empty()) {

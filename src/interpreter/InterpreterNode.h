@@ -124,14 +124,14 @@ protected:
 };
 
 /**
- * @class InterpreterCompundNode
+ * @class InterpreterCompoundNode
  * @brief Compound node represents interpreter node with a list of children.
  */
-class InterpreterCompundNode : public InterpreterNode {
+class InterpreterCompoundNode : public InterpreterNode {
     using NodePtrVec = std::vector<std::unique_ptr<InterpreterNode>>;
 
 public:
-    InterpreterCompundNode(enum InterpreterNodeType ty, const RamNode* sdw, NodePtrVec children = {},
+    InterpreterCompoundNode(enum InterpreterNodeType ty, const RamNode* sdw, NodePtrVec children = {},
             RelationHandle* relHandle = nullptr)
             : InterpreterNode(ty, sdw, relHandle), children(std::move(children)) {}
 
@@ -308,7 +308,7 @@ class InterpreterNestedOperation {
 public:
     InterpreterNestedOperation(std::unique_ptr<InterpreterNode> nested) : nested(std::move(nested)) {}
 
-    inline const InterpreterNode* getNestesOperation() const {
+    inline const InterpreterNode* getNestedOperation() const {
         return nested.get();
     };
 
@@ -317,14 +317,14 @@ protected:
 };
 
 /**
- * @class InterpreterCondOperation
+ * @class InterpreterConditionalOperation
  * @brief Encode a conditional operation for the interpreter node. E.g. Exit, Filter
  */
-class InterpreterCondOperation {
+class InterpreterConditionalOperation {
 public:
-    InterpreterCondOperation(std::unique_ptr<InterpreterNode> cond) : cond(std::move(cond)) {}
+    InterpreterConditionalOperation(std::unique_ptr<InterpreterNode> cond) : cond(std::move(cond)) {}
 
-    inline const InterpreterNode* getCondtion() const {
+    inline const InterpreterNode* getCondition() const {
         return cond.get();
     };
 
@@ -356,29 +356,29 @@ class InterpreterAutoIncrement : public InterpreterNode {
 /**
  * @class InterpreterIntrinsicOperator
  */
-class InterpreterIntrinsicOperator : public InterpreterCompundNode {
-    using InterpreterCompundNode::InterpreterCompundNode;
+class InterpreterIntrinsicOperator : public InterpreterCompoundNode {
+    using InterpreterCompoundNode::InterpreterCompoundNode;
 };
 
 /**
  * @class InterpreterUserDefinedOperator
  */
-class InterpreterUserDefinedOperator : public InterpreterCompundNode {
-    using InterpreterCompundNode::InterpreterCompundNode;
+class InterpreterUserDefinedOperator : public InterpreterCompoundNode {
+    using InterpreterCompoundNode::InterpreterCompoundNode;
 };
 
 /**
  * @class InterpreterNestedIntrinsicOperator
  */
-class InterpreterNestedIntrinsicOperator : public InterpreterCompundNode {
-    using InterpreterCompundNode::InterpreterCompundNode;
+class InterpreterNestedIntrinsicOperator : public InterpreterCompoundNode {
+    using InterpreterCompoundNode::InterpreterCompoundNode;
 };
 
 /**
  * @class InterpreterPackRecord
  */
-class InterpreterPackRecord : public InterpreterCompundNode {
-    using InterpreterCompundNode::InterpreterCompundNode;
+class InterpreterPackRecord : public InterpreterCompoundNode {
+    using InterpreterCompoundNode::InterpreterCompoundNode;
 };
 
 /**
@@ -512,12 +512,12 @@ public:
  * @class InterpreterChoice
  */
 class InterpreterChoice : public InterpreterNode,
-                          public InterpreterCondOperation,
+                          public InterpreterConditionalOperation,
                           public InterpreterNestedOperation {
 public:
     InterpreterChoice(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
             std::unique_ptr<InterpreterNode> cond, std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, relHandle), InterpreterCondOperation(std::move(cond)),
+            : InterpreterNode(ty, sdw, relHandle), InterpreterConditionalOperation(std::move(cond)),
               InterpreterNestedOperation(std::move(nested)) {}
 };
 
@@ -571,13 +571,13 @@ protected:
  * @class InterpreterAggregate
  */
 class InterpreterAggregate : public InterpreterNode,
-                             public InterpreterCondOperation,
+                             public InterpreterConditionalOperation,
                              public InterpreterNestedOperation {
 public:
     InterpreterAggregate(enum InterpreterNodeType ty, const RamNode* sdw, RelationHandle* relHandle,
             std::unique_ptr<InterpreterNode> expr, std::unique_ptr<InterpreterNode> filter,
             std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, relHandle), InterpreterCondOperation(std::move(filter)),
+            : InterpreterNode(ty, sdw, relHandle), InterpreterConditionalOperation(std::move(filter)),
               InterpreterNestedOperation(std::move(nested)), expr(std::move(expr)) {}
 
     inline const InterpreterNode* getExpr() const {
@@ -621,12 +621,12 @@ class InterpreterParallelIndexAggregate : public InterpreterIndexAggregate,
  * @class InterpreterBreak
  */
 class InterpreterBreak : public InterpreterNode,
-                         public InterpreterCondOperation,
+                         public InterpreterConditionalOperation,
                          public InterpreterNestedOperation {
 public:
     InterpreterBreak(enum InterpreterNodeType ty, const RamNode* sdw, std::unique_ptr<InterpreterNode> cond,
             std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, nullptr), InterpreterCondOperation(std::move(cond)),
+            : InterpreterNode(ty, sdw, nullptr), InterpreterConditionalOperation(std::move(cond)),
               InterpreterNestedOperation(std::move(nested)) {}
 };
 
@@ -634,12 +634,12 @@ public:
  * @class InterpreterFilter
  */
 class InterpreterFilter : public InterpreterNode,
-                          public InterpreterCondOperation,
+                          public InterpreterConditionalOperation,
                           public InterpreterNestedOperation {
 public:
     InterpreterFilter(enum InterpreterNodeType ty, const RamNode* sdw, std::unique_ptr<InterpreterNode> cond,
             std::unique_ptr<InterpreterNode> nested)
-            : InterpreterNode(ty, sdw, nullptr), InterpreterCondOperation(std::move(cond)),
+            : InterpreterNode(ty, sdw, nullptr), InterpreterConditionalOperation(std::move(cond)),
               InterpreterNestedOperation(std::move(nested)) {}
 };
 
@@ -656,22 +656,22 @@ public:
 /**
  * @class InterpreterSubroutineReturn
  */
-class InterpreterSubroutineReturn : public InterpreterCompundNode {
-    using InterpreterCompundNode::InterpreterCompundNode;
+class InterpreterSubroutineReturn : public InterpreterCompoundNode {
+    using InterpreterCompoundNode::InterpreterCompoundNode;
 };
 
 /**
  * @class InterpreterSequence
  */
-class InterpreterSequence : public InterpreterCompundNode {
-    using InterpreterCompundNode::InterpreterCompundNode;
+class InterpreterSequence : public InterpreterCompoundNode {
+    using InterpreterCompoundNode::InterpreterCompoundNode;
 };
 
 /**
  * @class InterpreterParallel
  */
-class InterpreterParallel : public InterpreterCompundNode {
-    using InterpreterCompundNode::InterpreterCompundNode;
+class InterpreterParallel : public InterpreterCompoundNode {
+    using InterpreterCompoundNode::InterpreterCompoundNode;
 };
 
 /**

@@ -163,7 +163,7 @@ public:
     }
 
     NodePtr visitExistenceCheck(const RamExistenceCheck& exists) override {
-        InterpreterSuperInst superOp = getExistenceSuperInstInfo(exists);
+        InterpreterSuperInstruction superOp = getExistenceSuperInstInfo(exists);
         // Check if the search signature is a total signature
         bool isTotal = true;
         for (const auto& cur : exists.getValues()) {
@@ -176,7 +176,7 @@ public:
     }
 
     NodePtr visitProvenanceExistenceCheck(const RamProvenanceExistenceCheck& provExists) override {
-        InterpreterSuperInst superOp = getExistenceSuperInstInfo(provExists);
+        InterpreterSuperInstruction superOp = getExistenceSuperInstInfo(provExists);
         return std::make_unique<InterpreterProvenanceExistenceCheck>(I_ProvenanceExistenceCheck, &provExists,
                 visit(provExists.getChildNodes().back()), encodeView(&provExists), std::move(superOp));
     }
@@ -215,7 +215,7 @@ public:
     }
 
     NodePtr visitIndexScan(const RamIndexScan& scan) override {
-        InterpreterSuperInst indexOperation = getIndexSuperInstInfo(scan);
+        InterpreterSuperInstruction indexOperation = getIndexSuperInstInfo(scan);
         NodePtrVec children;
         children.push_back(visitTupleOperation(scan));
         return std::make_unique<InterpreterIndexScan>(I_IndexScan, &scan, nullptr, visitTupleOperation(scan),
@@ -225,7 +225,7 @@ public:
     NodePtr visitParallelIndexScan(const RamParallelIndexScan& piscan) override {
         size_t relId = encodeRelation(piscan.getRelation());
         auto rel = relations[relId].get();
-        InterpreterSuperInst indexOperation = getIndexSuperInstInfo(piscan);
+        InterpreterSuperInstruction indexOperation = getIndexSuperInstInfo(piscan);
         auto res = std::make_unique<InterpreterParallelIndexScan>(I_ParallelIndexScan, &piscan, rel,
                 visitTupleOperation(piscan), encodeIndexPos(piscan), std::move(indexOperation));
         res->setPreamble(parentQueryPreamble);
@@ -249,14 +249,14 @@ public:
     }
 
     NodePtr visitIndexChoice(const RamIndexChoice& choice) override {
-        InterpreterSuperInst indexOperation = getIndexSuperInstInfo(choice);
+        InterpreterSuperInstruction indexOperation = getIndexSuperInstInfo(choice);
         return std::make_unique<InterpreterIndexChoice>(I_IndexChoice, &choice, nullptr,
                 visit(choice.getCondition()), visitTupleOperation(choice), encodeView(&choice),
                 std::move(indexOperation));
     }
 
     NodePtr visitParallelIndexChoice(const RamParallelIndexChoice& ichoice) override {
-        InterpreterSuperInst indexOperation = getIndexSuperInstInfo(ichoice);
+        InterpreterSuperInstruction indexOperation = getIndexSuperInstInfo(ichoice);
         size_t relId = encodeRelation(ichoice.getRelation());
         auto rel = relations[relId].get();
         auto res = std::make_unique<InterpreterParallelIndexChoice>(I_ParallelIndexChoice, &ichoice, rel,
@@ -290,7 +290,7 @@ public:
     }
 
     NodePtr visitIndexAggregate(const RamIndexAggregate& aggregate) override {
-        InterpreterSuperInst indexOperation = getIndexSuperInstInfo(aggregate);
+        InterpreterSuperInstruction indexOperation = getIndexSuperInstInfo(aggregate);
         size_t relId = encodeRelation(aggregate.getRelation());
         auto rel = relations[relId].get();
         return std::make_unique<InterpreterIndexAggregate>(I_IndexAggregate, &aggregate, rel,
@@ -299,7 +299,7 @@ public:
     }
 
     NodePtr visitParallelIndexAggregate(const RamParallelIndexAggregate& aggregate) override {
-        InterpreterSuperInst indexOperation = getIndexSuperInstInfo(aggregate);
+        InterpreterSuperInstruction indexOperation = getIndexSuperInstInfo(aggregate);
         size_t relId = encodeRelation(aggregate.getRelation());
         auto rel = relations[relId].get();
         auto res = std::make_unique<InterpreterParallelIndexAggregate>(I_ParallelIndexAggregate, &aggregate,
@@ -320,7 +320,7 @@ public:
     }
 
     NodePtr visitProject(const RamProject& project) override {
-        InterpreterSuperInst superOp = getProjectSuperInstInfo(project);
+        InterpreterSuperInstruction superOp = getProjectSuperInstInfo(project);
         size_t relId = encodeRelation(project.getRelation());
         auto rel = relations[relId].get();
         return std::make_unique<InterpreterProject>(I_Project, &project, rel, std::move(superOp));
@@ -659,9 +659,9 @@ private:
     /**
      * @brief Encode and return the super-instruction information about a index operation.
      */
-    InterpreterSuperInst getIndexSuperInstInfo(const RamIndexOperation& ramIndex) {
+    InterpreterSuperInstruction getIndexSuperInstInfo(const RamIndexOperation& ramIndex) {
         size_t arity = ramIndex.getRelation().getArity();
-        InterpreterSuperInst indexOperation(arity);
+        InterpreterSuperInstruction indexOperation(arity);
         const auto& first = ramIndex.getRangePattern().first;
         for (size_t i = 0; i < arity; ++i) {
             auto& low = first[i];
@@ -722,9 +722,9 @@ private:
     /**
      * @brief Encode and return the super-instruction information about an existence check operation
      */
-    InterpreterSuperInst getExistenceSuperInstInfo(const RamAbstractExistenceCheck& exist) {
+    InterpreterSuperInstruction getExistenceSuperInstInfo(const RamAbstractExistenceCheck& exist) {
         size_t arity = exist.getRelation().getArity();
-        InterpreterSuperInst superOp(arity);
+        InterpreterSuperInstruction superOp(arity);
         const auto& children = exist.getValues();
         for (size_t i = 0; i < arity; ++i) {
             auto& child = children[i];
@@ -758,9 +758,9 @@ private:
     /**
      * @brief Encode and return the super-instruction information about a project operation
      */
-    InterpreterSuperInst getProjectSuperInstInfo(const RamProject& exist) {
+    InterpreterSuperInstruction getProjectSuperInstInfo(const RamProject& exist) {
         size_t arity = exist.getRelation().getArity();
-        InterpreterSuperInst superOp(arity);
+        InterpreterSuperInstruction superOp(arity);
         const auto& children = exist.getValues();
         for (size_t i = 0; i < arity; ++i) {
             auto& child = children[i];

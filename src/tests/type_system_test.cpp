@@ -18,10 +18,7 @@
 
 #include "RamTypes.h"
 #include "ast/TypeSystem.h"
-#include "utility/ContainerUtil.h"
 #include "utility/StringUtil.h"
-#include <algorithm>
-#include <cstddef>
 #include <string>
 #include <vector>
 

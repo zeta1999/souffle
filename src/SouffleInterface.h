@@ -8,7 +8,7 @@
 
 /************************************************************************
  *
- * @file SouffleInterface.h
+ * @file CompiledSouffle.h
  *
  * Main include file for generated C++ classes of Souffle
  *

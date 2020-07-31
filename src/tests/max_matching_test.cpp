@@ -16,6 +16,7 @@
 
 #include "tests/test.h"
 
+#include "ram/analysis/Analysis.h"
 #include "ram/analysis/IndexAnalysis.h"
 #include <set>
 #include <string>

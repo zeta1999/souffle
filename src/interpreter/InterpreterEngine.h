@@ -132,5 +132,4 @@ private:
     RecordTable recordTable;
 };
 
-
 }  // namespace souffle

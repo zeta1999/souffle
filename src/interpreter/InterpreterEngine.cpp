@@ -283,21 +283,21 @@ RamDomain InterpreterEngine::execute(const InterpreterNode* node, InterpreterCon
     }
 
 #define CAL_SEARCH_BOUND(superInfo, low, high)                          \
-    /** Unbounded and Constant */                                      \
-    memcpy(low, superInfo.first.data(), sizeof(low));                  \
-    memcpy(high, superInfo.second.data(), sizeof(high));                 \
-    /* TupleElement */                                                 \
-    for (const auto& tupleElement : superInfo.tupleFirst) {            \
-        low[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]]; \
-    }                                                                  \
-    for (const auto& tupleElement : superInfo.tupleSecond) {           \
+    /** Unbounded and Constant */                                       \
+    memcpy(low, superInfo.first.data(), sizeof(low));                   \
+    memcpy(high, superInfo.second.data(), sizeof(high));                \
+    /* TupleElement */                                                  \
+    for (const auto& tupleElement : superInfo.tupleFirst) {             \
+        low[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]];  \
+    }                                                                   \
+    for (const auto& tupleElement : superInfo.tupleSecond) {            \
         high[tupleElement[0]] = ctxt[tupleElement[1]][tupleElement[2]]; \
-    }                                                                  \
-    /* Generic */                                                      \
-    for (const auto& expr : superInfo.exprFirst) {                     \
-        low[expr.first] = execute(expr.second.get(), ctxt);            \
-    }                                                                  \
-    for (const auto& expr : superInfo.exprSecond) {                    \
+    }                                                                   \
+    /* Generic */                                                       \
+    for (const auto& expr : superInfo.exprFirst) {                      \
+        low[expr.first] = execute(expr.second.get(), ctxt);             \
+    }                                                                   \
+    for (const auto& expr : superInfo.exprSecond) {                     \
         high[expr.first] = execute(expr.second.get(), ctxt);            \
     }
 

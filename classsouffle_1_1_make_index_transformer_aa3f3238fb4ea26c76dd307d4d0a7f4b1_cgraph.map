@@ -1,0 +1,51 @@
+<map id="souffle::MakeIndexTransformer::transform" name="souffle::MakeIndexTransformer::transform">
+<area shape="rect" id="node2" href="$classsouffle_1_1_ram_translation_unit.html#a9397dc9274dc27e27a2329fae9269b0d" title="templated method to compute/retrieve an analysis for a translation unit " alt="" coords="286,210,489,251"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ram_translation_unit.html#ab464bb1f13b9a284e54b9150582c1b97" title="get the RAM Program of the translation unit " alt="" coords="847,799,1050,841"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_make_index_transformer.html#a237bbe7961056c14eeb72339834dd306" title="Make indexable RAM operation indexed. " alt="" coords="276,1207,499,1249"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_global.html#a2dcb257b0f98d0b882862427cc965640" title="souffle::Global::config" alt="" coords="867,5,1030,32"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_debug_report.html#ac0feb8780d23c2ca5d7700e4857b10c4" title="souffle::DebugReport\l::addSection" alt="" coords="588,210,747,251"/>
+<area shape="rect" id="node7" href="$classsouffle_1_1_ram_transformer.html#a09ebbf557165cbdebf5d95d5124f709b" title="apply the transformer to a translation unit &#160;translationUnit that will be transformed. " alt="" coords="576,427,759,469"/>
+<area shape="rect" id="node20" href="$namespacesouffle.html#a7fba43e03f480ca372449b103dfc9a2f" title="Creates a node mapper based on a corresponding lambda expression. " alt="" coords="547,1156,788,1183"/>
+<area shape="rect" id="node21" href="$classsouffle_1_1_make_index_transformer.html#a20482e6d8465294e62a687339235e2b2" title="Rewrite an aggregate operation to an indexed aggregate operation. " alt="" coords="556,1557,779,1598"/>
+<area shape="rect" id="node44" href="$classsouffle_1_1_make_index_transformer.html#a6b745363e74100028215be99f7da764f" title="Rewrite an index scan operation to an amended index scan operation. " alt="" coords="556,1207,779,1249"/>
+<area shape="rect" id="node47" href="$classsouffle_1_1_make_index_transformer.html#acd4c1a174939f94a9ae7eefcc8da6de7" title="Rewrite a scan operation to an indexed scan operation. " alt="" coords="556,1334,779,1375"/>
+<area shape="rect" id="node48" href="$namespacesouffle.html#a307bae61c898715dccb57c9732335000" title="A utility function visiting all nodes within the ast rooted by the given node recursively in a depth&#45;..." alt="" coords="583,1824,751,1851"/>
+<area shape="rect" id="node8" href="$namespacesouffle.html#aecc08c83ad9634fc515b7aa094702949" title="A generic function converting strings into strings (trivial case). " alt="" coords="886,384,1011,411"/>
+<area shape="rect" id="node9" href="$namespacesouffle_1_1test.html#a4195ac46f2a48cfa9b911259a22c3ccb" title="souffle::test::now" alt="" coords="881,435,1016,461"/>
+<area shape="rect" id="node10" href="$classsouffle_1_1_ram_transformer.html#a10a0d3a003094ad4a8de96b968d26e29" title="transform the translation unit / used by apply &#160;translationUnit that will be transformed. " alt="" coords="857,486,1040,527"/>
+<area shape="rect" id="node11" href="$classsouffle_1_1_ram_translation_unit.html#adc388ca999ac2b1a8b584f517e60d930" title="throw away all alive analyses of the translation unit " alt="" coords="847,551,1050,593"/>
+<area shape="rect" id="node12" href="$classsouffle_1_1_ram_transformer.html#ac8533b87fb70032e240b5fc8c40dea33" title="get name of the transformer " alt="" coords="857,617,1040,658"/>
+<area shape="rect" id="node13" href="$namespacesouffle_1_1test.html#a10453085bc4f71f32dcda443d4b3c446" title="souffle::test::count" alt="" coords="877,683,1020,709"/>
+<area shape="rect" id="node14" href="$classsouffle_1_1_ram_translation_unit.html#aa12b4d374b978ea3dea421c11fd55478" title="get debug report " alt="" coords="847,734,1050,775"/>
+<area shape="rect" id="node15" href="$classsouffle_1_1_debug_report.html#a5e9ee78bb3c716e38cb79b485e28eb39" title="souffle::DebugReport\l::startSection" alt="" coords="869,57,1028,98"/>
+<area shape="rect" id="node16" href="$classsouffle_1_1_debug_report.html#a555b97488e24480a728dd1782eafa9db" title="souffle::DebugReport\l::addCodeSection" alt="" coords="869,122,1028,163"/>
+<area shape="rect" id="node17" href="$classsouffle_1_1_debug_report.html#a7e549c285244587078499c95b590d9a1" title="souffle::DebugReport\l::endSection" alt="" coords="869,187,1028,229"/>
+<area shape="rect" id="node18" href="$classsouffle_1_1_ram_translation_unit.html#a34cc65ccb9f56403c617ed235f8100ab" title="get error report " alt="" coords="847,253,1050,294"/>
+<area shape="rect" id="node19" href="$classsouffle_1_1_error_report.html#a43341b617858ddfafb8f893e32d9bd6e" title="souffle::ErrorReport\l::getNumErrors" alt="" coords="875,318,1022,359"/>
+<area shape="rect" id="node22" href="$namespacesouffle.html#a1dd578fbaf92e67ee52ebdd8cf364584" title="souffle::clone" alt="" coords="1444,1668,1553,1695"/>
+<area shape="rect" id="node23" href="$classsouffle_1_1_make_index_transformer.html#a49dfe17c2849768283c49a0a18fc396c" title="Construct query patterns for an indexable operation. " alt="" coords="837,1586,1060,1627"/>
+<area shape="rect" id="node28" href="$classsouffle_1_1_ram_abstract_aggregate.html#a347f9771fa0c565779edd31fe46df237" title="Get target expression. " alt="" coords="1665,1863,1891,1905"/>
+<area shape="rect" id="node29" href="$classsouffle_1_1_ram_abstract_aggregate.html#a77e13a8d984bba805c9f1701e947e441" title="Get condition. " alt="" coords="1665,1646,1891,1687"/>
+<area shape="rect" id="node32" href="$namespacesouffle.html#ad0e8debde5608979e041dd30e044612a" title="Valid C++ identifier, note that this does not ensure the uniqueness of identifiers returned..." alt="" coords="1433,1319,1565,1345"/>
+<area shape="rect" id="node37" href="$classsouffle_1_1_ram_relation.html#aa2d201d636a8b01283b5996a56d7abb8" title="Get arity of relation. " alt="" coords="870,1703,1027,1745"/>
+<area shape="rect" id="node38" href="$classsouffle_1_1_ram_abstract_aggregate.html#a30e4d2f08b55799a1dcafd24938d8d0d" title="Get aggregation function. " alt="" coords="836,1821,1061,1862"/>
+<area shape="rect" id="node39" href="$classsouffle_1_1_ram_nested_operation.html#afdbbe7da4e005809c1ca1531b06f65f0" title="Get nested operation. " alt="" coords="841,1302,1056,1343"/>
+<area shape="rect" id="node40" href="$classsouffle_1_1_ram_relation_operation.html#a499c5f7c9562a0cfe16ee3668e19ca88" title="Get search relation. " alt="" coords="838,1367,1059,1409"/>
+<area shape="rect" id="node41" href="$classsouffle_1_1_ram_tuple_operation.html#ae121c8c72d4b9dcb56fe2d69b6364720" title="Get identifier. " alt="" coords="847,1237,1050,1278"/>
+<area shape="rect" id="node42" href="$namespacesouffle.html#aeea6de3eaf7c83bc19097c74d3fb6693" title="Convert terms of a conjunction to a list. " alt="" coords="855,1484,1042,1511"/>
+<area shape="rect" id="node24" href="$classsouffle_1_1_make_index_transformer.html#a6291d74f806c3511bdb7be1eedd17890" title="souffle::MakeIndexTransformer\l::getLowerUpperExpression" alt="" coords="1109,1501,1332,1542"/>
+<area shape="rect" id="node36" href="$namespacesouffle.html#aaaed06bbcb6b8efcfd2474b1c5d81aa3" title="Determines if an expression represents an undefined value. " alt="" coords="1125,1617,1316,1644"/>
+<area shape="rect" id="node25" href="$classsouffle_1_1_ram_level_analysis.html#a587569ef6e7cc7b69d58341bed110bf7" title="Get level of a RAM expression/condition. " alt="" coords="1401,1581,1596,1622"/>
+<area shape="rect" id="node33" href="$namespacesouffle.html#a6befeedfd76433e1bd51a1f6cd42afec" title="souffle::isEqConstraint" alt="" coords="1415,1428,1583,1455"/>
+<area shape="rect" id="node34" href="$namespacesouffle.html#a1d955796bc5c48f5b9555dfc325217ec" title="souffle::isGreaterEqualConstraint" alt="" coords="1380,1479,1617,1505"/>
+<area shape="rect" id="node35" href="$namespacesouffle.html#ac52960118770dd0faae0e8079b37fceb" title="souffle::isGreaterThanConstraint" alt="" coords="1382,1529,1615,1556"/>
+<area shape="rect" id="node26" href="$classsouffle_1_1_ram_index_operation.html#ace310bad18356b42d1e7372b87618fbc" title="Get range pattern. " alt="" coords="1676,1281,1880,1322"/>
+<area shape="rect" id="node30" href="$namespacesouffle.html#aa0949fa42d9e396bb5407f69b450c1f1" title="Filter a vector to include certain elements. " alt="" coords="1726,1017,1830,1044"/>
+<area shape="rect" id="node27" href="$namespacesouffle.html#ad62d4e824a9d74c7462da546a21780fe" title="A utility function enabling the creation of a vector of pointers. " alt="" coords="1939,1288,2085,1315"/>
+<area shape="rect" id="node31" href="$namespacesouffle.html#a6502e279c40a34078cb9d93a465c7590" title="Filter a vector to exclude certain elements. " alt="" coords="1949,1017,2075,1044"/>
+<area shape="rect" id="node43" href="$classsouffle_1_1_ram_condition.html#a54f67f8136251030e958232ae1aa051a" title="Create a clone (i.e. " alt="" coords="1137,1333,1304,1374"/>
+<area shape="rect" id="node45" href="$classsouffle_1_1_ram_nested_operation.html#a680ef8e965daa0ff12930306cd6a48a5" title="Get profile text. " alt="" coords="841,1119,1056,1161"/>
+<area shape="rect" id="node46" href="$namespacesouffle.html#adda7adbee5f19bb274a067facc71d0e8" title="Determines if a condition represents true. " alt="" coords="877,1185,1020,1212"/>
+<area shape="rect" id="node49" href="$namespacesouffle.html#a030c754119d60ea72cff8af5b62710e6" title="A utility function visiting all nodes within the ast rooted by the given node recursively in a depth&#45;..." alt="" coords="865,1989,1033,2030"/>
+<area shape="rect" id="node50" href="$classsouffle_1_1_ast_node.html#a07dd728cde93a2b1d72d987cf54cbd8e" title="Obtain a list of all embedded AST child nodes. " alt="" coords="1125,1989,1316,2030"/>
+</map>

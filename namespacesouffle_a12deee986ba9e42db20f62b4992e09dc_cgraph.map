@@ -1,0 +1,12 @@
+<map id="souffle::TEST" name="souffle::TEST">
+<area shape="rect" id="node2" href="$classsouffle_1_1_min_index_selection.html#a2055d17d6da3d4d464ae9c7c07a8ed67" title="Add new key to an Index Set " alt="" coords="167,5,361,47"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_test_auto_index.html#a865235bad978a70fab26a7146328f15a" title="returns number of unique matchings " alt="" coords="181,71,347,112"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_search_signature.html#a885682764c693a2a36229253adecb59f" title="souffle::SearchSignature::set" alt="" coords="160,137,368,163"/>
+<area shape="rect" id="node8" href="$classsouffle_1_1_min_index_selection.html#ab94b6f734df006e8c7886b3c41a3fb65" title="map the keys in the key set to lexicographical order " alt="" coords="167,188,361,229"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_search_signature.html#a09ea82762595da52db4d0bfc5960e448" title="souffle::SearchSignature\l::empty" alt="" coords="416,5,596,47"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_max_matching.html#ab3c0a165f9409b73df7bbe5ee21922df" title="get number of matches in the solution " alt="" coords="426,71,586,112"/>
+<area shape="rect" id="node7" href="$namespacesouffle.html#a1c6084921898cf9cc52173b551b39dfa" title="souffle::operator\&lt;\&lt;" alt="" coords="431,137,581,163"/>
+<area shape="rect" id="node9" href="$classsouffle_1_1_search_signature.html#a4246ee8562dc7e156770ec49c0f02117" title="souffle::SearchSignature\l::getDelta" alt="" coords="416,188,596,229"/>
+<area shape="rect" id="node11" href="$namespacesouffle.html#a850ddc94302e9b170a98729a22a4c8fa" title="Applies a function to each element of a vector and returns the results. " alt="" coords="455,254,557,281"/>
+<area shape="rect" id="node10" href="$classsouffle_1_1_search_signature.html#a949ec42a09c4f8aafd7c2286224c5cce" title="souffle::SearchSignature\l::arity" alt="" coords="644,188,824,229"/>
+</map>

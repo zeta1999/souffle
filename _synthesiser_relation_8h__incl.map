@@ -1,0 +1,10 @@
+<map id="synthesiser/SynthesiserRelation.h" name="synthesiser/SynthesiserRelation.h">
+<area shape="rect" id="node2" href="$ram_2_relation_8h.html" title="ram/Relation.h" alt="" coords="1636,80,1753,107"/>
+<area shape="rect" id="node26" href="$_index_analysis_8h.html" title="ram/analysis/IndexAnalysis.h" alt="" coords="511,155,724,181"/>
+<area shape="rect" id="node3" href="$_relation_tag_8h.html" title="RelationTag.h" alt="" coords="1704,155,1813,181"/>
+<area shape="rect" id="node16" href="$ram_2_node_8h.html" title="ram/Node.h" alt="" coords="1581,155,1680,181"/>
+<area shape="rect" id="node20" href="$_container_util_8h.html" title="utility/ContainerUtil.h" alt="" coords="1181,155,1344,181"/>
+<area shape="rect" id="node4" href="$_misc_util_8h.html" title="utility/MiscUtil.h" alt="" coords="717,229,845,256"/>
+<area shape="rect" id="node5" href="$tinyformat_8h.html" title="tinyformat.h" alt="" coords="817,304,919,331"/>
+<area shape="rect" id="node27" href="$ram_2analysis_2_analysis_8h.html" title="ram/analysis/Analysis.h" alt="" coords="281,304,458,331"/>
+</map>

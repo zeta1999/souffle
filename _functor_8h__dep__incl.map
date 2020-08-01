@@ -1,0 +1,37 @@
+<map id="ast/Functor.h" name="ast/Functor.h">
+<area shape="rect" id="node2" href="$_ground_8cpp.html" title="ast/analysis/Ground.cpp" alt="" coords="456,333,635,360"/>
+<area shape="rect" id="node3" href="$_type_8cpp.html" title="ast/analysis/Type.cpp" alt="" coords="986,333,1148,360"/>
+<area shape="rect" id="node4" href="$_intrinsic_functor_8h.html" title="ast/IntrinsicFunctor.h" alt="" coords="1020,80,1176,107"/>
+<area shape="rect" id="node5" href="$_inline_relations_8cpp.html" title="ast/transform/InlineRelations.cpp" alt="" coords="327,251,564,278"/>
+<area shape="rect" id="node7" href="$_provenance_8cpp.html" title="ast/transform/Provenance.cpp" alt="" coords="264,162,481,189"/>
+<area shape="rect" id="node9" href="$_semantic_checker_8cpp.html" title="ast/transform/SemanticChecker.cpp" alt="" coords="48,251,302,278"/>
+<area shape="rect" id="node20" href="$_magic_set_8cpp.html" title="ast/transform/MagicSet.cpp" alt="" coords="5630,333,5830,360"/>
+<area shape="rect" id="node32" href="$_resolve_aliases_8cpp.html" title="ast/transform/ResolveAliases.cpp" alt="" coords="5642,251,5881,278"/>
+<area shape="rect" id="node34" href="$_ast_to_ram_translator_8cpp.html" title="AstToRamTranslator.cpp" alt="" coords="5441,251,5618,278"/>
+<area shape="rect" id="node35" href="$_user_defined_functor_8h.html" title="ast/UserDefinedFunctor.h" alt="" coords="2287,80,2471,107"/>
+<area shape="rect" id="node6" href="$_polymorphic_objects_8cpp.html" title="ast/transform/Polymorphic\lObjects.cpp" alt="" coords="506,155,700,196"/>
+<area shape="rect" id="node8" href="$_remove_redundant_sums_8cpp.html" title="ast/transform/RemoveRedundant\lSums.cpp" alt="" coords="774,155,1010,196"/>
+<area shape="rect" id="node10" href="$_utils_8cpp.html" title="ast/Utils.cpp" alt="" coords="589,251,692,278"/>
+<area shape="rect" id="node11" href="$ast_2_visitor_8h.html" title="ast/Visitor.h" alt="" coords="2539,162,2638,189"/>
+<area shape="rect" id="node12" href="$_component_lookup_8cpp.html" title="ast/analysis/ComponentLookup.cpp" alt="" coords="4162,251,4415,278"/>
+<area shape="rect" id="node13" href="$analysis_2_constraint_8h.html" title="ast/analysis/Constraint.h" alt="" coords="716,251,898,278"/>
+<area shape="rect" id="node14" href="$_i_o_type_8cpp.html" title="ast/analysis/IOType.cpp" alt="" coords="4440,251,4614,278"/>
+<area shape="rect" id="node15" href="$_recursive_clauses_8cpp.html" title="ast/analysis/RecursiveClauses.cpp" alt="" coords="4639,251,4884,278"/>
+<area shape="rect" id="node16" href="$_component_instantiation_8cpp.html" title="ast/transform/ComponentInstantiation.cpp" alt="" coords="4908,251,5207,278"/>
+<area shape="rect" id="node17" href="$_fold_anonymous_records_8cpp.html" title="ast/transform/FoldAnonymous\lRecords.cpp" alt="" coords="923,244,1142,285"/>
+<area shape="rect" id="node18" href="$_grounded_terms_checker_8cpp.html" title="ast/transform/GroundedTerms\lChecker.cpp" alt="" coords="1166,244,1382,285"/>
+<area shape="rect" id="node19" href="$_magic_set_8h.html" title="ast/transform/MagicSet.h" alt="" coords="5232,251,5417,278"/>
+<area shape="rect" id="node22" href="$_materialize_aggregation_queries_8cpp.html" title="ast/transform/Materialize\lAggregationQueries.cpp" alt="" coords="1406,244,1592,285"/>
+<area shape="rect" id="node23" href="$_materialize_singleton_aggregation_8cpp.html" title="ast/transform/Materialize\lSingletonAggregation.cpp" alt="" coords="1616,244,1806,285"/>
+<area shape="rect" id="node24" href="$_partition_body_literals_8cpp.html" title="ast/transform/PartitionBody\lLiterals.cpp" alt="" coords="1830,244,2032,285"/>
+<area shape="rect" id="node25" href="$_pragma_checker_8cpp.html" title="ast/transform/PragmaChecker.cpp" alt="" coords="2056,251,2299,278"/>
+<area shape="rect" id="node26" href="$_reduce_existentials_8cpp.html" title="ast/transform/ReduceExistentials.cpp" alt="" coords="2323,251,2587,278"/>
+<area shape="rect" id="node27" href="$_remove_boolean_constraints_8cpp.html" title="ast/transform/RemoveBoolean\lConstraints.cpp" alt="" coords="2612,244,2832,285"/>
+<area shape="rect" id="node28" href="$_remove_empty_relations_8cpp.html" title="ast/transform/RemoveEmpty\lRelations.cpp" alt="" coords="2856,244,3065,285"/>
+<area shape="rect" id="node29" href="$_remove_relation_copies_8cpp.html" title="ast/transform/RemoveRelation\lCopies.cpp" alt="" coords="3089,244,3309,285"/>
+<area shape="rect" id="node30" href="$_reorder_literals_8cpp.html" title="ast/transform/ReorderLiterals.cpp" alt="" coords="3333,251,3572,278"/>
+<area shape="rect" id="node31" href="$_replace_singleton_variables_8cpp.html" title="ast/transform/ReplaceSingleton\lVariables.cpp" alt="" coords="3647,244,3874,285"/>
+<area shape="rect" id="node33" href="$_unique_aggregation_variables_8cpp.html" title="ast/transform/UniqueAggregation\lVariables.cpp" alt="" coords="3898,244,4137,285"/>
+<area shape="rect" id="node21" href="$main_8cpp.html" title="main.cpp" alt="" coords="5283,333,5366,360"/>
+<area shape="rect" id="node36" href="$_user_defined_functors_8cpp.html" title="ast/transform/UserDefined\lFunctors.cpp" alt="" coords="2712,155,2907,196"/>
+</map>

@@ -1,0 +1,10 @@
+<map id="souffle::RamIndexAnalysis::print" name="souffle::RamIndexAnalysis::print">
+<area shape="rect" id="node2" href="$classsouffle_1_1_min_index_selection.html#a4f8d529628ad2c96f87bcf7f22b2131d" title="Get all indexes " alt="" coords="255,5,449,47"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_ram_relation.html#aa2d201d636a8b01283b5996a56d7abb8" title="Get arity of relation. " alt="" coords="273,71,431,112"/>
+<area shape="rect" id="node4" href="$classsouffle_1_1_ram_relation.html#a4311da6ad3d188e46a2604e6d30812de" title="Get attribute names. " alt="" coords="273,136,431,177"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ram_relation.html#a445819695b0b607dd8605137edc69971" title="Get name. " alt="" coords="273,201,431,243"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_min_index_selection.html#adfb23e72bfc28d36f3aa206d92e111aa" title="Get searches " alt="" coords="255,267,449,308"/>
+<area shape="rect" id="node7" href="$namespacesouffle.html#aaaed06bbcb6b8efcfd2474b1c5d81aa3" title="Determines if an expression represents an undefined value. " alt="" coords="257,333,447,359"/>
+<area shape="rect" id="node8" href="$classsouffle_1_1_search_signature.html#a885682764c693a2a36229253adecb59f" title="souffle::SearchSignature::set" alt="" coords="248,383,456,410"/>
+<area shape="rect" id="node9" href="$namespacesouffle.html#a1c6084921898cf9cc52173b551b39dfa" title="souffle::operator\&lt;\&lt;" alt="" coords="504,383,655,410"/>
+</map>

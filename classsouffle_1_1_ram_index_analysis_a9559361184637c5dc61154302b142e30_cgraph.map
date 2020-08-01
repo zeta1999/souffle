@@ -1,0 +1,9 @@
+<map id="souffle::RamIndexAnalysis::getSearchSignature" name="souffle::RamIndexAnalysis::getSearchSignature">
+<area shape="rect" id="node2" href="$classsouffle_1_1_ram_relation.html#aa2d201d636a8b01283b5996a56d7abb8" title="Get arity of relation. " alt="" coords="280,5,437,47"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_ram_index_operation.html#ace310bad18356b42d1e7372b87618fbc" title="Get range pattern. " alt="" coords="257,71,461,112"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ram_relation_operation.html#a499c5f7c9562a0cfe16ee3668e19ca88" title="Get search relation. " alt="" coords="248,136,469,177"/>
+<area shape="rect" id="node6" href="$namespacesouffle.html#aaaed06bbcb6b8efcfd2474b1c5d81aa3" title="Determines if an expression represents an undefined value. " alt="" coords="263,202,454,229"/>
+<area shape="rect" id="node7" href="$classsouffle_1_1_search_signature.html#a885682764c693a2a36229253adecb59f" title="souffle::SearchSignature::set" alt="" coords="255,253,463,279"/>
+<area shape="rect" id="node4" href="$namespacesouffle.html#ad62d4e824a9d74c7462da546a21780fe" title="A utility function enabling the creation of a vector of pointers. " alt="" coords="519,78,666,105"/>
+<area shape="rect" id="node8" href="$namespacesouffle.html#a1c6084921898cf9cc52173b551b39dfa" title="souffle::operator\&lt;\&lt;" alt="" coords="517,253,668,279"/>
+</map>

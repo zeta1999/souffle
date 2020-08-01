@@ -1,0 +1,29 @@
+<map id="souffle::separateDBs" name="souffle::separateDBs">
+<area shape="rect" id="node2" href="$classsouffle_1_1_ast_program.html#a36a9cf206241d64c1dabe532026fc3ae" title="add a clause " alt="" coords="263,5,413,47"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_ast_program.html#a03ebc7b31cced8250c79e3c7815be8f0" title="souffle::AstProgram\l::addRelation" alt="" coords="263,71,413,112"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_ast_program.html#a71fb3c28c3a105637c22cbe6a9fb63ef" title="get relations " alt="" coords="782,151,933,192"/>
+<area shape="rect" id="node8" href="$classsouffle_1_1_ast_clause.html#aef9cb574a067db73c83fd9c9f63d297f" title="Create a clone (i.e. " alt="" coords="269,289,407,331"/>
+<area shape="rect" id="node14" href="$namespacesouffle.html#ac9327b98da5d4ad231903d0bb9205bbc" title="souffle::createNewRelation" alt="" coords="239,377,437,403"/>
+<area shape="rect" id="node17" href="$namespacesouffle.html#a70f903ef77f947a3123c891794322534" title="souffle::nextSrcLoc" alt="" coords="541,494,686,521"/>
+<area shape="rect" id="node18" href="$namespacesouffle.html#a4d9e53888640a9abfd7ea7c43715152a" title="Returns a vector of clauses in the program describing the relation with the given name..." alt="" coords="265,486,411,513"/>
+<area shape="rect" id="node20" href="$classsouffle_1_1_ast_clause.html#a5a29a4f9ba5d0e4aea869cf71a6efbbf" title="Return the atom that represents the head of the clause. " alt="" coords="544,596,683,637"/>
+<area shape="rect" id="node21" href="$namespacesouffle.html#aeb526d569fc848583a59613102f660d3" title="souffle::getNextEdbName" alt="" coords="243,137,433,163"/>
+<area shape="rect" id="node22" href="$namespacesouffle.html#ae4b6e248ec714e64f38ce032caf5f477" title="Returns whether the given clause is a fact. " alt="" coords="283,633,393,659"/>
+<area shape="rect" id="node28" href="$classsouffle_1_1_ast_atom.html#acfca6d3ea5ccbd46a629d54c145206bb" title="set qualified name " alt="" coords="211,683,465,710"/>
+<area shape="rect" id="node4" href="$namespacesouffle.html#ada252aa15afbf7d703a11b000dfd4048" title="Returns the relation with the given name in the program. " alt="" coords="539,103,687,130"/>
+<area shape="rect" id="node5" href="$namespacesouffle.html#a62f80c157a6a365d78a43592732a8efa" title="Returns the first element in a container that satisfies a given predicate, nullptr otherwise..." alt="" coords="805,99,909,126"/>
+<area shape="rect" id="node7" href="$namespacesouffle.html#ad62d4e824a9d74c7462da546a21780fe" title="A utility function enabling the creation of a vector of pointers. " alt="" coords="1023,461,1170,487"/>
+<area shape="rect" id="node9" href="$classsouffle_1_1_ast_clause.html#aeb3fc669b2ccdcf24169b3bc8e6534a6" title="souffle::AstClause\l::AstClause" alt="" coords="544,209,683,251"/>
+<area shape="rect" id="node12" href="$namespacesouffle.html#a1dd578fbaf92e67ee52ebdd8cf364584" title="souffle::clone" alt="" coords="559,275,668,302"/>
+<area shape="rect" id="node13" href="$classsouffle_1_1_ast_node.html#a545cacc1afc26c19044a6822b4ca84ae" title="Return source location of the AstNode. " alt="" coords="513,326,713,353"/>
+<area shape="rect" id="node10" href="$classsouffle_1_1_ast_node.html#aec7e7384fa4ec1ec83d76882849acffd" title="souffle::AstNode::AstNode" alt="" coords="761,217,953,243"/>
+<area shape="rect" id="node11" href="$classsouffle_1_1_ast_node.html#a54d46554a24c9223d28dccc8e8dc51c5" title="souffle::AstNode::\l~AstNode" alt="" coords="1028,209,1165,251"/>
+<area shape="rect" id="node15" href="$classsouffle_1_1_ast_relation.html#ae27800d5845e8ac6df95b20bfc51aecf" title="Get relation attributes. " alt="" coords="783,420,931,461"/>
+<area shape="rect" id="node16" href="$classsouffle_1_1_ast_relation.html#ad2025f014882934287fbf5bf05a9ced7" title="Get relation representation. " alt="" coords="539,428,688,469"/>
+<area shape="rect" id="node19" href="$classsouffle_1_1_ast_program.html#aa04b430e385f40c6fe2bf7ad2ca31bb3" title="get clauses " alt="" coords="782,512,933,553"/>
+<area shape="rect" id="node23" href="$classsouffle_1_1_ast_clause.html#a1b5199df425ba5839383a75c5bb8a254" title="Obtains a copy of the internally maintained body literals. " alt="" coords="788,603,927,644"/>
+<area shape="rect" id="node24" href="$classsouffle_1_1_ast_intrinsic_functor.html#a01ba7a7e6289f2b4abb05f37e7eea872" title="souffle::AstIntrinsicFunctor\l::getFunctionInfo" alt="" coords="516,713,711,755"/>
+<area shape="rect" id="node25" href="$namespacesouffle.html#a307bae61c898715dccb57c9732335000" title="A utility function visiting all nodes within the ast rooted by the given node recursively in a depth&#45;..." alt="" coords="529,779,697,806"/>
+<area shape="rect" id="node26" href="$namespacesouffle.html#a030c754119d60ea72cff8af5b62710e6" title="A utility function visiting all nodes within the ast rooted by the given node recursively in a depth&#45;..." alt="" coords="773,772,941,813"/>
+<area shape="rect" id="node27" href="$classsouffle_1_1_ast_node.html#a07dd728cde93a2b1d72d987cf54cbd8e" title="Obtain a list of all embedded AST child nodes. " alt="" coords="1001,772,1192,813"/>
+</map>

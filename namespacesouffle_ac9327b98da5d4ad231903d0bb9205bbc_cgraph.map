@@ -1,0 +1,8 @@
+<map id="souffle::createNewRelation" name="souffle::createNewRelation">
+<area shape="rect" id="node2" href="$namespacesouffle.html#a1dd578fbaf92e67ee52ebdd8cf364584" title="souffle::clone" alt="" coords="296,5,405,32"/>
+<area shape="rect" id="node3" href="$classsouffle_1_1_ast_relation.html#ae27800d5845e8ac6df95b20bfc51aecf" title="Get relation attributes. " alt="" coords="277,57,425,98"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ast_relation.html#ad2025f014882934287fbf5bf05a9ced7" title="Get relation representation. " alt="" coords="276,122,425,163"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_ast_node.html#a545cacc1afc26c19044a6822b4ca84ae" title="Return source location of the AstNode. " alt="" coords="251,188,451,215"/>
+<area shape="rect" id="node7" href="$namespacesouffle.html#a70f903ef77f947a3123c891794322534" title="souffle::nextSrcLoc" alt="" coords="278,239,423,265"/>
+<area shape="rect" id="node4" href="$namespacesouffle.html#ad62d4e824a9d74c7462da546a21780fe" title="A utility function enabling the creation of a vector of pointers. " alt="" coords="499,64,645,91"/>
+</map>

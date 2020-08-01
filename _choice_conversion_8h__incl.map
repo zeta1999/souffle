@@ -1,0 +1,23 @@
+<map id="ram/transform/ChoiceConversion.h" name="ram/transform/ChoiceConversion.h">
+<area shape="rect" id="node2" href="$ram_2_translation_unit_8h.html" title="ram/TranslationUnit.h" alt="" coords="1568,80,1731,107"/>
+<area shape="rect" id="node49" href="$_level_analysis_8h.html" title="ram/analysis/LevelAnalysis.h" alt="" coords="114,155,326,181"/>
+<area shape="rect" id="node50" href="$ram_2transform_2_transformer_8h.html" title="ram/transform/Transformer.h" alt="" coords="3663,528,3873,555"/>
+<area shape="rect" id="node3" href="$_debug_report_8h.html" title="DebugReport.h" alt="" coords="334,528,453,555"/>
+<area shape="rect" id="node10" href="$_global_8h.html" title="Global.h" alt="" coords="1425,528,1501,555"/>
+<area shape="rect" id="node13" href="$_symbol_table_8h.html" title="SymbolTable.h" alt="" coords="1252,453,1369,480"/>
+<area shape="rect" id="node34" href="$ram_2_program_8h.html" title="ram/Program.h" alt="" coords="2217,155,2335,181"/>
+<area shape="rect" id="node48" href="$ram_2analysis_2_analysis_8h.html" title="ram/analysis/Analysis.h" alt="" coords="122,229,299,256"/>
+<area shape="rect" id="node14" href="$_ram_types_8h.html" title="RamTypes.h" alt="" coords="1117,603,1219,629"/>
+<area shape="rect" id="node19" href="$_misc_util_8h.html" title="utility/MiscUtil.h" alt="" coords="3051,603,3179,629"/>
+<area shape="rect" id="node27" href="$_parallel_util_8h.html" title="utility/ParallelUtil.h" alt="" coords="629,528,776,555"/>
+<area shape="rect" id="node29" href="$_stream_util_8h.html" title="utility/StreamUtil.h" alt="" coords="2092,528,2239,555"/>
+<area shape="rect" id="node20" href="$tinyformat_8h.html" title="tinyformat.h" alt="" coords="2934,677,3037,704"/>
+<area shape="rect" id="node35" href="$ram_2_node_8h.html" title="ram/Node.h" alt="" coords="2905,528,3004,555"/>
+<area shape="rect" id="node38" href="$ram_2_relation_8h.html" title="ram/Relation.h" alt="" coords="3231,453,3348,480"/>
+<area shape="rect" id="node40" href="$_container_util_8h.html" title="utility/ContainerUtil.h" alt="" coords="2719,528,2881,555"/>
+<area shape="rect" id="node43" href="$_statement_8h.html" title="ram/Statement.h" alt="" coords="2565,229,2697,256"/>
+<area shape="rect" id="node39" href="$_relation_tag_8h.html" title="RelationTag.h" alt="" coords="3231,528,3340,555"/>
+<area shape="rect" id="node44" href="$_condition_8h.html" title="ram/Condition.h" alt="" coords="2821,379,2947,405"/>
+<area shape="rect" id="node45" href="$_operation_8h.html" title="ram/Operation.h" alt="" coords="3028,304,3156,331"/>
+<area shape="rect" id="node47" href="$_string_util_8h.html" title="utility/StringUtil.h" alt="" coords="1525,528,1662,555"/>
+</map>

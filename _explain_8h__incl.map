@@ -1,0 +1,15 @@
+<map id="Explain.h" name="Explain.h">
+<area shape="rect" id="node2" href="$_explain_provenance_8h.html" title="ExplainProvenance.h" alt="" coords="1854,155,2013,181"/>
+<area shape="rect" id="node39" href="$_explain_provenance_impl_8h.html" title="ExplainProvenanceImpl.h" alt="" coords="2444,80,2631,107"/>
+<area shape="rect" id="node41" href="$_explain_tree_8h.html" title="ExplainTree.h" alt="" coords="3520,229,3629,256"/>
+<area shape="rect" id="node3" href="$_ram_types_8h.html" title="RamTypes.h" alt="" coords="3273,379,3375,405"/>
+<area shape="rect" id="node9" href="$_souffle_interface_8h.html" title="SouffleInterface.h" alt="" coords="1865,229,2002,256"/>
+<area shape="rect" id="node10" href="$_symbol_table_8h.html" title="SymbolTable.h" alt="" coords="1580,304,1697,331"/>
+<area shape="rect" id="node11" href="$_misc_util_8h.html" title="utility/MiscUtil.h" alt="" coords="2615,379,2743,405"/>
+<area shape="rect" id="node12" href="$tinyformat_8h.html" title="tinyformat.h" alt="" coords="2446,453,2549,480"/>
+<area shape="rect" id="node33" href="$_string_util_8h.html" title="utility/StringUtil.h" alt="" coords="3566,304,3703,331"/>
+<area shape="rect" id="node21" href="$_parallel_util_8h.html" title="utility/ParallelUtil.h" alt="" coords="1293,379,1440,405"/>
+<area shape="rect" id="node23" href="$_stream_util_8h.html" title="utility/StreamUtil.h" alt="" coords="2055,379,2201,405"/>
+<area shape="rect" id="node40" href="$_binary_constraint_ops_8h.html" title="BinaryConstraintOps.h" alt="" coords="2676,304,2844,331"/>
+<area shape="rect" id="node42" href="$_container_util_8h.html" title="utility/ContainerUtil.h" alt="" coords="2225,379,2388,405"/>
+</map>

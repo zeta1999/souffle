@@ -1,0 +1,7 @@
+<map id="souffle::MinimiseProgramTransformer::reduceClauseBodies" name="souffle::MinimiseProgramTransformer::reduceClauseBodies">
+<area shape="rect" id="node2" href="$namespacesouffle.html#a1dd578fbaf92e67ee52ebdd8cf364584" title="souffle::clone" alt="" coords="335,5,445,32"/>
+<area shape="rect" id="node3" href="$namespacesouffle.html#a8a825f62e860ca448e7e16ab1a3a4333" title="souffle::contains" alt="" coords="325,56,455,83"/>
+<area shape="rect" id="node5" href="$classsouffle_1_1_ast_translation_unit.html#a85862a5fcfecdf63c7367926cdedde23" title="get the AST program " alt="" coords="293,107,487,149"/>
+<area shape="rect" id="node6" href="$classsouffle_1_1_ast_program.html#a0bde67af569811987d8e21929163d132" title="remove a clause " alt="" coords="315,173,465,214"/>
+<area shape="rect" id="node4" href="$namespacesouffle.html#aae135d2382a133fa5b036296fbd7f60a" title="souffle::isEqualAdornment" alt="" coords="535,56,728,83"/>
+</map>

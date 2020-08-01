@@ -15,10 +15,10 @@
  ***********************************************************************/
 
 #include "TypeSystem.h"
-#include "RamTypes.h"
 #include "utility/FunctionalUtil.h"
 #include "utility/StreamUtil.h"
 #include "utility/StringUtil.h"
+#include "utility/tinyformat.h"
 #include <cassert>
 
 namespace souffle {
